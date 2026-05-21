@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIDIZ Digital Catalog</title>
+    <meta name="description" content="시디즈 인체공학 의자 디지털 카탈로그 — 제품 라인업, 모델 비교, 맞춤 추천">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SIDIZ Digital Catalog">
+    <meta property="og:description" content="시디즈 인체공학 의자 디지털 카탈로그 — 제품 라인업, 모델 비교, 맞춤 추천">
+    <meta property="og:image" content="https://kr.sidiz.com/cdn/shop/files/sidiz_logo.png?v=1686020046">
+    <meta property="og:locale" content="ko_KR">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SIDIZ Digital Catalog">
+    <meta name="twitter:description" content="시디즈 인체공학 의자 디지털 카탈로그">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -13,9 +22,6 @@
             --sidiz-light: #e6ebff;
             --sidiz-dark: #001499;
             --warm-gray: #f4f5fb;
-            --text-primary: #1a1a1a;
-            --text-secondary: #6b7280;
-            --card-shadow: 0 4px 24px rgba(13, 59, 255, 0.08);
             --text-primary: #1a1a1a;
             --text-secondary: #6b7280;
             --card-shadow: 0 4px 24px rgba(10, 30, 61, 0.08);
@@ -203,6 +209,28 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 24px;
+        }
+        .product-category-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .product-category-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--sidiz-navy);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+        .product-category-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--sidiz-light);
         }
         .product-card {
             background: white;
@@ -418,6 +446,7 @@
             gap: 8px;
         }
         .btn-primary:hover { background: var(--sidiz-blue); }
+        .btn-primary:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 3px; }
         .btn-secondary {
             background: white;
             color: var(--sidiz-dark);
@@ -434,6 +463,8 @@
             gap: 8px;
         }
         .btn-secondary:hover { border-color: var(--sidiz-blue); color: var(--sidiz-blue); }
+        .btn-secondary:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 3px; }
+        .header-nav a:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 2px; }
 
         .back-link {
             display: inline-flex;
@@ -518,82 +549,6 @@
         }
         .check { color: var(--sidiz-navy); font-weight: 700; font-size: 1rem; }
         .dash { color: #d1d5db; font-size: 1rem; }
-
-        /* ── RECOMMENDATION QUIZ ── */
-        .quiz-container {
-            background: white;
-            border-radius: 20px;
-            padding: 48px;
-            box-shadow: var(--card-shadow);
-            text-align: center;
-            max-width: 640px;
-            margin: 0 auto;
-        }
-        .quiz-progress {
-            display: flex;
-            gap: 6px;
-            justify-content: center;
-            margin-bottom: 36px;
-        }
-        .quiz-dot {
-            width: 32px;
-            height: 4px;
-            border-radius: 4px;
-            background: #e5e7eb;
-            transition: var(--transition);
-        }
-        .quiz-dot.active { background: var(--sidiz-blue); }
-        .quiz-dot.done { background: var(--sidiz-navy); }
-        .quiz-question {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--sidiz-dark);
-            margin-bottom: 32px;
-            line-height: 1.4;
-        }
-        .quiz-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .quiz-option {
-            background: var(--warm-gray);
-            border: 2px solid transparent;
-            border-radius: 14px;
-            padding: 20px 16px;
-            cursor: pointer;
-            transition: var(--transition);
-            text-align: center;
-        }
-        .quiz-option:hover { border-color: var(--sidiz-accent); background: var(--sidiz-light); }
-        .quiz-option.selected { border-color: var(--sidiz-blue); background: var(--sidiz-light); }
-        .quiz-option .icon { font-size: 1.6rem; margin-bottom: 8px; display: block; }
-        .quiz-option .label { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
-
-        .quiz-result {
-            display: none;
-            text-align: center;
-        }
-        .quiz-result h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--sidiz-dark);
-            margin-bottom: 8px;
-        }
-        .quiz-result .result-subtitle {
-            color: var(--sidiz-blue);
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-        .quiz-result p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.92rem;
-        }
 
         /* ── PROCESS STEPS ── */
         .steps-timeline {
@@ -861,13 +816,7 @@
                 white-space: nowrap;
             }
 
-            /* 퀴즈 */
-            .quiz-container { padding: 28px 16px; }
-            .quiz-options { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .quiz-option { padding: 16px 10px; }
-            .quiz-option .icon { font-size: 1.4rem; }
-            .quiz-option .label { font-size: 0.85rem; }
-            .quiz-question { font-size: 1.15rem; }
+
 
             /* 구매 후 안내 — step 텍스트 크게 */
             .steps-timeline { padding-left: 36px; }
@@ -2141,6 +2090,160 @@
             .price-range-bar .bar-min,
             .price-range-bar .bar-max { font-size: 0.58rem; }
         }
+        /* ── CART ── */
+        .cart-trigger {
+            position: relative;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.3rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .cart-trigger:hover { background: var(--sidiz-light); }
+        .cart-badge {
+            position: absolute;
+            top: 0; right: 0;
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cart-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 299;
+        }
+        .cart-overlay.open { display: block; }
+        .cart-drawer {
+            position: fixed;
+            top: 0; right: -420px;
+            width: 400px; max-width: 95vw;
+            height: 100vh;
+            background: white;
+            z-index: 300;
+            display: flex; flex-direction: column;
+            box-shadow: -4px 0 32px rgba(0,0,0,0.12);
+            transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .cart-drawer.open { right: 0; }
+        .cart-drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-drawer-header h3 { font-family: 'Outfit',sans-serif; font-size: 1.1rem; font-weight: 700; }
+        .cart-close {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.1rem; color: var(--text-secondary);
+            padding: 4px 8px; border-radius: 6px;
+        }
+        .cart-close:hover { background: #f3f4f6; }
+        .cart-items {
+            flex: 1; overflow-y: auto;
+            padding: 16px 24px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .cart-empty {
+            text-align: center; color: var(--text-secondary);
+            font-size: 0.9rem; padding: 40px 0;
+        }
+        .cart-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px;
+            background: var(--warm-gray);
+            border-radius: 12px;
+            gap: 12px;
+        }
+        .cart-item-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+        .cart-item-variant { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .cart-item-price { font-family: 'Outfit',sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--sidiz-dark); }
+        .cart-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .qty-btn {
+            width: 28px; height: 28px;
+            border: 1.5px solid #ddd; background: white;
+            border-radius: 6px; cursor: pointer;
+            font-size: 1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .qty-btn:hover { border-color: var(--sidiz-blue); color: var(--sidiz-blue); }
+        .qty-val { font-weight: 700; font-size: 0.9rem; min-width: 20px; text-align: center; }
+        .cart-remove {
+            background: none; border: none; cursor: pointer;
+            color: #9ca3af; font-size: 0.85rem; padding: 4px;
+            margin-left: 4px;
+        }
+        .cart-remove:hover { color: #ef4444; }
+        .cart-summary-wrap {
+            padding: 16px 24px 24px;
+            border-top: 1px solid #eee;
+        }
+        .cart-summary-row {
+            display: flex; justify-content: space-between;
+            font-size: 0.9rem; padding: 5px 0;
+            color: var(--text-secondary);
+        }
+        .cart-summary-row.discount { color: #16a34a; font-weight: 600; }
+        .cart-summary-row.total {
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--text-primary);
+            border-top: 1.5px solid #eee;
+            padding-top: 10px; margin-top: 4px;
+        }
+        .cart-next-tier {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            color: var(--sidiz-blue);
+            margin: 10px 0;
+        }
+        .cart-buy-btn {
+            width: 100%; justify-content: center;
+            margin-top: 12px; text-decoration: none;
+        }
+
+        /* ── VARIANT PRICING ── */
+        .variant-pricing { margin-bottom: 24px; }
+        .variant-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem; font-weight: 700;
+            color: var(--sidiz-dark);
+            margin-bottom: 12px;
+        }
+        .variant-table { display: flex; flex-direction: column; gap: 8px; }
+        .variant-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--warm-gray);
+            border-radius: 10px;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        .variant-name { font-size: 0.88rem; font-weight: 500; flex: 1; }
+        .variant-price {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700; font-size: 0.95rem;
+            color: var(--sidiz-dark);
+        }
+        .btn-add-cart {
+            background: var(--sidiz-navy);
+            color: white; border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem; font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .btn-add-cart:hover { background: var(--sidiz-blue); }
+        .btn-add-cart:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 2px; }
     </style>
 
     <!-- Favicon -->
@@ -2293,7 +2396,6 @@
             <div class="link-section-grid" id="menuCheckGrid">
                 <label class="link-toggle"><input type="checkbox" name="menu" value="products" onchange="onMenuChange()"> 제품 라인업</label>
                 <label class="link-toggle"><input type="checkbox" name="menu" value="compare"  onchange="onMenuChange()"> 모델 비교</label>
-                <label class="link-toggle"><input type="checkbox" name="menu" value="recommend" onchange="onMenuChange()"> 나에게 맞는 의자</label>
                 <label class="link-toggle"><input type="checkbox" name="menu" value="process"  onchange="onMenuChange()"> 구매 후 안내</label>
                 <label class="link-toggle"><input type="checkbox" name="menu" value="posture"  onchange="onMenuChange()"> 올바른 사용법</label>
                 <label class="link-toggle"><input type="checkbox" name="menu" value="care"     onchange="onMenuChange()"> 관리법</label>
@@ -2392,7 +2494,6 @@
     <div class="header-nav" id="headerNav">
         <a class="active" onclick="navigate('products', this)">제품 라인업</a>
         <a onclick="navigate('compare', this)">모델 비교</a>
-        <a onclick="navigate('recommend', this)">나에게 맞는 의자</a>
         <a onclick="navigate('process', this)">구매 후 안내</a>
         <a onclick="navigate('posture', this)">올바른 사용법</a>
         <a onclick="navigate('care', this)">관리법</a>
@@ -2404,6 +2505,10 @@
             <span style="display:none;font-weight:800;font-size:0.75rem;color:var(--sidiz-navy);letter-spacing:1px">SIDIZ</span>
         </div>
     </div>
+    <button class="cart-trigger" onclick="openCart()" aria-label="장바구니">
+        🛒
+        <span class="cart-badge" id="cartBadge" style="display:none">0</span>
+    </button>
 </header>
 
 <div class="page-wrapper">
@@ -2434,7 +2539,7 @@
                 <h3>T50</h3>
                 <div class="subtitle">국가대표 의자</div>
                 <p>10년 이상 사랑받아 온 시디즈의 시그니처. 검증된 인체공학 설계로 모든 체형에 맞는 편안함을 제공합니다.</p>
-                <div class="price">449,000원</div>
+                <div class="price">279,000원<span>부터</span></div>
             </div>
         </div>
         <!-- T60 -->
@@ -2447,7 +2552,7 @@
                 <h3>T60</h3>
                 <div class="subtitle">퍼스널 피팅 시스템 체어</div>
                 <p>모든 체형에 맞춰 세밀하게 조절되는 인피니핏 헤드레스트 탑재. 홈라이크 디자인으로 집·사무실 어디서나 어울립니다.</p>
-                <div class="price">599,000원</div>
+                <div class="price">399,000원<span>부터</span></div>
             </div>
         </div>
         <!-- T90 -->
@@ -2460,7 +2565,7 @@
                 <h3>T90</h3>
                 <div class="subtitle">퍼포먼스 인체공학 체어</div>
                 <p>2025년 출시된 시디즈 최상위 모델. 4D 팔걸이·퍼펙트 피팅 럼버서포트·플렉서블 등판으로 체형에 정밀하게 대응합니다.</p>
-                <div class="price">1,290,000원</div>
+                <div class="price">999,000원<span>부터</span></div>
             </div>
         </div>
         <!-- T80 -->
@@ -2473,7 +2578,7 @@
                 <h3>T80</h3>
                 <div class="subtitle">Ultimate Comfort</div>
                 <p>프리미엄 소재와 최상급 틸팅 메커니즘으로 완성한 시디즈의 프리미엄 모델입니다.</p>
-                <div class="price">899,000원</div>
+                <div class="price">619,000원<span>부터</span></div>
             </div>
         </div>
         <!-- GC PRO -->
@@ -2486,7 +2591,7 @@
                 <h3>GC PRO</h3>
                 <div class="subtitle">프로 게이밍 체어</div>
                 <p>장시간 게임 플레이를 위해 설계된 프로 게이밍 의자. 쿨링시트·천연가죽 옵션으로 몰입 환경을 완성합니다.</p>
-                <div class="price">690,000원</div>
+                <div class="price">690,000원<span>부터</span></div>
             </div>
         </div>
         <!-- RINGO 2 -->
@@ -2512,7 +2617,7 @@
                 <h3>T20</h3>
                 <div class="subtitle">합리적인 인체공학</div>
                 <p>핵심 인체공학 기능을 합리적인 가격에 담았습니다. 처음 시디즈를 만나는 분들에게 추천합니다.</p>
-                <div class="price">279,000원</div>
+                <div class="price">204,000원</div>
             </div>
         </div>
         <!-- GX 게이밍 -->
@@ -2525,7 +2630,7 @@
                 <h3>GX</h3>
                 <div class="subtitle">게이밍 퍼포먼스 체어</div>
                 <p>게이밍 디자인과 시디즈 인체공학의 만남. 쿨링시트와 조절형 팔걸이로 장시간 플레이를 지원합니다.</p>
-                <div class="price">393,000원</div>
+                <div class="price">299,000원</div>
             </div>
         </div>
         <!-- LINIE -->
@@ -2538,7 +2643,7 @@
                 <h3>LINIE</h3>
                 <div class="subtitle">디자인 오피스 체어</div>
                 <p>미니멀한 디자인과 인체공학의 균형. 오피스 인테리어와 자연스럽게 어우러지는 의자입니다.</p>
-                <div class="price">599,000원</div>
+                <div class="price">259,000원<span>부터</span></div>
             </div>
         </div>
         <!-- ible -->
@@ -2549,11 +2654,327 @@
             </div>
             <div class="product-card-body">
                 <h3>IBLE</h3>
-                
+                <div class="subtitle">집중력 향상 체어</div>
                 <p>집중력을 높이는 최적의 자세를 만들어 줍니다.</p>
-                <div class="price">349,000원</div>
+                <div class="price">179,000원<span>부터</span></div>
             </div>
         </div>
+
+        <!-- ── 스터디 ── -->
+        <div class="product-category-header"><h2>스터디</h2></div>
+
+        <!-- TREVO -->
+        <div class="product-card" onclick="showDetail('trevo')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('trevo')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/TREVO_THUM_1.jpg'); background-color: #f0f4ff;">
+                <div class="badge">STUDY</div>
+            </div>
+            <div class="product-card-body">
+                <h3>TREVO</h3>
+                <div class="subtitle">올바른 자세 스터디 체어</div>
+                <p>전방 틸팅과 착탈식 커버로 올바른 공부 자세와 위생 관리를 동시에 잡는 스터디 의자입니다.</p>
+                <div class="price">129,000원</div>
+            </div>
+        </div>
+
+        <!-- ── 라이트워크 ── -->
+        <div class="product-category-header"><h2>라이트워크</h2></div>
+
+        <!-- BUTTON -->
+        <div class="product-card" onclick="showDetail('button')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('button')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/BUTTON_1.jpg'); background-color: #f5f5f5;">
+                <div class="badge">라이트워크</div>
+            </div>
+            <div class="product-card-body">
+                <h3>BUTTON</h3>
+                <div class="subtitle">8가지 조합 체어</div>
+                <p>다리·이동방식·소재를 자유롭게 선택해 공간과 용도에 맞게 구성하는 라이트워크 의자입니다.</p>
+                <div class="price">129,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- MUUVE -->
+        <div class="product-card" onclick="showDetail('muuve')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('muuve')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/MUUVE_____00_38ec3062-1bad-41fd-8fa1-61325b251294.jpg'); background-color: #f5f5f5;">
+                <div class="badge">라이트워크</div>
+            </div>
+            <div class="product-card-body">
+                <h3>MUUVE</h3>
+                <div class="subtitle">미니멀 홈오피스·다이닝</div>
+                <p>군더더기 없는 미니멀 디자인으로 홈오피스와 다이닝 공간 모두에 어울리는 다목적 의자입니다.</p>
+                <div class="price">179,000원</div>
+            </div>
+        </div>
+
+        <!-- EGA -->
+        <div class="product-card" onclick="showDetail('ega')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('ega')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/EGA_1.jpg'); background-color: #f5f5f5;">
+                <div class="badge">라이트워크</div>
+            </div>
+            <div class="product-card-body">
+                <h3>EGA</h3>
+                <div class="subtitle">인체공학 × 미학</div>
+                <p>부드러운 곡선 디자인과 다양한 옵션 조합으로 어떤 공간에도 자연스럽게 어울립니다.</p>
+                <div class="price">179,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- ── 리빙다이닝 ── -->
+        <div class="product-category-header"><h2>리빙다이닝</h2></div>
+
+        <!-- MANE -->
+        <div class="product-card" onclick="showDetail('mane')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('mane')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_MANE_M071E_A845AC_00_0b048581-51d5-4727-a439-fe25d9748db8.jpg'); background-color: #f5f0eb;">
+                <div class="badge">다이닝</div>
+            </div>
+            <div class="product-card-body">
+                <h3>MANE</h3>
+                <div class="subtitle">세련된 리빙다이닝 체어</div>
+                <p>인조가죽과 플라스틱 두 가지 타입으로 다이닝·거실·카페 어디서나 어울리는 스타일리시한 의자입니다.</p>
+                <div class="price">69,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- PLIT -->
+        <div class="product-card" onclick="showDetail('plit')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('plit')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_PLIT_BEIGE_00.jpg'); background-color: #f5f0eb;">
+                <div class="badge">다이닝</div>
+            </div>
+            <div class="product-card-body">
+                <h3>PLIT</h3>
+                <div class="subtitle">스타일리시 식탁의자</div>
+                <p>유려한 쉘 디자인과 다양한 컬러로 공간의 분위기를 완성하는 식탁 의자입니다.</p>
+                <div class="price">99,000원</div>
+            </div>
+        </div>
+
+        <!-- OUI -->
+        <div class="product-card" onclick="showDetail('oui')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('oui')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/OUI_M171EZ___BW_00_84af1e09-21ac-4158-b551-bc8aedc85eda.jpg'); background-color: #f5f0eb;">
+                <div class="badge">바스툴</div>
+            </div>
+            <div class="product-card-body">
+                <h3>OUI</h3>
+                <div class="subtitle">프리미엄 바스툴</div>
+                <p>아일랜드 식탁과 높은 테이블에 최적화된 프리미엄 바스툴. 550·680mm 두 가지 높이를 제공합니다.</p>
+                <div class="price">149,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- ── 싯부스터 ── -->
+        <div class="product-category-header"><h2>싯부스터</h2></div>
+
+        <!-- FUNGUS -->
+        <div class="product-card" onclick="showDetail('fungus')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('fungus')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_454_00_acd68f3f-2563-4ad1-8018-ca7d0a102264.jpg'); background-color: #eef2f7;">
+                <div class="badge">자세교정</div>
+            </div>
+            <div class="product-card-body">
+                <h3>FUNGUS</h3>
+                <div class="subtitle">골반 교정 싯부스터</div>
+                <p>기존 의자 위에 올려 사용하는 자세교정 방석. 골반을 앞으로 기울여 허리 곡선을 자연스럽게 만들어 줍니다.</p>
+                <div class="price">99,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- STEPO -->
+        <div class="product-card" onclick="showDetail('stepo')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('stepo')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg'); background-color: #eef2f7;">
+                <div class="badge">발 건강</div>
+            </div>
+            <div class="product-card-body">
+                <h3>STEPO</h3>
+                <div class="subtitle">풋레스트</div>
+                <p>발이 바닥에 닿지 않을 때 발목 피로를 줄이고 혈액순환을 돕는 풋레스트입니다.</p>
+                <div class="price">54,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- PILLO -->
+        <div class="product-card" onclick="showDetail('pillo')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('pillo')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_PILLO_M090_831A_00.jpg'); background-color: #eef2f7;">
+                <div class="badge">좌식</div>
+            </div>
+            <div class="product-card-body">
+                <h3>PILLO</h3>
+                <div class="subtitle">좌식 인체공학 방석</div>
+                <p>바닥 생활에서 골반과 척추를 올바른 위치로 유지해주는 인체공학적 좌식 방석입니다.</p>
+                <div class="price">89,000원</div>
+            </div>
+        </div>
+
+        <!-- OLLY -->
+        <div class="product-card" onclick="showDetail('olly')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('olly')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_olly_b_01.jpg'); background-color: #132257;">
+                <div class="badge">토트넘 콜라보</div>
+            </div>
+            <div class="product-card-body">
+                <h3>OLLY</h3>
+                <div class="subtitle">휴대용 아웃도어 방석</div>
+                <p>시디즈X토트넘 콜라보 휴대용 방석 의자. 가볍고 접이식으로 야외 어디서나 사용할 수 있습니다.</p>
+                <div class="price">34,900원</div>
+            </div>
+        </div>
+
+        <!-- ── 그로잉 ── -->
+        <div class="product-category-header"><h2>그로잉</h2></div>
+
+        <!-- MOLTI -->
+        <div class="product-card" onclick="showDetail('molti')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('molti')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_02.jpg'); background-color: #fff5f0;">
+                <div class="badge">3in1</div>
+            </div>
+            <div class="product-card-body">
+                <h3>MOLTI</h3>
+                <div class="subtitle">3in1 그로잉 베이비체어</div>
+                <p>신생아부터 유아까지, 좌식 → 하이체어 → 책상의자로 성장에 맞춰 변하는 3-in-1 체어입니다.</p>
+                <div class="price">259,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- ATTI -->
+        <div class="product-card" onclick="showDetail('atti')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('atti')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_587b38d9-e6a7-4e35-a56a-08ef9308307e.jpg'); background-color: #fff5f0;">
+                <div class="badge">세트할인</div>
+            </div>
+            <div class="product-card-body">
+                <h3>ATTI</h3>
+                <div class="subtitle">성장형 어린이 책상·의자</div>
+                <p>초등학생을 위한 성장형 의자와 책상. 세트 구매 시 8% 할인 혜택이 적용됩니다.</p>
+                <div class="price">69,000원<span>부터</span></div>
+            </div>
+        </div>
+
+        <!-- ── P굿즈 ── -->
+        <div class="product-category-header"><h2>P굿즈</h2></div>
+
+        <!-- 멀티스프레이 -->
+        <div class="product-card" onclick="showDetail('spray')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('spray')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_FABRIC_SPRAY_INFINITY__01.jpg'); background-color: #f0f7f0;">
+                <div class="badge">케어</div>
+            </div>
+            <div class="product-card-body">
+                <h3>멀티스프레이</h3>
+                <div class="subtitle">패브릭 케어 스프레이</div>
+                <p>시디즈 공식 패브릭 탈취·방향 스프레이. 의자 패브릭의 냄새를 제거하고 상쾌한 향을 더합니다.</p>
+                <div class="price">29,000원</div>
+            </div>
+        </div>
+
+        <!-- 더 프로그레시브 백 -->
+        <div class="product-card" onclick="showDetail('pbag')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('pbag')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_THE_PROGRESSIVE_BAG_01.jpg'); background-color: #f0f7f0;">
+                <div class="badge">에코</div>
+            </div>
+            <div class="product-card-body">
+                <h3>더 프로그레시브 백</h3>
+                <div class="subtitle">시디즈 공식 에코백</div>
+                <p>타이벡 소재의 가볍고 방수 기능이 있는 시디즈 공식 에코백입니다.</p>
+                <div class="price">15,000원</div>
+            </div>
+        </div>
+
+        <!-- ── 악세서리 ── -->
+        <div class="product-category-header"><h2>악세서리 / 커버</h2></div>
+
+        <!-- 트레보 커버 -->
+        <div class="product-card" onclick="showDetail('coverTrevo')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverTrevo')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_TREVO_S40D0KK_5F1_01.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>트레보 커버</h3>
+                <div class="subtitle">트레보 전용 패브릭 커버</div>
+                <p>세탁 가능한 트레보 전용 착탈식 패브릭 커버입니다.</p>
+                <div class="price">27,000원</div>
+            </div>
+        </div>
+
+        <!-- 링고 2세대 커버 -->
+        <div class="product-card" onclick="showDetail('coverRingo2')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverRingo2')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_RINGO_SJC2.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>링고 2세대 커버</h3>
+                <div class="subtitle">링고 2세대 전용 커버</div>
+                <p>세탁 가능한 링고 2세대 전용 착탈식 패브릭 커버입니다.</p>
+                <div class="price">29,000원</div>
+            </div>
+        </div>
+
+        <!-- 링고 1세대 커버 -->
+        <div class="product-card" onclick="showDetail('coverRingo1')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverRingo1')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_ringo_cover_cocerel_379e9229-5540-4e43-9367-d8a61928f58f.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>링고 1세대 커버</h3>
+                <div class="subtitle">링고 1세대 전용 커버</div>
+                <p>세탁 가능한 링고 1세대 전용 착탈식 패브릭 커버입니다.</p>
+                <div class="price">25,000원</div>
+            </div>
+        </div>
+
+        <!-- T50 AIR 커버 -->
+        <div class="product-card" onclick="showDetail('coverT50Air')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverT50Air')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_T529D_00.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T50 AIR 커버</h3>
+                <div class="subtitle">T50 AIR 전용 좌판 커버</div>
+                <p>세탁 가능한 T50 AIR 전용 착탈식 좌판 커버입니다.</p>
+                <div class="price">30,000원</div>
+            </div>
+        </div>
+
+        <!-- T60 AIR 커버 -->
+        <div class="product-card" onclick="showDetail('coverT60Air')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverT60Air')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_COVER_5G1B_c8e9726b-a2cf-4fb1-9591-a2c4ac789c61.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T60 AIR 커버</h3>
+                <div class="subtitle">T60 AIR 전용 좌판 커버</div>
+                <p>세탁 가능한 T60 AIR 전용 착탈식 좌판 커버입니다.</p>
+                <div class="price">33,000원</div>
+            </div>
+        </div>
+
+        <!-- 플릿 커버 -->
+        <div class="product-card" onclick="showDetail('coverPlit')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverPlit')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_PLIT_BEIGE_cover_01_aed95ae8-8cba-4d52-a7b8-361e1b0e3c1d.jpg'); background-color: #f5f5f5;">
+                <div class="badge">커버</div>
+            </div>
+            <div class="product-card-body">
+                <h3>플릿 커버</h3>
+                <div class="subtitle">플릿 전용 좌판 커버</div>
+                <p>세탁 가능한 플릿 전용 착탈식 좌판 커버입니다.</p>
+                <div class="price">22,000원</div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -2594,34 +3015,6 @@
         <table class="compare-table" id="compareTable"></table>
     </div>
 
-    <div class="footer-cta">
-        <h2 data-editable data-key="cta-compare-h2" contenteditable="false">어떤 모델이 좋을지 고민되시나요?</h2>
-        <p data-editable data-key="cta-compare-p" contenteditable="false">간단한 질문 3개로 나에게 맞는 의자를 추천받아 보세요.</p>
-        <div class="cta-row">
-            <a class="btn-primary" onclick="navigate('recommend', document.querySelectorAll('.header-nav a')[2])">나에게 맞는 의자 찾기 →</a>
-        </div>
-    </div>
-</div>
-
-<!-- ──────── RECOMMEND ──────── -->
-<div id="recommend" class="section">
-    <div class="section-label">RECOMMENDATION</div>
-    <div class="section-title" data-editable data-key="sec-recommend-title" contenteditable="false">나에게 맞는 의자 찾기</div>
-    <div class="section-desc" data-editable data-key="sec-recommend-desc" contenteditable="false">3가지 질문에 답하면, 가장 잘 맞는 시디즈 의자를 추천해 드립니다.</div>
-
-    <div class="quiz-container" id="quizContainer">
-        <div class="quiz-progress" id="quizProgress">
-            <div class="quiz-dot active"></div>
-            <div class="quiz-dot"></div>
-            <div class="quiz-dot"></div>
-        </div>
-        <div id="quizBody">
-            <!-- Filled by JS -->
-        </div>
-        <div class="quiz-result" id="quizResult">
-            <!-- Filled by JS -->
-        </div>
-    </div>
 </div>
 
 <!-- ──────── POSTURE ──────── -->
@@ -2759,13 +3152,6 @@
         </div>
     </div>
 
-    <div class="footer-cta">
-        <h2 data-editable data-key="cta-posture-h2" contenteditable="false">나에게 맞는 의자가 궁금하신가요?</h2>
-        <p data-editable data-key="cta-posture-p" contenteditable="false">3가지 질문으로 최적의 시디즈 의자를 추천받아 보세요.</p>
-        <div class="cta-row">
-            <a class="btn-primary" onclick="navigate('recommend', document.querySelectorAll('.header-nav a')[2])">나에게 맞는 의자 찾기 →</a>
-        </div>
-    </div>
 </div>
 
 <!-- ──────── PROCESS ──────── -->
@@ -3043,12 +3429,20 @@ OOO 고객님, 오늘 방문 예정입니다.
 //  관리자 모드 시스템
 // ══════════════════════════════════════════════
 
-const ADMIN_PW = '1234';       // 비밀번호 (변경 가능)
+// SHA-256 hash of '1234' — 변경하려면 새 비밀번호의 SHA-256 값으로 교체
+const ADMIN_PW_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
 const STORAGE_KEY = 'sidiz_edits';
 let isAdminMode = false;
 let adminPressTimer = null;
 let deployPressTimer = null;
-let currentEditId = null;      // 현재 편집 중인 제품 ID
+let currentEditId = null;
+let adminFailCount = 0;
+let adminLockUntil = 0;
+
+async function hashString(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // ── 편집 모드 롱프레스 (로고 3초) ──
 function startAdminPress() {
@@ -3090,15 +3484,31 @@ function openAdminModal() {
 function closeAdminModal() {
     document.getElementById('adminModalOverlay').classList.remove('open');
 }
-function checkAdminPw() {
+async function checkAdminPw() {
+    const now = Date.now();
+    const errorMsg = document.getElementById('adminErrorMsg');
+    if (now < adminLockUntil) {
+        const secs = Math.ceil((adminLockUntil - now) / 1000);
+        errorMsg.textContent = `${secs}초 후 다시 시도하세요`;
+        return;
+    }
     const val = document.getElementById('adminPwInput').value;
     const input = document.getElementById('adminPwInput');
-    if (val === ADMIN_PW) {
+    const hash = await hashString(val);
+    if (hash === ADMIN_PW_HASH) {
+        adminFailCount = 0;
         closeAdminModal();
         enterAdminMode();
     } else {
+        adminFailCount++;
         input.classList.add('error');
-        document.getElementById('adminErrorMsg').textContent = '비밀번호가 올바르지 않습니다';
+        if (adminFailCount >= 5) {
+            adminLockUntil = Date.now() + 30000;
+            adminFailCount = 0;
+            errorMsg.textContent = '5회 실패. 30초 후 다시 시도하세요';
+        } else {
+            errorMsg.textContent = `비밀번호가 올바르지 않습니다 (${adminFailCount}/5)`;
+        }
         setTimeout(() => input.classList.remove('error'), 500);
         input.value = '';
     }
@@ -3137,8 +3547,16 @@ function saveAllEdits() {
     // products 데이터 저장 (카드 편집 반영)
     edits['__products__'] = JSON.stringify(products);
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(edits));
-    showToast('💾 저장 완료!');
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(edits));
+        showToast('💾 저장 완료!');
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            showToast('⚠️ 저장 공간 부족 — 이미지 크기를 줄이거나 초기화 후 재시도 하세요');
+        } else {
+            showToast('❌ 저장 실패');
+        }
+    }
 }
 
 function loadEdits() {
@@ -3390,6 +3808,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyStoredEdits();
     initComparePicker();
     applyGuestParams();
+    updateCartBadge();
 });
 
 // ══════════════════════════════════════════════
@@ -3555,7 +3974,7 @@ function exitDeployMode() {
 
 // ── 메뉴 체크 변경 시 연동 ──
 const MENU_LABELS = {
-    products: '제품 라인업', compare: '모델 비교', recommend: '나에게 맞는 의자',
+    products: '제품 라인업', compare: '모델 비교',
     process: '구매 후 안내', posture: '올바른 사용법', care: '관리법', stores: '매장 안내'
 };
 
@@ -4172,13 +4591,154 @@ function renderCompareTable() {
     table.innerHTML = thead + tbody;
 }
 
+const variantData = {
+    t50: [
+        { name: 'T50HF', price: 279000 },
+        { name: 'T50HDA', price: 329000 },
+        { name: 'T50 (블랙/화이트)', price: 359000 },
+        { name: 'T50 AIR', price: 389000 },
+    ],
+    t60: [
+        { name: 'T60 LDA', price: 399000 },
+        { name: 'T60 AIR LDA', price: 414000 },
+        { name: 'T60', price: 429000 },
+        { name: 'T60 AIR', price: 444000 },
+    ],
+    t80: [
+        { name: 'T80 메쉬', price: 619000 },
+        { name: 'T80 메쉬+천연가죽', price: 724000 },
+        { name: 'T80 천연가죽', price: 789000 },
+    ],
+    t90: [
+        { name: 'T90 더블라셀', price: 999000 },
+        { name: 'T90 아쿠아텍스', price: 1045000 },
+        { name: 'T90 컬러팔레트', price: 1170000 },
+        { name: 'T90 천연가죽', price: 1290000 },
+    ],
+    gcpro: [
+        { name: 'GC PRO 일반', price: 690000 },
+        { name: 'GC PRO 쿨링', price: 790000 },
+        { name: 'GC PRO 풀사양', price: 860000 },
+        { name: '토트넘 GC PRO', price: 750000 },
+    ],
+    gx: [
+        { name: 'GX', price: 299000 },
+    ],
+    t20: [
+        { name: 'T20', price: 204000 },
+        { name: '토트넘 T20', price: 204000 },
+    ],
+    linie: [
+        { name: '리니에 메쉬', price: 259000 },
+        { name: '리니에 플렉스', price: 259000 },
+    ],
+    ible: [
+        { name: '아이블 고정형', price: 179000 },
+        { name: '아이블 높조형', price: 195000 },
+    ],
+    ringo2: [
+        { name: '링고', price: 189000 },
+    ],
+    trevo: [
+        { name: '트레보', price: 129000 },
+    ],
+    button: [
+        { name: '높조/바퀴/패브릭', price: 199000 },
+        { name: '높조/바퀴/플라스틱', price: 159000 },
+        { name: '높조/글라이드/패브릭', price: 189000 },
+        { name: '높조/글라이드/플라스틱', price: 149000 },
+        { name: '4레그/바퀴/패브릭', price: 179000 },
+        { name: '4레그/바퀴/플라스틱', price: 139000 },
+        { name: '4레그/글라이드/패브릭', price: 169000 },
+        { name: '4레그/글라이드/플라스틱', price: 129000 },
+    ],
+    muuve: [
+        { name: '뮤브', price: 179000 },
+    ],
+    ega: [
+        { name: '에가 높조/바퀴', price: 199000 },
+        { name: '에가 높조/글라이드', price: 194000 },
+        { name: '에가 4레그/바퀴', price: 184000 },
+        { name: '에가 4레그/글라이드', price: 179000 },
+    ],
+    mane: [
+        { name: '마네 인조가죽', price: 135000 },
+        { name: '마네 플라스틱', price: 69000 },
+    ],
+    plit: [
+        { name: '플릿', price: 99000 },
+    ],
+    oui: [
+        { name: '위 550 네이키드', price: 149000 },
+        { name: '위 550 패브릭', price: 159000 },
+        { name: '위 680 네이키드', price: 149000 },
+        { name: '위 680 패브릭', price: 159000 },
+    ],
+    fungus: [
+        { name: '펑거스', price: 124000 },
+        { name: '펑거스 바퀴형', price: 124000 },
+        { name: '토트넘 펑거스', price: 99000 },
+    ],
+    stepo: [
+        { name: '스테포', price: 54000 },
+        { name: '스테포 커버형', price: 69000 },
+    ],
+    pillo: [
+        { name: '필로', price: 89000 },
+    ],
+    olly: [
+        { name: '올리 (토트넘)', price: 34900 },
+    ],
+    molti: [
+        { name: '몰티 하이체어', price: 259000 },
+        { name: '몰티 헬로베이비세트', price: 379000 },
+    ],
+    atti: [
+        { name: '아띠 의자', price: 69000 },
+        { name: '아띠 책상', price: 89000 },
+    ],
+    spray: [
+        { name: '멀티스프레이 INFINITY', price: 29000 },
+    ],
+    pbag: [
+        { name: '더 프로그레시브 백', price: 15000 },
+    ],
+    coverTrevo: [
+        { name: '트레보 커버', price: 27000 },
+    ],
+    coverRingo2: [
+        { name: '링고 2세대 커버', price: 29000 },
+    ],
+    coverRingo1: [
+        { name: '링고 1세대 커버', price: 25000 },
+    ],
+    coverT50Air: [
+        { name: 'T50 AIR 커버', price: 30000 },
+    ],
+    coverT60Air: [
+        { name: 'T60 AIR 커버', price: 33000 },
+    ],
+    coverPlit: [
+        { name: '플릿 커버', price: 22000 },
+    ],
+};
+
+const DISCOUNT_TIERS = [
+    { min: 5000000, rate: 0.15, label: '500만원 이상' },
+    { min: 3000000, rate: 0.13, label: '300만원 이상' },
+    { min: 1500000, rate: 0.10, label: '150만원 이상' },
+    { min: 700000,  rate: 0.07, label: '70만원 이상' },
+    { min: 500000,  rate: 0.05, label: '50만원 이상' },
+    { min: 300000,  rate: 0.03, label: '30만원 이상' },
+];
+
 // ── PRODUCT DATA ──
 const products = {
     t50: {
         name: 'T50',
         tagline: '전 세계가 선택한 시디즈의 국가대표 의자',
         desc: '10년 이상 사랑받아 온 시디즈의 스테디셀러. 멀티 싱크 틸팅과 요추 지지대, 좌판 깊이 조절까지 — 검증된 인체공학 설계로 장시간 편안한 착석감을 제공합니다. 다양한 체형과 업무 환경에 맞게 세밀한 커스터마이징이 가능합니다.',
-        price: '449,000원',
+        price: '279,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/T50_HLDA_black_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '🔄', title: '멀티 싱크 틸팅', desc: '등판과 좌판이 독립적으로 움직여 자연스러운 기대기 동작을 지원합니다.' },
@@ -4192,7 +4752,7 @@ const products = {
         name: 'T60',
         tagline: '나에게 꼭 맞는 퍼스널 피팅 체어',
         desc: '실제 사용자 데이터를 바탕으로 설계된 시디즈의 신형 퍼스널 피팅 의자입니다. 높이·각도·깊이를 세밀하게 조절할 수 있는 인피니핏 헤드레스트와 요추 지지대로 소형 체형부터 대형 체형까지 모두 편안하게 맞춰집니다. 홈라이크 디자인으로 집·사무실 어디에도 자연스럽게 어울립니다.',
-        price: '599,000원',
+        price: '399,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/T60_HLDA_gray_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '🎯', title: '인피니핏 헤드레스트', desc: '높이 125mm·각도 100도·깊이 35mm까지 조절 가능한 정밀 헤드레스트로 목과 어깨 부담을 최소화합니다.' },
@@ -4206,7 +4766,7 @@ const products = {
         name: 'T80',
         tagline: '최상의 편안함, Ultimate Comfort',
         desc: '독일 디자인 스튜디오와 협업한 시디즈의 플래그십 라인. 얼티메이트 싱크 틸팅과 메모리폼 좌판, 4D 조절형 암레스트까지 — 프리미엄 소재와 기술의 집약체입니다. 최고의 앉음 경험을 추구하는 분들을 위한 의자입니다.',
-        price: '899,000원',
+        price: '619,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/T80_HLDA_charcoal_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '💎', title: '얼티메이트 싱크 틸팅', desc: '시디즈 최상위 틸팅 기술로, 어떤 자세에서도 균형 잡힌 지지력을 제공합니다.' },
@@ -4220,7 +4780,7 @@ const products = {
         name: 'T20',
         tagline: '합리적인 가격, 핵심 인체공학',
         desc: '시디즈의 인체공학 노하우를 합리적인 가격대에 담았습니다. 싱크 틸팅과 요추 지지대 등 핵심 기능은 그대로 — 처음 인체공학 의자를 경험하는 분들에게 최적의 선택입니다.',
-        price: '279,000원',
+        price: '204,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/T20_TABPLUS_black_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '🔄', title: '싱크 틸팅', desc: '자연스러운 기대기 동작을 지원하는 기본 틸팅 시스템입니다.' },
@@ -4234,7 +4794,7 @@ const products = {
         name: 'LINIE',
         tagline: '디자인과 인체공학의 균형',
         desc: '미니멀한 외관 속에 시디즈의 인체공학 기술을 담았습니다. 오피스 인테리어와 자연스럽게 어우러지면서도 멀티 싱크 틸팅, 좌판 깊이 조절, 4D 암레스트 등 본질적인 기능은 타협하지 않았습니다.',
-        price: '599,000원',
+        price: '259,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/LINIE_ivory_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '🎨', title: '미니멀 디자인', desc: '군더더기 없는 라인으로 어떤 오피스 공간에도 조화롭게 어울립니다.' },
@@ -4248,7 +4808,7 @@ const products = {
         name: 'IBLE',
         tagline: '집중과 학습을 위한 체어',
         desc: '집중력을 높이는 약간의 전방 틸팅과, 안정적인 착석감을 위한 틸팅 잠금 기능이 특징입니다. 공부할 때 최적의 자세를 유지할 수 있도록 설계되었습니다.',
-        price: '349,000원',
+        price: '179,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/IBLE_gray_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '📚', title: '학습 최적화 설계', desc: '집중 자세를 유도하는 전방 틸팅과 안정적인 잠금 기능을 제공합니다.' },
@@ -4262,7 +4822,7 @@ const products = {
         name: 'T90',
         tagline: '퍼포먼스 인체공학의 정점',
         desc: '2025년 출시된 시디즈 최상위 플래그십 모델입니다. 4D 암레스트, 퍼펙트 피팅 럼버서포트, 플렉서블 등판을 통해 사용자 체형과 작업 자세에 정밀하게 대응합니다. 사무실·재택·멀티 디바이스 업무 환경 모두에서 최상의 퍼포먼스를 유지하도록 설계되었습니다.',
-        price: '1,290,000원',
+        price: '999,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/T90_HLDA_black_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '🎯', title: '퍼펙트 피팅 럼버서포트', desc: '사용자 체형에 맞춰 정밀하게 조절되는 요추 지지 시스템입니다.' },
@@ -4290,7 +4850,7 @@ const products = {
         name: 'GX',
         tagline: '게이밍 디자인 × 시디즈 인체공학',
         desc: '게이밍 감성과 시디즈의 인체공학 기술을 결합한 모델입니다. 쿨링시트로 장시간 플레이에도 쾌적함을 유지하고, 조절형 팔걸이와 좌판 깊이 조절로 게임에 최적화된 자세를 잡을 수 있습니다.',
-        price: '393,000원',
+        price: '299,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/GX_black_01.jpg?v=1744697809&width=800',
         features: [
             { icon: '❄️', title: '쿨링시트', desc: '통기성이 뛰어난 쿨링시트로 장시간 게임 중에도 쾌적한 착석감을 유지합니다.' },
@@ -4327,71 +4887,302 @@ const products = {
             { icon: '🧹', title: '간편한 관리', desc: '액체나 음식물이 묻어도 닦아내기 편한 소재. 별도 전용 커버도 구매 가능합니다.' }
         ],
         tags: ['초등학생', '어린이', '키즈', '성장의자'],
-    }
+    },
+    trevo: {
+        name: 'TREVO',
+        tagline: '올바른 자세를 만드는 스터디 체어',
+        desc: '전방 틸팅과 틸팅 잠금 기능으로 공부할 때 올바른 자세를 유지할 수 있도록 도와주는 스터디 의자입니다. 착탈식 커버로 위생 관리가 쉽고, 가볍고 심플한 디자인으로 어디서나 잘 어울립니다.',
+        price: '129,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/TREVO_THUM_1.jpg',
+        features: [
+            { icon: '📚', title: '전방 틸팅', desc: '책상에 집중할 때 앞으로 살짝 기울어지는 전방 틸팅으로 올바른 공부 자세를 유지합니다.' },
+            { icon: '🔒', title: '틸팅 잠금', desc: '움직임이 불필요할 때 자세를 고정하여 안정적인 착석감을 제공합니다.' },
+            { icon: '🧼', title: '착탈식 커버', desc: '분리하여 세탁 가능한 커버로 청결한 사용 환경을 유지합니다.' },
+            { icon: '💡', title: '합리적 가격', desc: '꼭 필요한 기능만 담아 부담 없는 가격으로 제공합니다.' }
+        ],
+        tags: ['수험생', '초등학생', '스터디', '가성비'],
+    },
+    button: {
+        name: 'BUTTON',
+        tagline: '공간에 맞게 선택하는 라이트워크 체어',
+        desc: '다리 타입(높이조절/4레그), 이동 방식(바퀴/글라이드), 소재(패브릭/플라스틱)를 자유롭게 조합할 수 있는 라이트워크 의자입니다. 홈오피스·회의실·카페 등 다양한 공간에 어울리는 심플한 디자인이 특징입니다.',
+        price: '129,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/BUTTON_1.jpg',
+        features: [
+            { icon: '🔧', title: '8가지 조합', desc: '다리·이동방식·소재를 자유롭게 선택해 공간과 용도에 맞게 구성할 수 있습니다.' },
+            { icon: '🏠', title: '다용도 활용', desc: '홈오피스, 회의실, 카페 등 어떤 공간에도 자연스럽게 어울리는 미니멀 디자인입니다.' },
+            { icon: '⚖️', title: '가벼운 무게', desc: '이동이 편리한 경량 설계로 필요에 따라 쉽게 옮길 수 있습니다.' },
+            { icon: '🧹', title: '손쉬운 관리', desc: '오염에 강한 소재를 사용해 유지 관리가 간편합니다.' }
+        ],
+        tags: ['홈오피스', '회의실', '미팅', '라이트워크'],
+    },
+    muuve: {
+        name: 'MUUVE',
+        tagline: '미니멀 디자인 홈오피스·다이닝 체어',
+        desc: '군더더기 없는 미니멀한 외관과 시디즈의 인체공학 설계가 결합된 다목적 의자입니다. 홈오피스 작업 의자이자 다이닝 의자로도 활용 가능하며, 5년 품질 보증으로 오래 안심하고 사용할 수 있습니다.',
+        price: '179,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/MUUVE_____00_38ec3062-1bad-41fd-8fa1-61325b251294.jpg',
+        features: [
+            { icon: '🎨', title: '미니멀 디자인', desc: '홈오피스와 다이닝 공간 모두에 자연스럽게 어울리는 세련된 외관입니다.' },
+            { icon: '🏠', title: '다목적 활용', desc: '업무용 의자이자 식탁 의자로도 사용 가능한 실용적인 제품입니다.' },
+            { icon: '🛡️', title: '5년 품질 보증', desc: '시디즈의 품질 보증 정책으로 오래도록 안심하고 사용할 수 있습니다.' },
+            { icon: '⚖️', title: '125kg 하중 지지', desc: '탄탄한 내구성으로 최대 125kg까지 지지합니다.' }
+        ],
+        tags: ['홈오피스', '다이닝', '미니멀', '라이트워크'],
+    },
+    ega: {
+        name: 'EGA',
+        tagline: '인체공학과 미학의 균형',
+        desc: '부드러운 곡선 디자인과 실용적인 기능이 조화를 이루는 라이트워크 의자입니다. 높이 조절형과 4레그 고정형, 바퀴와 글라이드 옵션으로 다양한 공간과 용도에 맞게 선택할 수 있습니다.',
+        price: '179,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/EGA_1.jpg',
+        features: [
+            { icon: '✨', title: '우아한 곡선 디자인', desc: '부드러운 라인과 세련된 디테일로 어떤 공간의 인테리어와도 잘 어울립니다.' },
+            { icon: '🔧', title: '다양한 옵션', desc: '높이조절/4레그, 바퀴/글라이드 조합으로 원하는 사용 환경에 맞게 선택 가능합니다.' },
+            { icon: '🧴', title: '내구성 소재', desc: '시간이 지나도 변형 없이 견고한 소재를 사용했습니다.' },
+            { icon: '🏢', title: '오피스·홈 활용', desc: '사무 환경과 가정 모두에서 자연스럽게 사용할 수 있습니다.' }
+        ],
+        tags: ['홈오피스', '오피스', '다이닝', '라이트워크'],
+    },
+    mane: {
+        name: 'MANE',
+        tagline: '세련된 리빙다이닝 체어',
+        desc: '심플하고 세련된 디자인의 리빙다이닝 의자입니다. 고급스러운 인조가죽 타입과 실용적인 플라스틱 타입 중 선택할 수 있으며, 식탁·거실·카페 등 다양한 공간에 자연스럽게 어울립니다.',
+        price: '69,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_MANE_M071E_A845AC_00_0b048581-51d5-4727-a439-fe25d9748db8.jpg',
+        features: [
+            { icon: '🎨', title: '세련된 디자인', desc: '미니멀한 라인으로 식탁, 거실, 카페 어디에나 잘 어울립니다.' },
+            { icon: '🪑', title: '2가지 소재', desc: '인조가죽의 고급스러움과 플라스틱의 실용성 중 원하는 타입을 선택할 수 있습니다.' },
+            { icon: '🔗', title: '스택 보관', desc: '사용하지 않을 때 여러 개를 쌓아 보관할 수 있어 공간 효율이 높습니다.' },
+            { icon: '💰', title: '합리적 가격', desc: '세련된 디자인을 합리적인 가격에 제공합니다.' }
+        ],
+        tags: ['다이닝', '리빙', '카페', '인테리어'],
+    },
+    plit: {
+        name: 'PLIT',
+        tagline: '가볍고 스타일리시한 식탁의자',
+        desc: '유려한 쉘 디자인과 다양한 컬러 옵션으로 공간의 분위기를 완성하는 식탁 의자입니다. 가볍고 튼튼한 구조로 이동이 편리하며, 착탈식 패브릭 커버로 스타일을 바꿔가며 사용할 수 있습니다.',
+        price: '99,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_PLIT_BEIGE_00.jpg',
+        features: [
+            { icon: '🎨', title: '쉘 디자인', desc: '부드러운 곡선의 쉘 구조로 세련된 인테리어 효과를 연출합니다.' },
+            { icon: '🌈', title: '다양한 컬러', desc: '베이지, 화이트 등 다채로운 컬러로 공간 분위기에 맞게 연출할 수 있습니다.' },
+            { icon: '🧼', title: '착탈식 커버', desc: '별도 패브릭 커버를 씌워 스타일 변화 및 위생 관리가 가능합니다.' },
+            { icon: '⚖️', title: '경량 구조', desc: '가벼워 이동과 보관이 편리합니다.' }
+        ],
+        tags: ['다이닝', '식탁의자', '인테리어', '리빙'],
+    },
+    oui: {
+        name: 'OUI',
+        tagline: '프리미엄 바스툴',
+        desc: '아일랜드 식탁과 높은 테이블에 최적화된 시디즈의 프리미엄 바스툴입니다. 550mm와 680mm 두 가지 높이, 네이키드와 패브릭 두 가지 좌판 타입으로 선택 가능합니다.',
+        price: '149,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/OUI_M171EZ___BW_00_84af1e09-21ac-4158-b551-bc8aedc85eda.jpg',
+        features: [
+            { icon: '🍽️', title: '아일랜드 테이블 최적', desc: '아일랜드 식탁과 높은 카운터에 맞게 설계된 바스툴 높이를 제공합니다.' },
+            { icon: '📐', title: '2가지 높이', desc: '550mm와 680mm 두 가지 높이 옵션으로 테이블 높이에 맞게 선택합니다.' },
+            { icon: '🪑', title: '2가지 좌판', desc: '네이키드(심플)와 패브릭(편안함) 중 원하는 타입을 선택할 수 있습니다.' },
+            { icon: '✨', title: '워터폴 엣지', desc: '허벅지 압박을 줄여주는 워터폴 엣지 설계로 장시간 착석도 편안합니다.' }
+        ],
+        tags: ['다이닝', '바스툴', '아일랜드', '카페'],
+    },
+    fungus: {
+        name: 'FUNGUS',
+        tagline: '앉는 자세를 바로잡는 싯부스터',
+        desc: '장시간 앉아 있을 때 허리와 골반을 올바른 위치로 유지시켜 주는 시디즈의 대표 싯부스터입니다. 기존 의자 위에 올려 사용하며, 바퀴형과 고정형 중 선택 가능합니다.',
+        price: '99,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_454_00_acd68f3f-2563-4ad1-8018-ca7d0a102264.jpg',
+        features: [
+            { icon: '🦴', title: '골반 교정', desc: '경사진 좌면이 골반을 앞으로 기울여 자연스러운 허리 곡선을 만들어 줍니다.' },
+            { icon: '🔄', title: '바퀴형 옵션', desc: '살짝 흔들리는 바퀴형으로 코어 근육을 자연스럽게 활성화합니다.' },
+            { icon: '🪑', title: '기존 의자에 사용', desc: '모든 의자 위에 올려 즉시 사용 가능한 편의성을 제공합니다.' },
+            { icon: '🏆', title: '스테디셀러', desc: '오랜 기간 검증된 시디즈의 베스트셀러 싯부스터입니다.' }
+        ],
+        tags: ['자세교정', '재택근무', '오피스', '허리건강'],
+    },
+    stepo: {
+        name: 'STEPO',
+        tagline: '발 건강을 위한 발판',
+        desc: '발이 바닥에 닿지 않는 상황에서 발목 피로를 줄이고 혈액순환을 돕는 풋레스트입니다. 기본형과 커버형이 있으며, 책상 아래에 놓아 올바른 착석 자세를 완성합니다.',
+        price: '54,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg',
+        features: [
+            { icon: '🦶', title: '발목 피로 감소', desc: '발이 허공에 떠 있을 때 생기는 발목과 다리 피로를 효과적으로 줄여줍니다.' },
+            { icon: '💓', title: '혈액순환 개선', desc: '발을 자연스러운 높이에 받쳐주어 하지 혈액순환을 돕습니다.' },
+            { icon: '🧩', title: '기본형·커버형', desc: '심플한 기본형과 패브릭 커버형 중 선호에 따라 선택 가능합니다.' },
+            { icon: '📐', title: '미끄럼 방지', desc: '바닥 미끄럼 방지 처리로 안정적으로 사용할 수 있습니다.' }
+        ],
+        tags: ['발피로', '혈액순환', '수험생', '자세교정'],
+    },
+    pillo: {
+        name: 'PILLO',
+        tagline: '건강한 좌식 생활의 시작',
+        desc: '방바닥에 앉을 때 척추와 골반을 올바른 위치로 유지해주는 좌식 방석입니다. 인체공학적 설계로 장시간 바닥 생활에서도 피로를 최소화합니다.',
+        price: '89,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_PILLO_M090_831A_00.jpg',
+        features: [
+            { icon: '🧘', title: '좌식 인체공학', desc: '바닥에 앉을 때 골반과 척추를 올바른 위치로 자연스럽게 유도합니다.' },
+            { icon: '🦴', title: '허리 부담 감소', desc: '경사 설계로 허리에 가해지는 압박을 줄여 장시간 좌식 생활도 편안합니다.' },
+            { icon: '🏠', title: '좌식 생활 최적화', desc: '가정의 거실, 명상 공간, 바닥 업무 환경에 모두 적합합니다.' },
+            { icon: '🌈', title: '다양한 컬러', desc: '인테리어와 조화로운 다양한 컬러 옵션을 제공합니다.' }
+        ],
+        tags: ['좌식생활', '명상', '홈인테리어', '자세교정'],
+    },
+    olly: {
+        name: 'OLLY',
+        tagline: '어디서나 편안한 휴대용 의자',
+        desc: '시디즈X토트넘 홋스퍼 콜라보레이션 제품입니다. 가볍고 접이식으로 야외 활동, 피크닉, 스포츠 관람에 최적화된 휴대용 방석 겸 의자입니다.',
+        price: '34,900원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_olly_b_01.jpg',
+        features: [
+            { icon: '⚽', title: '토트넘 콜라보', desc: '시디즈와 토트넘 홋스퍼의 공식 콜라보 제품으로 스퍼스 네이비 컬러를 담았습니다.' },
+            { icon: '🎒', title: '휴대 편의', desc: '접이식 구조로 가방에 넣어 다닐 수 있는 휴대성을 갖췄습니다.' },
+            { icon: '🌿', title: '야외 활용', desc: '피크닉, 야외 스포츠 관람, 캠핑 등 다양한 야외 활동에 적합합니다.' },
+            { icon: '💡', title: '가성비', desc: '시디즈 인체공학 노하우를 부담 없는 가격에 경험할 수 있습니다.' }
+        ],
+        tags: ['야외', '피크닉', '토트넘', '휴대용'],
+    },
+    molti: {
+        name: 'MOLTI',
+        tagline: '3in1 그로잉 베이비체어',
+        desc: '신생아부터 유아까지 성장 단계에 맞게 변형되는 3-in-1 그로잉 체어입니다. 바닥 좌식 → 하이체어 → 책상 의자로 단계별로 활용 가능하며, 안전 KC인증을 획득했습니다.',
+        price: '259,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_02.jpg',
+        features: [
+            { icon: '👶', title: '3단계 변신', desc: '바닥 좌식 시트 → 하이체어 → 책상 의자로 성장에 맞춰 형태를 바꿀 수 있습니다.' },
+            { icon: '🛡️', title: 'KC 안전 인증', desc: '어린이 안전 특별법에 따른 KC인증 취득으로 안전성이 검증되었습니다.' },
+            { icon: '🌈', title: '다양한 컬러', desc: '파우더 핑크, 아보카도 그린 등 아이 방 분위기에 맞는 컬러를 선택할 수 있습니다.' },
+            { icon: '🧺', title: '헬로베이비 세트', desc: '의자+이너시트+다리 세트 구매 시 더욱 합리적인 가격으로 구성됩니다.' }
+        ],
+        tags: ['신생아', '아기', '유아', '그로잉체어'],
+    },
+    atti: {
+        name: 'ATTI',
+        tagline: '아이와 함께 자라는 책상·의자 세트',
+        desc: '초등학생을 위한 성장형 의자와 책상 세트입니다. 아띠 의자와 아띠 책상을 함께 구매하면 세트 할인 혜택을 받을 수 있습니다. 높이 조절 기능으로 아이의 성장에 맞춰 오래 사용할 수 있습니다.',
+        price: '69,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_587b38d9-e6a7-4e35-a56a-08ef9308307e.jpg',
+        features: [
+            { icon: '📏', title: '높이 조절', desc: '아이의 성장에 맞춰 의자와 책상 높이를 조절할 수 있습니다.' },
+            { icon: '🎒', title: '세트 할인', desc: '아띠 의자와 책상을 세트로 구매하면 8% 할인 혜택이 적용됩니다.' },
+            { icon: '🛡️', title: '안전 설계', desc: '날카로운 모서리를 없애고 안전한 소재를 사용해 아이가 안전하게 사용할 수 있습니다.' },
+            { icon: '🎨', title: '사랑스러운 디자인', desc: '아이 방 인테리어에 잘 어울리는 귀여운 디자인으로 완성했습니다.' }
+        ],
+        tags: ['초등학생', '어린이', '책상세트', '그로잉'],
+    },
+    spray: {
+        name: '멀티스프레이',
+        tagline: '의자와 패브릭을 깨끗하게',
+        desc: '시디즈 공식 패브릭 케어 스프레이입니다. 의자 패브릭의 냄새를 제거하고 공간에 은은한 향을 더해줍니다. 150ml 소용량으로 책상 위에 두고 편리하게 사용할 수 있습니다.',
+        price: '29,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_FABRIC_SPRAY_INFINITY__01.jpg',
+        features: [
+            { icon: '🌿', title: '탈취·방향', desc: '패브릭에 배인 냄새를 효과적으로 제거하고 공간에 상쾌한 향을 더합니다.' },
+            { icon: '🧴', title: '패브릭 케어', desc: '시디즈 의자 패브릭 소재에 최적화된 성분으로 소재 손상 없이 사용 가능합니다.' },
+            { icon: '✈️', title: '소용량 편의성', desc: '150ml 소용량으로 가볍게 들고 다니거나 책상 위에 두고 편리하게 사용합니다.' },
+            { icon: '🏆', title: '공식 케어 제품', desc: '시디즈가 직접 개발한 공식 패브릭 케어 솔루션입니다.' }
+        ],
+        tags: ['케어용품', '패브릭', '탈취', '방향'],
+    },
+    pbag: {
+        name: '더 프로그레시브 백',
+        tagline: '시디즈 공식 에코백',
+        desc: '타이벡 소재로 제작된 시디즈의 공식 에코백입니다. 가볍고 질기며 방수 기능이 있어 일상에서 실용적으로 활용할 수 있습니다.',
+        price: '15,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_THE_PROGRESSIVE_BAG_01.jpg',
+        features: [
+            { icon: '♻️', title: '에코 소재', desc: '타이벡(Tyvek) 소재로 제작된 친환경 에코백입니다.' },
+            { icon: '💧', title: '방수 기능', desc: '가볍고 방수 기능이 있어 비 오는 날에도 내용물을 안전하게 보호합니다.' },
+            { icon: '🎒', title: '실용적 디자인', desc: '가볍고 질겨 장기간 사용 가능한 내구성 높은 소재입니다.' },
+            { icon: '🏷️', title: '시디즈 브랜딩', desc: '시디즈의 로고와 감성을 담은 공식 굿즈입니다.' }
+        ],
+        tags: ['에코백', '굿즈', '환경', '타이벡'],
+    },
+    coverTrevo: {
+        name: '트레보 커버',
+        tagline: '트레보 의자 전용 패브릭 커버',
+        desc: '트레보 스터디 의자 전용 착탈식 패브릭 커버입니다. 세탁이 가능하여 위생적인 사용이 가능하고, 다양한 컬러로 스타일 변화를 줄 수 있습니다.',
+        price: '27,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_TREVO_S40D0KK_5F1_01.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '분리하여 세탁할 수 있어 언제나 청결하게 유지할 수 있습니다.' },
+            { icon: '🎨', title: '다양한 컬러', desc: '다채로운 컬러 옵션으로 의자의 분위기를 새롭게 연출할 수 있습니다.' },
+            { icon: '✂️', title: '정품 전용 커버', desc: '트레보 의자에 완벽하게 맞도록 제작된 정품 전용 커버입니다.' },
+            { icon: '🛒', title: '간편 교체', desc: '간단하게 탈부착 가능해 교체가 쉽습니다.' }
+        ],
+        tags: ['커버', '트레보', '악세서리', '패브릭'],
+    },
+    coverRingo2: {
+        name: '링고 2세대 커버',
+        tagline: '링고 2세대 전용 패브릭 커버',
+        desc: '링고 2세대 의자 전용 착탈식 패브릭 커버입니다. 아이가 사용하는 의자를 항상 깨끗하게 유지할 수 있으며, 다양한 컬러로 교체하는 재미가 있습니다.',
+        price: '29,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_RINGO_SJC2.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '분리 세탁이 가능해 아이의 의자를 항상 위생적으로 유지합니다.' },
+            { icon: '🎨', title: '다양한 컬러', desc: '아이가 좋아하는 컬러로 의자를 새롭게 꾸밀 수 있습니다.' },
+            { icon: '✂️', title: '링고 2세대 전용', desc: '링고 2세대 의자에 딱 맞게 제작된 정품 전용 커버입니다.' },
+            { icon: '🛒', title: '간편 탈부착', desc: '간단하게 분리·장착할 수 있어 관리가 편리합니다.' }
+        ],
+        tags: ['커버', '링고', '키즈', '악세서리'],
+    },
+    coverRingo1: {
+        name: '링고 1세대 커버',
+        tagline: '링고 1세대 전용 패브릭 커버',
+        desc: '링고 1세대 의자 전용 착탈식 패브릭 커버입니다. 오래된 의자를 새 것처럼 바꿔주고 위생 관리를 도와줍니다.',
+        price: '25,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_ringo_cover_cocerel_379e9229-5540-4e43-9367-d8a61928f58f.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '분리 세탁으로 항상 청결하게 유지할 수 있습니다.' },
+            { icon: '🎨', title: '다양한 컬러', desc: '다양한 컬러 옵션으로 의자 분위기를 새롭게 연출합니다.' },
+            { icon: '✂️', title: '링고 1세대 전용', desc: '링고 1세대 의자에 맞게 제작된 정품 전용 커버입니다.' },
+            { icon: '💰', title: '합리적 가격', desc: '기존 의자를 저렴하게 새로 단장할 수 있습니다.' }
+        ],
+        tags: ['커버', '링고', '키즈', '악세서리'],
+    },
+    coverT50Air: {
+        name: 'T50 AIR 커버',
+        tagline: 'T50 AIR 전용 좌판 커버',
+        desc: 'T50 AIR 의자 전용 좌판 패브릭 커버입니다. 자주 닿는 좌판을 위생적으로 관리하고, 새로운 컬러로 의자 분위기를 바꿀 수 있습니다.',
+        price: '30,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_T529D_00.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '좌판 커버를 분리해 세탁할 수 있어 위생적으로 관리됩니다.' },
+            { icon: '✂️', title: 'T50 AIR 전용', desc: 'T50 AIR 의자 좌판에 딱 맞게 제작된 정품 전용 커버입니다.' },
+            { icon: '🎨', title: '컬러 변화', desc: '다양한 컬러 옵션으로 의자의 분위기를 새롭게 연출합니다.' },
+            { icon: '🛒', title: '간편 교체', desc: '착탈이 쉬워 필요에 따라 간편하게 교체할 수 있습니다.' }
+        ],
+        tags: ['커버', 'T50 AIR', '악세서리', '좌판'],
+    },
+    coverT60Air: {
+        name: 'T60 AIR 커버',
+        tagline: 'T60 AIR 전용 좌판 커버',
+        desc: 'T60 AIR 의자 전용 좌판 패브릭 커버입니다. 위생적인 관리와 스타일 변화를 동시에 만족시킵니다.',
+        price: '33,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_COVER_5G1B_c8e9726b-a2cf-4fb1-9591-a2c4ac789c61.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '좌판 커버를 분리해 세탁할 수 있어 위생적으로 관리됩니다.' },
+            { icon: '✂️', title: 'T60 AIR 전용', desc: 'T60 AIR 의자 좌판에 딱 맞게 제작된 정품 전용 커버입니다.' },
+            { icon: '🎨', title: '컬러 변화', desc: '다양한 컬러 옵션으로 의자의 분위기를 새롭게 연출합니다.' },
+            { icon: '🛒', title: '간편 교체', desc: '착탈이 쉬워 필요에 따라 간편하게 교체할 수 있습니다.' }
+        ],
+        tags: ['커버', 'T60 AIR', '악세서리', '좌판'],
+    },
+    coverPlit: {
+        name: '플릿 커버',
+        tagline: '플릿 식탁의자 전용 좌판 커버',
+        desc: '플릿 식탁의자 전용 착탈식 패브릭 커버입니다. 식탁 의자를 항상 깔끔하게 유지하고, 다양한 컬러로 다이닝 공간을 꾸밀 수 있습니다.',
+        price: '22,000원',
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_PLIT_BEIGE_cover_01_aed95ae8-8cba-4d52-a7b8-361e1b0e3c1d.jpg',
+        features: [
+            { icon: '🧼', title: '세탁 가능', desc: '분리 세탁이 가능해 식탁 의자를 항상 청결하게 유지합니다.' },
+            { icon: '✂️', title: '플릿 전용', desc: '플릿 의자에 딱 맞게 제작된 정품 전용 커버입니다.' },
+            { icon: '🎨', title: '컬러 변화', desc: '다양한 컬러로 다이닝 공간의 분위기를 바꿀 수 있습니다.' },
+            { icon: '💰', title: '합리적 가격', desc: '부담 없는 가격으로 인테리어 변화를 줄 수 있습니다.' }
+        ],
+        tags: ['커버', '플릿', '다이닝', '악세서리'],
+    },
 };
-
-// ── QUIZ DATA ──
-const quizQuestions = [
-    {
-        question: '주로 의자에서 무엇을 하시나요?',
-        options: [
-            { icon: '💻', label: '업무 (PC 작업)', value: 'work' },
-            { icon: '📖', label: '공부 / 독서', value: 'study' },
-            { icon: '🎮', label: '게임 / 멀티미디어', value: 'game' },
-            { icon: '🏠', label: '재택 / 홈오피스', value: 'home' },
-        ]
-    },
-    {
-        question: '의자를 고를 때 가장 중요한 것은?',
-        options: [
-            { icon: '💰', label: '가격 대비 성능', value: 'value' },
-            { icon: '🦴', label: '허리 건강 / 인체공학', value: 'ergo' },
-            { icon: '🎨', label: '디자인 / 인테리어', value: 'design' },
-            { icon: '💎', label: '최고의 편안함', value: 'premium' },
-        ]
-    },
-    {
-        question: '하루에 의자에 얼마나 오래 앉아 계시나요?',
-        options: [
-            { icon: '⏱️', label: '4시간 이하', value: 'short' },
-            { icon: '🕐', label: '4~8시간', value: 'medium' },
-            { icon: '🕛', label: '8시간 이상', value: 'long' },
-            { icon: '🌙', label: '거의 하루종일', value: 'allday' },
-        ]
-    }
-];
-
-let quizAnswers = [];
-let currentQuizStep = 0;
-
-// ── QUIZ RESULT LOGIC ──
-function getRecommendation(answers) {
-    const [usage, priority, hours] = answers;
-    
-    // Simple scoring
-    let scores = { t50: 0, t60: 0, t80: 0, t90: 0, t20: 0, gx: 0, gcpro: 0, linie: 0, ible: 0, ringo2: 0 };
-    
-    // Usage
-    if (usage === 'work') { scores.t50 += 3; scores.t60 += 3; scores.t90 += 3; scores.t80 += 2; scores.linie += 2; scores.t20 += 1; }
-    if (usage === 'study') { scores.ible += 4; scores.t20 += 2; scores.ringo2 += 1; }
-    if (usage === 'game') { scores.gcpro += 5; scores.gx += 4; scores.t80 += 1; }
-    if (usage === 'home') { scores.linie += 3; scores.t60 += 3; scores.t50 += 2; scores.t80 += 1; }
-    
-    // Priority
-    if (priority === 'value') { scores.t20 += 4; scores.ible += 1; scores.ringo2 += 1; }
-    if (priority === 'ergo') { scores.t90 += 4; scores.t60 += 3; scores.t50 += 3; scores.t80 += 2; }
-    if (priority === 'design') { scores.linie += 4; scores.t60 += 2; scores.t90 += 1; }
-    if (priority === 'premium') { scores.t90 += 5; scores.t80 += 4; scores.gcpro += 2; }
-    
-    // Hours
-    if (hours === 'short') { scores.t20 += 2; scores.ringo2 += 1; }
-    if (hours === 'medium') { scores.t50 += 2; scores.t60 += 2; scores.ible += 1; }
-    if (hours === 'long') { scores.t60 += 2; scores.t50 += 2; scores.t80 += 3; scores.t90 += 2; scores.gcpro += 2; }
-    if (hours === 'allday') { scores.t90 += 5; scores.t80 += 4; scores.t50 += 1; scores.gcpro += 1; }
-    
-    const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
-    return best;
-}
 
 // ── NAVIGATION ──
 function navigate(sectionId, navEl) {
@@ -4424,20 +5215,40 @@ function showDetail(productId) {
     if (!p) return;
     
     document.getElementById('detailContent').innerHTML = `
-        <div class="detail-img" style="background-image: url('${p.img}'); background-color: #eef2f7;"></div>
+        <div class="detail-img" style="background-image: url('${p.img}'); background-color: #eef2f7;">
+            <img src="${p.img}" alt="" style="display:none" onerror="this.parentElement.style.backgroundImage='none'">
+        </div>
         <div class="detail-info">
             <div class="name">${p.name}</div>
             <div class="tagline">${p.tagline}</div>
             <div class="desc">${p.desc}</div>
             <div class="price-tag">${renderPrice(p)}</div>
             <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
+            <div id="detailVariants"></div>
             <div class="cta-row">
-                <a class="btn-primary" href="https://kr.sidiz.com/" target="_blank">🛒 온라인 구매하기</a>
                 <a class="btn-secondary" href="tel:1588-0581">📞 매장 상담 문의</a>
             </div>
         </div>
     `;
-    
+
+    // variant pricing table
+    const variants = variantData[productId];
+    const variantHtml = variants ? `
+        <div class="variant-pricing">
+            <h3 class="variant-title">옵션 및 가격</h3>
+            <div class="variant-table">
+                ${variants.map(v => `
+                    <div class="variant-row">
+                        <span class="variant-name">${v.name}</span>
+                        <span class="variant-price">${fmt(v.price)}</span>
+                        <button class="btn-add-cart" onclick="addToCart('${productId}', '${v.name}', ${v.price})">+ 담기</button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    ` : '';
+    document.getElementById('detailVariants').innerHTML = variantHtml;
+
     document.getElementById('detailFeatures').innerHTML = `
         <h2 style="font-family:'Outfit',sans-serif; font-size:1.3rem; font-weight:700; color:var(--sidiz-dark); margin-bottom:20px;">주요 기능</h2>
         <div class="feature-grid">
@@ -4460,75 +5271,118 @@ function showDetail(productId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── QUIZ ──
-function renderQuiz() {
-    const q = quizQuestions[currentQuizStep];
-    document.getElementById('quizBody').innerHTML = `
-        <div class="quiz-question">${q.question}</div>
-        <div class="quiz-options">
-            ${q.options.map((opt, i) => `
-                <div class="quiz-option" onclick="selectQuizOption('${opt.value}', this)">
-                    <span class="icon">${opt.icon}</span>
-                    <span class="label">${opt.label}</span>
-                </div>
-            `).join('')}
+// ── CART ──
+let cart = [];
+let cartIdCounter = 0;
+
+function fmt(n) { return n.toLocaleString('ko-KR') + '원'; }
+
+function getDiscount(subtotal) {
+    return DISCOUNT_TIERS.find(t => subtotal >= t.min) || null;
+}
+
+function getNextTier(subtotal) {
+    const idx = DISCOUNT_TIERS.findIndex(t => subtotal >= t.min);
+    const next = idx === -1 ? DISCOUNT_TIERS[DISCOUNT_TIERS.length - 1] : DISCOUNT_TIERS[idx - 1];
+    if (!next) return null;
+    return { need: next.min - subtotal, rate: next.rate, label: next.label };
+}
+
+function addToCart(productId, variantName, price) {
+    const existing = cart.find(i => i.productId === productId && i.variantName === variantName);
+    if (existing) {
+        existing.qty++;
+    } else {
+        const p = products[productId];
+        cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, qty: 1 });
+    }
+    updateCartBadge();
+    renderCartItems();
+    openCart();
+    showToast(`🛒 ${variantName} 담겼습니다`);
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(i => i.id !== id);
+    updateCartBadge();
+    renderCartItems();
+}
+
+function updateQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty = Math.max(1, item.qty + delta);
+    renderCartItems();
+}
+
+function updateCartBadge() {
+    const total = cart.reduce((s, i) => s + i.qty, 0);
+    const badge = document.getElementById('cartBadge');
+    if (badge) {
+        badge.textContent = total;
+        badge.style.display = total > 0 ? 'flex' : 'none';
+    }
+}
+
+function renderCartItems() {
+    const el = document.getElementById('cartItems');
+    const summaryEl = document.getElementById('cartSummary');
+    if (!el) return;
+
+    if (cart.length === 0) {
+        el.innerHTML = '<div class="cart-empty">담긴 상품이 없습니다</div>';
+        summaryEl.innerHTML = '';
+        return;
+    }
+
+    el.innerHTML = cart.map(item => `
+        <div class="cart-item">
+            <div class="cart-item-info">
+                <div class="cart-item-name">${item.name}</div>
+                <div class="cart-item-variant">${item.variantName}</div>
+                <div class="cart-item-price">${fmt(item.price * item.qty)}</div>
+            </div>
+            <div class="cart-item-actions">
+                <button class="qty-btn" onclick="updateQty(${item.id}, -1)">−</button>
+                <span class="qty-val">${item.qty}</span>
+                <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                <button class="cart-remove" onclick="removeFromCart(${item.id})">✕</button>
+            </div>
         </div>
+    `).join('');
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc = getDiscount(subtotal);
+    const discAmt = disc ? Math.round(subtotal * disc.rate) : 0;
+    const final = subtotal - discAmt;
+    const next = getNextTier(subtotal);
+
+    summaryEl.innerHTML = `
+        <div class="cart-summary-row">
+            <span>소계</span><span>${fmt(subtotal)}</span>
+        </div>
+        ${disc ? `<div class="cart-summary-row discount">
+            <span>할인 (${disc.label} ${(disc.rate * 100).toFixed(0)}%)</span>
+            <span>−${fmt(discAmt)}</span>
+        </div>` : ''}
+        <div class="cart-summary-row total">
+            <span>최종 금액</span><span>${fmt(final)}</span>
+        </div>
+        ${next && next.need > 0 ? `<div class="cart-next-tier">
+            💡 <b>${fmt(next.need)}</b> 더 담으면 <b>${(next.rate * 100).toFixed(0)}%</b> 할인!
+        </div>` : ''}
+        <a class="btn-primary cart-buy-btn" href="https://kr.sidiz.com/" target="_blank">🛒 시디즈 온라인몰에서 구매</a>
     `;
-    
-    // Update progress
-    document.querySelectorAll('.quiz-dot').forEach((dot, i) => {
-        dot.className = 'quiz-dot';
-        if (i < currentQuizStep) dot.classList.add('done');
-        if (i === currentQuizStep) dot.classList.add('active');
-    });
 }
 
-function selectQuizOption(value, el) {
-    document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-    
-    quizAnswers[currentQuizStep] = value;
-    
-    setTimeout(() => {
-        currentQuizStep++;
-        if (currentQuizStep < quizQuestions.length) {
-            renderQuiz();
-        } else {
-            showQuizResult();
-        }
-    }, 400);
+function openCart() {
+    document.getElementById('cartDrawer').classList.add('open');
+    document.getElementById('cartOverlay').classList.add('open');
 }
 
-function showQuizResult() {
-    const recommendId = getRecommendation(quizAnswers);
-    const p = products[recommendId];
-    
-    document.querySelectorAll('.quiz-dot').forEach(d => d.className = 'quiz-dot done');
-    document.getElementById('quizBody').style.display = 'none';
-    
-    const resultEl = document.getElementById('quizResult');
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `
-        <div style="font-size:3rem; margin-bottom:16px;">🎯</div>
-        <h3>추천 제품: ${p.name}</h3>
-        <div class="result-subtitle">${p.tagline}</div>
-        <p style="margin-bottom:28px;">${p.desc}</p>
-        <div style="margin-bottom:24px;">
-            ${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}
-        </div>
-        <div class="cta-row" style="justify-content:center;">
-            <a class="btn-primary" onclick="showDetail('${recommendId}')">상세 정보 보기 →</a>
-            <a class="btn-secondary" onclick="resetQuiz()">다시 테스트하기</a>
-        </div>
-    `;
-}
-
-function resetQuiz() {
-    quizAnswers = [];
-    currentQuizStep = 0;
-    document.getElementById('quizBody').style.display = 'block';
-    document.getElementById('quizResult').style.display = 'none';
-    renderQuiz();
+function closeCart() {
+    document.getElementById('cartDrawer').classList.remove('open');
+    document.getElementById('cartOverlay').classList.remove('open');
 }
 
 function toggleKakao(el) {
@@ -4537,8 +5391,17 @@ function toggleKakao(el) {
     body.classList.toggle('open');
 }
 
-// ── INIT ──
-renderQuiz();
 </script>
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+    <div class="cart-drawer-header">
+        <h3>🛒 장바구니</h3>
+        <button class="cart-close" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+        <div class="cart-empty">담긴 상품이 없습니다</div>
+    </div>
+    <div class="cart-summary-wrap" id="cartSummary"></div>
+</div>
 </body>
 </html>
