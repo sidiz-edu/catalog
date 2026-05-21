@@ -210,6 +210,33 @@
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 24px;
         }
+        /* ── 카테고리 필터 바 ── */
+        .cat-filter-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            margin-bottom: 24px;
+        }
+        .cat-filter-bar::-webkit-scrollbar { display: none; }
+        .cat-filter-btn {
+            flex-shrink: 0;
+            padding: 7px 16px;
+            border-radius: 100px;
+            border: 1.5px solid #e0e4f0;
+            background: white;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .cat-filter-btn:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); }
+        .cat-filter-btn.active { background: var(--sidiz-navy); border-color: var(--sidiz-navy); color: white; }
+
         .product-category-header {
             grid-column: 1 / -1;
             display: flex;
@@ -2528,6 +2555,19 @@
     <div class="section-title" data-editable data-key="sec-products-title" contenteditable="false">제품 라인업</div>
     <div class="section-desc" data-editable data-key="sec-products-desc" contenteditable="false">시디즈의 대표 제품을 한눈에 만나보세요. 각 모델을 탭하면 상세 정보를 확인할 수 있습니다.</div>
 
+    <div class="cat-filter-bar">
+        <button class="cat-filter-btn active" data-cat="전체"     onclick="filterProducts('전체')">전체</button>
+        <button class="cat-filter-btn"         data-cat="워크"     onclick="filterProducts('워크')">워크</button>
+        <button class="cat-filter-btn"         data-cat="게이밍"   onclick="filterProducts('게이밍')">게이밍</button>
+        <button class="cat-filter-btn"         data-cat="스터디"   onclick="filterProducts('스터디')">스터디</button>
+        <button class="cat-filter-btn"         data-cat="라이트워크" onclick="filterProducts('라이트워크')">라이트워크</button>
+        <button class="cat-filter-btn"         data-cat="리빙다이닝" onclick="filterProducts('리빙다이닝')">리빙다이닝</button>
+        <button class="cat-filter-btn"         data-cat="싯부스터" onclick="filterProducts('싯부스터')">싯부스터</button>
+        <button class="cat-filter-btn"         data-cat="그로잉"   onclick="filterProducts('그로잉')">그로잉</button>
+        <button class="cat-filter-btn"         data-cat="P굿즈"    onclick="filterProducts('P굿즈')">P굿즈</button>
+        <button class="cat-filter-btn"         data-cat="악세서리" onclick="filterProducts('악세서리')">악세서리</button>
+    </div>
+
     <div class="product-grid" id="productGrid">
         <!-- T50 -->
         <div class="product-card" onclick="showDetail('t50')">
@@ -4387,6 +4427,102 @@ const compareData = {
         착좌텐션: '★★★★★',
         메쉬특징: '압도적 지지력 · 늘어짐 없는 하드한 텐션',
     },
+    // ── 스터디 ──
+    trevo: {
+        label: 'TREVO', badge: '',
+        포지셔닝: '스터디', 가격대: '12만원', 틸팅방식: '전방 틸팅',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '착탈식 커버', 추천대상: '수험생·초등학생',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    // ── 라이트워크 ──
+    button: {
+        label: 'BUTTON', badge: '',
+        포지셔닝: '라이트워크', 가격대: '12만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '8가지 조합', 추천대상: '홈오피스·회의실',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    muuve: {
+        label: 'MUUVE', badge: '',
+        포지셔닝: '홈오피스·다이닝', 가격대: '17만원', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '미니멀 디자인', 추천대상: '홈오피스·다이닝',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    ega: {
+        label: 'EGA', badge: '',
+        포지셔닝: '라이트워크', 가격대: '17만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '다양한 다리 옵션', 추천대상: '오피스·홈',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    // ── 리빙다이닝 ──
+    mane: {
+        label: 'MANE', badge: '',
+        포지셔닝: '리빙다이닝', 가격대: '6만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '인조가죽·플라스틱', 추천대상: '다이닝·카페',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    plit: {
+        label: 'PLIT', badge: '',
+        포지셔닝: '식탁의자', 가격대: '9만원', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '쉘 디자인·착탈 커버', 추천대상: '다이닝·인테리어',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    oui: {
+        label: 'OUI', badge: '',
+        포지셔닝: '바스툴', 가격대: '14만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '550·680mm 높이', 추천대상: '아일랜드·카페',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    // ── 싯부스터 ──
+    fungus: {
+        label: 'FUNGUS', badge: '',
+        포지셔닝: '싯부스터', 가격대: '9만원~', 틸팅방식: '경사형',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '골반 교정', 추천대상: '자세교정·재택',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    stepo: {
+        label: 'STEPO', badge: '',
+        포지셔닝: '풋레스트', 가격대: '5만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '발목 피로 감소', 추천대상: '수험생·직장인',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    pillo: {
+        label: 'PILLO', badge: '',
+        포지셔닝: '좌식 방석', 가격대: '8만원', 틸팅방식: '경사형',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '좌식 인체공학', 추천대상: '좌식생활',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    olly: {
+        label: 'OLLY', badge: '토트넘',
+        포지셔닝: '휴대용 방석', 가격대: '3만원', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '접이식·야외', 추천대상: '피크닉·야외',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    // ── 그로잉 ──
+    molti: {
+        label: 'MOLTI', badge: '',
+        포지셔닝: '3in1 베이비체어', 가격대: '25만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '3단계 변신·KC인증', 추천대상: '신생아·유아',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
+    atti: {
+        label: 'ATTI', badge: '',
+        포지셔닝: '어린이 책상·의자', 가격대: '6만원~', 틸팅방식: '—',
+        요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
+        헤드레스트: false, 특수기능: '세트 할인 8%', 추천대상: '초등학생',
+        메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
+    },
 };
 
 const compareRows = [
@@ -4414,9 +4550,13 @@ function initComparePicker() {
     picker.innerHTML = '';
 
     const groups = [
-        { label: '라이프스타일', ids: ['ringo2', 'ible', 'linie'] },
-        { label: '게이밍',       ids: ['gx', 'gcpro'] },
-        { label: '오피스',       ids: ['t20', 't50', 't60', 't80', 't90'] },
+        { label: '워크',       ids: ['t20', 't50', 't60', 't80', 't90'] },
+        { label: '게이밍',     ids: ['gx', 'gcpro'] },
+        { label: '스터디',     ids: ['ible', 'ringo2', 'trevo'] },
+        { label: '라이트워크', ids: ['linie', 'muuve', 'button', 'ega'] },
+        { label: '리빙다이닝', ids: ['mane', 'plit', 'oui'] },
+        { label: '싯부스터',   ids: ['fungus', 'stepo', 'pillo', 'olly'] },
+        { label: '그로잉',     ids: ['molti', 'atti'] },
     ];
 
     groups.forEach((group, gi) => {
@@ -5183,6 +5323,39 @@ const products = {
         tags: ['커버', '플릿', '다이닝', '악세서리'],
     },
 };
+
+// ── CATEGORY FILTER ──
+const categoryMap = {
+    워크:     ['t50', 't60', 't80', 't90', 't20', 't40'],
+    게이밍:   ['gcpro', 'gx'],
+    스터디:   ['ible', 'ringo2', 'trevo'],
+    라이트워크: ['linie', 'button', 'muuve', 'ega'],
+    리빙다이닝: ['mane', 'plit', 'oui'],
+    싯부스터: ['fungus', 'stepo', 'pillo', 'olly'],
+    그로잉:   ['molti', 'atti'],
+    'P굿즈':  ['spray', 'pbag'],
+    악세서리: ['coverTrevo', 'coverRingo2', 'coverRingo1', 'coverT50Air', 'coverT60Air', 'coverPlit'],
+};
+
+function filterProducts(category) {
+    const cards = document.querySelectorAll('#productGrid .product-card');
+    const headers = document.querySelectorAll('#productGrid .product-category-header');
+
+    if (category === '전체') {
+        cards.forEach(c => c.style.display = '');
+        headers.forEach(h => h.style.display = '');
+    } else {
+        const ids = categoryMap[category] || [];
+        cards.forEach(c => {
+            const m = (c.getAttribute('onclick') || '').match(/showDetail\('(\w+)'\)/);
+            c.style.display = (m && ids.includes(m[1])) ? '' : 'none';
+        });
+        headers.forEach(h => h.style.display = 'none');
+    }
+
+    document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.cat-filter-btn[data-cat="${category}"]`)?.classList.add('active');
+}
 
 // ── NAVIGATION ──
 function navigate(sectionId, navEl) {
