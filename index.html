@@ -167,6 +167,41 @@
             letter-spacing: 0.5px;
         }
 
+        /* ── HERO SEARCH ── */
+        .hero-search-wrap {
+            margin-top: 28px;
+            display: flex;
+            align-items: center;
+            max-width: 480px;
+            background: rgba(255,255,255,0.12);
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: 40px;
+            padding: 10px 18px;
+            gap: 10px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .hero-search-wrap:focus-within {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .hero-search-icon { color: rgba(255,255,255,0.7); font-size: 1rem; flex-shrink: 0; }
+        .hero-search-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .hero-search-input::placeholder { color: rgba(255,255,255,0.55); }
+        .hero-search-clear {
+            background: none; border: none; cursor: pointer;
+            color: rgba(255,255,255,0.6); font-size: 1rem; padding: 0;
+            display: none;
+        }
+        .hero-search-clear.visible { display: block; }
+
         /* ── SECTIONS ── */
         .section {
             display: none;
@@ -2771,6 +2806,14 @@
         <div class="hero-badge" data-editable data-key="hero-badge" contenteditable="false">SITTING EXPERT'S CHOICE</div>
         <h1 data-editable data-key="hero-h1" contenteditable="false">당신의 몸이 기억하는<br>올바른 앉음</h1>
         <p data-editable data-key="hero-p" contenteditable="false">시디즈는 인체공학 연구를 기반으로, 오래 앉아도 편안한 의자를 설계합니다. 나에게 맞는 의자를 찾아보세요.</p>
+        <div class="hero-search-wrap">
+            <span class="hero-search-icon">🔍</span>
+            <input class="hero-search-input" id="heroSearchInput" type="text"
+                placeholder="제품 검색 (예: T50, 트레보, LINIE…)"
+                oninput="heroSearch(this.value)"
+                onkeydown="if(event.key==='Enter')heroSearch(this.value)">
+            <button class="hero-search-clear" id="heroSearchClear" onclick="heroClear()">✕</button>
+        </div>
     </div>
 </div>
 
@@ -6035,6 +6078,98 @@ function filterProducts(category) {
 
     document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.cat-filter-btn[data-cat="${category}"]`)?.classList.add('active');
+}
+
+// ── HERO SEARCH ──
+const SEARCH_ALIASES = {
+    t50:        ['t50','티50','티오십'],
+    t60:        ['t60','티60','티육십'],
+    t80:        ['t80','티80','티팔십'],
+    t90:        ['t90','티90','티구십'],
+    t20:        ['t20','티20','티이십'],
+    gx:         ['gx','지엑스'],
+    gcpro:      ['gc pro','gcpro','gc','지씨프로','지씨'],
+    linie:      ['linie','리니에','리니'],
+    ible:       ['ible','아이블'],
+    ringo2:     ['ringo','ringo2','링고','링고2','링고2세대'],
+    trevo:      ['trevo','트레보'],
+    button:     ['button','버튼'],
+    muuve:      ['muuve','뮤브'],
+    ega:        ['ega','에가'],
+    mane:       ['mane','마네'],
+    plit:       ['plit','플릿'],
+    oui:        ['oui','위'],
+    fungus:     ['fungus','펑거스'],
+    stepo:      ['stepo','스테포'],
+    pillo:      ['pillo','필로'],
+    olly:       ['olly','올리'],
+    molti:      ['molti','몰티'],
+    atti:       ['atti','아띠'],
+    spray:      ['spray','스프레이','멀티스프레이'],
+    pbag:       ['pbag','bag','백','프로그레시브백','더프로그레시브백'],
+    coverTrevo: ['트레보커버','커버트레보','trevo cover','covertrevo'],
+    coverRingo2:['링고커버','링고2커버','ringo cover','coverringo'],
+    coverRingo1:['링고1커버','링고1세대커버'],
+    coverT50Air:['t50air커버','t50커버'],
+    coverT60Air:['t60air커버','t60커버'],
+    coverPlit:  ['플릿커버','plit cover','coverplit'],
+};
+
+function heroSearch(query) {
+    const q = query.trim().toLowerCase().replace(/\s+/g,'');
+    const clearBtn = document.getElementById('heroSearchClear');
+    if (clearBtn) clearBtn.classList.toggle('visible', q.length > 0);
+    if (!q) { heroClear(false); return; }
+
+    // 매칭 제품 ID 찾기
+    const matched = new Set();
+    for (const [id, aliases] of Object.entries(SEARCH_ALIASES)) {
+        if (aliases.some(a => a.replace(/\s+/g,'').includes(q) || q.includes(a.replace(/\s+/g,'')))) {
+            matched.add(id);
+        }
+    }
+
+    // products 섹션으로 스크롤 & 표시
+    const productsSection = document.getElementById('products');
+    if (productsSection && productsSection.style.display === 'none') {
+        document.querySelector('.cat-filter-btn[data-cat="전체"]')?.click();
+    }
+
+    // 카드 필터링
+    const cards = document.querySelectorAll('#productGrid .product-card');
+    const headers = document.querySelectorAll('#productGrid .product-category-header');
+    headers.forEach(h => h.style.display = 'none');
+    let anyVisible = false;
+    cards.forEach(c => {
+        const m = (c.getAttribute('onclick') || '').match(/showDetail\('(\w+)'\)/);
+        const show = m && matched.has(m[1]);
+        c.style.display = show ? '' : 'none';
+        if (show) anyVisible = true;
+    });
+
+    // 결과 없으면 전체 보여주기
+    if (!anyVisible) {
+        cards.forEach(c => c.style.display = '');
+        headers.forEach(h => h.style.display = '');
+    }
+
+    // 스크롤
+    productsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function heroClear(focus = true) {
+    const inp = document.getElementById('heroSearchInput');
+    const clearBtn = document.getElementById('heroSearchClear');
+    if (inp) inp.value = '';
+    if (clearBtn) clearBtn.classList.remove('visible');
+    // 전체 복원
+    const cards = document.querySelectorAll('#productGrid .product-card');
+    const headers = document.querySelectorAll('#productGrid .product-category-header');
+    cards.forEach(c => c.style.display = '');
+    headers.forEach(h => h.style.display = '');
+    document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.cat-filter-btn[data-cat="전체"]')?.classList.add('active');
+    if (focus && inp) inp.focus();
 }
 
 // ── NAVIGATION ──
