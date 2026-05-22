@@ -2674,9 +2674,10 @@
 <!-- HEADER -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <header>
-    <div class="header-logo" id="adminTrigger"
+    <div class="header-logo" id="adminTrigger" style="cursor:pointer"
         onmousedown="startAdminPress()" onmouseup="cancelAdminPress()" onmouseleave="cancelAdminPress()"
-        ontouchstart="startAdminPress()" ontouchend="cancelAdminPress()">
+        ontouchstart="startAdminPress()" ontouchend="cancelAdminPress()"
+        onclick="goHome()">
         SIDIZ <span>CATALOG</span>
     </div>
     <button class="hamburger" onclick="toggleMobileNav()" aria-label="메뉴 열기">
@@ -3745,11 +3746,21 @@ async function hashString(str) {
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// ── 로고 클릭: 짧으면 홈, 길면 어드민 ──
+let _logoLongPressed = false;
+function goHome() {
+    if (_logoLongPressed) return; // 롱프레스 완료 시 홈 이동 차단
+    navigate('products', document.querySelector('.header-nav a:first-child'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ── 편집 모드 롱프레스 (로고 3초) ──
 function startAdminPress() {
+    _logoLongPressed = false;
     const logo = document.getElementById('adminTrigger');
     logo.classList.add('pressing');
     adminPressTimer = setTimeout(() => {
+        _logoLongPressed = true;
         logo.classList.remove('pressing');
         openAdminModal();
     }, 3000);
