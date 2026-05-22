@@ -481,6 +481,11 @@
         .detail-color-chip.active { border-color: var(--sidiz-navy); background: var(--sidiz-light); color: var(--sidiz-navy); }
         .detail-color-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 
+        /* ── SPEC SELECTOR ── */
+        .detail-spec-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .detail-spec-btn { padding: 5px 12px; border-radius: 16px; border: 1.5px solid #ddd; background: white; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .detail-spec-btn.active { border-color: var(--sidiz-navy); background: var(--sidiz-light); color: var(--sidiz-dark); font-weight: 600; }
+
         /* ── COUPON UI IN DETAIL ── */
         .detail-coupon-row {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -5109,6 +5114,8 @@ const variantData = {
         { name: 'T80 메쉬', price: 619000 },
         { name: 'T80 메쉬+천연가죽', price: 724000 },
         { name: 'T80 천연가죽', price: 789000 },
+        { name: 'T80 천연가죽 (블랙)', price: 789000 },
+        { name: 'T80 천연가죽 (크림)', price: 789000 },
     ],
     t90: [
         { name: 'T90 더블라셀', price: 999000 },
@@ -5126,8 +5133,9 @@ const variantData = {
         { name: 'GX', price: 379000 },
     ],
     t20: [
-        { name: 'T20', price: 204000 },
-        { name: '토트넘 T20', price: 204000 },
+        { name: 'T20', price: 229000 },
+        { name: '토트넘 T20', price: 229000 },
+        { name: '토트넘 T20 코커렐', price: 229000 },
     ],
     linie: [
         { name: '리니에 메쉬', price: 259000 },
@@ -5140,6 +5148,9 @@ const variantData = {
     ],
     ringo2: [
         { name: '링고', price: 189000 },
+        { name: '싯브레이크 캐스터 B형', price: null, note: '추가 구성품' },
+        { name: '글라이드 B형', price: null, note: '추가 구성품' },
+        { name: '링고 전용 커버', price: null, note: '추가 구성품' },
     ],
     trevo: [
         { name: '트레보', price: 129000 },
@@ -5258,16 +5269,15 @@ const GROUP_PROMOS = {
         ]
     },
     living: {
-        ids: ['trevo', 'oui', 'mane', 'plit'],
+        ids: ['oui', 'mane', 'plit'],
         label: '예쁜 의자도 시디즈 (리빙다이닝)',
         tiers: [
             { minQty: 4, rate: 0.10, desc: '4개 이상 10%' },
             { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
-            { minQty: 1, rate: 0.03, desc: '1개 3%' },
         ]
     },
     attiSet: {
-        ids: ['molti', 'atti'],
+        ids: ['atti'],
         label: '아띠 세트 할인',
         tiers: [
             { minQty: 2, rate: 0.08, desc: '세트(의자+책상) 8%' },
@@ -5278,7 +5288,7 @@ const GROUP_PROMOS = {
         ids: ['trevo', 'coverTrevo'],
         label: '트레보 세트 할인',
         tiers: [
-            { minQty: 2, rate: 0.08, desc: '세트(트레보+커버) 8%' },
+            { minQty: 2, rate: 0.08, desc: '트레보+커버 세트 8%' },
             { minQty: 1, rate: 0.05, desc: '단품 5%' },
         ]
     },
@@ -5338,6 +5348,104 @@ const productAccessories = {
     atti:  ['pbag'],
 };
 
+// ── T50/T60/GC PRO 스펙 그룹 데이터 ──
+const productSpecGroups = {
+    t50: [
+        {
+            name: 'T50 HF', price: 279000,
+            colors: [
+                { name: '웜그레이/블랙', code: '#7a7570', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_451M_00_b597eb10-a027-4684-b5ea-cf285374328a.jpg' },
+                { name: '차콜/블랙',     code: '#4a4a4a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_456_00_4127c527-1aea-475f-af51-1b3c9dc0a4d0.jpg' },
+                { name: '딥그린/블랙',   code: '#2e4039', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_457B_00_b9683a91-1903-4b0f-81bb-eaa41c305f1b.jpg' },
+            ]
+        },
+        {
+            name: 'T50 HDA', price: 329000,
+            colors: [
+                { name: '웜그레이/화이트', code: '#b5afa8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_451M_00_119c3bd8-ab67-4b78-b389-faf47f9dcc1b.jpg' },
+                { name: '딥그린/화이트',   code: '#4a6055', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_457B_00_558fdde2-9bb2-4f9d-89c8-c8b59dee08c1.jpg' },
+                { name: '아이보리/화이트', code: '#f0ece0', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HLDA_452M_00.jpg' },
+                { name: '코랄/화이트',     code: '#e87b6a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HLDA_458D_00.jpg' },
+                { name: '웜그레이/블랙',   code: '#7a7570', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_451M_00_b597eb10-a027-4684-b5ea-cf285374328a.jpg' },
+                { name: '차콜/블랙',       code: '#4a4a4a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_456_00_4127c527-1aea-475f-af51-1b3c9dc0a4d0.jpg' },
+                { name: '딥그린/블랙',     code: '#2e4039', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_457B_00_b9683a91-1903-4b0f-81bb-eaa41c305f1b.jpg' },
+            ]
+        },
+        {
+            name: 'T50 HLDA', price: 359000,
+            colors: [
+                { name: '웜그레이/화이트', code: '#b5afa8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_451M_00_119c3bd8-ab67-4b78-b389-faf47f9dcc1b.jpg' },
+                { name: '딥그린/화이트',   code: '#4a6055', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_457B_00_558fdde2-9bb2-4f9d-89c8-c8b59dee08c1.jpg' },
+                { name: '아이보리/화이트', code: '#f0ece0', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HLDA_452M_00.jpg' },
+                { name: '코랄/화이트',     code: '#e87b6a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HLDA_458D_00.jpg' },
+                { name: '웜그레이/블랙',   code: '#7a7570', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_451M_00_b597eb10-a027-4684-b5ea-cf285374328a.jpg' },
+                { name: '차콜/블랙',       code: '#4a4a4a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_456_00_4127c527-1aea-475f-af51-1b3c9dc0a4d0.jpg' },
+                { name: '딥그린/블랙',     code: '#2e4039', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_457B_00_b9683a91-1903-4b0f-81bb-eaa41c305f1b.jpg' },
+            ]
+        },
+        {
+            name: 'T50 AIR', price: 389000,
+            colors: [
+                { name: '그레이/화이트', code: '#9a9a9a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_451M_00_119c3bd8-ab67-4b78-b389-faf47f9dcc1b.jpg' },
+                { name: '블루/화이트',   code: '#4a70a8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_451M_00_119c3bd8-ab67-4b78-b389-faf47f9dcc1b.jpg' },
+                { name: '블랙/화이트',   code: '#3a3a3a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNF500HLDA_451M_00_119c3bd8-ab67-4b78-b389-faf47f9dcc1b.jpg' },
+                { name: '그레이/블랙',   code: '#6a6a6a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_451M_00_b597eb10-a027-4684-b5ea-cf285374328a.jpg' },
+                { name: '블루/블랙',     code: '#2a4a80', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_451M_00_b597eb10-a027-4684-b5ea-cf285374328a.jpg' },
+                { name: '블랙/블랙',     code: '#1a1a1a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_456_00_4127c527-1aea-475f-af51-1b3c9dc0a4d0.jpg' },
+            ]
+        },
+    ],
+    t60: [
+        {
+            name: 'T60', price: 399000,
+            colors: [
+                { name: '라이트그레이 (헤드레스트)', code: '#c8c4be', price: 429000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_136f6080-f74c-471c-a0f4-5c92311d177c.jpg' },
+                { name: '그레이 (헤드레스트)',       code: '#8c8c8c', price: 429000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00.jpg' },
+                { name: '차콜 (헤드레스트)',         code: '#4a4a4a', price: 429000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00.jpg' },
+                { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 399000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg' },
+            ]
+        },
+        {
+            name: 'T60 AIR', price: 429000,
+            colors: [
+                { name: '라이트그레이 (헤드레스트)', code: '#c8c4be', price: 444000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_136f6080-f74c-471c-a0f4-5c92311d177c.jpg' },
+                { name: '그레이 (헤드레스트)',       code: '#8c8c8c', price: 444000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00.jpg' },
+                { name: '차콜 (헤드레스트)',         code: '#4a4a4a', price: 444000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00.jpg' },
+                { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 429000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg' },
+            ]
+        },
+    ],
+    gcpro: [
+        {
+            name: 'GC PRO 일반', price: 690000,
+            colors: [
+                { name: '블랙블루',   code: '#1a2a4a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A446BK_00_b0917b9b-a15b-4865-b28a-0b0078b26465.jpg' },
+                { name: '그레이레드', code: '#6a4040', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A441QW_00_e08ca92b-5dde-4b28-9e1d-a43b99491eb2.jpg' },
+            ]
+        },
+        {
+            name: 'GC PRO 쿨링', price: 790000,
+            colors: [
+                { name: '블랙블루',   code: '#1a2a4a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A446BK_00_b0917b9b-a15b-4865-b28a-0b0078b26465.jpg' },
+                { name: '그레이레드', code: '#6a4040', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A441QW_00_e08ca92b-5dde-4b28-9e1d-a43b99491eb2.jpg' },
+            ]
+        },
+        {
+            name: 'GC PRO 풀사양', price: 860000,
+            colors: [
+                { name: '블랙블루',   code: '#1a2a4a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A446BK_00_b0917b9b-a15b-4865-b28a-0b0078b26465.jpg' },
+                { name: '그레이레드', code: '#6a4040', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_G100HDAWJ_A441QW_00_e08ca92b-5dde-4b28-9e1d-a43b99491eb2.jpg' },
+            ]
+        },
+        {
+            name: '토트넘 GC PRO', price: 750000,
+            colors: [
+                { name: '프레스 컨퍼런스', code: '#132340', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GC_PRO_Tott_00_865bda6f-4c92-4a6a-952e-5ec591565ab8.jpg' },
+            ]
+        },
+    ],
+};
+
 // ── 컬러 데이터 (kr.sidiz.com CDN 실제 URL) ──
 const productColors = {
     t50: [
@@ -5356,10 +5464,12 @@ const productColors = {
         { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 399000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg' },
     ],
     t80: [
-        { name: '차콜/블랙 (메쉬)',    code: '#4a4a4a', price: 619000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_456BK_00.jpg' },
-        { name: '라이트그레이 (메쉬)', code: '#c8c4be', price: 619000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_451NWW_00_a71f85e4-a460-4238-9460-bdeb63320686.jpg' },
-        { name: '블랙 (천연가죽)',     code: '#1a1a1a', price: 724000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L946BK_00_4f62cd85-61d1-417a-b1aa-aa171da3cb6e.jpg' },
-        { name: '크림 (천연가죽)',     code: '#f5f0e0', price: 724000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L941LW_00_b999ce29-8ca0-473c-bc40-da0c434e0772.jpg' },
+        { name: '차콜/블랙 (메쉬)',       code: '#4a4a4a', price: 619000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_456BK_00.jpg' },
+        { name: '라이트그레이 (메쉬)',    code: '#c8c4be', price: 619000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_451NWW_00_a71f85e4-a460-4238-9460-bdeb63320686.jpg' },
+        { name: '블랙 (메쉬/천연가죽)',   code: '#1a1a1a', price: 724000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L946BK_00_4f62cd85-61d1-417a-b1aa-aa171da3cb6e.jpg' },
+        { name: '크림 (메쉬/천연가죽)',   code: '#f5f0e8', price: 724000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L941LW_00_b999ce29-8ca0-473c-bc40-da0c434e0772.jpg' },
+        { name: '블랙 (천연가죽)', code: '#111111', price: 789000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L946BK_00_4f62cd85-61d1-417a-b1aa-aa171da3cb6e.jpg' },
+        { name: '크림 (천연가죽)', code: '#f5f0e8', price: 789000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T80_T80HLDA1KK_L941LW_00_b999ce29-8ca0-473c-bc40-da0c434e0772.jpg' },
     ],
     t90: [
         { name: '그레이 (더블라셀)',         code: '#8c8c8c', price: 999000,  img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T90_T90HLDA1KK_4B1LMN_00_5fa353f4-3398-4a37-843a-a67954b9025e.jpg' },
@@ -5378,6 +5488,7 @@ const productColors = {
         { name: '오프화이트', code: '#f0ede4', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_O-White_00.jpg' },
         { name: '미드그레이', code: '#8c8c8c', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_M-Gray_00.jpg' },
         { name: '스모크블랙', code: '#3a3a3a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_S-Black_00.jpg' },
+        { name: '토트넘 코커렐', code: '#7b2d8b', price: 229000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_O-White_00.jpg' },
     ],
     linie: [
         { name: '웜그레이/화이트(플렉스)', code: '#b5afa8', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_LINIE_TXNA250NF_451M_00_f0a84914-e6b8-492e-8ecd-f841c66c5b16.jpg' },
@@ -5492,13 +5603,12 @@ const products = {
     t80: {
         name: 'T80',
         tagline: '최상의 편안함, Ultimate Comfort',
-        desc: '독일 디자인 스튜디오와 협업한 시디즈의 플래그십 라인. 얼티메이트 싱크 틸팅과 메모리폼 좌판, 4D 조절형 암레스트까지 — 프리미엄 소재와 기술의 집약체입니다. 최고의 앉음 경험을 추구하는 분들을 위한 의자입니다.',
+        desc: '독일 디자인 스튜디오와 협업한 시디즈의 플래그십 라인. 얼티메이트 싱크 틸팅과 메모리폼 좌판, 프리미엄 소재와 기술의 집약체입니다. 최고의 앉음 경험을 추구하는 분들을 위한 의자입니다.',
         price: '619,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_456BK_00.jpg',
         features: [
             { icon: '💎', title: '얼티메이트 싱크 틸팅', desc: '시디즈 최상위 틸팅 기술로, 어떤 자세에서도 균형 잡힌 지지력을 제공합니다.' },
             { icon: '🧠', title: '메모리폼 좌판', desc: '체압을 분산시켜 장시간 착석 시에도 엉덩이와 허벅지의 피로를 줄여줍니다.' },
-            { icon: '🖐️', title: '4D 암레스트', desc: '높이, 각도, 좌우, 앞뒤 4방향으로 조절 가능한 프리미엄 암레스트입니다.' },
             { icon: '✨', title: '프리미엄 마감', desc: '알루미늄 다이캐스팅 베이스, 고급 원단 적용으로 견고함과 고급스러움을 동시에.' }
         ],
         tags: ['프리미엄', '임원용', '홈오피스', '장시간 업무'],
@@ -5506,8 +5616,8 @@ const products = {
     t20: {
         name: 'T20',
         tagline: '합리적인 가격, 핵심 인체공학',
-        desc: '시디즈의 인체공학 노하우를 합리적인 가격대에 담았습니다. 싱크 틸팅과 요추 지지대 등 핵심 기능은 그대로 — 처음 인체공학 의자를 경험하는 분들에게 최적의 선택입니다.',
-        price: '204,000원',
+        desc: '시디즈의 인체공학 노하우를 합리적인 가격대에 담았습니다. 처음 인체공학 의자를 경험하는 분들에게 최적의 선택입니다.',
+        price: '229,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_T20_2_O-White_00_2a3d0ec2-4c05-4243-9e78-b4cda91d0b13.jpg',
         features: [
             { icon: '🔄', title: '싱크 틸팅', desc: '자연스러운 기대기 동작을 지원하는 기본 틸팅 시스템입니다.' },
@@ -5520,13 +5630,11 @@ const products = {
     linie: {
         name: 'LINIE',
         tagline: '디자인과 인체공학의 균형',
-        desc: '미니멀한 외관 속에 시디즈의 인체공학 기술을 담았습니다. 오피스 인테리어와 자연스럽게 어우러지면서도 멀티 싱크 틸팅, 좌판 깊이 조절, 4D 암레스트 등 본질적인 기능은 타협하지 않았습니다.',
+        desc: '미니멀한 외관 속에 시디즈의 인체공학 기술을 담았습니다. 오피스 인테리어와 자연스럽게 어우러지면서도 본질적인 기능은 타협하지 않았습니다.',
         price: '259,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_LINIE_TXNA250NF_451M_00_f0a84914-e6b8-492e-8ecd-f841c66c5b16.jpg',
         features: [
             { icon: '🎨', title: '미니멀 디자인', desc: '군더더기 없는 라인으로 어떤 오피스 공간에도 조화롭게 어울립니다.' },
-            { icon: '🔄', title: '멀티 싱크 틸팅', desc: 'T50과 동일한 멀티 싱크 틸팅으로 편안한 기대기를 지원합니다.' },
-            { icon: '🖐️', title: '4D 암레스트', desc: '4방향 조절 가능한 암레스트로 개인 맞춤 세팅이 가능합니다.' },
             { icon: '🎨', title: '다양한 컬러', desc: '오피스 분위기에 맞춘 다양한 컬러 옵션을 제공합니다.' }
         ],
         tags: ['디자인 중시', '오피스', '인테리어', '미팅룸'],
@@ -5534,11 +5642,11 @@ const products = {
     ible: {
         name: 'IBLE',
         tagline: '집중과 학습을 위한 체어',
-        desc: '집중력을 높이는 약간의 전방 틸팅과, 안정적인 착석감을 위한 틸팅 잠금 기능이 특징입니다. 공부할 때 최적의 자세를 유지할 수 있도록 설계되었습니다.',
+        desc: '집중력을 높이는 고정형 설계로 안정적인 착석감이 특징입니다. 공부할 때 최적의 자세를 유지할 수 있도록 설계되었습니다.',
         price: '179,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_ible_TNB501FE_451M_00_268446e8-bf47-4026-bc32-218d7088b200.jpg',
         features: [
-            { icon: '📚', title: '학습 최적화 설계', desc: '집중 자세를 유도하는 전방 틸팅과 안정적인 잠금 기능을 제공합니다.' },
+            { icon: '📚', title: '학습 최적화 설계', desc: '집중 자세를 유도하는 안정적인 고정형 설계를 제공합니다.' },
             { icon: '🦴', title: '요추 지지대', desc: '장시간 공부 시 허리 피로를 줄여주는 요추 서포트입니다.' },
             { icon: '✅', title: '검증된 품질', desc: '국내 주요 교육기관과 도서관에 납품된 검증된 학습 의자입니다.' },
             { icon: '🧼', title: '쉬운 관리', desc: '학습 환경에 최적화된 내구성 높은 소재로 관리가 편합니다.' }
@@ -5562,11 +5670,10 @@ const products = {
     gx: {
         name: 'GX',
         tagline: '게이밍 디자인 × 시디즈 인체공학',
-        desc: '게이밍 감성과 시디즈의 인체공학 기술을 결합한 모델입니다. 쿨링시트로 장시간 플레이에도 쾌적함을 유지하고, 조절형 팔걸이와 좌판 깊이 조절로 게임에 최적화된 자세를 잡을 수 있습니다.',
-        price: '299,000원',
+        desc: '게이밍 감성과 시디즈의 인체공학 기술을 결합한 모델입니다. 조절형 팔걸이와 좌판 깊이 조절로 게임에 최적화된 자세를 잡을 수 있습니다.',
+        price: '379,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_GX_G20HDA0KK_CM9WW_00_6aa397d4-e469-4d4a-86f7-d577fba46d88.jpg',
         features: [
-            { icon: '❄️', title: '쿨링시트', desc: '통기성이 뛰어난 쿨링시트로 장시간 게임 중에도 쾌적한 착석감을 유지합니다.' },
             { icon: '🖥️', title: '게이밍 최적화 자세', desc: '리미티드 틸팅과 좌판 조절로 모니터와 컨트롤러에 최적화된 자세를 만들어 줍니다.' },
             { icon: '🖐️', title: '3D 조절형 팔걸이', desc: '상하·좌우·앞뒤 조절이 가능해 게임 컨트롤러 사용에도 편안합니다.' },
             { icon: '🎮', title: '게이밍 디자인', desc: '블랙블루, 그레이레드 등 게이밍 감성의 컬러라인업을 제공합니다.' }
@@ -5731,7 +5838,7 @@ const products = {
         name: 'PILLO',
         tagline: '건강한 좌식 생활의 시작',
         desc: '방바닥에 앉을 때 척추와 골반을 올바른 위치로 유지해주는 좌식 방석입니다. 인체공학적 설계로 장시간 바닥 생활에서도 피로를 최소화합니다.',
-        price: '89,000원',
+        price: '99,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_PILLO_M090_831A_00.jpg',
         features: [
             { icon: '🧘', title: '좌식 인체공학', desc: '바닥에 앉을 때 골반과 척추를 올바른 위치로 자연스럽게 유도합니다.' },
@@ -5963,6 +6070,13 @@ function switchDetailTab(panelId, btn) {
     btn.classList.add('active');
 }
 
+// ── 쿠폰 적용 불가 항목 ──
+const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','fungus','stepo','pillo','olly','atti']);
+
+// ── SPEC SELECTOR STATE ──
+const _currentSpec = {};
+const _currentSpecColors = {};
+
 // ── DETAIL COUPON STATE ──
 let detailCouponState = { applied: false, productId: null };
 
@@ -5988,7 +6102,7 @@ function toggleDetailCoupon(productId) {
 
 // ── DETAIL COLOR SWITCH ──
 function switchDetailColor(productId, idx) {
-    const colors = productColors[productId];
+    const colors = _currentSpecColors[productId] || productColors[productId];
     if (!colors || !colors[idx]) return;
     const c = colors[idx];
     // 이미지 변경
@@ -6019,17 +6133,95 @@ function switchDetailColor(productId, idx) {
     }
 }
 
+// ── SPEC SELECTOR ──
+function switchDetailSpec(productId, specIdx) {
+    _currentSpec[productId] = specIdx;
+    const specs = productSpecGroups[productId];
+    if (!specs) return;
+    const spec = specs[specIdx];
+    const specColors = spec.colors;
+    const firstColor = specColors[0];
+    const hasColorPrice = specColors.some(c => c.price);
+
+    // 스펙 버튼 활성화
+    document.querySelectorAll('.detail-spec-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === specIdx);
+    });
+
+    // 컬러 칩 재생성
+    const colorBarEl = document.querySelector('.detail-color-bar');
+    if (colorBarEl) {
+        colorBarEl.innerHTML = specColors.map((c, i) => `
+            <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
+                <span class="detail-color-dot" style="background:${c.code}"></span>
+                ${c.name}
+            </div>
+        `).join('');
+    }
+
+    // color-cart-row 재생성
+    const colorCartRow = document.querySelector('.color-cart-row');
+    if (colorCartRow && hasColorPrice) {
+        colorCartRow.innerHTML = `
+            <button id="detailColorCartBtn" class="btn-color-cart"
+                style="${firstColor?.price ? '' : 'display:none'}"
+                onclick="addToCart('${productId}', '${firstColor?.name}', ${firstColor?.price || spec.price})">
+                🛒 이 색상으로 담기
+            </button>`;
+    }
+
+    // 가격 업데이트
+    const priceEl = document.getElementById('detailColorPrice');
+    const baseEl = document.getElementById('detailBasePrice');
+    const priceWrap = priceEl?.closest('.price-tag');
+    if (priceEl && firstColor?.price) {
+        priceEl.textContent = firstColor.price.toLocaleString('ko-KR') + '원';
+        priceWrap?.classList.add('detail-price-active');
+    } else if (priceEl) {
+        priceWrap?.classList.remove('detail-price-active');
+    }
+
+    // 메인 이미지 업데이트
+    const imgEl = document.getElementById('detailMainImg');
+    if (imgEl && firstColor?.img) {
+        imgEl.style.backgroundImage = `url('${firstColor.img}')`;
+    }
+
+    // _currentSpecColors 갱신 (switchDetailColor 에서 사용)
+    _currentSpecColors[productId] = specColors;
+}
+
 // ── PRODUCT DETAIL ──
 function showDetail(productId) {
     const p = products[productId];
     if (!p) return;
     detailCouponState = { applied: false, productId };
 
-    // 컬러 데이터
-    const colors = productColors[productId] || [];
+    // 스펙 그룹 또는 단순 컬러 결정
+    const specs = productSpecGroups[productId];
+    const initSpecIdx = _currentSpec[productId] || 0;
+    let colors, specBar;
+    if (specs) {
+        _currentSpec[productId] = initSpecIdx;
+        colors = specs[initSpecIdx].colors;
+        _currentSpecColors[productId] = colors;
+        specBar = `
+        <div class="detail-spec-bar">
+            ${specs.map((s, i) => `
+                <button class="detail-spec-btn ${i === initSpecIdx ? 'active' : ''}"
+                    onclick="switchDetailSpec('${productId}', ${i})">${s.name}</button>
+            `).join('')}
+        </div>`;
+    } else {
+        colors = productColors[productId] || [];
+        _currentSpecColors[productId] = colors;
+        specBar = '';
+    }
+
     const firstColor = colors[0];
     const hasColorPrice = colors.some(c => c.price);
     const colorBar = colors.length > 1 ? `
+        ${specBar}
         <div class="detail-color-bar">
             ${colors.map((c, i) => `
                 <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
@@ -6045,13 +6237,11 @@ function showDetail(productId) {
                 onclick="addToCart('${productId}', '${firstColor?.name}', ${firstColor?.price || 0})">
                 🛒 이 색상으로 담기
             </button>
-        </div>` : ''}` : '';
+        </div>` : ''}` : specBar;
 
-    // 프로모션 미해당 → 쿠폰 UI
-    const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
-    const isPromoItem = promoIds.includes(productId);
+    // 쿠폰 UI
     const basePrice = variantData[productId] ? variantData[productId][0].price : null;
-    const couponUi = !isPromoItem && basePrice ? `
+    const couponUi = !COUPON_NEVER.has(productId) && basePrice ? `
         <div class="detail-coupon-row">
             <span class="coupon-tag">🎁 신규가입 쿠폰 -5,000원</span>
             <button id="detailCouponBtn" class="coupon-apply-btn" onclick="toggleDetailCoupon('${productId}')">쿠폰 적용</button>
@@ -6086,11 +6276,16 @@ function showDetail(productId) {
         <div class="variant-pricing">
             <h3 class="variant-title">옵션 및 가격</h3>
             <div class="variant-table">
-                ${variants.map(v => `
+                ${variants.map(v => v.price ? `
                     <div class="variant-row">
                         <span class="variant-name">${v.name}</span>
                         <span class="variant-price">${fmt(v.price)}</span>
                         <button class="btn-add-cart" onclick="addToCart('${productId}', '${v.name}', ${v.price})">+ 담기</button>
+                    </div>
+                ` : `
+                    <div class="variant-row" style="opacity:0.7">
+                        <span class="variant-name">${v.name}</span>
+                        <span class="variant-price" style="color:var(--text-secondary);font-size:0.8rem">추가 구성품</span>
                     </div>
                 `).join('')}
             </div>
@@ -6191,11 +6386,12 @@ function getBestDiscount(cart) {
     }
     if (groupAmt > 0) candidates.push({ label: groupLabels.join(' / '), amt: groupAmt, type: 'group' });
 
-    // 3) 신규가입 쿠폰 5,000원 (프로모션 미해당 상품에만 적용)
+    // 3) 신규가입 쿠폰 5,000원 (쿠폰 불가 상품 제외)
     if (couponApplied) {
-        const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
-        const nonPromoSubtotal = cart.filter(i => !promoIds.includes(i.productId)).reduce((s, i) => s + i.price * i.qty, 0);
-        if (nonPromoSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
+        const couponEligibleSubtotal = cart
+            .filter(i => !COUPON_NEVER.has(i.productId))
+            .reduce((s, i) => s + i.price * i.qty, 0);
+        if (couponEligibleSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
     }
 
     if (candidates.length === 0) return null;
@@ -6287,9 +6483,8 @@ function renderCartItems() {
     const final = subtotal - discAmt;
     const next = getNextTier(subtotal);
 
-    // 신규가입 쿠폰 적용 가능 여부 (프로모션 미해당 상품이 카트에 있을 때)
-    const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
-    const hasNonPromo = cart.some(i => !promoIds.includes(i.productId));
+    // 신규가입 쿠폰 적용 가능 여부 (쿠폰 불가 상품 제외)
+    const hasNonPromo = cart.some(i => !COUPON_NEVER.has(i.productId));
 
     summaryEl.innerHTML = `
         ${hasNonPromo ? `<div class="coupon-toggle" onclick="toggleCoupon()">
