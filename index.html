@@ -6260,8 +6260,12 @@ function switchDetailColor(productId, idx) {
     const colorCartBtn = document.getElementById('detailColorCartBtn');
     if (colorCartBtn) {
         if (c.price) {
+            const specIdx = _currentSpec[productId];
+            const specName = (productSpecGroups[productId] && specIdx !== undefined)
+                ? productSpecGroups[productId][specIdx]?.name : null;
+            const variantLabel = specName ? `${specName} — ${c.name}` : c.name;
             colorCartBtn.style.display = 'inline-flex';
-            colorCartBtn.onclick = () => addToCart(productId, c.name, c.price);
+            colorCartBtn.onclick = () => addToCart(productId, variantLabel, c.price);
         } else {
             colorCartBtn.style.display = 'none';
         }
@@ -6297,10 +6301,11 @@ function switchDetailSpec(productId, specIdx) {
     // color-cart-row 재생성
     const colorCartRow = document.querySelector('.color-cart-row');
     if (colorCartRow && hasColorPrice) {
+        const vName = `${spec.name} — ${firstColor?.name}`;
         colorCartRow.innerHTML = `
             <button id="detailColorCartBtn" class="btn-color-cart"
                 style="${firstColor?.price ? '' : 'display:none'}"
-                onclick="addToCart('${productId}', '${firstColor?.name}', ${firstColor?.price || spec.price})">
+                onclick="addToCart('${productId}', '${vName}', ${firstColor?.price || spec.price})">
                 🛒 이 색상으로 담기
             </button>`;
     }
@@ -6355,6 +6360,8 @@ function showDetail(productId) {
 
     const firstColor = colors[0];
     const hasColorPrice = colors.some(c => c.price);
+    const initSpecName = specs ? specs[initSpecIdx].name : null;
+    const initVariantName = initSpecName ? `${initSpecName} — ${firstColor?.name}` : firstColor?.name;
     const colorBar = colors.length > 1 ? `
         ${specBar}
         <div class="detail-color-bar">
@@ -6369,7 +6376,7 @@ function showDetail(productId) {
         <div class="color-cart-row">
             <button id="detailColorCartBtn" class="btn-color-cart"
                 style="${firstColor?.price ? '' : 'display:none'}"
-                onclick="addToCart('${productId}', '${firstColor?.name}', ${firstColor?.price || 0})">
+                onclick="addToCart('${productId}', '${initVariantName}', ${firstColor?.price || 0})">
                 🛒 이 색상으로 담기
             </button>
         </div>` : ''}` : specBar;
