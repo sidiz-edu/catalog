@@ -2315,6 +2315,65 @@
             width: 100%; justify-content: center;
             margin-top: 12px; text-decoration: none;
         }
+        /* ── PROMO BANNER (홈 상단) ── */
+        .promo-banner {
+            background: white; border-radius: 20px;
+            padding: 24px 28px; margin-bottom: 32px;
+            border: 1.5px solid #fde8e3; box-shadow: 0 4px 20px rgba(255,107,82,0.08);
+        }
+        .promo-banner-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+        }
+        .promo-banner-title {
+            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800;
+            color: #1a1a1a; display: flex; align-items: center; gap: 10px;
+        }
+        .promo-banner-title .month-chip {
+            background: #ff6b52; color: white; border-radius: 6px;
+            padding: 2px 10px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .promo-rules-strip {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .promo-rule-pill {
+            background: #fef3f1; border: 1px solid #fcd4cc;
+            border-radius: 20px; padding: 5px 12px;
+            font-size: 0.78rem; color: #c0402a; font-weight: 500;
+        }
+        .promo-cards-wrap {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .promo-card {
+            background: var(--warm-gray); border-radius: 14px; padding: 16px;
+            border: 1.5px solid transparent; transition: var(--transition);
+        }
+        .promo-card:hover { border-color: #ff6b52; transform: translateY(-2px); }
+        .promo-card-series {
+            font-size: 0.72rem; font-weight: 700; color: #ff6b52;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+        }
+        .promo-card-name {
+            font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 8px;
+        }
+        .promo-card-desc {
+            font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;
+        }
+        .promo-card-desc b { color: #c0402a; }
+        .promo-card-footer {
+            margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee;
+            font-size: 0.75rem; color: var(--text-secondary);
+        }
+        @media (max-width: 768px) {
+            .promo-cards-wrap { grid-template-columns: 1fr 1fr; }
+            .promo-banner { padding: 18px 16px; }
+        }
+        @media (max-width: 480px) {
+            .promo-cards-wrap { grid-template-columns: 1fr; }
+        }
+
         .coupon-toggle {
             display: flex; align-items: center; gap: 8px;
             background: #f0fdf4; border: 1px solid #bbf7d0;
@@ -2642,6 +2701,75 @@
 
 <!-- ──────── PRODUCTS ──────── -->
 <div id="products" class="section active">
+
+    <!-- 이달의 행사 배너 -->
+    <div class="promo-banner">
+        <div class="promo-banner-header">
+            <div class="promo-banner-title">
+                <span class="month-chip">5월 행사</span>
+                이달의 행사 &amp; 쿠폰
+            </div>
+        </div>
+        <div class="promo-rules-strip">
+            <span class="promo-rule-pill">📌 쿠폰 기준가: 온라인 행사가</span>
+            <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
+        </div>
+        <div class="promo-cards-wrap">
+            <!-- 신규가입 -->
+            <div class="promo-card">
+                <div class="promo-card-series">전 시리즈</div>
+                <div class="promo-card-name">신규회원 가입</div>
+                <div class="promo-card-desc">신규 회원 가입 시<br><b>5,000원</b> 할인 쿠폰 지급</div>
+                <div class="promo-card-footer">장바구니에서 적용 가능</div>
+            </div>
+            <!-- 5월 가정의달 -->
+            <div class="promo-card">
+                <div class="promo-card-series">전 시리즈 · 5월 가정의달</div>
+                <div class="promo-card-name">금액대 기본 할인</div>
+                <div class="promo-card-desc">
+                    30만원 이상 <b>3%</b><br>
+                    50만원 이상 <b>5%</b><br>
+                    70만원 이상 <b>7%</b>
+                </div>
+                <div class="promo-card-footer">주문 금액 기준 자동 적용</div>
+            </div>
+            <!-- 예쁜 의자도 시디즈 -->
+            <div class="promo-card">
+                <div class="promo-card-series">리빙다이닝 · 라이트워크</div>
+                <div class="promo-card-name">예쁜 의자도 시디즈</div>
+                <div class="promo-card-desc">
+                    트레보 / 마네 / 위 / 플릿<br>
+                    뮤브 / 에가 / 버튼 / 리니에<br>
+                    <b>1개 3% · 2개 이상 5%</b><br>
+                    <span style="color:#ff6b52">리빙다이닝 4개 이상 10%</span>
+                </div>
+                <div class="promo-card-footer">수량 기준 자동 적용</div>
+            </div>
+            <!-- 혜택 더하기 -->
+            <div class="promo-card">
+                <div class="promo-card-series">전 시리즈 · 혜택 더하기</div>
+                <div class="promo-card-name">고액 구매 추가 할인</div>
+                <div class="promo-card-desc">
+                    150만원 이상 <b>10%</b><br>
+                    300만원 이상 <b>13%</b><br>
+                    500만원 이상 <b>15%</b>
+                </div>
+                <div class="promo-card-footer">주문 금액 기준 자동 적용</div>
+            </div>
+            <!-- 아띠/트레보 세트 -->
+            <div class="promo-card">
+                <div class="promo-card-series">아띠 세트 · 트레보 세트</div>
+                <div class="promo-card-name">세트 구매 특별 할인</div>
+                <div class="promo-card-desc">
+                    단품 구매 <b>5%</b><br>
+                    세트 구매 <b>8%</b><br>
+                    <span style="font-size:0.75rem;color:var(--text-secondary)">아띠 의자+책상 · 트레보+커버</span>
+                </div>
+                <div class="promo-card-footer">장바구니 구성 자동 판단</div>
+            </div>
+        </div>
+    </div>
+
     <div class="section-label">PRODUCT LINEUP</div>
     <div class="section-title" data-editable data-key="sec-products-title" contenteditable="false">제품 라인업</div>
     <div class="section-desc" data-editable data-key="sec-products-desc" contenteditable="false">시디즈의 대표 제품을 한눈에 만나보세요. 각 모델을 탭하면 상세 정보를 확인할 수 있습니다.</div>
@@ -4991,22 +5119,39 @@ const DISCOUNT_TIERS = [
     { min: 300000,  rate: 0.03, label: '30만원 이상' },
 ];
 
-// 그룹별 수량 프로모션
+// 그룹별 수량 프로모션 (예쁜 의자도 시디즈 + 세트 할인)
 const GROUP_PROMOS = {
     lightwork: {
         ids: ['muuve', 'ega', 'button', 'linie'],
-        label: '라이트워크 구매 할인',
+        label: '예쁜 의자도 시디즈 (라이트워크)',
         tiers: [
             { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
-            { minQty: 1, rate: 0.03, desc: '1개 구매 3%' },
+            { minQty: 1, rate: 0.03, desc: '1개 3%' },
         ]
     },
     living: {
         ids: ['trevo', 'oui', 'mane', 'plit'],
-        label: '리빙/스터디 구매 할인',
+        label: '예쁜 의자도 시디즈 (리빙다이닝)',
         tiers: [
             { minQty: 4, rate: 0.10, desc: '4개 이상 10%' },
             { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
+            { minQty: 1, rate: 0.03, desc: '1개 3%' },
+        ]
+    },
+    attiSet: {
+        ids: ['molti', 'atti'],
+        label: '아띠 세트 할인',
+        tiers: [
+            { minQty: 2, rate: 0.08, desc: '세트(의자+책상) 8%' },
+            { minQty: 1, rate: 0.05, desc: '단품 5%' },
+        ]
+    },
+    trevoSet: {
+        ids: ['trevo', 'coverTrevo'],
+        label: '트레보 세트 할인',
+        tiers: [
+            { minQty: 2, rate: 0.08, desc: '세트(트레보+커버) 8%' },
+            { minQty: 1, rate: 0.05, desc: '단품 5%' },
         ]
     },
 };
@@ -5745,7 +5890,7 @@ function showDetail(productId) {
         </div>` : '';
 
     // 프로모션 미해당 → 쿠폰 UI
-    const promoIds = [...GROUP_PROMOS.lightwork.ids, ...GROUP_PROMOS.living.ids];
+    const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
     const isPromoItem = promoIds.includes(productId);
     const basePrice = variantData[productId] ? variantData[productId][0].price : null;
     const couponUi = !isPromoItem && basePrice ? `
@@ -5887,10 +6032,7 @@ function getBestDiscount(cart) {
 
     // 3) 신규가입 쿠폰 5,000원 (프로모션 미해당 상품에만 적용)
     if (couponApplied) {
-        const promoIds = [
-            ...GROUP_PROMOS.lightwork.ids,
-            ...GROUP_PROMOS.living.ids,
-        ];
+        const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
         const nonPromoSubtotal = cart.filter(i => !promoIds.includes(i.productId)).reduce((s, i) => s + i.price * i.qty, 0);
         if (nonPromoSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
     }
@@ -5982,7 +6124,7 @@ function renderCartItems() {
     const next = getNextTier(subtotal);
 
     // 신규가입 쿠폰 적용 가능 여부 (프로모션 미해당 상품이 카트에 있을 때)
-    const promoIds = [...GROUP_PROMOS.lightwork.ids, ...GROUP_PROMOS.living.ids];
+    const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
     const hasNonPromo = cart.some(i => !promoIds.includes(i.productId));
 
     summaryEl.innerHTML = `
