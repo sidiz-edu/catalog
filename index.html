@@ -2381,6 +2381,20 @@
             cursor: pointer; font-size: 0.85rem; color: #166534;
         }
         .coupon-check { font-size: 1.1rem; }
+        /* ── 견적 링크 ── */
+        .quote-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 24px 0; border-top: 1px solid #f0f0f0; margin-top: 8px;
+        }
+        .quote-btn {
+            flex: 1; background: #1a1a2e; color: white; border: none;
+            border-radius: 10px; padding: 10px; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: var(--transition);
+        }
+        .quote-btn:hover { background: var(--sidiz-navy); }
+        .quote-copied { background: #16a34a !important; }
+
         .coupon-badge {
             background: #16a34a; color: #fff;
             border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; margin-left: 4px;
@@ -4576,17 +4590,31 @@ function renderStoresSection(storeIds) {
     }
 }
 
+// 가격대 문자열 자동 생성 헬퍼
+function priceLabel(id) {
+    const r = (() => {
+        const vd = variantData[id];
+        if (!vd || !vd.length) return null;
+        const prices = vd.map(v => v.price);
+        return { min: Math.min(...prices), max: Math.max(...prices) };
+    })();
+    if (!r) return '—';
+    const min = Math.round(r.min / 10000);
+    const max = Math.round(r.max / 10000);
+    return min === max ? `${min}만원` : `${min}~${max}만원`;
+}
+
 const compareData = {
     ringo2: {
         label: 'RINGO 2', badge: '',
-        포지셔닝: '어린이 성장의자', 가격대: '18만원', 틸팅방식: '고정형',
+        포지셔닝: '어린이 성장의자', 가격대: priceLabel('ringo2'), 틸팅방식: '고정형',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '그로잉·발받침', 추천대상: '초등학생',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     t20: {
         label: 'T20', badge: '',
-        포지셔닝: '입문/가성비', 가격대: '27만원', 틸팅방식: '싱크 틸팅',
+        포지셔닝: '입문/가성비', 가격대: priceLabel('t20'), 틸팅방식: '싱크 틸팅',
         요추지지대: true, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: '별도 옵션', 특수기능: '—', 추천대상: '입문자',
         메쉬명칭: '—', 자재코드: '4X',
@@ -4596,7 +4624,7 @@ const compareData = {
     },
     ible: {
         label: 'IBLE', badge: '',
-        포지셔닝: '학습 전용', 가격대: '34만원', 틸팅방식: '틸팅 잠금',
+        포지셔닝: '학습 전용', 가격대: priceLabel('ible'), 틸팅방식: '틸팅 잠금',
         요추지지대: true, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '전방 틸팅', 추천대상: '수험생·대학생',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
@@ -4606,7 +4634,7 @@ const compareData = {
     },
     gx: {
         label: 'GX', badge: '',
-        포지셔닝: '게이밍', 가격대: '39만원', 틸팅방식: '리미티드 틸팅',
+        포지셔닝: '게이밍', 가격대: priceLabel('gx'), 틸팅방식: '리미티드 틸팅',
         요추지지대: false, 좌판깊이조절: true, '4D암레스트': false,
         헤드레스트: true, 특수기능: '쿨링시트', 추천대상: '게이머',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
@@ -4616,7 +4644,7 @@ const compareData = {
     },
     gcpro: {
         label: 'GC PRO', badge: '',
-        포지셔닝: '프로 게이밍', 가격대: '69만원', 틸팅방식: '리클라이닝',
+        포지셔닝: '프로 게이밍', 가격대: priceLabel('gcpro'), 틸팅방식: '리클라이닝',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': false,
         헤드레스트: true, 특수기능: '쿨링시트·천연가죽', 추천대상: '프로·헤비 게이머',
         메쉬명칭: '—', 자재코드: 'KATE',
@@ -4626,7 +4654,7 @@ const compareData = {
     },
     t50: {
         label: 'T50', badge: '',
-        포지셔닝: '올라운더', 가격대: '44만원', 틸팅방식: '멀티 싱크',
+        포지셔닝: '올라운더', 가격대: priceLabel('t50'), 틸팅방식: '멀티 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': false,
         헤드레스트: true, 특수기능: '멀티 리미티드', 추천대상: '직장인·범용',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
@@ -4636,7 +4664,7 @@ const compareData = {
     },
     t60: {
         label: 'T60', badge: 'NEW',
-        포지셔닝: '퍼스널 피팅', 가격대: '59만원', 틸팅방식: '리미티드 싱크',
+        포지셔닝: '퍼스널 피팅', 가격대: priceLabel('t60'), 틸팅방식: '리미티드 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': false,
         헤드레스트: true, 특수기능: '인피니핏 헤드레스트', 추천대상: '재택·사무 직장인',
         메쉬명칭: '에어플렉스 메쉬', 자재코드: '5HX',
@@ -4646,7 +4674,7 @@ const compareData = {
     },
     linie: {
         label: 'LINIE', badge: '',
-        포지셔닝: '디자인', 가격대: '59만원', 틸팅방식: '멀티 싱크',
+        포지셔닝: '디자인', 가격대: priceLabel('linie'), 틸팅방식: '멀티 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '다양한 컬러', 추천대상: '디자인 중시',
         메쉬명칭: '—', 자재코드: '45X',
@@ -4656,7 +4684,7 @@ const compareData = {
     },
     t80: {
         label: 'T80', badge: '',
-        포지셔닝: '프리미엄', 가격대: '89만원', 틸팅방식: '얼티메이트 싱크',
+        포지셔닝: '프리미엄', 가격대: priceLabel('t80'), 틸팅방식: '얼티메이트 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '천연가죽 옵션', 추천대상: '프리미엄 추구',
         메쉬명칭: '—', 자재코드: 'N42X',
@@ -4666,7 +4694,7 @@ const compareData = {
     },
     t90: {
         label: 'T90', badge: '플래그십',
-        포지셔닝: '최상위 플래그십', 가격대: '129만원', 틸팅방식: '플렉서블 싱크',
+        포지셔닝: '최상위 플래그십', 가격대: priceLabel('t90'), 틸팅방식: '플렉서블 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '퍼펙트 피팅 럼버', 추천대상: '최고를 원하는 분',
         메쉬명칭: '더블라셀 메쉬', 자재코드: 'RE GROVE',
@@ -4677,7 +4705,7 @@ const compareData = {
     // ── 스터디 ──
     trevo: {
         label: 'TREVO', badge: '',
-        포지셔닝: '스터디', 가격대: '12만원', 틸팅방식: '전방 틸팅',
+        포지셔닝: '스터디', 가격대: priceLabel('trevo'), 틸팅방식: '전방 틸팅',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '착탈식 커버', 추천대상: '수험생·초등학생',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
@@ -4685,21 +4713,21 @@ const compareData = {
     // ── 라이트워크 ──
     button: {
         label: 'BUTTON', badge: '',
-        포지셔닝: '라이트워크', 가격대: '12만원~', 틸팅방식: '—',
+        포지셔닝: '라이트워크', 가격대: priceLabel('button'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '8가지 조합', 추천대상: '홈오피스·회의실',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     muuve: {
         label: 'MUUVE', badge: '',
-        포지셔닝: '홈오피스·다이닝', 가격대: '17만원', 틸팅방식: '—',
+        포지셔닝: '홈오피스·다이닝', 가격대: priceLabel('muuve'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '미니멀 디자인', 추천대상: '홈오피스·다이닝',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     ega: {
         label: 'EGA', badge: '',
-        포지셔닝: '라이트워크', 가격대: '17만원~', 틸팅방식: '—',
+        포지셔닝: '라이트워크', 가격대: priceLabel('ega'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '다양한 다리 옵션', 추천대상: '오피스·홈',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
@@ -4707,21 +4735,21 @@ const compareData = {
     // ── 리빙다이닝 ──
     mane: {
         label: 'MANE', badge: '',
-        포지셔닝: '리빙다이닝', 가격대: '6만원~', 틸팅방식: '—',
+        포지셔닝: '리빙다이닝', 가격대: priceLabel('mane'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '인조가죽·플라스틱', 추천대상: '다이닝·카페',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     plit: {
         label: 'PLIT', badge: '',
-        포지셔닝: '식탁의자', 가격대: '9만원', 틸팅방식: '—',
+        포지셔닝: '식탁의자', 가격대: priceLabel('plit'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '쉘 디자인·착탈 커버', 추천대상: '다이닝·인테리어',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     oui: {
         label: 'OUI', badge: '',
-        포지셔닝: '바스툴', 가격대: '14만원~', 틸팅방식: '—',
+        포지셔닝: '바스툴', 가격대: priceLabel('oui'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '550·680mm 높이', 추천대상: '아일랜드·카페',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
@@ -4729,28 +4757,28 @@ const compareData = {
     // ── 싯부스터 ──
     fungus: {
         label: 'FUNGUS', badge: '',
-        포지셔닝: '싯부스터', 가격대: '9만원~', 틸팅방식: '경사형',
+        포지셔닝: '싯부스터', 가격대: priceLabel('fungus'), 틸팅방식: '경사형',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '골반 교정', 추천대상: '자세교정·재택',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     stepo: {
         label: 'STEPO', badge: '',
-        포지셔닝: '풋레스트', 가격대: '5만원~', 틸팅방식: '—',
+        포지셔닝: '풋레스트', 가격대: priceLabel('stepo'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '발목 피로 감소', 추천대상: '수험생·직장인',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     pillo: {
         label: 'PILLO', badge: '',
-        포지셔닝: '좌식 방석', 가격대: '8만원', 틸팅방식: '경사형',
+        포지셔닝: '좌식 방석', 가격대: priceLabel('pillo'), 틸팅방식: '경사형',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '좌식 인체공학', 추천대상: '좌식생활',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     olly: {
         label: 'OLLY', badge: '토트넘',
-        포지셔닝: '휴대용 방석', 가격대: '3만원', 틸팅방식: '—',
+        포지셔닝: '휴대용 방석', 가격대: priceLabel('olly'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '접이식·야외', 추천대상: '피크닉·야외',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
@@ -4758,14 +4786,14 @@ const compareData = {
     // ── 그로잉 ──
     molti: {
         label: 'MOLTI', badge: '',
-        포지셔닝: '3in1 베이비체어', 가격대: '25만원~', 틸팅방식: '—',
+        포지셔닝: '3in1 베이비체어', 가격대: priceLabel('molti'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '3단계 변신·KC인증', 추천대상: '신생아·유아',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     atti: {
         label: 'ATTI', badge: '',
-        포지셔닝: '어린이 책상·의자', 가격대: '6만원~', 틸팅방식: '—',
+        포지셔닝: '어린이 책상·의자', 가격대: priceLabel('atti'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '세트 할인 8%', 추천대상: '초등학생',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
@@ -4850,20 +4878,12 @@ function toggleCompareChip(id, chip) {
     renderCompareTable();
 }
 
-// 가격 문자열 → 숫자 변환
-// 제품별 실제 가격 범위 (공식몰 + 다나와 기준, 단위: 원)
-const priceRanges = {
-    ringo2: { min: 189000, max: 249000 },
-    t20:    { min: 180000, max: 250000 },
-    ible:   { min: 184000, max: 340000 },
-    gx:     { min: 390000, max: 490000 },
-    gcpro:  { min: 590000, max: 690000 },
-    t50:    { min: 359000, max: 489000 },
-    t60:    { min: 419000, max: 599000 },
-    linie:  { min: 490000, max: 680000 },
-    t80:    { min: 629000, max: 829000 },
-    t90:    { min: 999000, max: 1290000 },
-};
+// 가격 범위: variantData에서 자동 계산 (항상 동기화)
+const priceRanges = {};
+Object.keys(variantData).forEach(id => {
+    const prices = variantData[id].map(v => v.price).filter(Boolean);
+    if (prices.length) priceRanges[id] = { min: Math.min(...prices), max: Math.max(...prices) };
+});
 
 // 5만원 단위 눈금 설정
 const CHART_MIN = 150000;
@@ -4879,46 +4899,59 @@ function renderPriceChart() {
     const barsEl = document.getElementById('priceRangeBars');
     const axisEl = document.getElementById('priceAxis');
     if (selectedModels.length < 2) { chart.style.display = 'none'; return; }
+
+    // 가격 범위 있는 모델만 차트에 표시
+    const chartModels = selectedModels.filter(id => priceRanges[id]);
+    if (chartModels.length < 1) { chart.style.display = 'none'; return; }
     chart.style.display = 'block';
 
-    const chartSpan = CHART_MAX - CHART_MIN;
+    // 선택 모델 기준으로 차트 범위 동적 설정
+    const allMins = chartModels.map(id => priceRanges[id].min);
+    const allMaxs = chartModels.map(id => priceRanges[id].max);
+    const dynMin = Math.max(0, Math.min(...allMins) - 50000);
+    const dynMax = Math.max(...allMaxs) + 50000;
+    const chartSpan = dynMax - dynMin;
 
     // 눈금 생성
     const ticks = [];
-    for (let v = CHART_MIN; v <= CHART_MAX; v += TICK_STEP) ticks.push(v);
-    const tickW = (TICK_STEP / chartSpan * 100).toFixed(4) + '%';
+    const step = chartSpan <= 500000 ? 50000 : chartSpan <= 1000000 ? 100000 : 200000;
+    for (let v = Math.ceil(dynMin / step) * step; v <= dynMax; v += step) ticks.push(v);
 
     axisEl.innerHTML = ticks.map(v =>
         `<span class="price-axis-tick">${formatPrice(v)}</span>`
     ).join('');
 
     // 가격 오름차순 정렬
-    const sorted = [...selectedModels].sort((a, b) =>
-        priceRanges[a].min - priceRanges[b].min
-    );
-
-    barsEl.style.setProperty('--tick-w', tickW);
+    const sorted = [...chartModels].sort((a, b) => priceRanges[a].min - priceRanges[b].min);
 
     barsEl.innerHTML = sorted.map(id => {
         const r = priceRanges[id];
         const d = compareData[id];
-        const leftPct  = ((r.min - CHART_MIN) / chartSpan * 100).toFixed(2);
-        const widthPct = ((r.max - r.min)    / chartSpan * 100).toFixed(2);
-        const isNarrow = (r.max - r.min) < 120000;
+        const leftPct  = ((r.min - dynMin) / chartSpan * 100).toFixed(2);
+        const widthPct = Math.max(2, (r.max - r.min) / chartSpan * 100).toFixed(2);
+        const isNarrow = (r.max - r.min) < chartSpan * 0.1;
+        const samePrice = r.min === r.max;
 
         return `
         <div class="price-row">
             <div class="price-row-label">${d.label}</div>
-            <div class="price-row-track" style="--tick-w:${tickW}">
+            <div class="price-row-track">
                 <div class="price-range-bar${isNarrow ? ' narrow' : ''}"
-                    data-label="${formatPrice(r.min)}~${formatPrice(r.max)}"
                     style="left:${leftPct}%; width:${widthPct}%">
-                    <span class="bar-min">${formatPrice(r.min)}</span>
-                    <span class="bar-max">${formatPrice(r.max)}</span>
+                    ${samePrice
+                        ? `<span class="bar-min">${formatPrice(r.min)}</span>`
+                        : `<span class="bar-min">${formatPrice(r.min)}</span><span class="bar-max">${formatPrice(r.max)}</span>`}
                 </div>
             </div>
         </div>`;
     }).join('');
+
+    // 가격 없는 제품 텍스트로 표시
+    const noPrice = selectedModels.filter(id => !priceRanges[id]);
+    if (noPrice.length) {
+        barsEl.innerHTML += `<div style="font-size:0.78rem;color:var(--text-secondary);padding:4px 0">
+            ${noPrice.map(id => compareData[id].label).join(', ')}: 가격 범위 차트 미지원</div>`;
+    }
 }
 
 function renderCompareTable() {
@@ -6095,11 +6128,14 @@ function renderCartItems() {
     const summaryEl = document.getElementById('cartSummary');
     if (!el) return;
 
+    const quoteBar = document.getElementById('quoteBar');
     if (cart.length === 0) {
         el.innerHTML = '<div class="cart-empty">담긴 상품이 없습니다</div>';
         summaryEl.innerHTML = '';
+        if (quoteBar) quoteBar.style.display = 'none';
         return;
     }
+    if (quoteBar) quoteBar.style.display = 'flex';
 
     el.innerHTML = cart.map(item => `
         <div class="cart-item">
@@ -6165,6 +6201,55 @@ function toggleKakao(el) {
     body.classList.toggle('open');
 }
 
+// ── 견적 링크 ──
+function copyQuoteLink() {
+    if (!cart.length) return;
+    const payload = cart.map(i => ({
+        pid: i.productId, vn: i.variantName, p: i.price, q: i.qty
+    }));
+    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const url = `${location.origin}${location.pathname}?cart=${encoded}`;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('quoteCopyBtn');
+        btn.classList.add('quote-copied');
+        btn.textContent = '✅ 링크 복사 완료!';
+        setTimeout(() => {
+            btn.classList.remove('quote-copied');
+            btn.innerHTML = '🔗 견적 링크 복사';
+        }, 2500);
+    }).catch(() => {
+        // clipboard API 실패 시 prompt fallback
+        prompt('아래 링크를 복사하세요:', url);
+    });
+}
+
+function loadCartFromUrl() {
+    try {
+        const params = new URLSearchParams(location.search);
+        const encoded = params.get('cart');
+        if (!encoded) return;
+        const payload = JSON.parse(decodeURIComponent(atob(encoded)));
+        if (!Array.isArray(payload)) return;
+        cart = [];
+        cartIdCounter = 0;
+        payload.forEach(item => {
+            cart.push({
+                id: cartIdCounter++,
+                productId: item.pid,
+                name: (products[item.pid]?.name) || item.pid,
+                variantName: item.vn,
+                price: item.p,
+                qty: item.q || 1,
+            });
+        });
+        updateCartBadge();
+        renderCartItems();
+        if (cart.length) openCart();
+        // URL 파라미터 제거 (뒤로가기 UX 개선)
+        history.replaceState(null, '', location.pathname);
+    } catch(e) { /* 잘못된 링크 무시 */ }
+}
+
 // ── 카드 컬러 스와치 초기화 ──
 function initCardSwatches() {
     document.querySelectorAll('.product-card[onclick]').forEach(card => {
@@ -6203,8 +6288,11 @@ function switchCardColor(productId, idx, dotEl) {
     if (label) label.textContent = c.name;
 }
 
-// 페이지 로드 시 스와치 초기화
-document.addEventListener('DOMContentLoaded', initCardSwatches);
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    initCardSwatches();
+    loadCartFromUrl();
+});
 
 </script>
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
@@ -6217,6 +6305,11 @@ document.addEventListener('DOMContentLoaded', initCardSwatches);
         <div class="cart-empty">담긴 상품이 없습니다</div>
     </div>
     <div class="cart-summary-wrap" id="cartSummary"></div>
+    <div class="quote-bar" id="quoteBar" style="display:none">
+        <button class="quote-btn" id="quoteCopyBtn" onclick="copyQuoteLink()">
+            🔗 견적 링크 복사
+        </button>
+    </div>
 </div>
 </body>
 </html>
