@@ -167,37 +167,37 @@
             letter-spacing: 0.5px;
         }
 
-        /* ── HERO SEARCH ── */
-        .hero-search-wrap {
-            margin-top: 28px;
+        /* ── PRODUCT SEARCH ── */
+        .product-search-wrap {
             display: flex;
             align-items: center;
             max-width: 480px;
-            background: rgba(255,255,255,0.12);
-            border: 1.5px solid rgba(255,255,255,0.25);
+            background: #fff;
+            border: 1.5px solid #e0e4ef;
             border-radius: 40px;
             padding: 10px 18px;
             gap: 10px;
-            transition: background 0.2s, border-color 0.2s;
+            margin-bottom: 20px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .hero-search-wrap:focus-within {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.5);
+        .product-search-wrap:focus-within {
+            border-color: var(--sidiz-navy);
+            box-shadow: 0 0 0 3px rgba(13,59,255,0.08);
         }
-        .hero-search-icon { color: rgba(255,255,255,0.7); font-size: 1rem; flex-shrink: 0; }
-        .hero-search-input {
+        .hero-search-icon { color: var(--text-secondary); font-size: 1rem; flex-shrink: 0; }
+        .product-search-input {
             flex: 1;
             background: none;
             border: none;
             outline: none;
-            color: #fff;
+            color: var(--text-primary);
             font-size: 0.95rem;
             font-family: 'Noto Sans KR', sans-serif;
         }
-        .hero-search-input::placeholder { color: rgba(255,255,255,0.55); }
+        .product-search-input::placeholder { color: #aab0c0; }
         .hero-search-clear {
             background: none; border: none; cursor: pointer;
-            color: rgba(255,255,255,0.6); font-size: 1rem; padding: 0;
+            color: #aab0c0; font-size: 1rem; padding: 0;
             display: none;
         }
         .hero-search-clear.visible { display: block; }
@@ -2806,14 +2806,6 @@
         <div class="hero-badge" data-editable data-key="hero-badge" contenteditable="false">SITTING EXPERT'S CHOICE</div>
         <h1 data-editable data-key="hero-h1" contenteditable="false">당신의 몸이 기억하는<br>올바른 앉음</h1>
         <p data-editable data-key="hero-p" contenteditable="false">시디즈는 인체공학 연구를 기반으로, 오래 앉아도 편안한 의자를 설계합니다. 나에게 맞는 의자를 찾아보세요.</p>
-        <div class="hero-search-wrap">
-            <span class="hero-search-icon">🔍</span>
-            <input class="hero-search-input" id="heroSearchInput" type="text"
-                placeholder="제품 검색 (예: T50, 트레보, LINIE…)"
-                oninput="heroSearch(this.value)"
-                onkeydown="if(event.key==='Enter')heroSearch(this.value)">
-            <button class="hero-search-clear" id="heroSearchClear" onclick="heroClear()">✕</button>
-        </div>
     </div>
 </div>
 
@@ -2912,6 +2904,15 @@
     <div class="section-label">PRODUCT LINEUP</div>
     <div class="section-title" data-editable data-key="sec-products-title" contenteditable="false">제품 라인업</div>
     <div class="section-desc" data-editable data-key="sec-products-desc" contenteditable="false">시디즈의 대표 제품을 한눈에 만나보세요. 각 모델을 탭하면 상세 정보를 확인할 수 있습니다.</div>
+
+    <div class="product-search-wrap">
+        <span class="hero-search-icon">🔍</span>
+        <input class="product-search-input" id="heroSearchInput" type="text"
+            placeholder="제품 검색 (예: T50, 트레보, LINIE…)"
+            oninput="heroSearch(this.value)"
+            onkeydown="if(event.key==='Enter')heroSearch(this.value)">
+        <button class="hero-search-clear" id="heroSearchClear" onclick="heroClear()">✕</button>
+    </div>
 
     <div class="cat-filter-bar">
         <button class="cat-filter-btn active" data-cat="전체"     onclick="filterProducts('전체')">전체</button>
