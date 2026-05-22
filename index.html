@@ -409,6 +409,15 @@
         }
         .detail-price-active #detailBasePrice { display: none; }
         .detail-price-active #detailColorPrice { display: inline !important; }
+        .color-cart-row { margin: 8px 0 16px; }
+        .btn-color-cart {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--sidiz-coral); color: white;
+            border: none; border-radius: 10px;
+            padding: 10px 20px; font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; transition: opacity 0.15s;
+        }
+        .btn-color-cart:hover { opacity: 0.85; }
 
         /* ── DETAIL TABS ── */
         .detail-tab-nav {
@@ -5993,10 +6002,20 @@ function switchDetailColor(productId, idx) {
     const priceEl = document.getElementById('detailColorPrice');
     const priceWrap = priceEl?.closest('.price-tag');
     if (priceEl && c.price) {
-        priceEl.textContent = fmt(c.price) + '원';
+        priceEl.textContent = fmt(c.price);
         priceWrap?.classList.add('detail-price-active');
     } else if (priceEl) {
         priceWrap?.classList.remove('detail-price-active');
+    }
+    // 색상 담기 버튼 업데이트
+    const colorCartBtn = document.getElementById('detailColorCartBtn');
+    if (colorCartBtn) {
+        if (c.price) {
+            colorCartBtn.style.display = 'inline-flex';
+            colorCartBtn.onclick = () => addToCart(productId, c.name, c.price);
+        } else {
+            colorCartBtn.style.display = 'none';
+        }
     }
 }
 
@@ -6008,6 +6027,8 @@ function showDetail(productId) {
 
     // 컬러 데이터
     const colors = productColors[productId] || [];
+    const firstColor = colors[0];
+    const hasColorPrice = colors.some(c => c.price);
     const colorBar = colors.length > 1 ? `
         <div class="detail-color-bar">
             ${colors.map((c, i) => `
@@ -6016,7 +6037,15 @@ function showDetail(productId) {
                     ${c.name}
                 </div>
             `).join('')}
-        </div>` : '';
+        </div>
+        ${hasColorPrice ? `
+        <div class="color-cart-row">
+            <button id="detailColorCartBtn" class="btn-color-cart"
+                style="${firstColor?.price ? '' : 'display:none'}"
+                onclick="addToCart('${productId}', '${firstColor?.name}', ${firstColor?.price || 0})">
+                🛒 이 색상으로 담기
+            </button>
+        </div>` : ''}` : '';
 
     // 프로모션 미해당 → 쿠폰 UI
     const promoIds = Object.values(GROUP_PROMOS).flatMap(g => g.ids);
