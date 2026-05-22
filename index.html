@@ -4603,16 +4603,14 @@ function renderStoresSection(storeIds) {
 
 // 가격대 문자열 자동 생성 헬퍼
 function priceLabel(id) {
-    const r = (() => {
+    try {
         const vd = variantData[id];
-        if (!vd || !vd.length) return null;
+        if (!vd || !vd.length) return '—';
         const prices = vd.map(v => v.price);
-        return { min: Math.min(...prices), max: Math.max(...prices) };
-    })();
-    if (!r) return '—';
-    const min = Math.round(r.min / 10000);
-    const max = Math.round(r.max / 10000);
-    return min === max ? `${min}만원` : `${min}~${max}만원`;
+        const min = Math.round(Math.min(...prices) / 10000);
+        const max = Math.round(Math.max(...prices) / 10000);
+        return min === max ? `${min}만원` : `${min}~${max}만원`;
+    } catch(e) { return '—'; }
 }
 
 const compareData = {
@@ -4889,12 +4887,8 @@ function toggleCompareChip(id, chip) {
     renderCompareTable();
 }
 
-// 가격 범위: variantData에서 자동 계산 (항상 동기화)
+// 가격 범위: variantData 정의 후 자동 계산 (아래 initPriceData() 에서 채움)
 const priceRanges = {};
-Object.keys(variantData).forEach(id => {
-    const prices = variantData[id].map(v => v.price).filter(Boolean);
-    if (prices.length) priceRanges[id] = { min: Math.min(...prices), max: Math.max(...prices) };
-});
 
 // 5만원 단위 눈금 설정
 const CHART_MIN = 150000;
@@ -5153,6 +5147,17 @@ const variantData = {
         { name: '플릿 커버', price: 22000 },
     ],
 };
+
+// variantData 정의 후 priceRanges + compareData 가격대 자동 계산
+(function initPriceData() {
+    Object.keys(variantData).forEach(id => {
+        const prices = variantData[id].map(v => v.price).filter(Boolean);
+        if (prices.length) priceRanges[id] = { min: Math.min(...prices), max: Math.max(...prices) };
+    });
+    Object.keys(compareData).forEach(id => {
+        if (variantData[id]) compareData[id].가격대 = priceLabel(id);
+    });
+})();
 
 const DISCOUNT_TIERS = [
     { min: 5000000, rate: 0.15, label: '500만원 이상' },
