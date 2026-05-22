@@ -496,14 +496,15 @@
         .acc-card-btn:hover { background: var(--sidiz-navy); color: white; }
 
         /* ── COLOR SWATCH ON CARD ── */
-        .card-color-bar { display: flex; gap: 6px; padding: 10px 20px 16px; align-items: center; }
+        .card-color-bar { display: flex; flex-direction: column; gap: 6px; padding: 10px 20px 16px; }
+        .card-color-dots { display: flex; gap: 6px; align-items: center; }
         .color-dot {
             width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
             border: 2px solid transparent; transition: var(--transition);
             flex-shrink: 0;
         }
         .color-dot.active, .color-dot:hover { border-color: var(--sidiz-navy); transform: scale(1.15); }
-        .color-dot-label { font-size: 0.75rem; color: var(--text-secondary); margin-left: 4px; }
+        .color-dot-label { font-size: 0.75rem; color: var(--text-secondary); }
 
         /* ── COLOR GALLERY IN DETAIL ── */
         .detail-color-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
@@ -6719,13 +6720,14 @@ function initCardSwatches() {
 
         const bar = document.createElement('div');
         bar.className = 'card-color-bar';
-        bar.innerHTML = colors.map((c, i) => `
+        bar.innerHTML = `<div class="card-color-dots">` +
+            colors.map((c, i) => `
             <span class="color-dot ${i === 0 ? 'active' : ''}"
                   style="background:${c.code}"
                   title="${c.name}"
                   onclick="event.stopPropagation(); switchCardColor('${productId}', ${i}, this)">
             </span>`).join('') +
-            `<span class="color-dot-label" id="clabel-${productId}">${colors[0].name}</span>`;
+            `</div><span class="color-dot-label" id="clabel-${productId}">${colors[0].name}</span>`;
         card.appendChild(bar);
     });
 }
