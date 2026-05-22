@@ -2317,61 +2317,102 @@
         }
         /* ── PROMO BANNER (홈 상단) ── */
         .promo-banner {
-            background: white; border-radius: 20px;
-            padding: 24px 28px; margin-bottom: 32px;
-            border: 1.5px solid #fde8e3; box-shadow: 0 4px 20px rgba(255,107,82,0.08);
+            background: linear-gradient(135deg, #fff9f7 0%, #ffffff 60%);
+            border-radius: 24px; padding: 28px;
+            margin-bottom: 32px;
+            border: 1.5px solid #fde8e3;
+            box-shadow: 0 8px 32px rgba(255,107,82,0.09);
         }
-        .promo-banner-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
-        }
+        .promo-banner-header { margin-bottom: 6px; }
         .promo-banner-title {
-            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800;
+            font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800;
             color: #1a1a1a; display: flex; align-items: center; gap: 10px;
         }
         .promo-banner-title .month-chip {
-            background: #ff6b52; color: white; border-radius: 6px;
-            padding: 2px 10px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
+            background: #ff6b52; color: white; border-radius: 8px;
+            padding: 3px 12px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
         }
         .promo-rules-strip {
-            display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+            display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 22px;
         }
         .promo-rule-pill {
             background: #fef3f1; border: 1px solid #fcd4cc;
-            border-radius: 20px; padding: 5px 12px;
-            font-size: 0.78rem; color: #c0402a; font-weight: 500;
+            border-radius: 20px; padding: 5px 14px;
+            font-size: 0.78rem; color: #c0402a; font-weight: 600;
         }
         .promo-cards-wrap {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
         }
         .promo-card {
-            background: var(--warm-gray); border-radius: 14px; padding: 16px;
-            border: 1.5px solid transparent; transition: var(--transition);
+            background: white; border-radius: 18px; padding: 20px 18px;
+            border: 1.5px solid #f0f0f0; transition: all 0.2s ease;
+            position: relative; overflow: hidden;
         }
-        .promo-card:hover { border-color: #ff6b52; transform: translateY(-2px); }
+        .promo-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: var(--pc-accent, #ff6b52);
+            border-radius: 18px 18px 0 0;
+        }
+        .promo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.10);
+            border-color: var(--pc-accent, #ff6b52);
+        }
+        .promo-card-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
         .promo-card-series {
-            font-size: 0.72rem; font-weight: 700; color: #ff6b52;
-            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+            font-size: 0.68rem; font-weight: 700;
+            color: var(--pc-accent, #ff6b52);
+            letter-spacing: 0.5px; margin-bottom: 4px; text-transform: uppercase;
         }
         .promo-card-name {
-            font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 8px;
+            font-weight: 800; font-size: 0.97rem; color: #1a1a1a; margin-bottom: 13px;
         }
         .promo-card-desc {
-            font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;
+            font-size: 0.8rem; color: #555; line-height: 1.75;
         }
-        .promo-card-desc b { color: #c0402a; }
+        .promo-card-desc b { color: #1a1a1a; font-weight: 700; }
+        .promo-rate-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 3px 0;
+        }
+        .promo-rate-row .rate-label { font-size: 0.78rem; color: #777; }
+        .promo-rate-row .rate-val {
+            background: var(--pc-accent, #ff6b52); color: white;
+            font-size: 0.78rem; font-weight: 800; border-radius: 6px;
+            padding: 2px 9px; min-width: 38px; text-align: center;
+        }
         .promo-card-footer {
-            margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee;
-            font-size: 0.75rem; color: var(--text-secondary);
+            margin-top: 14px; padding-top: 10px; border-top: 1px solid #f0f0f0;
+            font-size: 0.72rem; color: #aaa;
         }
-        @media (max-width: 768px) {
+        .promo-card-wide { grid-column: span 2; }
+        .promo-wide-inner {
+            display: flex; gap: 24px; align-items: flex-start;
+        }
+        .promo-wide-left { flex: 1; }
+        .promo-wide-right {
+            display: flex; gap: 10px; flex-shrink: 0;
+        }
+        .promo-set-box {
+            background: #fafafa; border-radius: 12px; padding: 14px 18px;
+            text-align: center; min-width: 90px; border: 1.5px solid #f0f0f0;
+        }
+        .promo-set-box .set-rate {
+            font-size: 1.5rem; font-weight: 900;
+            color: var(--pc-accent, #ff6b52); line-height: 1;
+        }
+        .promo-set-box .set-label { font-size: 0.72rem; color: #888; margin-top: 4px; }
+        @media (max-width: 860px) {
             .promo-cards-wrap { grid-template-columns: 1fr 1fr; }
-            .promo-banner { padding: 18px 16px; }
+            .promo-card-wide { grid-column: span 2; }
+            .promo-banner { padding: 20px 18px; }
         }
-        @media (max-width: 480px) {
+        @media (max-width: 520px) {
             .promo-cards-wrap { grid-template-columns: 1fr; }
+            .promo-card-wide { grid-column: span 1; }
+            .promo-wide-inner { flex-direction: column; }
         }
 
         .coupon-toggle {
@@ -2731,56 +2772,77 @@
         </div>
         <div class="promo-cards-wrap">
             <!-- 신규가입 -->
-            <div class="promo-card">
+            <div class="promo-card" style="--pc-accent:#10b981;">
+                <span class="promo-card-icon">🎁</span>
                 <div class="promo-card-series">전 시리즈</div>
                 <div class="promo-card-name">신규회원 가입</div>
-                <div class="promo-card-desc">신규 회원 가입 시<br><b>5,000원</b> 할인 쿠폰 지급</div>
-                <div class="promo-card-footer">장바구니에서 적용 가능</div>
+                <div class="promo-card-desc">
+                    신규 회원 가입 시<br>
+                    <span style="font-size:1.35rem;font-weight:900;color:#10b981;line-height:2;">5,000원</span> 할인 쿠폰 지급
+                </div>
+                <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
             </div>
             <!-- 5월 가정의달 -->
-            <div class="promo-card">
+            <div class="promo-card" style="--pc-accent:#3b82f6;">
+                <span class="promo-card-icon">📦</span>
                 <div class="promo-card-series">전 시리즈 · 5월 가정의달</div>
                 <div class="promo-card-name">금액대 기본 할인</div>
                 <div class="promo-card-desc">
-                    30만원 이상 <b>3%</b><br>
-                    50만원 이상 <b>5%</b><br>
-                    70만원 이상 <b>7%</b>
+                    <div class="promo-rate-row"><span class="rate-label">30만원 이상</span><span class="rate-val" style="background:#3b82f6;">3%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">50만원 이상</span><span class="rate-val" style="background:#3b82f6;">5%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">70만원 이상</span><span class="rate-val" style="background:#3b82f6;">7%</span></div>
                 </div>
-                <div class="promo-card-footer">주문 금액 기준 자동 적용</div>
+                <div class="promo-card-footer">⚡ 주문 금액 기준 자동 적용</div>
             </div>
             <!-- 예쁜 의자도 시디즈 -->
-            <div class="promo-card">
+            <div class="promo-card" style="--pc-accent:#ff6b52;">
+                <span class="promo-card-icon">🪑</span>
                 <div class="promo-card-series">리빙다이닝 · 라이트워크</div>
                 <div class="promo-card-name">예쁜 의자도 시디즈</div>
                 <div class="promo-card-desc">
-                    트레보 / 마네 / 위 / 플릿<br>
-                    뮤브 / 에가 / 버튼 / 리니에<br>
-                    <b>1개 3% · 2개 이상 5%</b><br>
-                    <span style="color:#ff6b52">리빙다이닝 4개 이상 10%</span>
+                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">트레보·마네·위·플릿·뮤브·에가·버튼·리니에</div>
+                    <div class="promo-rate-row"><span class="rate-label">1개 이상</span><span class="rate-val">3%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">2개 이상</span><span class="rate-val">5%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">리빙다이닝 4개↑</span><span class="rate-val">10%</span></div>
                 </div>
-                <div class="promo-card-footer">수량 기준 자동 적용</div>
+                <div class="promo-card-footer">⚡ 수량 기준 자동 적용</div>
             </div>
             <!-- 혜택 더하기 -->
-            <div class="promo-card">
+            <div class="promo-card" style="--pc-accent:#8b5cf6;">
+                <span class="promo-card-icon">💎</span>
                 <div class="promo-card-series">전 시리즈 · 혜택 더하기</div>
                 <div class="promo-card-name">고액 구매 추가 할인</div>
                 <div class="promo-card-desc">
-                    150만원 이상 <b>10%</b><br>
-                    300만원 이상 <b>13%</b><br>
-                    500만원 이상 <b>15%</b>
+                    <div class="promo-rate-row"><span class="rate-label">150만원 이상</span><span class="rate-val" style="background:#8b5cf6;">10%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">300만원 이상</span><span class="rate-val" style="background:#8b5cf6;">13%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">500만원 이상</span><span class="rate-val" style="background:#8b5cf6;">15%</span></div>
                 </div>
-                <div class="promo-card-footer">주문 금액 기준 자동 적용</div>
+                <div class="promo-card-footer">⚡ 주문 금액 기준 자동 적용</div>
             </div>
             <!-- 아띠/트레보 세트 -->
-            <div class="promo-card">
-                <div class="promo-card-series">아띠 세트 · 트레보 세트</div>
-                <div class="promo-card-name">세트 구매 특별 할인</div>
-                <div class="promo-card-desc">
-                    단품 구매 <b>5%</b><br>
-                    세트 구매 <b>8%</b><br>
-                    <span style="font-size:0.75rem;color:var(--text-secondary)">아띠 의자+책상 · 트레보+커버</span>
+            <div class="promo-card promo-card-wide" style="--pc-accent:#f59e0b;">
+                <div class="promo-wide-inner">
+                    <div class="promo-wide-left">
+                        <span class="promo-card-icon">🔗</span>
+                        <div class="promo-card-series">아띠 세트 · 트레보 세트</div>
+                        <div class="promo-card-name">세트 구매 특별 할인</div>
+                        <div class="promo-card-desc">
+                            <span style="color:#aaa;font-size:0.74rem;">아띠 의자+책상 / 트레보+커버</span><br>
+                            세트로 구매할수록 더 큰 혜택
+                        </div>
+                        <div class="promo-card-footer">⚡ 장바구니 구성 자동 판단</div>
+                    </div>
+                    <div class="promo-wide-right">
+                        <div class="promo-set-box" style="border-color:#fde8c3;">
+                            <div class="set-rate" style="color:#f59e0b;">5%</div>
+                            <div class="set-label">단품 구매</div>
+                        </div>
+                        <div class="promo-set-box" style="background:#fff8ec;border-color:#f59e0b;">
+                            <div class="set-rate" style="color:#f59e0b;">8%</div>
+                            <div class="set-label">세트 구매</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="promo-card-footer">장바구니 구성 자동 판단</div>
             </div>
         </div>
     </div>
