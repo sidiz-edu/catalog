@@ -2238,6 +2238,17 @@
             width: 100%; justify-content: center;
             margin-top: 12px; text-decoration: none;
         }
+        .coupon-toggle {
+            display: flex; align-items: center; gap: 8px;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+            cursor: pointer; font-size: 0.85rem; color: #166534;
+        }
+        .coupon-check { font-size: 1.1rem; }
+        .coupon-badge {
+            background: #16a34a; color: #fff;
+            border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; margin-left: 4px;
+        }
 
         /* ── VARIANT PRICING ── */
         .variant-pricing { margin-bottom: 24px; }
@@ -2673,7 +2684,7 @@
                 <h3>GX</h3>
                 <div class="subtitle">게이밍 퍼포먼스 체어</div>
                 <p>게이밍 디자인과 시디즈 인체공학의 만남. 쿨링시트와 조절형 팔걸이로 장시간 플레이를 지원합니다.</p>
-                <div class="price">299,000원</div>
+                <div class="price">379,000원</div>
             </div>
         </div>
         <!-- LINIE -->
@@ -4765,7 +4776,7 @@ const variantData = {
         { name: '토트넘 GC PRO', price: 750000 },
     ],
     gx: [
-        { name: 'GX', price: 299000 },
+        { name: 'GX', price: 379000 },
     ],
     t20: [
         { name: 'T20', price: 204000 },
@@ -4874,6 +4885,26 @@ const DISCOUNT_TIERS = [
     { min: 500000,  rate: 0.05, label: '50만원 이상' },
     { min: 300000,  rate: 0.03, label: '30만원 이상' },
 ];
+
+// 그룹별 수량 프로모션
+const GROUP_PROMOS = {
+    lightwork: {
+        ids: ['muuve', 'ega', 'button', 'linie'],
+        label: '라이트워크 구매 할인',
+        tiers: [
+            { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
+            { minQty: 1, rate: 0.03, desc: '1개 구매 3%' },
+        ]
+    },
+    living: {
+        ids: ['trevo', 'oui', 'mane', 'plit'],
+        label: '리빙/스터디 구매 할인',
+        tiers: [
+            { minQty: 4, rate: 0.10, desc: '4개 이상 10%' },
+            { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
+        ]
+    },
+};
 
 // ── PRODUCT DATA ──
 const products = {
@@ -5439,8 +5470,46 @@ let cartIdCounter = 0;
 
 function fmt(n) { return n.toLocaleString('ko-KR') + '원'; }
 
-function getDiscount(subtotal) {
-    return DISCOUNT_TIERS.find(t => subtotal >= t.min) || null;
+let couponApplied = false;
+
+// 모든 프로모션 중 가장 유리한 할인 반환
+function getBestDiscount(cart) {
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const candidates = [];
+
+    // 1) 금액 기준 할인 (DISCOUNT_TIERS)
+    const tier = DISCOUNT_TIERS.find(t => subtotal >= t.min);
+    if (tier) candidates.push({ label: tier.label + ' ' + (tier.rate * 100).toFixed(0) + '%', amt: Math.round(subtotal * tier.rate), type: 'tier' });
+
+    // 2) 그룹 수량 할인 (GROUP_PROMOS) — 그룹별 독립 계산, 합산
+    let groupAmt = 0;
+    const groupLabels = [];
+    for (const gKey of Object.keys(GROUP_PROMOS)) {
+        const g = GROUP_PROMOS[gKey];
+        const groupItems = cart.filter(i => g.ids.includes(i.productId));
+        const groupQty = groupItems.reduce((s, i) => s + i.qty, 0);
+        const groupSubtotal = groupItems.reduce((s, i) => s + i.price * i.qty, 0);
+        const matched = g.tiers.find(t => groupQty >= t.minQty);
+        if (matched && groupSubtotal > 0) {
+            groupAmt += Math.round(groupSubtotal * matched.rate);
+            groupLabels.push(g.label + ' ' + matched.desc);
+        }
+    }
+    if (groupAmt > 0) candidates.push({ label: groupLabels.join(' / '), amt: groupAmt, type: 'group' });
+
+    // 3) 신규가입 쿠폰 5,000원 (프로모션 미해당 상품에만 적용)
+    if (couponApplied) {
+        const promoIds = [
+            ...GROUP_PROMOS.lightwork.ids,
+            ...GROUP_PROMOS.living.ids,
+        ];
+        const nonPromoSubtotal = cart.filter(i => !promoIds.includes(i.productId)).reduce((s, i) => s + i.price * i.qty, 0);
+        if (nonPromoSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
+    }
+
+    if (candidates.length === 0) return null;
+    // 가장 할인 금액이 큰 것 선택
+    return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
 }
 
 function getNextTier(subtotal) {
@@ -5486,6 +5555,11 @@ function updateCartBadge() {
     }
 }
 
+function toggleCoupon() {
+    couponApplied = !couponApplied;
+    renderCartItems();
+}
+
 function renderCartItems() {
     const el = document.getElementById('cartItems');
     const summaryEl = document.getElementById('cartSummary');
@@ -5514,24 +5588,32 @@ function renderCartItems() {
     `).join('');
 
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const disc = getDiscount(subtotal);
-    const discAmt = disc ? Math.round(subtotal * disc.rate) : 0;
+    const best = getBestDiscount(cart);
+    const discAmt = best ? best.amt : 0;
     const final = subtotal - discAmt;
     const next = getNextTier(subtotal);
 
+    // 신규가입 쿠폰 적용 가능 여부 (프로모션 미해당 상품이 카트에 있을 때)
+    const promoIds = [...GROUP_PROMOS.lightwork.ids, ...GROUP_PROMOS.living.ids];
+    const hasNonPromo = cart.some(i => !promoIds.includes(i.productId));
+
     summaryEl.innerHTML = `
+        ${hasNonPromo ? `<div class="coupon-toggle" onclick="toggleCoupon()">
+            <span class="coupon-check ${couponApplied ? 'on' : ''}">${couponApplied ? '✅' : '☐'}</span>
+            <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
+        </div>` : ''}
         <div class="cart-summary-row">
             <span>소계</span><span>${fmt(subtotal)}</span>
         </div>
-        ${disc ? `<div class="cart-summary-row discount">
-            <span>할인 (${disc.label} ${(disc.rate * 100).toFixed(0)}%)</span>
+        ${best ? `<div class="cart-summary-row discount">
+            <span>할인 (${best.label})</span>
             <span>−${fmt(discAmt)}</span>
         </div>` : ''}
         <div class="cart-summary-row total">
             <span>최종 금액</span><span>${fmt(final)}</span>
         </div>
         ${next && next.need > 0 ? `<div class="cart-next-tier">
-            💡 <b>${fmt(next.need)}</b> 더 담으면 <b>${(next.rate * 100).toFixed(0)}%</b> 할인!
+            💡 <b>${fmt(next.need)}</b> 더 담으면 <b>${(next.rate * 100).toFixed(0)}%</b> 추가 할인!
         </div>` : ''}
         <a class="btn-primary cart-buy-btn" href="https://kr.sidiz.com/" target="_blank">🛒 시디즈 온라인몰에서 구매</a>
     `;
