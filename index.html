@@ -2517,6 +2517,21 @@
             font-family: 'Outfit', sans-serif;
             font-weight: 700; font-size: 0.95rem;
             color: var(--sidiz-dark);
+            display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+        }
+        .compare-price {
+            font-size: 0.75rem; font-weight: 400;
+            color: var(--text-secondary);
+            text-decoration: line-through;
+        }
+        .sale-price-row {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .discount-badge {
+            display: inline-block;
+            background: #ff4444; color: white;
+            font-size: 0.68rem; font-weight: 700;
+            padding: 1px 5px; border-radius: 4px;
         }
         .btn-add-cart {
             background: var(--sidiz-navy);
@@ -5156,105 +5171,101 @@ function renderCompareTable() {
 
 const variantData = {
     t50: [
-        { name: 'T50HF', price: 279000 },
-        { name: 'T50HDA', price: 329000 },
-        { name: 'T50 (블랙/화이트)', price: 359000 },
-        { name: 'T50 AIR', price: 389000 },
+        { name: 'T50HF',              price: 279000, comparePrice: 299000 },
+        { name: 'T50HDA',             price: 329000, comparePrice: 349000 },
+        { name: 'T50 HLDA (풀옵션)',  price: 359000, comparePrice: 379000 },
+        { name: 'T50 AIR',            price: 389000, comparePrice: 409000 },
     ],
     t60: [
-        { name: 'T60 LDA (헤드레스트 없음)', price: 399000 },
-        { name: 'T60 (헤드레스트)', price: 429000 },
-        { name: 'T60 AIR (헤드레스트 없음)', price: 429000 },
-        { name: 'T60 AIR (헤드레스트)', price: 444000 },
+        { name: 'T60 LDA (헤드레스트 없음)', price: 399000, comparePrice: 409000 },
+        { name: 'T60 (헤드레스트)',          price: 429000, comparePrice: 439000 },
+        { name: 'T60 AIR (헤드레스트 없음)', price: 429000, comparePrice: 439000 },
+        { name: 'T60 AIR (헤드레스트)',      price: 444000, comparePrice: 459000 },
     ],
     t80: [
-        { name: 'T80 메쉬', price: 619000 },
-        { name: 'T80 천연가죽', price: 724000 },
-        { name: 'T80 천연가죽 (크림/라이트크림)', price: 789000 },
+        { name: 'T80 메쉬/패브릭',    price: 619000, comparePrice: 659000 },
+        { name: 'T80 메쉬+천연가죽',  price: 724000, comparePrice: 764000 },
+        { name: 'T80 천연가죽',        price: 789000, comparePrice: 829000 },
     ],
     t90: [
-        { name: 'T90 더블라셀', price: 999000 },
-        { name: 'T90 아쿠아텍스', price: 1045000 },
-        { name: 'T90 컬러팔레트', price: 1170000 },
-        { name: 'T90 천연가죽', price: 1290000 },
+        { name: 'T90 더블라셀',       price:  999000, comparePrice: 1050000 },
+        { name: 'T90 아쿠아텍스',     price: 1045000, comparePrice: 1100000 },
+        { name: 'T90 리미티드 팔레트', price: 1170000, comparePrice: 1350000 },
+        { name: 'T90 천연가죽',        price: 1290000, comparePrice: 1350000 },
     ],
     gcpro: [
-        { name: 'GC PRO 일반', price: 690000 },
-        { name: 'GC PRO 쿨링', price: 790000 },
-        { name: 'GC PRO 풀사양', price: 860000 },
-        { name: '토트넘 GC PRO', price: 750000 },
+        { name: 'GC PRO 일반',    price: 690000, comparePrice: 730000 },
+        { name: 'GC PRO 쿨링',    price: 790000, comparePrice: 830000 },
+        { name: 'GC PRO 쿨링+LED',price: 860000, comparePrice: 900000 },
+        { name: '토트넘 GC PRO',  price: 750000, comparePrice: 790000 },
     ],
     gx: [
-        { name: 'GX', price: 379000 },
+        { name: 'GX', price: 379000, comparePrice: 409000 },
     ],
     t20: [
-        { name: 'T20', price: 204000 },
-        { name: '토트넘 T20', price: 229000 },
+        { name: 'T20',       price: 204000, comparePrice: 235000 },
+        { name: '토트넘 T20', price: 204000 },
     ],
     linie: [
-        { name: '리니에 메쉬', price: 259000 },
-        { name: '리니에 플렉스', price: 259000 },
+        { name: '리니에 메쉬',  price: 259000, comparePrice: 279000 },
+        { name: '리니에 플렉스', price: 259000, comparePrice: 279000 },
     ],
     ible: [
-        { name: '아이블 표준형', price: 179000 },
-        { name: '높이조절형/바퀴', price: 195000 },
-        { name: '높이조절형/글라이드', price: 195000 },
+        { name: '아이블 고정형',     price: 179000, comparePrice: 189000 },
+        { name: '높이조절형/바퀴',   price: 195000, comparePrice: 209000 },
+        { name: '높이조절형/글라이드', price: 195000, comparePrice: 209000 },
     ],
     ringo2: [
-        { name: '링고', price: 189000 },
-        { name: '싯브레이크 캐스터 B형', price: null, note: '추가 구성품' },
-        { name: '글라이드 B형', price: null, note: '추가 구성품' },
-        { name: '링고 전용 커버', price: null, note: '추가 구성품' },
+        { name: '링고 2세대', price: 189000, comparePrice: 199000 },
     ],
     trevo: [
-        { name: '트레보', price: 129000 },
-        { name: '트레보 커버', price: 25000 },
+        { name: '트레보', price: 129000, comparePrice: 139000 },
     ],
     button: [
-        { name: '높조/바퀴/패브릭', price: 199000 },
-        { name: '높조/바퀴/플라스틱', price: 159000 },
-        { name: '높조/글라이드/패브릭', price: 189000 },
-        { name: '높조/글라이드/플라스틱', price: 149000 },
-        { name: '4레그/바퀴/패브릭', price: 179000 },
-        { name: '4레그/바퀴/플라스틱', price: 139000 },
-        { name: '4레그/글라이드/패브릭', price: 169000 },
-        { name: '4레그/글라이드/플라스틱', price: 129000 },
+        { name: '높조/바퀴/패브릭',      price: 199000, comparePrice: 209000 },
+        { name: '높조/바퀴/플라스틱',     price: 159000, comparePrice: 169000 },
+        { name: '높조/글라이드/패브릭',   price: 189000, comparePrice: 199000 },
+        { name: '높조/글라이드/플라스틱', price: 149000, comparePrice: 159000 },
+        { name: '4레그/바퀴/패브릭',      price: 179000, comparePrice: 189000 },
+        { name: '4레그/바퀴/플라스틱',    price: 139000, comparePrice: 149000 },
+        { name: '4레그/글라이드/패브릭',  price: 169000, comparePrice: 179000 },
+        { name: '4레그/글라이드/플라스틱', price: 129000, comparePrice: 139000 },
     ],
     muuve: [
-        { name: '뮤브', price: 179000 },
+        { name: '뮤브', price: 179000, comparePrice: 189000 },
     ],
     ega: [
-        { name: '에가 높조/바퀴', price: 199000 },
-        { name: '에가 높조/글라이드', price: 194000 },
-        { name: '에가 4레그/바퀴', price: 184000 },
-        { name: '에가 4레그/글라이드', price: 179000 },
-        { name: '에가 데일리', price: 179000 },
+        { name: '에가 높조/바퀴',    price: 199000, comparePrice: 214000 },
+        { name: '에가 높조/글라이드', price: 194000, comparePrice: 209000 },
+        { name: '에가 4레그/바퀴',   price: 184000, comparePrice: 199000 },
+        { name: '에가 4레그/글라이드', price: 179000, comparePrice: 194000 },
+        { name: '에가 데일리',       price: 179000, comparePrice: 194000 },
     ],
     mane: [
-        { name: '마네 인조가죽', price: 135000 },
-        { name: '마네 플라스틱', price: 69000 },
+        { name: '마네 인조가죽', price: 135000, comparePrice: 145000 },
+        { name: '마네 플라스틱', price:  69000, comparePrice:  79000 },
     ],
     plit: [
-        { name: '플릿', price: 99000 },
+        { name: '플릿', price: 99000, comparePrice: 109000 },
     ],
     oui: [
-        { name: '위 550 네이키드', price: 149000 },
-        { name: '위 550 패브릭', price: 159000 },
-        { name: '위 680 네이키드', price: 149000 },
-        { name: '위 680 패브릭', price: 159000 },
+        { name: '위 550 네이키드', price: 149000, comparePrice: 159000 },
+        { name: '위 550 패브릭',   price: 159000, comparePrice: 169000 },
+        { name: '위 680 네이키드', price: 149000, comparePrice: 159000 },
+        { name: '위 680 패브릭',   price: 159000, comparePrice: 169000 },
     ],
     fungus: [
-        { name: '펑거스', price: 124000 },
-        { name: '펑거스 바퀴형', price: 124000 },
-        { name: '토트넘 펑거스', price: 99000 },
+        { name: '펑거스',        price: 124000, comparePrice: 143000 },
+        { name: '펑거스 바퀴형',  price: 124000, comparePrice: 143000 },
+        { name: '토트넘 펑거스',  price:  99000 },
     ],
     stepo: [
-        { name: '스테포', price: 54000 },
-        { name: '스테포 커버형', price: 69000 },
+        { name: '스테포',        price: 54000 },
+        { name: '스테포 커버형',  price: 69000 },
     ],
     pillo: [
-        { name: '필로 패브릭', price: 99000 },
-        { name: '필로 인조가죽', price: 99000 },
+        { name: '필로 패브릭',   price: 99000 },
+        { name: '필로 인조가죽',  price: 99000 },
     ],
     olly: [
         { name: '올리 (토트넘)', price: 34900 },
@@ -6462,7 +6473,13 @@ function showDetail(productId) {
                 ${variants.map(v => v.price ? `
                     <div class="variant-row">
                         <span class="variant-name">${v.name}</span>
-                        <span class="variant-price">${fmt(v.price)}</span>
+                        <span class="variant-price">
+                            ${v.comparePrice ? `<span class="compare-price">${fmt(v.comparePrice)}</span>` : ''}
+                            <span class="sale-price-row">
+                                ${v.comparePrice ? `<span class="discount-badge">${Math.round((1 - v.price/v.comparePrice)*100)}%</span>` : ''}
+                                ${fmt(v.price)}
+                            </span>
+                        </span>
                         <button class="btn-add-cart" onclick="addToCart('${productId}', '${v.name}', ${v.price})">+ 담기</button>
                     </div>
                 ` : `
