@@ -2397,7 +2397,7 @@
         }
         .promo-cards-wrap {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 14px;
         }
         .promo-card {
@@ -2459,7 +2459,7 @@
             color: var(--pc-accent, #ff6b52); line-height: 1;
         }
         .promo-set-box .set-label { font-size: 0.72rem; color: #888; margin-top: 4px; }
-        @media (max-width: 860px) {
+        @media (max-width: 960px) {
             .promo-cards-wrap { grid-template-columns: 1fr 1fr; }
             .promo-card-wide { grid-column: span 2; }
             .promo-banner { padding: 20px 18px; }
@@ -2849,16 +2849,28 @@
                 </div>
                 <div class="promo-card-footer">⚡ 주문 금액 기준 자동 적용</div>
             </div>
-            <!-- 예쁜 의자도 시디즈 -->
+            <!-- LIVING DINING -->
             <div class="promo-card" style="--pc-accent:#ff6b52;">
-                <span class="promo-card-icon">🪑</span>
-                <div class="promo-card-series">리빙다이닝 · 라이트워크</div>
-                <div class="promo-card-name">예쁜 의자도 시디즈</div>
+                <span class="promo-card-icon">🏡</span>
+                <div class="promo-card-series">LIVING DINING 🆕</div>
+                <div class="promo-card-name">리빙다이닝 수량 할인</div>
                 <div class="promo-card-desc">
-                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">트레보·마네·위·플릿·뮤브·에가·버튼·리니에</div>
-                    <div class="promo-rate-row"><span class="rate-label">1개 이상</span><span class="rate-val">3%</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">2개 이상</span><span class="rate-val">5%</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">리빙다이닝 4개↑</span><span class="rate-val">10%</span></div>
+                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">트레보 · 위 바스툴 · 마네 · 플릿</div>
+                    <div class="promo-rate-row"><span class="rate-label">1개</span><span class="rate-val" style="background:#ccc;">-</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">2~3개</span><span class="rate-val">5%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">4개 이상</span><span class="rate-val">10%</span></div>
+                </div>
+                <div class="promo-card-footer">⚡ 수량 기준 자동 적용</div>
+            </div>
+            <!-- HOME OFFICE -->
+            <div class="promo-card" style="--pc-accent:#06b6d4;">
+                <span class="promo-card-icon">💼</span>
+                <div class="promo-card-series">HOME OFFICE 🆕</div>
+                <div class="promo-card-name">홈오피스 수량 할인</div>
+                <div class="promo-card-desc">
+                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">에가 · 버튼 · 리니에 · 뮤브</div>
+                    <div class="promo-rate-row"><span class="rate-label">1개</span><span class="rate-val" style="background:#06b6d4;">3%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">2개 이상</span><span class="rate-val" style="background:#06b6d4;">5%</span></div>
                 </div>
                 <div class="promo-card-footer">⚡ 수량 기준 자동 적용</div>
             </div>
@@ -5305,20 +5317,21 @@ const DISCOUNT_TIERS = [
 
 // 그룹별 수량 프로모션 (예쁜 의자도 시디즈 + 세트 할인)
 const GROUP_PROMOS = {
-    lightwork: {
+    homeOffice: {
         ids: ['muuve', 'ega', 'button', 'linie'],
-        label: '예쁜 의자도 시디즈 (라이트워크)',
+        label: 'HOME OFFICE',
         tiers: [
             { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
             { minQty: 1, rate: 0.03, desc: '1개 3%' },
         ]
     },
-    living: {
-        ids: ['oui', 'mane', 'plit'],
-        label: '예쁜 의자도 시디즈 (리빙다이닝)',
+    livingDining: {
+        ids: ['trevo', 'oui', 'mane', 'plit'],
+        label: 'LIVING DINING',
         tiers: [
             { minQty: 4, rate: 0.10, desc: '4개 이상 10%' },
             { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
+            // 1개는 할인 없음 (trevoSet 단독 할인과 분리)
         ]
     },
     attiSet: {
@@ -5620,10 +5633,10 @@ const productColors = {
         { name: '14 GRAY',    code: '#888888', img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_14GRAY_00_4af791fb-36fd-4156-91c9-8d89d80292b0.jpg' },
     ],
     stepo: [
-        { name: '차콜그레이', code: '#6a6868', img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg' },
-        { name: '베이지',     code: '#d4c4a0', img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D2_00_5265060a-1e6c-48db-8252-e4453b8b14e3.jpg' },
-        { name: '민트그린',   code: '#80b898', img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D7_00_248b5a7c-f60c-4595-8c20-f8dd5ae1c731.jpg' },
-        { name: '그레이',     code: '#9a9a9a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F_MM_00_5fb2ed4d-017b-4467-ab4c-b53163cde8ac.jpg' },
+        { name: '차콜그레이 (커버형)', code: '#6a6868', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg' },
+        { name: '베이지 (커버형)',     code: '#d4c4a0', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D2_00_5265060a-1e6c-48db-8252-e4453b8b14e3.jpg' },
+        { name: '민트그린 (커버형)',   code: '#80b898', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D7_00_248b5a7c-f60c-4595-8c20-f8dd5ae1c731.jpg' },
+        { name: '그레이 (기본형)',     code: '#9a9a9a', price: 54000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F_MM_00_5fb2ed4d-017b-4467-ab4c-b53163cde8ac.jpg' },
     ],
     pillo: [
         { name: '다크그레이',   code: '#5a5a5a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_PILLO_M090_831A_00.jpg' },
@@ -6540,18 +6553,33 @@ function getBestDiscount(cart) {
     const tier = DISCOUNT_TIERS.find(t => subtotal >= t.min);
     if (tier) candidates.push({ label: tier.label + ' ' + (tier.rate * 100).toFixed(0) + '%', amt: Math.round(subtotal * tier.rate), type: 'tier' });
 
-    // 2) 그룹 수량 할인 (GROUP_PROMOS) — 그룹별 독립 계산, 합산
+    // 2) 그룹 수량 할인 (GROUP_PROMOS)
+    //    같은 아이템이 여러 그룹에 속할 때 → 높은 요율 그룹 우선 배정 (trevo 중복 방지)
+    const claimedIds = new Set();
     let groupAmt = 0;
     const groupLabels = [];
-    for (const gKey of Object.keys(GROUP_PROMOS)) {
-        const g = GROUP_PROMOS[gKey];
-        const groupItems = cart.filter(i => g.ids.includes(i.productId));
-        const groupQty = groupItems.reduce((s, i) => s + i.qty, 0);
-        const groupSubtotal = groupItems.reduce((s, i) => s + i.price * i.qty, 0);
-        const matched = g.tiers.find(t => groupQty >= t.minQty);
-        if (matched && groupSubtotal > 0) {
-            groupAmt += Math.round(groupSubtotal * matched.rate);
-            groupLabels.push(g.label + ' ' + matched.desc);
+
+    // 각 그룹의 요율 미리 계산 후 높은 순 정렬
+    const evaluated = [];
+    for (const [, g] of Object.entries(GROUP_PROMOS)) {
+        const items = cart.filter(i => g.ids.includes(i.productId));
+        const qty   = items.reduce((s, i) => s + i.qty, 0);
+        const matched = g.tiers.find(t => qty >= t.minQty);
+        if (matched) evaluated.push({ g, rate: matched.rate, desc: matched.desc, items });
+    }
+    evaluated.sort((a, b) => b.rate - a.rate);
+
+    for (const ev of evaluated) {
+        const free    = ev.items.filter(i => !claimedIds.has(i.id));
+        const freeQty = free.reduce((s, i) => s + i.qty, 0);
+        const reMatch = ev.g.tiers.find(t => freeQty >= t.minQty);
+        if (reMatch && free.length > 0) {
+            const amt = free.reduce((s, i) => s + Math.round(i.price * i.qty * reMatch.rate), 0);
+            if (amt > 0) {
+                groupAmt += amt;
+                groupLabels.push(ev.g.label + ' ' + reMatch.desc);
+                free.forEach(i => claimedIds.add(i.id));
+            }
         }
     }
     if (groupAmt > 0) candidates.push({ label: groupLabels.join(' / '), amt: groupAmt, type: 'group' });
