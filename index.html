@@ -6280,18 +6280,15 @@ const _currentSpecColors = {};
 
 // ── DETAIL COUPON STATE ──
 let detailCouponState = { applied: false, productId: null };
+let _currentDetailPrice = null;   // 현재 선택된 가격 추적
 
-function toggleDetailCoupon(productId) {
-    detailCouponState.applied = !detailCouponState.applied;
-    detailCouponState.productId = productId;
-    const p = products[productId];
-    const base = variantData[productId] ? variantData[productId][0].price : null;
+function _refreshCouponDisplay() {
     const resultEl = document.getElementById('detailCouponResult');
     const btnEl = document.getElementById('detailCouponBtn');
     if (!resultEl || !btnEl) return;
+    const base = _currentDetailPrice;
     if (detailCouponState.applied && base) {
-        const after = base - 5000;
-        resultEl.textContent = `→ 실구매가 ${fmt(after)} (신규가입 쿠폰 적용)`;
+        resultEl.textContent = `→ 실구매가 ${fmt(base - 5000)} (신규가입 쿠폰 적용)`;
         btnEl.textContent = '✅ 적용됨';
         btnEl.classList.add('applied');
     } else {
@@ -6299,6 +6296,12 @@ function toggleDetailCoupon(productId) {
         btnEl.textContent = '쿠폰 적용';
         btnEl.classList.remove('applied');
     }
+}
+
+function toggleDetailCoupon(productId) {
+    detailCouponState.applied = !detailCouponState.applied;
+    detailCouponState.productId = productId;
+    _refreshCouponDisplay();
 }
 
 // ── DETAIL COLOR SWITCH ──
@@ -6325,8 +6328,11 @@ function switchDetailColor(productId, idx) {
             ? `<del class="detail-compare-price">${fmt(cp)}</del>` : '';
         priceEl.innerHTML = cpHtml + fmt(c.price);
         priceWrap?.classList.add('detail-price-active');
+        _currentDetailPrice = c.price;
+        if (detailCouponState.applied) _refreshCouponDisplay();
     } else if (priceEl) {
         priceWrap?.classList.remove('detail-price-active');
+        // 스펙 기반 제품은 spec.price가 _currentDetailPrice에 이미 세팅됨
     }
     // 색상 담기 버튼 업데이트
     const colorCartBtn = document.getElementById('detailColorCartBtn');
@@ -6391,10 +6397,21 @@ function switchDetailSpec(productId, specIdx) {
             ? `<del class="detail-compare-price">${fmt(cp2)}</del>` : '';
         priceEl.innerHTML = cpHtml + fmt(firstColor.price);
         priceWrap?.classList.add('detail-price-active');
+        _currentDetailPrice = firstColor.price;
     } else if (priceEl) {
         priceWrap?.classList.remove('detail-price-active');
-        if (baseEl && spec.price) baseEl.textContent = spec.price.toLocaleString('ko-KR') + '원';
+        // 스펙 가격으로 detailBasePrice 업데이트 (comparePrice 마크업 포함)
+        if (baseEl && spec.price) {
+            const vd3 = variantData[productId] || [];
+            const mv3 = vd3.find(v => v.price === spec.price);
+            const cp3 = mv3?.comparePrice;
+            const cpHtml3 = (cp3 && cp3 > spec.price)
+                ? `<del class="detail-compare-price">${fmt(cp3)}</del>` : '';
+            baseEl.innerHTML = cpHtml3 + fmt(spec.price);
+        }
+        _currentDetailPrice = spec.price || _currentDetailPrice;
     }
+    if (detailCouponState.applied) _refreshCouponDisplay();
 
     // 메인 이미지 업데이트
     const imgEl = document.getElementById('detailMainImg');
@@ -6411,6 +6428,10 @@ function showDetail(productId) {
     const p = products[productId];
     if (!p) return;
     detailCouponState = { applied: false, productId };
+    // 초기 가격 = 스펙그룹의 첫 spec 가격 or variantData 최저가
+    const _initSpec = productSpecGroups[productId];
+    _currentDetailPrice = _initSpec ? _initSpec[0].price
+        : (variantData[productId]?.[0]?.price || null);
 
     // 스펙 그룹 또는 단순 컬러 결정
     const specs = productSpecGroups[productId];
