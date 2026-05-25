@@ -361,6 +361,12 @@
             font-weight: 400;
             color: var(--text-secondary);
         }
+        .card-compare-price {
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: #aaa;
+            text-decoration: line-through;
+        }
         /* 프로모션 뱃지 */
         .promo-badge {
             display: inline-block;
@@ -433,11 +439,20 @@
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
         .detail-info .price-tag small {
             font-size: 0.85rem;
             font-weight: 400;
             color: var(--text-secondary);
+        }
+        .detail-compare-price {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #aaa;
+            text-decoration: line-through;
         }
         #detailColorPrice {
             color: var(--sidiz-coral);
@@ -628,16 +643,24 @@
         .header-nav a:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 2px; }
 
         .back-link {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 6px;
             color: var(--text-secondary);
             font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
-            margin-bottom: 28px;
+            padding: 12px 0;
+            margin-bottom: 12px;
             transition: var(--transition);
             text-decoration: none;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--sidiz-light);
         }
         .back-link:hover { color: var(--sidiz-blue); }
 
@@ -1031,7 +1054,7 @@
             }
 
             /* 뒤로가기 링크 */
-            .back-link { font-size: 0.9rem; padding: 4px 0; margin-bottom: 20px; }
+            .back-link { font-size: 0.9rem; padding: 10px 0; margin-bottom: 8px; }
         }
 
         /* ══════════════════════════════════
@@ -6307,7 +6330,9 @@ function switchDetailColor(productId, idx) {
     const priceEl = document.getElementById('detailColorPrice');
     const priceWrap = priceEl?.closest('.price-tag');
     if (priceEl && c.price) {
-        priceEl.textContent = fmt(c.price);
+        const cpHtml = (c.comparePrice && c.comparePrice > c.price)
+            ? `<del class="detail-compare-price">${fmt(c.comparePrice)}</del>` : '';
+        priceEl.innerHTML = cpHtml + fmt(c.price);
         priceWrap?.classList.add('detail-price-active');
     } else if (priceEl) {
         priceWrap?.classList.remove('detail-price-active');
@@ -6368,7 +6393,9 @@ function switchDetailSpec(productId, specIdx) {
     const baseEl = document.getElementById('detailBasePrice');
     const priceWrap = priceEl?.closest('.price-tag');
     if (priceEl && firstColor?.price) {
-        priceEl.textContent = firstColor.price.toLocaleString('ko-KR') + '원';
+        const cpHtml = (firstColor.comparePrice && firstColor.comparePrice > firstColor.price)
+            ? `<del class="detail-compare-price">${fmt(firstColor.comparePrice)}</del>` : '';
+        priceEl.innerHTML = cpHtml + fmt(firstColor.price);
         priceWrap?.classList.add('detail-price-active');
     } else if (priceEl) {
         priceWrap?.classList.remove('detail-price-active');
@@ -6452,7 +6479,21 @@ function showDetail(productId) {
             <div class="desc">${p.desc}</div>
             <div class="price-tag">
                 <span id="detailColorPrice" style="display:none"></span>
-                <span id="detailBasePrice">${renderPrice(p)}</span>
+                <span id="detailBasePrice">${(() => {
+                    const vd = variantData[productId];
+                    let cpHtml = '';
+                    if (vd && vd.length) {
+                        const prices = vd.map(v => v.price).filter(Boolean);
+                        if (prices.length) {
+                            const minP = Math.min(...prices);
+                            const minV = vd.find(v => v.price === minP);
+                            if (minV?.comparePrice && minV.comparePrice > minP) {
+                                cpHtml = `<del class="detail-compare-price">${fmt(minV.comparePrice)}</del>`;
+                            }
+                        }
+                    }
+                    return cpHtml + renderPrice(p);
+                })()}</span>
             </div>
             ${colorBar}
             ${couponUi}
@@ -6826,9 +6867,37 @@ function switchCardColor(productId, idx, dotEl) {
     if (label) label.textContent = c.name;
 }
 
+// 카드 가격에 소비자가(취소선) 표시
+function initCardPrices() {
+    document.querySelectorAll('.product-card[onclick]').forEach(card => {
+        const match = card.getAttribute('onclick')?.match(/showDetail\('(\w+)'\)/);
+        if (!match) return;
+        const id = match[1];
+        const vd = variantData[id];
+        if (!vd || !vd.length) return;
+        const prices = vd.map(v => v.price).filter(Boolean);
+        if (!prices.length) return;
+        const minPrice = Math.min(...prices);
+        const minVariant = vd.find(v => v.price === minPrice);
+        const cp = minVariant?.comparePrice;
+        const hasRange = Math.min(...prices) !== Math.max(...prices);
+        const priceEl = card.querySelector('.product-card-body .price');
+        if (!priceEl) return;
+        const promoEl = priceEl.querySelector('.promo-badge');
+        const promoBadge = promoEl ? promoEl.outerHTML : '';
+        let html = '';
+        if (cp && cp > minPrice) html += `<del class="card-compare-price">${fmt(cp)}</del>`;
+        html += fmt(minPrice);
+        if (hasRange) html += '<span>부터</span>';
+        html += promoBadge;
+        priceEl.innerHTML = html;
+    });
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
     initCardSwatches();
+    initCardPrices();
     loadCartFromUrl();
 });
 
