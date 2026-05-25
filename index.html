@@ -655,7 +655,7 @@
             transition: var(--transition);
             text-decoration: none;
             position: sticky;
-            top: 0;
+            top: 64px;
             z-index: 50;
             background: rgba(255,255,255,0.96);
             backdrop-filter: blur(8px);
@@ -6317,8 +6317,12 @@ function switchDetailColor(productId, idx) {
     const priceEl = document.getElementById('detailColorPrice');
     const priceWrap = priceEl?.closest('.price-tag');
     if (priceEl && c.price) {
-        const cpHtml = (c.comparePrice && c.comparePrice > c.price)
-            ? `<del class="detail-compare-price">${fmt(c.comparePrice)}</del>` : '';
+        // productColors에 comparePrice 없으면 variantData에서 가격 매칭으로 보완
+        const vd = variantData[productId] || [];
+        const matchedVariant = vd.find(v => v.price === c.price);
+        const cp = c.comparePrice || matchedVariant?.comparePrice;
+        const cpHtml = (cp && cp > c.price)
+            ? `<del class="detail-compare-price">${fmt(cp)}</del>` : '';
         priceEl.innerHTML = cpHtml + fmt(c.price);
         priceWrap?.classList.add('detail-price-active');
     } else if (priceEl) {
@@ -6380,8 +6384,11 @@ function switchDetailSpec(productId, specIdx) {
     const baseEl = document.getElementById('detailBasePrice');
     const priceWrap = priceEl?.closest('.price-tag');
     if (priceEl && firstColor?.price) {
-        const cpHtml = (firstColor.comparePrice && firstColor.comparePrice > firstColor.price)
-            ? `<del class="detail-compare-price">${fmt(firstColor.comparePrice)}</del>` : '';
+        const vd2 = variantData[productId] || [];
+        const mv2 = vd2.find(v => v.price === firstColor.price);
+        const cp2 = firstColor.comparePrice || mv2?.comparePrice;
+        const cpHtml = (cp2 && cp2 > firstColor.price)
+            ? `<del class="detail-compare-price">${fmt(cp2)}</del>` : '';
         priceEl.innerHTML = cpHtml + fmt(firstColor.price);
         priceWrap?.classList.add('detail-price-active');
     } else if (priceEl) {
