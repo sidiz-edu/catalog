@@ -3269,7 +3269,7 @@
         <!-- MOLTI -->
         <div class="product-card" onclick="showDetail('molti')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('molti')">✏️ 편집</button>
-            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_02.jpg'); background-color: #fff5f0;">
+            <div class="product-card-img" style="background-image: url('https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_00.jpg'); background-color: #fff5f0;">
                 <div class="badge">3in1</div>
             </div>
             <div class="product-card-body">
@@ -3409,6 +3409,62 @@
                 <div class="subtitle">플릿 전용 좌판 커버</div>
                 <p>세탁 가능한 플릿 전용 착탈식 좌판 커버입니다.</p>
                 <div class="price">22,000원</div>
+            </div>
+        </div>
+
+        <!-- 싯브레이크 바퀴 A형 -->
+        <div class="product-card" onclick="showDetail('seatBreakA')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('seatBreakA')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_T00V1KG_BK65_01_01c6bc79-f9d9-4e2a-b156-921b75efc365.jpg'); background-color: #f5f5f5;">
+                <div class="badge">바퀴</div>
+            </div>
+            <div class="product-card-body">
+                <h3>싯브레이크 바퀴 A형</h3>
+                <div class="subtitle">정지 기능 탑재 교체 바퀴</div>
+                <p>밟으면 고정되는 브레이크 기능 탑재. T50·T60·T20·리니에 호환.</p>
+                <div class="price">30,000원</div>
+            </div>
+        </div>
+
+        <!-- 싯브레이크 바퀴 B형 -->
+        <div class="product-card" onclick="showDetail('seatBreakB')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('seatBreakB')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_S00V0KG_SG50_01_b2cb1526-0efc-4291-bbbf-b2b7f78f4ea8.jpg'); background-color: #f5f5f5;">
+                <div class="badge">바퀴</div>
+            </div>
+            <div class="product-card-body">
+                <h3>싯브레이크 바퀴 B형</h3>
+                <div class="subtitle">정지 기능 탑재 교체 바퀴</div>
+                <p>밟으면 고정되는 브레이크 기능 탑재. 링고 2세대 등 소형 의자 호환.</p>
+                <div class="price">23,000원</div>
+            </div>
+        </div>
+
+        <!-- 글라이드 A형 -->
+        <div class="product-card" onclick="showDetail('glideA')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('glideA')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_T509G_BK_01.jpg'); background-color: #f5f5f5;">
+                <div class="badge">글라이드</div>
+            </div>
+            <div class="product-card-body">
+                <h3>글라이드 A형</h3>
+                <div class="subtitle">바닥 보호 미끄럼 방지 글라이드</div>
+                <p>바퀴 대신 장착하는 글라이드. 바닥 긁힘 방지 및 의자 고정 효과.</p>
+                <div class="price">17,000원</div>
+            </div>
+        </div>
+
+        <!-- 글라이드 B형 -->
+        <div class="product-card" onclick="showDetail('glideB')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('glideB')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_S00G0KG_SG_01_958e0724-7aa4-404c-ad75-74e48a098ea3.jpg'); background-color: #f5f5f5;">
+                <div class="badge">글라이드</div>
+            </div>
+            <div class="product-card-body">
+                <h3>글라이드 B형</h3>
+                <div class="subtitle">소형 의자용 미끄럼 방지 글라이드</div>
+                <p>링고 2세대 등 소형 의자에 호환되는 글라이드. 바닥 긁힘 방지.</p>
+                <div class="price">17,000원</div>
             </div>
         </div>
 
@@ -5281,10 +5337,10 @@ const variantData = {
         { name: '올리 (토트넘)', price: 34900 },
     ],
     molti: [
-        { name: '몰티 플로어시트', price: 199000 },
         { name: '몰티 하이체어', price: 259000 },
-        { name: '몰티 책상의자', price: 219000 },
-        { name: '몰티 헬로베이비세트', price: 379000 },
+        { name: '몰티 헬로베이비 세트', price: 379000 },
+        { name: '몰티 이너시트', price: 90000 },
+        { name: '몰티 책상의자용 다리', price: 39000 },
     ],
     atti: [
         { name: '아띠 의자', price: 69000 },
@@ -5314,6 +5370,17 @@ const variantData = {
     coverPlit: [
         { name: '플릿 커버', price: 22000 },
     ],
+    // ── 옷걸이 ──
+    hangerT50:  [{ name: 'T50 & T50 AIR 옷걸이', price: 10000 }],
+    hangerT60:  [{ name: 'T60 & T60 AIR 옷걸이', price: 10000 }],
+    hangerGX:   [{ name: 'GX 옷걸이', price: 13000 }],
+    // ── 바퀴 / 글라이드 ──
+    seatBreakA: [{ name: '싯브레이크 바퀴 A형', price: 30000 }],
+    seatBreakB: [{ name: '싯브레이크 바퀴 B형', price: 23000 }],
+    glideA:     [{ name: '글라이드 A형', price: 17000 }],
+    glideB:     [{ name: '글라이드 B형', price: 17000 }],
+    // ── 팔걸이 패드 ──
+    armpadT20Tot: [{ name: '시디즈X토트넘 T20 팔걸이 패드', price: 25000 }],
 };
 
 // variantData 정의 후 priceRanges + compareData 가격대 자동 계산
@@ -5402,17 +5469,17 @@ const productSpecs = {
 
 // ── 제품별 관련 악세서리 ──
 const productAccessories = {
-    t50:   ['coverT50Air', 'spray', 'pbag'],
-    t60:   ['coverT60Air', 'spray', 'pbag'],
+    t50:   ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
+    t60:   ['hangerT60', 'seatBreakA', 'coverT60Air', 'spray', 'pbag'],
     t80:   ['spray', 'pbag'],
     t90:   ['spray', 'pbag'],
-    t20:   ['spray'],
+    t20:   ['armpadT20Tot', 'seatBreakA', 'spray'],
     gcpro: ['spray'],
-    gx:    ['spray'],
+    gx:    ['hangerGX', 'spray'],
     ible:  ['spray'],
-    linie: ['spray', 'pbag'],
+    linie: ['seatBreakA', 'spray', 'pbag'],
     trevo: ['coverTrevo', 'spray'],
-    ringo2:['coverRingo2', 'coverRingo1', 'spray'],
+    ringo2:['seatBreakB', 'glideB', 'coverRingo2', 'coverRingo1', 'spray'],
     oui:   ['spray'],
     mane:  ['spray'],
     plit:  ['coverPlit', 'spray'],
@@ -5978,7 +6045,8 @@ const products = {
         tagline: '3in1 그로잉 베이비체어',
         desc: '신생아부터 유아까지 성장 단계에 맞게 변형되는 3-in-1 그로잉 체어입니다. 바닥 좌식 → 하이체어 → 책상 의자로 단계별로 활용 가능하며, 안전 KC인증을 획득했습니다.',
         price: '259,000원',
-        img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_02.jpg',
+        mainPrice: 259000,
+        img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HC0KG_A441P_00.jpg',
         features: [
             { icon: '👶', title: '3단계 변신', desc: '바닥 좌식 시트 → 하이체어 → 책상 의자로 성장에 맞춰 형태를 바꿀 수 있습니다.' },
             { icon: '🛡️', title: 'KC 안전 인증', desc: '어린이 안전 특별법에 따른 KC인증 취득으로 안전성이 검증되었습니다.' },
@@ -6112,6 +6180,113 @@ const products = {
             { icon: '💰', title: '합리적 가격', desc: '부담 없는 가격으로 인테리어 변화를 줄 수 있습니다.' }
         ],
         tags: ['커버', '플릿', '다이닝', '악세서리'],
+    },
+    // ── 옷걸이 ──
+    hangerT50: {
+        name: 'T50 & T50 AIR 옷걸이',
+        tagline: 'T50 시리즈 전용 의자 옷걸이',
+        desc: 'T50 및 T50 AIR 의자 등받이에 간편하게 걸어두는 전용 옷걸이입니다. 외투, 가방 등을 깔끔하게 수납할 수 있습니다.',
+        price: '10,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_T509CH_BK.jpg',
+        features: [
+            { icon: '🪝', title: 'T50 전용 설계', desc: 'T50 · T50 AIR 등받이에 정확히 맞도록 제작된 정품 전용 옷걸이입니다.' },
+            { icon: '👔', title: '수납 편의', desc: '외투, 재킷, 가방 등을 의자에 걸어 깔끔한 공간을 유지하세요.' },
+            { icon: '🔧', title: '간편 장착', desc: '도구 없이 간단하게 탈부착이 가능합니다.' },
+        ],
+        tags: ['옷걸이', 'T50', '악세서리'],
+    },
+    hangerT60: {
+        name: 'T60 & T60 AIR 옷걸이',
+        tagline: 'T60 시리즈 전용 의자 옷걸이',
+        desc: 'T60 및 T60 AIR 의자 등받이에 간편하게 걸어두는 전용 옷걸이입니다.',
+        price: '10,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_T509CH_BK.jpg',
+        features: [
+            { icon: '🪝', title: 'T60 전용 설계', desc: 'T60 · T60 AIR 등받이에 정확히 맞도록 제작된 정품 전용 옷걸이입니다.' },
+            { icon: '👔', title: '수납 편의', desc: '외투, 재킷, 가방 등을 의자에 걸어 깔끔한 공간을 유지하세요.' },
+            { icon: '🔧', title: '간편 장착', desc: '도구 없이 간단하게 탈부착이 가능합니다.' },
+        ],
+        tags: ['옷걸이', 'T60', '악세서리'],
+    },
+    hangerGX: {
+        name: 'GX 옷걸이',
+        tagline: 'GX 전용 의자 옷걸이',
+        desc: 'GX 게이밍 의자 등받이에 걸어 사용하는 전용 옷걸이입니다.',
+        price: '13,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_GX_hanger_White.jpg',
+        features: [
+            { icon: '🪝', title: 'GX 전용 설계', desc: 'GX 의자 등받이에 정확히 맞도록 제작된 정품 전용 옷걸이입니다.' },
+            { icon: '👔', title: '수납 편의', desc: '외투, 재킷, 헤드셋 등을 의자에 걸어 게이밍 공간을 정리하세요.' },
+            { icon: '🔧', title: '간편 장착', desc: '도구 없이 간단하게 탈부착이 가능합니다.' },
+        ],
+        tags: ['옷걸이', 'GX', '게이밍', '악세서리'],
+    },
+    // ── 바퀴 / 글라이드 ──
+    seatBreakA: {
+        name: '싯브레이크 바퀴 A형',
+        tagline: '정지 기능 탑재 프리미엄 교체 바퀴',
+        desc: '밟으면 고정되는 싯브레이크 기능이 탑재된 교체용 바퀴 A형입니다. T50, T60, T20, 리니에 등 다수 시디즈 의자에 호환됩니다.',
+        price: '30,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_T00V1KG_BK65_01_01c6bc79-f9d9-4e2a-b156-921b75efc365.jpg',
+        features: [
+            { icon: '🛑', title: '브레이크 기능', desc: '발로 밟으면 즉시 고정되는 싯브레이크 기능으로 안전한 사용이 가능합니다.' },
+            { icon: '🔄', title: '간편 교체', desc: '기존 바퀴를 뽑고 새 바퀴를 끼우는 간단한 방식으로 교체가 가능합니다.' },
+            { icon: '🪑', title: '광범위 호환', desc: 'T50, T60, T20, 리니에 등 다양한 시디즈 의자에 호환됩니다.' },
+        ],
+        tags: ['바퀴', '싯브레이크', '교체부품', '악세서리'],
+    },
+    seatBreakB: {
+        name: '싯브레이크 바퀴 B형',
+        tagline: '정지 기능 탑재 교체 바퀴 (링고 2세대 등 호환)',
+        desc: '밟으면 고정되는 싯브레이크 기능이 탑재된 교체용 바퀴 B형입니다. 링고 2세대 등 소형 의자에 호환됩니다.',
+        price: '23,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_S00V0KG_SG50_01_b2cb1526-0efc-4291-bbbf-b2b7f78f4ea8.jpg',
+        features: [
+            { icon: '🛑', title: '브레이크 기능', desc: '발로 밟으면 즉시 고정되는 싯브레이크 기능입니다.' },
+            { icon: '🔄', title: '간편 교체', desc: '기존 바퀴를 뽑고 새 바퀴를 끼우는 간단한 방식으로 교체합니다.' },
+            { icon: '🪑', title: '링고 2세대 호환', desc: '링고 2세대 등 소형 의자에 최적화된 B형 바퀴입니다.' },
+        ],
+        tags: ['바퀴', '싯브레이크', '교체부품', '링고'],
+    },
+    glideA: {
+        name: '글라이드 A형',
+        tagline: '바퀴 대신 사용하는 미끄럼 방지 글라이드',
+        desc: '바퀴 대신 장착하는 글라이드 A형입니다. 바닥 긁힘을 방지하고 의자가 굴러다니지 않아 안정적인 착석이 가능합니다.',
+        price: '17,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_T509G_BK_01.jpg',
+        features: [
+            { icon: '🛡️', title: '바닥 보호', desc: '바닥 긁힘을 방지하여 마루, 타일 등 다양한 바닥재를 보호합니다.' },
+            { icon: '🔒', title: '고정 효과', desc: '의자가 굴러다니지 않아 집중이 필요한 학습·업무에 적합합니다.' },
+            { icon: '🔄', title: '간편 교체', desc: '기존 바퀴를 제거하고 간단히 끼워 교체할 수 있습니다.' },
+        ],
+        tags: ['글라이드', '교체부품', '바닥보호', '악세서리'],
+    },
+    glideB: {
+        name: '글라이드 B형',
+        tagline: '소형 의자용 미끄럼 방지 글라이드',
+        desc: '바퀴 대신 장착하는 글라이드 B형입니다. 링고 2세대 등 소형 의자에 호환되며 바닥 긁힘을 방지합니다.',
+        price: '17,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_CASTER-GLIDE_S00G0KG_SG_01_958e0724-7aa4-404c-ad75-74e48a098ea3.jpg',
+        features: [
+            { icon: '🛡️', title: '바닥 보호', desc: '바닥 긁힘을 방지하여 마루, 타일 등 다양한 바닥재를 보호합니다.' },
+            { icon: '🔒', title: '고정 효과', desc: '의자가 굴러다니지 않아 안정적인 착석 환경을 제공합니다.' },
+            { icon: '🪑', title: '링고 2세대 호환', desc: '링고 2세대 등 소형 의자에 최적화된 B형 글라이드입니다.' },
+        ],
+        tags: ['글라이드', '교체부품', '링고', '악세서리'],
+    },
+    // ── 팔걸이 패드 ──
+    armpadT20Tot: {
+        name: '시디즈X토트넘 T20 팔걸이 패드',
+        tagline: '토트넘 홋스퍼 콜라보 T20 전용 팔걸이 패드',
+        desc: '시디즈X토트넘 홋스퍼 콜라보레이션 T20 의자 전용 팔걸이 패드입니다. 팔걸이에 장착하여 쿠션감을 더하고 편의성을 높여줍니다.',
+        price: '25,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_ARMPAD_1VICARIO.jpg',
+        features: [
+            { icon: '🤝', title: '토트넘 콜라보', desc: '시디즈X토트넘 홋스퍼 공식 콜라보레이션 제품입니다.' },
+            { icon: '💪', title: '편의성 향상', desc: '팔걸이에 장착하여 장시간 착석 시 팔 피로를 줄여줍니다.' },
+            { icon: '✂️', title: 'T20 전용', desc: '시디즈X토트넘 T20 의자에 최적화된 전용 팔걸이 패드입니다.' },
+        ],
+        tags: ['팔걸이', '토트넘', 'T20', '악세서리'],
     },
 };
 
@@ -6892,10 +7067,12 @@ function initCardPrices() {
         if (!vd || !vd.length) return;
         const prices = vd.map(v => v.price).filter(Boolean);
         if (!prices.length) return;
-        const minPrice = Math.min(...prices);
-        const minVariant = vd.find(v => v.price === minPrice);
+        // mainPrice 오버라이드 (MOLTI 등 부속품 혼합 제품)
+        const overridePrice = products[id]?.mainPrice;
+        const minPrice = overridePrice || Math.min(...prices);
+        const minVariant = vd.find(v => v.price === minPrice) || vd.find(v => v.price);
         const cp = minVariant?.comparePrice;
-        const hasRange = Math.min(...prices) !== Math.max(...prices);
+        const hasRange = !overridePrice && Math.min(...prices) !== Math.max(...prices);
         const priceEl = card.querySelector('.product-card-body .price');
         if (!priceEl) return;
         const promoEl = priceEl.querySelector('.promo-badge');
