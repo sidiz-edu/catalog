@@ -16,6 +16,7 @@
     <meta name="twitter:title" content="SIDIZ Digital Catalog">
     <meta name="twitter:description" content="시디즈 인체공학 의자 디지털 카탈로그">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --sidiz-navy: #0D3BFF;
@@ -1055,6 +1056,242 @@
 
             /* 뒤로가기 링크 */
             .back-link { font-size: 0.9rem; padding: 10px 0; margin-bottom: 8px; }
+        }
+
+        /* ══════════════════════════════════
+           오류 신고 스타일
+        ══════════════════════════════════ */
+
+        /* 신고 버튼 (우하단 고정) */
+        .report-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 90;
+            background: #fff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 24px;
+            padding: 9px 16px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+            transition: var(--transition);
+            letter-spacing: -0.2px;
+        }
+        .report-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
+        .report-fab-icon { font-size: 1rem; }
+
+        /* 신고 모달 */
+        .report-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1100;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .report-modal-overlay.open { display: flex; }
+        .report-modal {
+            background: #fff;
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 540px;
+            padding: 28px 24px 32px;
+            animation: slideUp 0.28s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        .report-modal-handle {
+            width: 40px; height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        .report-modal h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+        .report-modal .report-context {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+            padding: 7px 12px;
+            background: var(--warm-gray);
+            border-radius: 8px;
+        }
+        .report-field { margin-bottom: 14px; }
+        .report-field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .report-field select,
+        .report-field textarea {
+            width: 100%;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .report-field select:focus,
+        .report-field textarea:focus { border-color: var(--sidiz-navy); }
+        .report-field textarea { resize: none; height: 90px; }
+        .report-submit-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .report-cancel-btn {
+            flex: 1;
+            padding: 13px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .report-submit-btn {
+            flex: 2;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: var(--sidiz-navy);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .report-submit-btn:hover { background: var(--sidiz-blue); }
+        .report-submit-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        /* 관리자 신고 패널 */
+        .report-panel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1100;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 64px;
+        }
+        .report-panel-overlay.open { display: flex; }
+        .report-panel {
+            background: #fff;
+            border-radius: 16px;
+            width: calc(100% - 32px);
+            max-width: 560px;
+            max-height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+        .report-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .report-panel-head h3 { font-size: 1rem; font-weight: 700; }
+        .report-panel-head button {
+            background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-secondary);
+        }
+        .report-panel-tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .report-tab {
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .report-tab.active { color: var(--sidiz-navy); border-bottom-color: var(--sidiz-navy); }
+        .report-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+        .report-item {
+            border: 1px solid #f3f4f6;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .report-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .report-item-cat {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--sidiz-light);
+            color: var(--sidiz-dark);
+        }
+        .report-item-date { font-size: 0.72rem; color: var(--text-secondary); }
+        .report-item-product { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+        .report-item-desc { font-size: 0.85rem; color: var(--text-primary); line-height: 1.5; }
+        .report-item-context { font-size: 0.72rem; color: var(--text-secondary); margin-top: 6px; }
+        .report-item-actions { display: flex; gap: 6px; margin-top: 10px; }
+        .report-action-btn {
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 7px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .report-action-btn:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); }
+        .report-action-btn.resolve { background: #ecfdf5; border-color: #86efac; color: #166534; }
+        .report-item.resolved { opacity: 0.55; }
+        .report-item.resolved .report-item-cat { background: #f3f4f6; color: #9ca3af; }
+        .report-empty { text-align: center; color: var(--text-secondary); font-size: 0.88rem; padding: 32px 0; }
+        .report-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 1px 6px;
+            margin-left: 5px;
+            line-height: 1.4;
         }
 
         /* ══════════════════════════════════
@@ -2599,6 +2836,7 @@
         <span>✏️ 편집 모드 — 텍스트를 클릭해 바로 수정하세요</span>
     </div>
     <div class="admin-bar-right">
+        <button class="admin-bar-btn" onclick="openReportPanel()" id="adminReportBtn">🚩 신고<span class="report-badge" id="adminBadge" style="display:none"></span></button>
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
         <button class="admin-bar-btn danger" onclick="openResetModal()">↺ 초기화</button>
         <button class="admin-bar-btn" onclick="exitAdminMode()">✕ 나가기</button>
@@ -6602,6 +6840,9 @@ function switchDetailSpec(productId, specIdx) {
 function showDetail(productId) {
     const p = products[productId];
     if (!p) return;
+    // 신고 컨텍스트용 현재 제품 ID 추적
+    const detailWrapper = document.getElementById('productDetail');
+    if (detailWrapper) detailWrapper.dataset.currentProductId = productId;
     detailCouponState = { applied: false, productId };
     // 초기 가격 = 스펙그룹의 첫 spec 가격 or variantData 최저가
     const _initSpec = productSpecGroups[productId];
@@ -7093,7 +7334,236 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCartFromUrl();
 });
 
+// ══════════════════════════════════════════════
+//  오류 신고 시스템 (Supabase 연동)
+// ══════════════════════════════════════════════
+
+const SUPABASE_URL  = 'https://dvlrzbckneucpvlacdll.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let _reportTab = 'new'; // 현재 관리자 탭
+
+// ── 현재 컨텍스트(제품/페이지) 추출 ──
+function _getReportContext() {
+    const detailEl = document.getElementById('productDetail');
+    if (detailEl && detailEl.style.display !== 'none') {
+        const nameEl = detailEl.querySelector('.detail-name');
+        const productId = detailEl.dataset.currentProductId || '';
+        const name = nameEl ? nameEl.textContent.trim() : '';
+        return { product_id: productId, product_name: name, page_context: '제품 상세' };
+    }
+    // 현재 활성 섹션
+    const activeNav = document.querySelector('.header-nav a.active');
+    const section = activeNav ? activeNav.textContent.trim() : '홈';
+    return { product_id: '', product_name: '', page_context: section };
+}
+
+// ── 신고 모달 열기 ──
+function openReportModal() {
+    const ctx = _getReportContext();
+    const ctxEl = document.getElementById('reportContext');
+    if (ctx.product_name) {
+        ctxEl.textContent = `📦 ${ctx.product_name} 제품 상세 페이지`;
+    } else {
+        ctxEl.textContent = `📄 ${ctx.page_context}`;
+    }
+    document.getElementById('reportDesc').value = '';
+    document.getElementById('reportCategory').value = '가격 오류';
+    document.getElementById('reportSubmitBtn').disabled = false;
+    document.getElementById('reportSubmitBtn').textContent = '신고 보내기';
+    document.getElementById('reportModalOverlay').classList.add('open');
+}
+function closeReportModal(e) {
+    if (e && e.target !== document.getElementById('reportModalOverlay')) return;
+    document.getElementById('reportModalOverlay').classList.remove('open');
+}
+
+// ── 신고 제출 ──
+async function submitReport() {
+    const desc = document.getElementById('reportDesc').value.trim();
+    if (!desc) { showToast('⚠️ 오류 내용을 입력해주세요'); return; }
+
+    const btn = document.getElementById('reportSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+
+    const ctx = _getReportContext();
+    const { error } = await _sb.from('error_reports').insert({
+        product_id:   ctx.product_id,
+        product_name: ctx.product_name,
+        category:     document.getElementById('reportCategory').value,
+        description:  desc,
+        page_context: ctx.page_context,
+        status:       'new'
+    });
+
+    if (error) {
+        showToast('❌ 전송 실패. 다시 시도해주세요.');
+        btn.disabled = false;
+        btn.textContent = '신고 보내기';
+    } else {
+        document.getElementById('reportModalOverlay').classList.remove('open');
+        showToast('✅ 신고가 접수되었습니다. 감사합니다!');
+    }
+}
+
+// ── 관리자 신고 패널 ──
+async function openReportPanel() {
+    document.getElementById('reportPanelOverlay').classList.add('open');
+    _reportTab = 'new';
+    document.getElementById('tabNew').classList.add('active');
+    document.getElementById('tabResolved').classList.remove('active');
+    await loadReports();
+}
+function closeReportPanel(e) {
+    if (e && e.target !== document.getElementById('reportPanelOverlay')) return;
+    document.getElementById('reportPanelOverlay').classList.remove('open');
+}
+
+function switchReportTab(tab) {
+    _reportTab = tab;
+    document.getElementById('tabNew').classList.toggle('active', tab === 'new');
+    document.getElementById('tabResolved').classList.toggle('active', tab === 'resolved');
+    loadReports();
+}
+
+async function loadReports() {
+    const listEl = document.getElementById('reportList');
+    listEl.innerHTML = '<div class="report-empty">불러오는 중...</div>';
+
+    const status = _reportTab === 'new' ? 'new' : 'resolved';
+    const { data, error } = await _sb
+        .from('error_reports')
+        .select('*')
+        .eq('status', status)
+        .order('created_at', { ascending: false });
+
+    if (error) { listEl.innerHTML = '<div class="report-empty">❌ 불러오기 실패</div>'; return; }
+
+    // 신규 건수 배지 갱신
+    if (_reportTab === 'new') {
+        const cnt = data.length;
+        ['reportBadge','adminBadge'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = cnt;
+            el.style.display = cnt ? '' : 'none';
+        });
+    }
+
+    if (!data.length) {
+        listEl.innerHTML = `<div class="report-empty">${_reportTab === 'new' ? '신규 신고가 없습니다 🎉' : '처리 완료된 항목이 없습니다'}</div>`;
+        return;
+    }
+
+    listEl.innerHTML = data.map(r => {
+        const date = new Date(r.created_at).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const resolved = r.status === 'resolved';
+        return `
+        <div class="report-item${resolved ? ' resolved' : ''}" id="ri-${r.id}">
+            <div class="report-item-header">
+                <span class="report-item-cat">${r.category}</span>
+                <span class="report-item-date">${date}</span>
+            </div>
+            ${r.product_name ? `<div class="report-item-product">📦 ${r.product_name}</div>` : ''}
+            <div class="report-item-desc">${r.description}</div>
+            ${r.page_context ? `<div class="report-item-context">📄 ${r.page_context}</div>` : ''}
+            <div class="report-item-actions">
+                ${!resolved ? `<button class="report-action-btn resolve" onclick="resolveReport('${r.id}')">✅ 처리 완료</button>` : ''}
+                <button class="report-action-btn" onclick="deleteReport('${r.id}')">🗑 삭제</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function resolveReport(id) {
+    await _sb.from('error_reports').update({ status: 'resolved' }).eq('id', id);
+    document.getElementById(`ri-${id}`)?.remove();
+    showToast('✅ 처리 완료로 변경했습니다');
+    // 배지 재계산
+    const remaining = document.querySelectorAll('#reportList .report-item').length;
+    ['reportBadge','adminBadge'].forEach(bid => {
+        const el = document.getElementById(bid);
+        if (!el) return;
+        el.textContent = remaining;
+        el.style.display = remaining ? '' : 'none';
+    });
+    if (!remaining) document.getElementById('reportList').innerHTML = '<div class="report-empty">신규 신고가 없습니다 🎉</div>';
+}
+
+async function deleteReport(id) {
+    await _sb.from('error_reports').delete().eq('id', id);
+    document.getElementById(`ri-${id}`)?.remove();
+    showToast('🗑 삭제 완료');
+    if (!document.querySelector('#reportList .report-item')) {
+        document.getElementById('reportList').innerHTML = `<div class="report-empty">${_reportTab === 'new' ? '신규 신고가 없습니다 🎉' : '처리 완료된 항목이 없습니다'}</div>`;
+    }
+}
+
+// 관리자 모드 진입 시 신규 신고 건수 자동 로드
+const _origEnterAdmin = enterAdminMode;
+enterAdminMode = async function() {
+    _origEnterAdmin();
+    const { count } = await _sb.from('error_reports').select('*', { count: 'exact', head: true }).eq('status', 'new');
+    ['reportBadge','adminBadge'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = count || 0;
+        el.style.display = count ? '' : 'none';
+    });
+};
+
 </script>
+<!-- ══ 오류 신고 버튼 (우하단) ══ -->
+<button class="report-fab" id="reportFab" onclick="openReportModal()">
+    <span class="report-fab-icon">🚩</span> 오류 신고
+</button>
+
+<!-- ══ 오류 신고 모달 ══ -->
+<div class="report-modal-overlay" id="reportModalOverlay" onclick="closeReportModal(event)">
+    <div class="report-modal" onclick="event.stopPropagation()">
+        <div class="report-modal-handle"></div>
+        <h3>🚩 오류 신고</h3>
+        <div class="report-context" id="reportContext">현재 페이지</div>
+        <div class="report-field">
+            <label>오류 유형</label>
+            <select id="reportCategory">
+                <option value="가격 오류">가격 오류</option>
+                <option value="스펙 오류">스펙 오류</option>
+                <option value="이미지 오류">이미지 오류</option>
+                <option value="링크 오류">링크 오류</option>
+                <option value="기타">기타</option>
+            </select>
+        </div>
+        <div class="report-field">
+            <label>오류 내용 <span style="color:#ef4444">*</span></label>
+            <textarea id="reportDesc" placeholder="어떤 내용이 잘못되었는지 간단히 설명해주세요"></textarea>
+        </div>
+        <div class="report-submit-row">
+            <button class="report-cancel-btn" onclick="closeReportModal()">취소</button>
+            <button class="report-submit-btn" id="reportSubmitBtn" onclick="submitReport()">신고 보내기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 관리자 신고 확인 패널 ══ -->
+<div class="report-panel-overlay" id="reportPanelOverlay" onclick="closeReportPanel(event)">
+    <div class="report-panel" onclick="event.stopPropagation()">
+        <div class="report-panel-head">
+            <h3>🚩 오류 신고 내역<span class="report-badge" id="reportBadge" style="display:none"></span></h3>
+            <button onclick="closeReportPanel()">✕</button>
+        </div>
+        <div class="report-panel-tabs">
+            <div class="report-tab active" id="tabNew" onclick="switchReportTab('new')">신규</div>
+            <div class="report-tab" id="tabResolved" onclick="switchReportTab('resolved')">처리 완료</div>
+        </div>
+        <div class="report-list" id="reportList">
+            <div class="report-empty">불러오는 중...</div>
+        </div>
+    </div>
+</div>
+
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
 <div class="cart-drawer" id="cartDrawer">
     <div class="cart-drawer-header">
