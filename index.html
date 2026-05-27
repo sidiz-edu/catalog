@@ -2750,6 +2750,13 @@
         }
         .quote-btn:hover { background: var(--sidiz-navy); }
         .quote-copied { background: #16a34a !important; }
+        .quote-print-btn {
+            flex: 1; background: #fff; color: var(--sidiz-dark); border: 1.5px solid var(--sidiz-light);
+            border-radius: 10px; padding: 10px; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: var(--transition);
+        }
+        .quote-print-btn:hover { border-color: var(--sidiz-navy); background: var(--sidiz-light); }
 
         .coupon-badge {
             background: #16a34a; color: #fff;
@@ -7232,6 +7239,147 @@ function copyQuoteLink() {
     });
 }
 
+// ── 견적서 출력 ──
+function printQuote() {
+    if (!cart.length) return;
+
+    const customerName = prompt('고객명을 입력하세요 (생략 가능)', '') ?? '';
+    const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const quoteNo = 'SQ-' + Date.now().toString().slice(-8);
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const best = getBestDiscount(cart);
+    const discAmt = best ? best.amt : 0;
+    const couponAmt = couponApplied
+        ? cart.filter(i => !COUPON_NEVER.has(i.productId)).reduce((s, i) => s + i.price * i.qty, 0) > 0 ? 5000 : 0
+        : 0;
+    const final = subtotal - discAmt - couponAmt;
+
+    const f = n => n.toLocaleString('ko-KR') + '원';
+
+    const rowsHtml = cart.map((item, idx) => `
+        <tr>
+            <td class="tc">${idx + 1}</td>
+            <td>${item.name}<br><span class="sub">${item.variantName}</span></td>
+            <td class="tr">${f(item.price)}</td>
+            <td class="tc">${item.qty}</td>
+            <td class="tr bold">${f(item.price * item.qty)}</td>
+        </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SIDIZ 견적서 ${quoteNo}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color:#1a1a1a; background:#fff; padding:32px 36px; font-size:13px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2.5px solid #0D3BFF; padding-bottom:16px; margin-bottom:20px; }
+  .brand { font-size:22px; font-weight:900; color:#001499; letter-spacing:-0.5px; }
+  .brand span { color:#0D3BFF; }
+  .doc-title { font-size:20px; font-weight:800; color:#0D3BFF; text-align:right; }
+  .doc-sub { font-size:11px; color:#6b7280; text-align:right; margin-top:3px; }
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px; }
+  .meta-box { background:#f8f9ff; border:1px solid #e6ebff; border-radius:8px; padding:12px 14px; }
+  .meta-box .label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .meta-box .val { font-size:13px; font-weight:600; color:#1a1a1a; }
+  table { width:100%; border-collapse:collapse; margin-bottom:18px; }
+  thead th { background:#0D3BFF; color:#fff; padding:9px 10px; font-size:11px; font-weight:700; text-align:left; }
+  thead th.tc { text-align:center; }
+  thead th.tr { text-align:right; }
+  tbody tr:nth-child(even) { background:#f8f9ff; }
+  tbody td { padding:10px 10px; border-bottom:1px solid #f0f0f0; vertical-align:top; }
+  .tc { text-align:center; }
+  .tr { text-align:right; }
+  .sub { font-size:11px; color:#6b7280; margin-top:2px; display:block; }
+  .bold { font-weight:700; }
+  .summary { display:flex; justify-content:flex-end; }
+  .summary-box { width:260px; border:1px solid #e6ebff; border-radius:8px; overflow:hidden; }
+  .summary-row { display:flex; justify-content:space-between; padding:8px 14px; font-size:12px; border-bottom:1px solid #f0f0f0; }
+  .summary-row:last-child { border-bottom:none; }
+  .summary-row.disc { color:#16a34a; font-weight:600; }
+  .summary-row.total { background:#0D3BFF; color:#fff; font-size:14px; font-weight:800; padding:11px 14px; }
+  .footer { margin-top:28px; border-top:1px solid #e5e7eb; padding-top:14px; display:flex; justify-content:space-between; align-items:flex-end; color:#6b7280; font-size:10.5px; line-height:1.7; }
+  .footer .note b { color:#1a1a1a; }
+  .sign-area { text-align:right; }
+  .sign-box { display:inline-block; border:1px solid #d1d5db; border-radius:6px; padding:10px 24px; font-size:11px; text-align:center; }
+  .sign-box .sign-label { color:#6b7280; margin-bottom:20px; }
+  .sign-box .sign-name { font-weight:700; font-size:13px; color:#1a1a1a; margin-top:4px; }
+  @media print {
+    body { padding:20px 24px; }
+    @page { margin:12mm; size:A4; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+    <div>
+        <div class="brand">SIDIZ<span>.</span></div>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px;">시디즈 더 프로그레시브</div>
+    </div>
+    <div>
+        <div class="doc-title">견 적 서</div>
+        <div class="doc-sub">No. ${quoteNo}</div>
+    </div>
+</div>
+
+<div class="meta">
+    <div class="meta-box">
+        <div class="label">고객</div>
+        <div class="val">${customerName || '(고객명 미입력)'}</div>
+    </div>
+    <div class="meta-box">
+        <div class="label">견적일</div>
+        <div class="val">${dateStr}</div>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th class="tc" style="width:36px">No.</th>
+            <th>제품명 / 옵션</th>
+            <th class="tr" style="width:110px">단가</th>
+            <th class="tc" style="width:48px">수량</th>
+            <th class="tr" style="width:120px">금액</th>
+        </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+</table>
+
+<div class="summary">
+    <div class="summary-box">
+        <div class="summary-row"><span>소계</span><span>${f(subtotal)}</span></div>
+        ${best ? `<div class="summary-row disc"><span>할인 (${best.label})</span><span>− ${f(discAmt)}</span></div>` : ''}
+        ${couponAmt ? `<div class="summary-row disc"><span>신규가입 쿠폰</span><span>− ${f(couponAmt)}</span></div>` : ''}
+        <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="note">
+        <b>유의사항</b><br>
+        · 본 견적서의 유효기간은 발행일로부터 <b>7일</b>입니다.<br>
+        · 프로모션 가격은 재고 및 행사 기간에 따라 변동될 수 있습니다.<br>
+        · 실제 구매 금액은 구매 시점의 공식 가격이 적용됩니다.
+    </div>
+    <div class="sign-area">
+        <div class="sign-box">
+            <div class="sign-label">담당자 확인</div>
+            <div class="sign-name">시디즈 더 프로그레시브</div>
+        </div>
+    </div>
+</div>
+
+<script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=794,height=1000');
+    w.document.write(html);
+    w.document.close();
+}
+
 function loadCartFromUrl() {
     try {
         const params = new URLSearchParams(location.search);
@@ -7577,6 +7725,9 @@ enterAdminMode = async function() {
     <div class="quote-bar" id="quoteBar" style="display:none">
         <button class="quote-btn" id="quoteCopyBtn" onclick="copyQuoteLink()">
             🔗 견적 링크 복사
+        </button>
+        <button class="quote-print-btn" onclick="printQuote()">
+            🖨 견적서 출력
         </button>
     </div>
 </div>
