@@ -492,8 +492,13 @@
         .spec-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 24px; }
         .spec-table tr { border-bottom: 1px solid #f0f0f0; }
         .spec-table td { padding: 9px 12px; }
-        .spec-table td:first-child { color: var(--text-secondary); font-weight: 500; width: 40%; white-space: nowrap; }
+        .spec-table td:first-child { color: var(--text-secondary); font-weight: 500; width: 44%; white-space: nowrap; }
         .spec-table td:last-child { font-weight: 600; color: var(--text-primary); }
+        .spec-table .spec-section-head td {
+            background: var(--warm-gray); color: var(--sidiz-dark);
+            font-size: 0.78rem; font-weight: 700; padding: 7px 12px;
+            letter-spacing: -0.2px; border-bottom: 1px solid var(--sidiz-light);
+        }
         .spec-note { font-size: 0.78rem; color: var(--text-secondary); margin-top: 8px; }
 
         /* ── ACCESSORIES IN DETAIL ── */
@@ -5190,6 +5195,7 @@ const compareData = {
         포지셔닝: '어린이 성장의자', 가격대: priceLabel('ringo2'), 틸팅방식: '고정형',
         요추지지대: false, 좌판깊이조절: true, '4D암레스트': false,
         헤드레스트: false, 특수기능: '2WAY 그로잉·발받침', 추천대상: '초등학생',
+        좌판높이: '435~535mm', 제품최대폭: '645mm', 중량: '12.3kg', 최대하중: '114kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     t20: {
@@ -5197,6 +5203,7 @@ const compareData = {
         포지셔닝: '입문/가성비', 가격대: priceLabel('t20'), 틸팅방식: '라이트 싱크',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: true, 특수기능: '이지리페어·스쿠핑', 추천대상: '입문자',
+        좌판높이: '430~490mm', 제품최대폭: '735mm', 중량: '15kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '4X',
         메쉬성분: '폴리에스터 60% · 폴리엘라스토머 40%',
         착좌텐션: '★★★',
@@ -5207,6 +5214,7 @@ const compareData = {
         포지셔닝: '학습 전용', 가격대: priceLabel('ible'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '하이브리드 글라이드', 추천대상: '수험생·대학생',
+        좌판높이: '455mm', 제품최대폭: '655mm', 중량: '8.9kg', 최대하중: '125kg',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
         메쉬성분: '폴리에스터 64% · 폴리엘라스토머 36%',
         착좌텐션: '★★★☆',
@@ -5217,6 +5225,7 @@ const compareData = {
         포지셔닝: '게이밍', 가격대: priceLabel('gx'), 틸팅방식: '게이밍 틸트',
         요추지지대: false, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '쿨링시트·카멜레온 메쉬', 추천대상: '게이머',
+        좌판높이: '425~485mm', 제품최대폭: '735mm', 중량: '17kg', 최대하중: '115kg',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
         메쉬성분: '폴리에스터 64% · 폴리엘라스토머 36%',
         착좌텐션: '★★★☆',
@@ -5227,6 +5236,7 @@ const compareData = {
         포지셔닝: '프로 게이밍', 가격대: priceLabel('gcpro'), 틸팅방식: '게이밍 틸트',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': true,
         헤드레스트: true, 특수기능: '쿨링시트·LED·천연가죽', 추천대상: '프로·헤비 게이머',
+        좌판높이: '450~525mm', 제품최대폭: '750mm', 중량: '27kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: 'KATE',
         메쉬성분: '폴리에스터 60% · 폴리엘라스토머 40%',
         착좌텐션: '★★★',
@@ -5237,6 +5247,7 @@ const compareData = {
         포지셔닝: '올라운더', 가격대: priceLabel('t50'), 틸팅방식: '싱크 틸팅',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: '별도 옵션', 특수기능: '포워드 틸팅·멀티 리미티드', 추천대상: '직장인·범용',
+        좌판높이: '435~505mm', 제품최대폭: '740mm', 중량: '17.9kg', 최대하중: '125kg',
         메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
         메쉬성분: '폴리에스터 64% · 폴리엘라스토머 36%',
         착좌텐션: '★★★☆',
@@ -5247,6 +5258,7 @@ const compareData = {
         포지셔닝: '퍼스널 피팅', 가격대: priceLabel('t60'), 틸팅방식: '싱크 틸팅',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '인피니핏 헤드레스트', 추천대상: '재택·사무 직장인',
+        좌판높이: '455~525mm', 제품최대폭: '735mm', 중량: '18.2kg', 최대하중: '125kg',
         메쉬명칭: '에어플렉스 메쉬', 자재코드: '5HX',
         메쉬성분: '폴리에스터 35% · 폴리엘라스토머 65%',
         착좌텐션: '★★★★☆',
@@ -5257,6 +5269,7 @@ const compareData = {
         포지셔닝: '디자인', 가격대: priceLabel('linie'), 틸팅방식: '오토 핏 틸트',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '오토 핏 틸트·스트림라인', 추천대상: '디자인 중시',
+        좌판높이: '445~545mm', 제품최대폭: '730mm', 중량: '13.2kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '45X',
         메쉬성분: '폴리에스터 100%',
         착좌텐션: '★★★★☆',
@@ -5267,6 +5280,7 @@ const compareData = {
         포지셔닝: '프리미엄', 가격대: priceLabel('t80'), 틸팅방식: '얼티밋 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '포워드 틸팅·천연가죽', 추천대상: '프리미엄 추구',
+        좌판높이: '465~565mm', 제품최대폭: '740mm', 중량: '22.9kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: 'N42X',
         메쉬성분: '폴리에스터 14% · TPEE 51% · 나일론 35%',
         착좌텐션: '★★★★☆',
@@ -5277,6 +5291,7 @@ const compareData = {
         포지셔닝: '최상위 플래그십', 가격대: priceLabel('t90'), 틸팅방식: '얼티밋 싱크',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
         헤드레스트: true, 특수기능: '플렉서블 백·퍼펙트 피팅 럼버', 추천대상: '최고를 원하는 분',
+        좌판높이: '440~510mm', 제품최대폭: '760mm', 중량: '28.3kg', 최대하중: '125kg',
         메쉬명칭: '더블라셀 메쉬', 자재코드: 'RE GROVE',
         메쉬성분: '폴리에스터 100%',
         착좌텐션: '★★★★★',
@@ -5288,6 +5303,7 @@ const compareData = {
         포지셔닝: '스터디', 가격대: priceLabel('trevo'), 틸팅방식: '전방 틸팅',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '착탈식 커버', 추천대상: '수험생·초등학생',
+        좌판높이: '485~515mm', 제품최대폭: '495mm', 중량: '6.7kg', 최대하중: '80kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     // ── 라이트워크 ──
@@ -5296,6 +5312,7 @@ const compareData = {
         포지셔닝: '라이트워크', 가격대: priceLabel('button'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '8가지 조합', 추천대상: '홈오피스·회의실',
+        좌판높이: '410~485mm', 제품최대폭: '570mm', 중량: '6.8kg', 최대하중: '112kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     muuve: {
@@ -5303,6 +5320,7 @@ const compareData = {
         포지셔닝: '홈오피스·다이닝', 가격대: priceLabel('muuve'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '미니멀 디자인', 추천대상: '홈오피스·다이닝',
+        좌판높이: '445~535mm', 제품최대폭: '645mm', 중량: '9kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     ega: {
@@ -5310,6 +5328,7 @@ const compareData = {
         포지셔닝: '라이트워크', 가격대: priceLabel('ega'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '다양한 다리 옵션', 추천대상: '오피스·홈',
+        좌판높이: '450~525mm', 제품최대폭: '660mm', 중량: '9.3kg', 최대하중: '112kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     // ── 리빙다이닝 ──
@@ -5318,6 +5337,7 @@ const compareData = {
         포지셔닝: '리빙다이닝', 가격대: priceLabel('mane'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '인조가죽·플라스틱', 추천대상: '다이닝·카페',
+        좌판높이: '440mm', 제품최대폭: '475mm', 중량: '4.9kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     plit: {
@@ -5325,6 +5345,7 @@ const compareData = {
         포지셔닝: '식탁의자', 가격대: priceLabel('plit'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '쉘 디자인·착탈 커버', 추천대상: '다이닝·인테리어',
+        좌판높이: '450mm', 제품최대폭: '455mm', 중량: '7.5kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     oui: {
@@ -5332,6 +5353,7 @@ const compareData = {
         포지셔닝: '바스툴', 가격대: priceLabel('oui'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '550·680mm 높이', 추천대상: '아일랜드·카페',
+        좌판높이: '450~520mm', 제품최대폭: '650mm', 중량: '약 11kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     // ── 싯부스터 ──
@@ -5340,6 +5362,7 @@ const compareData = {
         포지셔닝: '싯부스터', 가격대: priceLabel('fungus'), 틸팅방식: '경사형',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '골반 교정', 추천대상: '자세교정·재택',
+        좌판높이: '485mm', 제품최대폭: '425mm', 중량: '5.8kg', 최대하중: '112kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     stepo: {
@@ -5347,6 +5370,7 @@ const compareData = {
         포지셔닝: '풋레스트', 가격대: priceLabel('stepo'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '발목 피로 감소', 추천대상: '수험생·직장인',
+        좌판높이: '—', 제품최대폭: '—', 중량: '—', 최대하중: '—',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     pillo: {
@@ -5354,6 +5378,7 @@ const compareData = {
         포지셔닝: '좌식 방석', 가격대: priceLabel('pillo'), 틸팅방식: '경사형',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '좌식 인체공학', 추천대상: '좌식생활',
+        좌판높이: '—', 제품최대폭: '—', 중량: '—', 최대하중: '—',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     olly: {
@@ -5361,6 +5386,7 @@ const compareData = {
         포지셔닝: '휴대용 방석', 가격대: priceLabel('olly'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '접이식·야외', 추천대상: '피크닉·야외',
+        좌판높이: '—', 제품최대폭: '—', 중량: '—', 최대하중: '—',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     // ── 그로잉 ──
@@ -5369,6 +5395,7 @@ const compareData = {
         포지셔닝: '3in1 베이비체어', 가격대: priceLabel('molti'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '3단계 변신·KC인증', 추천대상: '신생아·유아',
+        좌판높이: '130~215mm', 제품최대폭: '450mm', 중량: '14.3kg', 최대하중: '40kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
     atti: {
@@ -5376,6 +5403,7 @@ const compareData = {
         포지셔닝: '어린이 책상·의자', 가격대: priceLabel('atti'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '세트 할인 8%', 추천대상: '초등학생',
+        좌판높이: '—', 제품최대폭: '550mm', 중량: '약 8kg', 최대하중: '125kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
 };
@@ -5390,6 +5418,11 @@ const compareRows = [
     { key: '헤드레스트', label: '헤드레스트', bool: true },
     { key: '특수기능', label: '특수 기능' },
     { key: '추천대상', label: '추천 대상' },
+    { key: '__divider__', label: '📐 제품 치수' },
+    { key: '좌판높이', label: '좌판 높이' },
+    { key: '제품최대폭', label: '제품 최대 폭' },
+    { key: '중량', label: '제품 중량' },
+    { key: '최대하중', label: '최대 하중' },
     { key: '__divider__', label: '🧵 메쉬 소재' },
     { key: '메쉬명칭', label: '메쉬 명칭' },
     { key: '메쉬성분', label: '메쉬 성분' },
@@ -5794,42 +5827,217 @@ const GROUP_PROMOS = {
 
 // ── PRODUCT SPECS ──
 const productSpecs = {
-    t50:   { seat_h:'435~505mm', width:'685mm', depth:'590mm', total_h:'1120~1190mm', weight:'16.5kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'멀티싱크 틸팅' },
-    t60:   { seat_h:'455~525mm', width:'515mm', depth:'595~660mm', total_h:'1065~1135mm', weight:'약 18.2kg', armrest:'4D 조절', headrest:'인피니핏 (높이·각도·깊이)', tilt:'멀티싱크 틸팅' },
-    t80:   { seat_h:'465~565mm', width:'510mm', depth:'565~635mm', total_h:'1160~1260mm', weight:'23.2kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'얼티메이트 싱크 틸팅' },
-    t90:   { seat_h:'440~560mm', width:'505mm', depth:'590~665mm', total_h:'1160~1280mm', weight:'28.7kg', armrest:'4D 조절', headrest:'멀티 조절', tilt:'플렉서블 등판+틸팅' },
-    t20:   { seat_h:'430~490mm', width:'505mm', depth:'605mm', total_h:'1110~1170mm',  weight:'약 15.5kg', armrest:'2D 조절', headrest:'없음', tilt:'싱크 틸팅' },
-    gcpro: { seat_h:'450~525mm', width:'500mm', depth:'660~720mm', total_h:'1180~1255mm', weight:'약 27.5kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'락킹 틸팅' },
-    gx:    { seat_h:'425~485mm', width:'520mm', depth:'595~655mm', total_h:'1160~1220mm', weight:'약 17kg', armrest:'3D 조절', headrest:'높이·각도 조절', tilt:'싱크 틸팅' },
-    ible:  { seat_h:'455mm',     width:'495mm', depth:'605mm',     total_h:'910mm',       weight:'약 9.4kg', armrest:'고정형', headrest:'없음', tilt:'전방 틸팅+잠금' },
-    linie: { seat_h:'445~545mm', width:'505mm', depth:'585mm',     total_h:'920~1020mm',  weight:'약 13.7kg', armrest:'4D 조절', headrest:'없음', tilt:'오토 핏 틸트' },
-    ringo2:{ seat_h:'435~535mm', width:'445mm', depth:'425~500mm', total_h:'800~900mm',   weight:'약 11kg',  armrest:'없음', headrest:'없음', tilt:'4단계 높이 조절' },
-    muuve: { seat_h:'445~535mm', width:'480mm', depth:'540mm', total_h:'730~810mm',   weight:'9kg',  armrest:'없음', headrest:'없음', tilt:'고정' },
-    ega:   { seat_h:'440~520mm', width:'490mm', depth:'550mm', total_h:'730~810mm',   weight:'약 9kg',  armrest:'선택', headrest:'없음', tilt:'고정' },
-    button:{ seat_h:'420~490mm', width:'490mm', depth:'540mm', total_h:'760~830mm',   weight:'약 8kg',  armrest:'선택', headrest:'없음', tilt:'고정' },
-    trevo: { seat_h:'380~450mm', width:'550mm', depth:'540mm', total_h:'760~830mm',   weight:'약 8kg',  armrest:'없음', headrest:'없음', tilt:'전방 틸팅' },
-    oui:   { seat_h:'450~520mm', width:'520mm', depth:'560mm', total_h:'950~1020mm',  weight:'약 11kg', armrest:'없음', headrest:'없음', tilt:'고정' },
-    mane:  { seat_h:'450~520mm', width:'510mm', depth:'570mm', total_h:'880~950mm',   weight:'약 11kg', armrest:'없음', headrest:'없음', tilt:'고정' },
-    plit:  { seat_h:'—', width:'455mm', depth:'480mm', total_h:'762mm',   weight:'7.5kg',  armrest:'없음', headrest:'없음', tilt:'고정' },
-    fungus:{ seat_h:'300~430mm', width:'370mm', depth:'320mm', total_h:'300~430mm',   weight:'약 3kg',  armrest:'없음', headrest:'없음', tilt:'높이 조절' },
-    stepo: { seat_h:'—', width:'350mm', depth:'250mm', total_h:'—', weight:'약 2kg', armrest:'없음', headrest:'없음', tilt:'—' },
-    pillo: { seat_h:'—', width:'420mm', depth:'420mm', total_h:'—', weight:'약 1kg', armrest:'없음', headrest:'없음', tilt:'—' },
-    olly:  { seat_h:'—', width:'330mm', depth:'270mm', total_h:'—', weight:'약 1kg', armrest:'없음', headrest:'없음', tilt:'—' },
-    molti: { seat_h:'—', width:'600mm', depth:'550mm', total_h:'580~730mm', weight:'약 10kg', armrest:'없음', headrest:'없음', tilt:'높이 조절' },
-    atti:  { seat_h:'—', width:'550mm', depth:'500mm', total_h:'550~700mm', weight:'약 8kg',  armrest:'없음', headrest:'없음', tilt:'높이 조절' },
+    // ── WORK ──
+    t50: {
+        seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+        back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
+        arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
+        head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+        weight:'17.9kg', max_load:'125kg',
+        tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'높이·각도 조절',
+    },
+    t60: {
+        seat_h:'455~525mm', seat_w:'515mm', seat_d:'510mm',
+        back_h:'990mm', back_w:'480mm', back_d:'595~660mm',
+        arm_h:'610mm', arm_in:'460mm', arm_out:'670mm',
+        head_h:'1065mm', max_w:'735mm', rot_r:'345mm',
+        weight:'18.2kg', max_load:'125kg',
+        tilt:'4000g 틸트', cylinder:'70g', base:'플라스틱 690 플랫 베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'인피니핏 (높이·각도·깊이)',
+    },
+    t80: {
+        seat_h:'465~565mm', seat_w:'510mm', seat_d:'490mm', seat_adj:'490~550mm',
+        back_h:'990~1090mm', back_w:'455mm', back_d:'570~630mm',
+        arm_h:'580~680mm', arm_in:'490mm', arm_out:'675mm',
+        head_h:'1160~1225mm', max_w:'740mm', rot_r:'350mm',
+        weight:'22.9kg', max_load:'125kg',
+        tilt:'얼티밋 싱크 틸트', cylinder:'100G EX', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'높이·각도 조절',
+    },
+    t90: {
+        seat_h:'440~510mm', seat_w:'505mm', seat_d:'495mm', seat_adj:'495~555mm',
+        back_h:'1075~1145mm', back_w:'480mm',
+        arm_h:'600~680mm', arm_in:'460mm', arm_out:'650mm',
+        max_w:'760mm', rot_r:'350mm',
+        weight:'28.3kg', max_load:'125kg',
+        tilt:'얼티밋 싱크 틸트', cylinder:'3600G', base:'알루미늄 700 플랫 베이스', wheel:'우레탄 중공 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'멀티 조절',
+    },
+    t20: {
+        seat_h:'430~490mm', seat_w:'505mm', seat_d:'485mm',
+        back_h:'970~1030mm', back_w:'460mm', back_d:'605mm',
+        arm_h:'650mm', arm_in:'470mm', arm_out:'660mm',
+        head_h:'1110~1170mm', max_w:'735mm', rot_r:'350mm',
+        weight:'15kg', max_load:'125kg',
+        tilt:'종타이 틸트', cylinder:'90G', base:'플라스틱 690 플랫 라운드베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'2D 조절', headrest:'높이·각도 조절',
+    },
+    // ── GAMING ──
+    gcpro: {
+        seat_h:'450~525mm', seat_w:'500mm', seat_d:'465mm', seat_adj:'465~520mm',
+        back_h:'1160~1235mm', back_w:'495mm',
+        arm_h:'665~765mm', arm_in:'455mm', arm_out:'700mm',
+        head_h:'1180~1265mm', max_w:'750mm', rot_r:'345mm',
+        weight:'27kg', max_load:'125kg',
+        tilt:'종타이 틸트', cylinder:'HIGH CONE', base:'플라스틱 690 JL 베이스', wheel:'우레탄 중공 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'높이·각도 조절',
+    },
+    gx: {
+        seat_h:'425~485mm', seat_w:'520mm', seat_d:'460mm', seat_adj:'460~515mm',
+        back_h:'960~1020mm', back_w:'440mm', back_d:'610~665mm',
+        arm_h:'605~715mm', arm_in:'470mm', arm_out:'715mm',
+        head_h:'1160~1215mm', max_w:'735mm', rot_r:'345mm',
+        weight:'17kg', max_load:'115kg',
+        tilt:'종타이 틸트', cylinder:'90G', base:'플라스틱 690 플랫 베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'3D 조절', headrest:'높이·각도 조절',
+    },
+    // ── STUDY ──
+    ible: {
+        seat_h:'455mm', seat_w:'495mm', seat_d:'475mm',
+        back_h:'910mm', back_w:'485mm', back_d:'605mm',
+        arm_h:'655mm', arm_in:'485mm', arm_out:'635mm',
+        max_w:'655mm',
+        weight:'8.9kg', max_load:'125kg',
+        tilt:'하이브리드 글라이드', wheel:'나일론 바퀴 (65파이)',
+        armrest:'고정형', headrest:'없음',
+    },
+    ringo2: {
+        seat_h:'435~535mm', seat_w:'445mm', seat_d:'440mm', back_d:'425~500mm',
+        back_h:'830~880mm', back_w:'390mm',
+        arm_h:'590~625mm', arm_in:'435mm', arm_out:'510mm',
+        max_w:'645mm', rot_r:'305mm',
+        weight:'12.3kg', max_load:'114kg',
+        cylinder:'60G 클린고정중심봉', base:'플라스틱 610베이스', wheel:'φ50 우레탄',
+        armrest:'없음', headrest:'없음',
+    },
+    trevo: {
+        seat_h:'485~515mm', seat_w:'400mm', seat_d:'310mm',
+        back_h:'740~770mm', back_w:'350mm', back_d:'400mm',
+        max_w:'495mm',
+        weight:'6.7kg', max_load:'80kg',
+        armrest:'없음', headrest:'없음', tilt:'—',
+    },
+    // ── LIGHT WORK ──
+    linie: {
+        seat_h:'445~545mm', seat_w:'505mm', seat_d:'510mm',
+        back_h:'920~1020mm', back_w:'425mm', back_d:'585mm',
+        arm_h:'615mm', arm_in:'455mm', arm_out:'610mm',
+        max_w:'730mm', rot_r:'345mm',
+        weight:'13.2kg', max_load:'125kg',
+        tilt:'WAT 전용틸트', cylinder:'100G EX', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (50파이)',
+        armrest:'4D 조절', headrest:'없음',
+    },
+    muuve: {
+        seat_h:'445~535mm', seat_w:'480mm', seat_d:'430mm',
+        back_h:'770~860mm', back_w:'430mm', back_d:'530mm',
+        max_w:'645mm', rot_r:'320mm',
+        weight:'9kg', max_load:'125kg',
+        cylinder:'중심봉 90_207 슬림', base:'알루미늄 640 4발 베이스', wheel:'우레탄 바퀴 (50파이)',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    ega: {
+        seat_h:'450~525mm', seat_w:'515mm', seat_d:'435mm',
+        back_h:'800~875mm', back_w:'435mm', back_d:'540mm',
+        arm_h:'640mm', arm_in:'540mm', arm_out:'660mm',
+        max_w:'660mm', rot_r:'350mm',
+        weight:'9.3kg', max_load:'112kg',
+        cylinder:'40파이 슬림중심봉', base:'알루미늄 700 4발 베이스', wheel:'나일론 바퀴 (50파이)',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    button: {
+        seat_h:'410~485mm', seat_w:'495mm', seat_d:'445mm',
+        back_h:'750~825mm', back_w:'460mm', back_d:'495mm',
+        max_w:'570mm', rot_r:'350mm',
+        weight:'6.8kg', max_load:'112kg',
+        cylinder:'40파이 슬림중심봉', base:'알루미늄 700 4발 베이스', wheel:'나일론 바퀴 (50파이)',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    // ── LIVING DINING ──
+    mane: {
+        seat_h:'440mm', seat_w:'470mm', seat_d:'390mm',
+        back_h:'750mm', back_w:'400mm', back_d:'480mm',
+        max_w:'475mm',
+        weight:'4.9kg', max_load:'125kg',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    plit: {
+        seat_h:'450mm', seat_w:'400mm', seat_d:'400mm',
+        back_h:'762mm', back_w:'430mm', back_d:'480mm',
+        max_w:'455mm',
+        weight:'7.5kg', max_load:'125kg',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    oui: { seat_h:'450~520mm', seat_w:'520mm', seat_d:'560mm', max_w:'650mm', weight:'약 11kg', max_load:'125kg', armrest:'없음', headrest:'없음', tilt:'고정' },
+    // ── SIT BOOSTER ──
+    fungus: {
+        seat_h:'485mm', seat_w:'500mm', seat_d:'465mm',
+        max_w:'425mm',
+        weight:'5.8kg', max_load:'112kg',
+        cylinder:'100G (FUNGUS 전용)', wheel:'나일론 바퀴 (40파이)',
+        armrest:'없음', headrest:'없음', tilt:'고정',
+    },
+    stepo: { seat_h:'—', max_w:'350mm', weight:'약 2kg', armrest:'없음', headrest:'없음', tilt:'—' },
+    pillo: { seat_h:'—', max_w:'420mm', weight:'약 1kg', armrest:'없음', headrest:'없음', tilt:'—' },
+    olly:  { seat_h:'—', max_w:'330mm', weight:'약 1kg', armrest:'없음', headrest:'없음', tilt:'—' },
+    // ── GROWING ──
+    molti: {
+        seat_h:'130~215mm', max_w:'450mm',
+        weight:'14.3kg', max_load:'40kg',
+        armrest:'없음', headrest:'없음', tilt:'높이 조절',
+    },
+    atti: { seat_h:'—', max_w:'550mm', weight:'약 8kg', max_load:'125kg', armrest:'없음', headrest:'없음', tilt:'높이 조절' },
 };
 
 // ── 스펙 그룹별 개별 스펙 (T50 HF vs AIR, T60 vs T60 AIR 등 모델 간 스펙 상이) ──
 const productSpecsByGroup = {
     t50: {
-        'T50 HF':   { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
-        'T50 HDA':  { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
-        'T50 HLDA': { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
-        'T50 AIR':  { seat_h:'440~510mm', width:'480mm', depth:'580~640mm', total_h:'1120~1190mm', weight:'17.9kg' },
+        'T50 HF': {
+            seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'590mm',
+            arm_h:'620mm', arm_in:'505mm', arm_out:'685mm',
+            head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+            weight:'16kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+        'T50 HDA': {
+            seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'590mm',
+            arm_h:'620mm', arm_in:'505mm', arm_out:'685mm',
+            head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+            weight:'약 16.5kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+        'T50 HLDA': {
+            seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
+            arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
+            head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+            weight:'17.9kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+        'T50 AIR': {
+            weight:'18kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'HIGH CONE', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
     },
     t60: {
-        'T60':     { seat_h:'455~525mm', width:'515mm', depth:'595~660mm', total_h:'1065~1135mm', weight:'약 18.2kg' },
-        'T60 AIR': { seat_h:'445~515mm', width:'500mm', depth:'595~635mm', total_h:'1065~1135mm', weight:'약 19kg' },
+        'T60': {
+            seat_h:'455~525mm', seat_w:'515mm', seat_d:'510mm',
+            back_h:'990mm', back_w:'480mm', back_d:'595~660mm',
+            arm_h:'610mm', arm_in:'460mm', arm_out:'670mm',
+            head_h:'1065mm', max_w:'735mm', rot_r:'345mm',
+            weight:'18.2kg', max_load:'125kg',
+            tilt:'4000g 틸트', cylinder:'70g', base:'플라스틱 690 플랫 베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+        'T60 AIR': {
+            seat_h:'445~515mm', seat_w:'500mm', seat_d:'500mm',
+            back_h:'990mm', back_w:'480mm', back_d:'595~635mm',
+            arm_h:'610mm', arm_in:'460mm', arm_out:'670mm',
+            head_h:'1065mm', max_w:'735mm', rot_r:'345mm',
+            weight:'19kg', max_load:'125kg',
+            tilt:'4042g 틸트', cylinder:'70g', base:'플라스틱 690 플랫 베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
     },
 };
 
@@ -6967,25 +7175,60 @@ function switchDetailSpec(productId, specIdx) {
     renderDetailSpecs(productId, spec.name);
 }
 
-// ── 스펙 테이블 렌더 (그룹별 오버라이드 지원) ──
+// ── 스펙 테이블 렌더 (그룹별 오버라이드 지원, 섹션 분리) ──
 function renderDetailSpecs(productId, specGroupName) {
     const base = productSpecs[productId];
     const groupOverride = specGroupName ? productSpecsByGroup[productId]?.[specGroupName] : null;
     const s = groupOverride ? { ...base, ...groupOverride } : base;
-    const label = specGroupName ? `※ ${specGroupName} 기준 스펙` : '※ 기본 모델 기준이며 옵션에 따라 상이할 수 있습니다.';
-    document.getElementById('detailSpecs').innerHTML = s ? `
+    const label = specGroupName ? `※ ${specGroupName} 기준 스펙` : '※ 대표 모델 기준이며 옵션에 따라 상이할 수 있습니다.';
+    if (!s) {
+        document.getElementById('detailSpecs').innerHTML = '<p style="color:var(--text-secondary);padding:20px 0">스펙 정보를 준비 중입니다.</p>';
+        return;
+    }
+    const row = (label, val, unit='') => val && val !== '—' && val !== 'nan' && val !== '해당사항 없음'
+        ? `<tr><td>${label}</td><td>${val}${unit && !String(val).includes('mm') && !String(val).includes('kg') ? unit : ''}</td></tr>` : '';
+
+    const section = (title, rows) => {
+        const content = rows.join('');
+        return content ? `<tr class="spec-section-head"><td colspan="2">${title}</td></tr>${content}` : '';
+    };
+
+    const html = `
         <h2 style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;color:var(--sidiz-dark);margin-bottom:20px;">제품 스펙</h2>
         <table class="spec-table">
-            <tr><td>좌면 높이</td><td>${s.seat_h}</td></tr>
-            <tr><td>전체 너비</td><td>${s.width}</td></tr>
-            <tr><td>전체 깊이</td><td>${s.depth}</td></tr>
-            <tr><td>전체 높이</td><td>${s.total_h}</td></tr>
-            <tr><td>제품 중량</td><td>${s.weight}</td></tr>
-            ${s.armrest && s.armrest !== '없음' ? `<tr><td>팔걸이</td><td>${s.armrest}</td></tr>` : ''}
-            ${s.headrest && s.headrest !== '없음' ? `<tr><td>헤드레스트</td><td>${s.headrest}</td></tr>` : ''}
-            <tr><td>틸팅 방식</td><td>${s.tilt}</td></tr>
+            ${section('📐 좌판', [
+                row('좌판 높이', s.seat_h),
+                row('좌판 폭', s.seat_w),
+                row('좌판 깊이', s.seat_d),
+                row('깊이 조절 범위', s.seat_adj),
+            ])}
+            ${section('🔲 등판', [
+                row('등판 높이', s.back_h),
+                row('등판 폭', s.back_w),
+                row('등판 깊이', s.back_d),
+            ])}
+            ${s.arm_h && s.arm_h !== '없음' ? section('💪 팔걸이', [
+                row('팔걸이 높이', s.arm_h),
+                row('팔걸이 내측 폭', s.arm_in),
+                row('팔걸이 외측 폭', s.arm_out),
+            ]) : ''}
+            ${s.head_h ? section('🪑 헤드레스트', [row('헤드레스트 높이', s.head_h)]) : ''}
+            ${section('📏 전체 규격', [
+                row('제품 최대 폭', s.max_w),
+                row('회전 반경', s.rot_r),
+                row('제품 중량', s.weight),
+                row('최대 하중', s.max_load),
+            ])}
+            ${section('⚙️ 하드웨어', [
+                row('틸트', s.tilt),
+                row('중심봉', s.cylinder),
+                row('베이스', s.base),
+                row('바퀴', s.wheel),
+            ])}
         </table>
-        <p class="spec-note">${label}</p>` : '<p style="color:var(--text-secondary);padding:20px 0">스펙 정보를 준비 중입니다.</p>';
+        <p class="spec-note">${label}</p>`;
+
+    document.getElementById('detailSpecs').innerHTML = html;
 }
 
 // ── PRODUCT DETAIL ──
