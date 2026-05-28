@@ -1059,6 +1059,60 @@
         }
 
         /* ══════════════════════════════════
+           최근 업데이트 알림
+        ══════════════════════════════════ */
+        .update-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 500;
+            background: #fff;
+            border: 1.5px solid var(--sidiz-light);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(13,59,255,0.12);
+            padding: 16px 20px;
+            width: calc(100% - 32px);
+            max-width: 400px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .update-toast.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+        .update-toast-head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .update-toast-title {
+            font-size: 0.82rem; font-weight: 700; color: var(--sidiz-dark);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .update-dot {
+            width: 7px; height: 7px; background: var(--sidiz-navy);
+            border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;
+        }
+        .update-toast-close {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-secondary); font-size: 1rem; line-height: 1;
+            padding: 2px 4px;
+        }
+        .update-toast-date { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 8px; }
+        .update-list { list-style: none; }
+        .update-list li {
+            font-size: 0.8rem; color: var(--text-primary);
+            padding: 4px 0; border-bottom: 1px solid #f3f4f6;
+            display: flex; align-items: flex-start; gap: 6px; line-height: 1.4;
+        }
+        .update-list li:last-child { border-bottom: none; }
+        .update-tag {
+            font-size: 0.68rem; font-weight: 700; padding: 2px 6px;
+            border-radius: 4px; background: var(--sidiz-light); color: var(--sidiz-dark);
+            white-space: nowrap; margin-top: 1px;
+        }
+        .update-tag.fix { background:#fef3c7; color:#92400e; }
+        .update-tag.new { background:#dcfce7; color:#166534; }
+
+        /* ══════════════════════════════════
            견적서 출력 모달
         ══════════════════════════════════ */
         .print-modal-overlay {
@@ -5740,20 +5794,20 @@ const GROUP_PROMOS = {
 
 // ── PRODUCT SPECS ──
 const productSpecs = {
-    t50:   { seat_h:'420~520mm', width:'650mm', depth:'700mm', total_h:'1000~1100mm', weight:'17.6kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'멀티싱크 틸팅' },
-    t60:   { seat_h:'420~530mm', width:'690mm', depth:'660mm', total_h:'1050~1165mm', weight:'약 21kg', armrest:'4D 조절', headrest:'인피니핏 (높이·각도·깊이)', tilt:'멀티싱크 틸팅' },
-    t80:   { seat_h:'420~530mm', width:'700mm', depth:'680mm', total_h:'1080~1200mm', weight:'약 24kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'얼티메이트 싱크 틸팅' },
-    t90:   { seat_h:'420~540mm', width:'680mm', depth:'700mm', total_h:'1040~1180mm', weight:'28.7kg', armrest:'4D 조절', headrest:'멀티 조절', tilt:'플렉서블 등판+틸팅' },
-    t20:   { seat_h:'430~510mm', width:'640mm', depth:'620mm', total_h:'960~1040mm',  weight:'약 15kg', armrest:'2D 조절', headrest:'없음', tilt:'싱크 틸팅' },
-    gcpro: { seat_h:'450~510mm', width:'740mm', depth:'680mm', total_h:'1230~1290mm', weight:'약 25kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'락킹 틸팅' },
-    gx:    { seat_h:'430~510mm', width:'700mm', depth:'660mm', total_h:'1180~1240mm', weight:'약 22kg', armrest:'3D 조절', headrest:'높이·각도 조절', tilt:'싱크 틸팅' },
-    ible:  { seat_h:'410~490mm', width:'600mm', depth:'570mm', total_h:'820~900mm',   weight:'약 9kg',  armrest:'고정형', headrest:'없음', tilt:'전방 틸팅+잠금' },
-    linie: { seat_h:'410~520mm', width:'670mm', depth:'645mm', total_h:'1000~1090mm', weight:'약 17kg', armrest:'4D 조절', headrest:'없음', tilt:'멀티싱크 틸팅' },
+    t50:   { seat_h:'435~505mm', width:'685mm', depth:'590mm', total_h:'1120~1190mm', weight:'16.5kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'멀티싱크 틸팅' },
+    t60:   { seat_h:'455~525mm', width:'515mm', depth:'595~660mm', total_h:'1065~1135mm', weight:'약 18.2kg', armrest:'4D 조절', headrest:'인피니핏 (높이·각도·깊이)', tilt:'멀티싱크 틸팅' },
+    t80:   { seat_h:'465~565mm', width:'510mm', depth:'565~635mm', total_h:'1160~1260mm', weight:'23.2kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'얼티메이트 싱크 틸팅' },
+    t90:   { seat_h:'440~560mm', width:'505mm', depth:'590~665mm', total_h:'1160~1280mm', weight:'28.7kg', armrest:'4D 조절', headrest:'멀티 조절', tilt:'플렉서블 등판+틸팅' },
+    t20:   { seat_h:'430~490mm', width:'505mm', depth:'605mm', total_h:'1110~1170mm',  weight:'약 15.5kg', armrest:'2D 조절', headrest:'없음', tilt:'싱크 틸팅' },
+    gcpro: { seat_h:'450~525mm', width:'500mm', depth:'660~720mm', total_h:'1180~1255mm', weight:'약 27.5kg', armrest:'4D 조절', headrest:'높이·각도 조절', tilt:'락킹 틸팅' },
+    gx:    { seat_h:'425~485mm', width:'520mm', depth:'595~655mm', total_h:'1160~1220mm', weight:'약 17kg', armrest:'3D 조절', headrest:'높이·각도 조절', tilt:'싱크 틸팅' },
+    ible:  { seat_h:'455mm',     width:'495mm', depth:'605mm',     total_h:'910mm',       weight:'약 9.4kg', armrest:'고정형', headrest:'없음', tilt:'전방 틸팅+잠금' },
+    linie: { seat_h:'445~545mm', width:'505mm', depth:'585mm',     total_h:'920~1020mm',  weight:'약 13.7kg', armrest:'4D 조절', headrest:'없음', tilt:'오토 핏 틸트' },
+    ringo2:{ seat_h:'435~535mm', width:'445mm', depth:'425~500mm', total_h:'800~900mm',   weight:'약 11kg',  armrest:'없음', headrest:'없음', tilt:'4단계 높이 조절' },
     muuve: { seat_h:'445~535mm', width:'480mm', depth:'540mm', total_h:'730~810mm',   weight:'9kg',  armrest:'없음', headrest:'없음', tilt:'고정' },
     ega:   { seat_h:'440~520mm', width:'490mm', depth:'550mm', total_h:'730~810mm',   weight:'약 9kg',  armrest:'선택', headrest:'없음', tilt:'고정' },
     button:{ seat_h:'420~490mm', width:'490mm', depth:'540mm', total_h:'760~830mm',   weight:'약 8kg',  armrest:'선택', headrest:'없음', tilt:'고정' },
     trevo: { seat_h:'380~450mm', width:'550mm', depth:'540mm', total_h:'760~830mm',   weight:'약 8kg',  armrest:'없음', headrest:'없음', tilt:'전방 틸팅' },
-    ringo2:{ seat_h:'330~420mm', width:'530mm', depth:'500mm', total_h:'750~840mm',   weight:'약 9kg',  armrest:'없음', headrest:'없음', tilt:'4단계 높이 조절' },
     oui:   { seat_h:'450~520mm', width:'520mm', depth:'560mm', total_h:'950~1020mm',  weight:'약 11kg', armrest:'없음', headrest:'없음', tilt:'고정' },
     mane:  { seat_h:'450~520mm', width:'510mm', depth:'570mm', total_h:'880~950mm',   weight:'약 11kg', armrest:'없음', headrest:'없음', tilt:'고정' },
     plit:  { seat_h:'—', width:'455mm', depth:'480mm', total_h:'762mm',   weight:'7.5kg',  armrest:'없음', headrest:'없음', tilt:'고정' },
@@ -5763,6 +5817,20 @@ const productSpecs = {
     olly:  { seat_h:'—', width:'330mm', depth:'270mm', total_h:'—', weight:'약 1kg', armrest:'없음', headrest:'없음', tilt:'—' },
     molti: { seat_h:'—', width:'600mm', depth:'550mm', total_h:'580~730mm', weight:'약 10kg', armrest:'없음', headrest:'없음', tilt:'높이 조절' },
     atti:  { seat_h:'—', width:'550mm', depth:'500mm', total_h:'550~700mm', weight:'약 8kg',  armrest:'없음', headrest:'없음', tilt:'높이 조절' },
+};
+
+// ── 스펙 그룹별 개별 스펙 (T50 HF vs AIR, T60 vs T60 AIR 등 모델 간 스펙 상이) ──
+const productSpecsByGroup = {
+    t50: {
+        'T50 HF':   { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
+        'T50 HDA':  { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
+        'T50 HLDA': { seat_h:'435~505mm', width:'685mm', depth:'590mm',     total_h:'1120~1190mm' },
+        'T50 AIR':  { seat_h:'440~510mm', width:'480mm', depth:'580~640mm', total_h:'1120~1190mm', weight:'17.9kg' },
+    },
+    t60: {
+        'T60':     { seat_h:'455~525mm', width:'515mm', depth:'595~660mm', total_h:'1065~1135mm', weight:'약 18.2kg' },
+        'T60 AIR': { seat_h:'445~515mm', width:'500mm', depth:'595~635mm', total_h:'1065~1135mm', weight:'약 19kg' },
+    },
 };
 
 // ── 제품별 관련 악세서리 ──
@@ -6894,6 +6962,30 @@ function switchDetailSpec(productId, specIdx) {
 
     // _currentSpecColors 갱신 (switchDetailColor 에서 사용)
     _currentSpecColors[productId] = specColors;
+
+    // 스펙 탭 테이블 갱신 (스펙그룹별 수치가 다를 경우)
+    renderDetailSpecs(productId, spec.name);
+}
+
+// ── 스펙 테이블 렌더 (그룹별 오버라이드 지원) ──
+function renderDetailSpecs(productId, specGroupName) {
+    const base = productSpecs[productId];
+    const groupOverride = specGroupName ? productSpecsByGroup[productId]?.[specGroupName] : null;
+    const s = groupOverride ? { ...base, ...groupOverride } : base;
+    const label = specGroupName ? `※ ${specGroupName} 기준 스펙` : '※ 기본 모델 기준이며 옵션에 따라 상이할 수 있습니다.';
+    document.getElementById('detailSpecs').innerHTML = s ? `
+        <h2 style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;color:var(--sidiz-dark);margin-bottom:20px;">제품 스펙</h2>
+        <table class="spec-table">
+            <tr><td>좌면 높이</td><td>${s.seat_h}</td></tr>
+            <tr><td>전체 너비</td><td>${s.width}</td></tr>
+            <tr><td>전체 깊이</td><td>${s.depth}</td></tr>
+            <tr><td>전체 높이</td><td>${s.total_h}</td></tr>
+            <tr><td>제품 중량</td><td>${s.weight}</td></tr>
+            ${s.armrest && s.armrest !== '없음' ? `<tr><td>팔걸이</td><td>${s.armrest}</td></tr>` : ''}
+            ${s.headrest && s.headrest !== '없음' ? `<tr><td>헤드레스트</td><td>${s.headrest}</td></tr>` : ''}
+            <tr><td>틸팅 방식</td><td>${s.tilt}</td></tr>
+        </table>
+        <p class="spec-note">${label}</p>` : '<p style="color:var(--text-secondary);padding:20px 0">스펙 정보를 준비 중입니다.</p>';
 }
 
 // ── PRODUCT DETAIL ──
@@ -7037,20 +7129,7 @@ function showDetail(productId) {
         </div>`;
 
     // ── 탭 2: 제품 스펙 ──
-    const s = productSpecs[productId];
-    document.getElementById('detailSpecs').innerHTML = s ? `
-        <h2 style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;color:var(--sidiz-dark);margin-bottom:20px;">제품 스펙</h2>
-        <table class="spec-table">
-            <tr><td>좌면 높이</td><td>${s.seat_h}</td></tr>
-            <tr><td>전체 너비</td><td>${s.width}</td></tr>
-            <tr><td>전체 깊이</td><td>${s.depth}</td></tr>
-            <tr><td>전체 높이</td><td>${s.total_h}</td></tr>
-            <tr><td>제품 중량</td><td>${s.weight}</td></tr>
-            ${s.armrest !== '없음' ? `<tr><td>팔걸이</td><td>${s.armrest}</td></tr>` : ''}
-            ${s.headrest !== '없음' ? `<tr><td>헤드레스트</td><td>${s.headrest}</td></tr>` : ''}
-            <tr><td>틸팅 방식</td><td>${s.tilt}</td></tr>
-        </table>
-        <p class="spec-note">※ 스펙은 기본 모델 기준이며 옵션에 따라 상이할 수 있습니다.</p>` : '<p style="color:var(--text-secondary);padding:20px 0">스펙 정보를 준비 중입니다.</p>';
+    renderDetailSpecs(productId, productSpecGroups[productId]?.[_currentSpec[productId] || 0]?.name);
 
     // ── 탭 3: 관련 상품 ──
     const accIds = productAccessories[productId] || [];
@@ -7556,7 +7635,52 @@ document.addEventListener('DOMContentLoaded', () => {
     initCardSwatches();
     initCardPrices();
     loadCartFromUrl();
+    initUpdateToast();
 });
+
+// ══════════════════════════════════════════════
+//  업데이트 알림 시스템
+// ══════════════════════════════════════════════
+
+const CHANGELOG = [
+    {
+        date: '2026-05-28',
+        items: [
+            { tag: 'fix', text: 'T50 HF / T50 AIR 좌면높이·너비·깊이·전체높이·중량 수정' },
+            { tag: 'fix', text: 'T60 / T60 AIR 좌면높이·너비·깊이·전체높이·중량 수정' },
+            { tag: 'fix', text: 'T80 / T90 / GC PRO 치수 및 중량 수정' },
+            { tag: 'fix', text: 'RINGO 2 / T20 / GX / LINIE / IBLE 치수 및 중량 수정' },
+            { tag: 'new', text: '스펙 탭 전환 시 모델별 개별 수치 반영 (T50 HF↔AIR, T60↔T60 AIR)' },
+        ]
+    }
+];
+
+const UPDATE_SEEN_KEY = 'sidiz_update_seen';
+
+function initUpdateToast() {
+    const latest = CHANGELOG[0];
+    if (!latest) return;
+
+    // 이미 확인한 버전이면 표시 안 함
+    const seen = sessionStorage.getItem(UPDATE_SEEN_KEY);
+    if (seen === latest.date) return;
+
+    // 날짜/목록 채우기
+    document.getElementById('updateToastDate').textContent =
+        new Date(latest.date).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' }) + ' 업데이트';
+    document.getElementById('updateToastList').innerHTML = latest.items
+        .map(i => `<li><span class="update-tag ${i.tag}">${i.tag === 'fix' ? '수정' : '신규'}</span>${i.text}</li>`)
+        .join('');
+
+    // 2초 뒤 표시
+    setTimeout(() => document.getElementById('updateToast')?.classList.add('show'), 2000);
+}
+
+function dismissUpdateToast() {
+    const latest = CHANGELOG[0];
+    if (latest) sessionStorage.setItem(UPDATE_SEEN_KEY, latest.date);
+    document.getElementById('updateToast')?.classList.remove('show');
+}
 
 // ══════════════════════════════════════════════
 //  오류 신고 시스템 (Supabase 연동)
@@ -7763,6 +7887,16 @@ enterAdminMode = async function() {
             <button class="print-confirm" onclick="confirmPrintQuote()">출력하기</button>
         </div>
     </div>
+</div>
+
+<!-- ══ 최근 업데이트 알림 ══ -->
+<div class="update-toast" id="updateToast">
+    <div class="update-toast-head">
+        <div class="update-toast-title"><span class="update-dot"></span> 카탈로그 업데이트</div>
+        <button class="update-toast-close" onclick="dismissUpdateToast()">✕</button>
+    </div>
+    <div class="update-toast-date" id="updateToastDate"></div>
+    <ul class="update-list" id="updateToastList"></ul>
 </div>
 
 <!-- ══ 오류 신고 버튼 (우하단) ══ -->
