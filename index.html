@@ -4339,7 +4339,7 @@ function startAdminPress() {
         _logoLongPressed = true;
         logo.classList.remove('pressing');
         openAdminModal();
-    }, 3000);
+    }, 1800);
 }
 function cancelAdminPress() {
     clearTimeout(adminPressTimer);
@@ -4354,7 +4354,7 @@ function startDeployPress(e) {
     deployPressTimer = setTimeout(() => {
         trigger.classList.remove('pressing');
         enterDeployMode();
-    }, 3000);
+    }, 1800);
 }
 function cancelDeployPress() {
     clearTimeout(deployPressTimer);
