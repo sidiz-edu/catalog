@@ -5403,7 +5403,7 @@ const compareData = {
         포지셔닝: '어린이 책상·의자', 가격대: priceLabel('atti'), 틸팅방식: '—',
         요추지지대: false, 좌판깊이조절: false, '4D암레스트': false,
         헤드레스트: false, 특수기능: '세트 할인 8%', 추천대상: '초등학생',
-        좌판높이: '—', 제품최대폭: '550mm', 중량: '약 8kg', 최대하중: '125kg',
+        좌판높이: '220~260mm', 제품최대폭: '380mm (의자) / 550mm (세트)', 중량: '3.2kg (의자) / 약 10.2kg (세트)', 최대하중: '40kg',
         메쉬명칭: '—', 자재코드: '—', 메쉬성분: '—', 착좌텐션: '—', 메쉬특징: '—',
     },
 };
@@ -5986,11 +5986,23 @@ const productSpecs = {
         weight:'14.3kg', max_load:'40kg',
         armrest:'없음', headrest:'없음', tilt:'높이 조절',
     },
-    atti: { seat_h:'—', max_w:'550mm', weight:'약 8kg', max_load:'125kg', armrest:'없음', headrest:'없음', tilt:'높이 조절' },
+    atti: { seat_h:'220~260mm', max_w:'380mm', weight:'3.2kg', max_load:'40kg', armrest:'없음', headrest:'없음', tilt:'높이 조절' },
 };
 
 // ── 스펙 그룹별 개별 스펙 (T50 HF vs AIR, T60 vs T60 AIR 등 모델 간 스펙 상이) ──
 const productSpecsByGroup = {
+    atti: {
+        'ATTI 의자': {
+            seat_h: '220~260mm', max_w: '380mm',
+            weight: '3.2kg', max_load: '40kg',
+            armrest: '없음', headrest: '없음', tilt: '높이 조절',
+        },
+        'ATTI 세트': {
+            seat_h: '220~260mm', max_w: '550mm',
+            weight: '약 10.2kg', max_load: '40kg',
+            armrest: '없음', headrest: '없음', tilt: '높이 조절',
+        },
+    },
     ible: {
         'IBLE 고정형': {
             seat_h:'455mm', seat_w:'495mm', seat_d:'475mm',
@@ -6090,6 +6102,24 @@ const productAccessories = {
 
 // ── T50/T60/GC PRO 스펙 그룹 데이터 ──
 const productSpecGroups = {
+    atti: [
+        {
+            name: 'ATTI 의자', price: 69000,
+            colors: [
+                { name: '소이밀크',   code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_0ac74bfd-1bea-4f2a-b59f-7478d3557e63.jpg' },
+                { name: '멜로우피치', code: '#e8b090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A443S_00_fd2608e1-f375-4db1-b270-431020c618cd.jpg' },
+                { name: '세이지민트', code: '#88b0a0', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A444D_00_ced609c8-8b2b-4252-80a5-4a0a0aff72a3.jpg' },
+            ]
+        },
+        {
+            name: 'ATTI 세트', price: 158000,
+            colors: [
+                { name: '소이밀크',   code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_0ac74bfd-1bea-4f2a-b59f-7478d3557e63.jpg' },
+                { name: '멜로우피치', code: '#e8b090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A443S_00_fd2608e1-f375-4db1-b270-431020c618cd.jpg' },
+                { name: '세이지민트', code: '#88b0a0', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A444D_00_ced609c8-8b2b-4252-80a5-4a0a0aff72a3.jpg' },
+            ]
+        },
+    ],
     ible: [
         {
             name: 'IBLE 고정형', price: 179000,
