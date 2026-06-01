@@ -7662,23 +7662,24 @@ function renderCartItems() {
 
     // 신규가입 쿠폰 적용 가능 여부 (쿠폰 불가 상품 제외)
     const hasNonPromo = cart.some(i => !COUPON_NEVER.has(i.productId));
-    // 군인/소방관/경찰 쿠폰 적용 가능 여부
-    const hasMilitaryItem = cart.some(i => MILITARY_STEPO.has(i.productId) || MILITARY_REPAIR.has(i.productId));
+    // 군인/소방관/경찰 쿠폰 (항상 표시)
+    const milCartAmt = (() => {
+        let amt = 0;
+        if (cart.some(i => MILITARY_STEPO.has(i.productId)))  amt += MILITARY_STEPO_AMT;
+        if (cart.some(i => MILITARY_REPAIR.has(i.productId))) amt += MILITARY_REPAIR_AMT;
+        return amt;
+    })();
+    const milBadge = milCartAmt > 0 ? `−${fmt(milCartAmt)}` : '스테포 −5,000 / 이지리페어 −2,000';
 
     summaryEl.innerHTML = `
         ${hasNonPromo ? `<div class="coupon-toggle" onclick="toggleCoupon()">
             <span class="coupon-check ${couponApplied ? 'on' : ''}">${couponApplied ? '✅' : '☐'}</span>
             <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
         </div>` : ''}
-        ${hasMilitaryItem ? (() => {
-            let milAmt = 0;
-            if (cart.some(i => MILITARY_STEPO.has(i.productId)))  milAmt += MILITARY_STEPO_AMT;
-            if (cart.some(i => MILITARY_REPAIR.has(i.productId))) milAmt += MILITARY_REPAIR_AMT;
-            return `<div class="coupon-toggle" onclick="toggleMilitaryCoupon()">
-                <span class="coupon-check ${militaryCouponApplied ? 'on' : ''}">${militaryCouponApplied ? '✅' : '☐'}</span>
-                <span>🎖️ 군인/소방관/경찰 쿠폰 <span class="coupon-badge">−${fmt(milAmt)}</span></span>
-            </div>`;
-        })() : ''}
+        <div class="coupon-toggle" onclick="toggleMilitaryCoupon()">
+            <span class="coupon-check ${militaryCouponApplied ? 'on' : ''}">${militaryCouponApplied ? '✅' : '☐'}</span>
+            <span>🎖️ 군인/소방관/경찰 쿠폰 <span class="coupon-badge">${milBadge}</span></span>
+        </div>
         <div class="cart-summary-row">
             <span>소계</span><span>${fmt(subtotal)}</span>
         </div>
