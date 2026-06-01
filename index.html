@@ -3212,7 +3212,7 @@
     <div class="promo-banner">
         <div class="promo-banner-header">
             <div class="promo-banner-title">
-                <span class="month-chip">5월 행사</span>
+                <span class="month-chip">6월 행사</span>
                 이달의 행사 &amp; 쿠폰
             </div>
         </div>
@@ -3232,10 +3232,22 @@
                 </div>
                 <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
             </div>
-            <!-- 5월 가정의달 -->
+            <!-- 군인/소방관/경찰 -->
+            <div class="promo-card" style="--pc-accent:#ef4444;">
+                <span class="promo-card-icon">🎖️</span>
+                <div class="promo-card-series">스테포 · 이지리페어 · 6월 신규</div>
+                <div class="promo-card-name">군인/소방관/경찰 쿠폰</div>
+                <div class="promo-card-desc">
+                    인증 완료 후 장바구니에서 선택<br>
+                    <div class="promo-rate-row"><span class="rate-label">스테포</span><span class="rate-val" style="background:#ef4444;">−5,000원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">이지리페어</span><span class="rate-val" style="background:#ef4444;">−2,000원</span></div>
+                </div>
+                <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
+            </div>
+            <!-- 6월 행사 -->
             <div class="promo-card" style="--pc-accent:#3b82f6;">
                 <span class="promo-card-icon">📦</span>
-                <div class="promo-card-series">전 시리즈 · 5월 가정의달</div>
+                <div class="promo-card-series">전 시리즈 · 6월 행사</div>
                 <div class="promo-card-name">금액대 기본 할인</div>
                 <div class="promo-card-desc">
                     <div class="promo-rate-row"><span class="rate-label">30만원 이상</span><span class="rate-val" style="background:#3b82f6;">3%</span></div>
@@ -5711,8 +5723,8 @@ const variantData = {
         { name: '토트넘 펑거스',  price:  99000, comparePrice: 143000 },
     ],
     stepo: [
-        { name: '스테포',        price: 54000 },
-        { name: '스테포 커버형',  price: 69000 },
+        { name: '스테포',        price: 49900, comparePrice: 54000 },
+        { name: '스테포 커버형',  price: 62000, comparePrice: 69000 },
     ],
     pillo: [
         { name: '필로 패브릭',   price: 99000 },
@@ -6367,10 +6379,10 @@ const productColors = {
         { name: '토트넘 에디션', code: '#132257', price: 99000, comparePrice: 143000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_FUNGUS_Stadium_02_7d43f2cd-36cc-4aee-9ae7-518571ffae43.jpg' },
     ],
     stepo: [
-        { name: '차콜그레이 (커버형)', code: '#6a6868', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg' },
-        { name: '베이지 (커버형)',     code: '#d4c4a0', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D2_00_5265060a-1e6c-48db-8252-e4453b8b14e3.jpg' },
-        { name: '민트그린 (커버형)',   code: '#80b898', price: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D7_00_248b5a7c-f60c-4595-8c20-f8dd5ae1c731.jpg' },
-        { name: '그레이 (기본형)',     code: '#9a9a9a', price: 54000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F_MM_00_5fb2ed4d-017b-4467-ab4c-b53163cde8ac.jpg' },
+        { name: '차콜그레이 (커버형)', code: '#6a6868', price: 62000, comparePrice: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D1_00_8260628b-26e0-4c42-8601-551fe9986bf3.jpg' },
+        { name: '베이지 (커버형)',     code: '#d4c4a0', price: 62000, comparePrice: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D2_00_5265060a-1e6c-48db-8252-e4453b8b14e3.jpg' },
+        { name: '민트그린 (커버형)',   code: '#80b898', price: 62000, comparePrice: 69000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F1_3D7_00_248b5a7c-f60c-4595-8c20-f8dd5ae1c731.jpg' },
+        { name: '그레이 (기본형)',     code: '#9a9a9a', price: 49900, comparePrice: 54000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_STEPO_SB01F_MM_00_5fb2ed4d-017b-4467-ab4c-b53163cde8ac.jpg' },
     ],
     pillo: [
         { name: '다크그레이',   code: '#5a5a5a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_PILLO_M090_831A_00.jpg' },
@@ -7094,6 +7106,12 @@ function switchDetailTab(panelId, btn) {
 
 // ── 쿠폰 적용 불가 항목 ──
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','fungus','stepo','pillo','olly','atti']);
+// 군인/소방관/경찰 쿠폰 대상 (스테포 5,000원 / 이지리페어 2,000원)
+const MILITARY_STEPO   = new Set(['stepo']);
+const MILITARY_REPAIR  = new Set([]); // 이지리페어 product ID 추가 필요
+const MILITARY_STEPO_AMT  = 5000;
+const MILITARY_REPAIR_AMT = 2000;
+let militaryCouponApplied = false;
 
 // ── SPEC SELECTOR STATE ──
 const _currentSpec = {};
@@ -7366,6 +7384,10 @@ function showDetail(productId) {
             <button id="detailCouponBtn" class="coupon-apply-btn" onclick="toggleDetailCoupon('${productId}')">쿠폰 적용</button>
             <span id="detailCouponResult" class="coupon-result"></span>
         </div>` : '';
+    const militaryUi = (MILITARY_STEPO.has(productId) || MILITARY_REPAIR.has(productId)) && basePrice ? `
+        <div class="detail-coupon-row">
+            <span class="coupon-tag">🎖️ 군인/소방관/경찰 쿠폰 -${MILITARY_STEPO.has(productId) ? '5,000' : '2,000'}원</span>
+        </div>` : '';
 
     document.getElementById('detailContent').innerHTML = `
         <div class="detail-img" id="detailMainImg" style="background-image: url('${p.img}'); background-color: #eef2f7;">
@@ -7395,6 +7417,7 @@ function showDetail(productId) {
             </div>
             ${colorBar}
             ${couponUi}
+            ${militaryUi}
             <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
             <div id="detailVariants"></div>
             <div class="cta-row">
@@ -7535,6 +7558,14 @@ function getBestDiscount(cart) {
         if (couponEligibleSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
     }
 
+    // 4) 군인/소방관/경찰 쿠폰 (스테포 5,000원 / 이지리페어 2,000원)
+    if (militaryCouponApplied) {
+        let milAmt = 0;
+        if (cart.some(i => MILITARY_STEPO.has(i.productId)))  milAmt += MILITARY_STEPO_AMT;
+        if (cart.some(i => MILITARY_REPAIR.has(i.productId))) milAmt += MILITARY_REPAIR_AMT;
+        if (milAmt > 0) candidates.push({ label: '군인/소방관/경찰 쿠폰', amt: milAmt, type: 'coupon' });
+    }
+
     if (candidates.length === 0) return null;
     // 가장 할인 금액이 큰 것 선택
     return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
@@ -7588,6 +7619,11 @@ function toggleCoupon() {
     renderCartItems();
 }
 
+function toggleMilitaryCoupon() {
+    militaryCouponApplied = !militaryCouponApplied;
+    renderCartItems();
+}
+
 function renderCartItems() {
     const el = document.getElementById('cartItems');
     const summaryEl = document.getElementById('cartSummary');
@@ -7626,12 +7662,23 @@ function renderCartItems() {
 
     // 신규가입 쿠폰 적용 가능 여부 (쿠폰 불가 상품 제외)
     const hasNonPromo = cart.some(i => !COUPON_NEVER.has(i.productId));
+    // 군인/소방관/경찰 쿠폰 적용 가능 여부
+    const hasMilitaryItem = cart.some(i => MILITARY_STEPO.has(i.productId) || MILITARY_REPAIR.has(i.productId));
 
     summaryEl.innerHTML = `
         ${hasNonPromo ? `<div class="coupon-toggle" onclick="toggleCoupon()">
             <span class="coupon-check ${couponApplied ? 'on' : ''}">${couponApplied ? '✅' : '☐'}</span>
             <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
         </div>` : ''}
+        ${hasMilitaryItem ? (() => {
+            let milAmt = 0;
+            if (cart.some(i => MILITARY_STEPO.has(i.productId)))  milAmt += MILITARY_STEPO_AMT;
+            if (cart.some(i => MILITARY_REPAIR.has(i.productId))) milAmt += MILITARY_REPAIR_AMT;
+            return `<div class="coupon-toggle" onclick="toggleMilitaryCoupon()">
+                <span class="coupon-check ${militaryCouponApplied ? 'on' : ''}">${militaryCouponApplied ? '✅' : '☐'}</span>
+                <span>🎖️ 군인/소방관/경찰 쿠폰 <span class="coupon-badge">−${fmt(milAmt)}</span></span>
+            </div>`;
+        })() : ''}
         <div class="cart-summary-row">
             <span>소계</span><span>${fmt(subtotal)}</span>
         </div>
