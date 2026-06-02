@@ -7616,6 +7616,7 @@ function navigate(sectionId, navEl) {
 
     // Show hero only on products page
     document.getElementById('heroSection').style.display = sectionId === 'products' ? 'block' : 'none';
+    ['fabPromo','fabLineup'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = sectionId==='products' ? 'flex' : 'none'; });
     
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
@@ -8032,6 +8033,7 @@ function showDetail(productId) {
 
     // 화면 전환
     document.getElementById('heroSection').style.display = 'none';
+    ['fabPromo','fabLineup'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('detail').classList.add('active');
     document.querySelectorAll('.header-nav a').forEach(a => a.classList.remove('active'));
