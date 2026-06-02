@@ -1197,6 +1197,18 @@
         }
         .report-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
         .report-fab-icon { font-size: 1rem; }
+        .nav-fab {
+            position: fixed; right: 24px; z-index: 90;
+            background: #fff; border: 1.5px solid #e5e7eb; border-radius: 24px;
+            padding: 9px 16px; font-size: 0.78rem; font-weight: 600;
+            color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+            transition: var(--transition); letter-spacing: -0.2px;
+        }
+        .nav-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
+        #fabPromo   { bottom: 120px; }
+        #fabLineup  { bottom: 72px; }
 
         /* 신고 모달 */
         .report-modal-overlay {
@@ -8856,6 +8868,13 @@ enterAdminMode = async function() {
     <ul class="update-list" id="updateToastList"></ul>
 </div>
 
+<!-- ══ 퀵 네비 버튼 (우하단) ══ -->
+<button class="nav-fab" id="fabPromo" onclick="document.querySelector('.promo-banner').scrollIntoView({behavior:'smooth'})">
+    🎁 이달의 행사
+</button>
+<button class="nav-fab" id="fabLineup" onclick="document.querySelector('.section-label').scrollIntoView({behavior:'smooth'})">
+    📦 제품 라인업
+</button>
 <!-- ══ 오류 신고 버튼 (우하단) ══ -->
 <button class="report-fab" id="reportFab" onclick="openReportModal()">
     <span class="report-fab-icon">🚩</span> 오류 신고
