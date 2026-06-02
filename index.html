@@ -3331,7 +3331,7 @@
         <button class="cat-filter-btn"         data-cat="싯부스터" onclick="filterProducts('싯부스터')">싯부스터</button>
         <button class="cat-filter-btn"         data-cat="그로잉"   onclick="filterProducts('그로잉')">그로잉</button>
         <button class="cat-filter-btn"         data-cat="P굿즈"    onclick="filterProducts('P굿즈')">P굿즈</button>
-        <button class="cat-filter-btn"         data-cat="악세서리" onclick="filterProducts('악세서리')">악세서리</button>
+        <button class="cat-filter-btn"         data-cat="이지리페어" onclick="filterProducts('이지리페어')">이지리페어</button>
     </div>
 
     <div class="product-grid" id="productGrid">
@@ -3695,7 +3695,7 @@
         </div>
 
         <!-- ── 악세서리 ── -->
-        <div class="product-category-header"><h2>악세서리 / 커버</h2></div>
+        <div class="product-category-header"><h2>이지리페어</h2></div>
 
         <!-- 트레보 커버 -->
         <div class="product-card" onclick="showDetail('coverTrevo')">
@@ -5829,6 +5829,7 @@ const GROUP_PROMOS = {
     },
     trevoSet: {
         ids: ['trevo', 'coverTrevo'],
+        mainId: 'trevo', // 트레보 의자가 반드시 포함되어야 할인 적용
         label: '트레보 세트 할인',
         tiers: [
             { minQty: 2, rate: 0.08, desc: '트레보+커버 세트 8%' },
@@ -6958,7 +6959,7 @@ const categoryMap = {
     싯부스터: ['fungus', 'stepo', 'pillo', 'olly'],
     그로잉:   ['molti', 'atti'],
     'P굿즈':  ['spray', 'pbag'],
-    악세서리: ['coverTrevo', 'coverRingo2', 'coverRingo1', 'coverT50Air', 'coverT60Air', 'coverPlit'],
+    이지리페어: ['coverTrevo', 'coverRingo2', 'coverRingo1', 'coverT50Air', 'coverT60Air', 'coverPlit'],
 };
 
 function filterProducts(category) {
@@ -7108,7 +7109,7 @@ function switchDetailTab(panelId, btn) {
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','fungus','stepo','pillo','olly','atti']);
 // 군인/소방관/경찰 쿠폰 대상 (스테포 5,000원 / 이지리페어 2,000원)
 const MILITARY_STEPO   = new Set(['stepo']);
-const MILITARY_REPAIR  = new Set([]); // 이지리페어 product ID 추가 필요
+const MILITARY_REPAIR  = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','seatBreakA','seatBreakB','glideA','glideB','hangerT50','hangerT60','hangerGX','armpadT20Tot','spray','pbag']);
 const MILITARY_STEPO_AMT  = 5000;
 const MILITARY_REPAIR_AMT = 2000;
 let militaryCouponApplied = false;
@@ -7529,6 +7530,8 @@ function getBestDiscount(cart) {
     const evaluated = [];
     for (const [, g] of Object.entries(GROUP_PROMOS)) {
         const items = cart.filter(i => g.ids.includes(i.productId));
+        // mainId가 있으면 해당 제품이 반드시 카트에 있어야 함 (커버 단독 할인 방지)
+        if (g.mainId && !items.some(i => i.productId === g.mainId)) continue;
         const qty   = items.reduce((s, i) => s + i.qty, 0);
         const matched = g.tiers.find(t => qty >= t.minQty);
         if (matched) evaluated.push({ g, rate: matched.rate, desc: matched.desc, items });
