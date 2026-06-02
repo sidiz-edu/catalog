@@ -2993,6 +2993,8 @@
         <span>✏️ 편집 모드 — 텍스트를 클릭해 바로 수정하세요</span>
     </div>
     <div class="admin-bar-right">
+        <button class="admin-bar-btn" onclick="document.querySelector('.promo-banner').scrollIntoView({behavior:'smooth'})">🎁 이달의 행사</button>
+        <button class="admin-bar-btn" onclick="document.querySelector('.section-label').scrollIntoView({behavior:'smooth'})">📦 제품 라인업</button>
         <button class="admin-bar-btn" onclick="openReportPanel()" id="adminReportBtn">🚩 신고<span class="report-badge" id="adminBadge" style="display:none"></span></button>
         <button class="admin-bar-btn" onclick="openQuotePanel()">📋 견적 이력</button>
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
