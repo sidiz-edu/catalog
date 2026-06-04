@@ -8947,21 +8947,26 @@ function _getReportContext() {
 // ── 오류신고 버튼 길게 누르기 → 신고 내역 패널 ──
 (function() {
     let _pressTimer = null;
+    function startPress() {
+        _pressTimer = setTimeout(function() {
+            _pressTimer = null;
+            openReportPanel();
+        }, 600);
+    }
+    function cancelPress() {
+        if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
+    }
     document.addEventListener('DOMContentLoaded', function() {
         const fab = document.getElementById('reportFab');
         if (!fab) return;
-        fab.addEventListener('touchstart', function(e) {
-            _pressTimer = setTimeout(function() {
-                _pressTimer = null;
-                openReportPanel();
-            }, 600);
-        }, { passive: true });
-        fab.addEventListener('touchend', function() {
-            if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
-        });
-        fab.addEventListener('touchmove', function() {
-            if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
-        });
+        // 모바일 터치
+        fab.addEventListener('touchstart', startPress, { passive: true });
+        fab.addEventListener('touchend', cancelPress);
+        fab.addEventListener('touchmove', cancelPress);
+        // PC 마우스
+        fab.addEventListener('mousedown', startPress);
+        fab.addEventListener('mouseup', cancelPress);
+        fab.addEventListener('mouseleave', cancelPress);
     });
 })();
 
@@ -9219,7 +9224,7 @@ enterAdminMode = async function() {
     📦 제품 라인업
 </button>
 <!-- ══ 오류 신고 버튼 (우하단) ══ -->
-<button class="report-fab" id="reportFab" onclick="openReportModal()" oncontextmenu="event.preventDefault(); openReportPanel()">
+<button class="report-fab" id="reportFab" onclick="openReportModal()">
     <span class="report-fab-icon">🚩</span> 오류 신고
 </button>
 
