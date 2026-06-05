@@ -4833,7 +4833,7 @@ OOO 고객님, 오늘 방문 예정입니다.
         <h2 data-editable data-key="cta-care-h2" contenteditable="false">A/S가 필요하신가요?</h2>
         <p data-editable data-key="cta-care-p" contenteditable="false">시디즈 공식 A/S 센터에서 빠르게 처리해 드립니다.</p>
         <div class="cta-row">
-            <a class="btn-primary" href="tel:1588-0581">📞 A/S 접수하기</a>
+            <a class="btn-primary" href="tel:1577-5674">📞 A/S 접수하기</a>
             <a class="btn-secondary" href="https://kr.sidiz.com/" target="_blank">🌐 온라인 A/S 신청</a>
         </div>
     </div>
@@ -5662,7 +5662,7 @@ const storeData = [
         naverUrl: 'https://map.naver.com/v5/search/시디즈+센텀'
     },
     {
-        id: 'cheongju', name: '매장 커넥트 청주점', region: '충북',
+        id: 'cheongju', name: '커넥트현대 청주', region: '충북',
         address: '충북 청주시 흥덕구 가경동 1416 커넥트현대 청주',
         hours: '월~목 10:30 – 18:00 · 금~일 10:30 – 21:00',
         phone: '043-925-2506',
@@ -6282,8 +6282,10 @@ const variantData = {
         { name: '몰티 책상의자용 다리', price: 39000 },
     ],
     atti: [
-        { name: '아띠 의자', price: 69000 },
-        { name: '아띠 책상', price: 89000 },
+        { name: '아띠 의자 (소이밀크)',   price: 69000 },
+        { name: '아띠 의자 (멜로우피치)', price: 69000 },
+        { name: '아띠 의자 (세이지민트)', price: 69000 },
+        { name: '아띠 책상 (화이트)',     price: 89000 },
     ],
     spray: [
         { name: '멀티스프레이 INFINITY', price: 29000 },
@@ -6580,10 +6582,10 @@ const productSpecsByGroup = {
             weight: '3.2kg', max_load: '40kg',
             armrest: '없음', headrest: '없음', tilt: '높이 조절',
         },
-        'ATTI 세트': {
-            seat_h: '220~260mm', max_w: '550mm',
-            weight: '약 10.2kg', max_load: '40kg',
-            armrest: '없음', headrest: '없음', tilt: '높이 조절',
+        'ATTI 책상': {
+            seat_h: '—', max_w: '550mm',
+            weight: '약 7kg', max_load: '—',
+            armrest: '—', headrest: '—', tilt: '—',
         },
     },
     ible: {
@@ -6695,11 +6697,9 @@ const productSpecGroups = {
             ]
         },
         {
-            name: 'ATTI 세트', price: 158000,
+            name: 'ATTI 책상', price: 89000,
             colors: [
-                { name: '소이밀크',   code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_0ac74bfd-1bea-4f2a-b59f-7478d3557e63.jpg' },
-                { name: '멜로우피치', code: '#e8b090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A443S_00_fd2608e1-f375-4db1-b270-431020c618cd.jpg' },
-                { name: '세이지민트', code: '#88b0a0', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A444D_00_ced609c8-8b2b-4252-80a5-4a0a0aff72a3.jpg' },
+                { name: '화이트', code: '#f5f5f0', img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_K30X1KG_WW_00_5fab6b75-be8c-4270-949d-bb3524e54ed7.jpg' },
             ]
         },
     ],
@@ -6837,7 +6837,7 @@ const productColors = {
     t80: [
         { name: '블랙 (메쉬)',             code: '#4a4a4a', price: 619000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_456BK_00.jpg' },
         { name: '내추럴화이트 (메쉬)',     code: '#c8c4be', price: 619000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_451NWW_00_a71f85e4-a460-4238-9460-bdeb63320686.jpg' },
-        { name: '블랙 (천연가죽)',         code: '#1a1a1a', price: 724000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_L946BK_00_4f62cd85-61d1-417a-b1aa-aa171da3cb6e.jpg' },
+        { name: '블랙 (천연가죽)',         code: '#1a1a1a', price: 724000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_L946BK_01.jpg' },
         { name: '라이트그레이 (천연가죽)', code: '#c4c0b8', price: 724000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_L941LW_00_b999ce29-8ca0-473c-bc40-da0c434e0772.jpg' },
         { name: '크림 (천연가죽)',         code: '#e8d8b8', price: 789000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_L946CR_00_3bd9c2cf-0da1-487f-bf1b-9eff7db2da42.jpg' },
         { name: '라이트크림 (천연가죽)',   code: '#f0e8d0', price: 789000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_L941LC_00_b39b3e40-8d41-4aa2-97eb-24b32bb7fd85.jpg' },
@@ -6943,7 +6943,7 @@ const productColors = {
         { name: '워터리블루', code: '#5080a8', price: 124000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_454_00_acd68f3f-2563-4ad1-8018-ca7d0a102264.jpg' },
         { name: '차콜',       code: '#4a4a4a', price: 124000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_456_00_3963bb03-faa1-4b78-9b76-5328a1b4093a.jpg' },
         { name: '브릭오렌지', code: '#c86040', price: 124000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_458_00_8f65569d-2a81-4b4a-bb1c-9e8069094bca.jpg' },
-        { name: '14 GRAY',    code: '#888888', price: 124000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_14GRAY_00_4af791fb-36fd-4156-91c9-8d89d80292b0.jpg' },
+
         { name: '그레이',     code: '#9a9a9a', price: 124000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_FUNGUS_MN130_451L_00_c1e761b8-d6f6-46db-b3ec-34a728ebedbe.jpg' },
         { name: '블루',       code: '#4060a0', price: 124000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_FUNGUS_MN130_454B_00_278993d9-f6b4-485a-8918-30e9f9afca94.jpg' },
         { name: '애쉬그린',   code: '#7a9a80', price: 124000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_FUNGUS_MN130_457L_00_d359f29b-ca80-4b79-8ea2-1992d3a957f7.jpg' },
@@ -8291,7 +8291,7 @@ function showDetail(productId) {
             <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
             <div id="detailVariants"></div>
             <div class="cta-row">
-                <a class="btn-secondary" href="tel:1588-0581">📞 매장 상담 문의</a>
+                <a class="btn-secondary" href="tel:1577-5674">📞 매장 상담 문의</a>
             </div>
         </div>
     `;
