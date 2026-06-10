@@ -8690,9 +8690,10 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const quoteNo = 'SQ-' + Date.now().toString().slice(-8);
 
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const { best, candidates: discCandidates } = getAllDiscountCandidates(cart);
+    const best = getBestDiscount(cart);          // 장바구니와 동일 로직 (쿠폰 토글 반영)
     const discAmt = best ? best.amt : 0;
     const final = subtotal - discAmt;
+    const { candidates: discCandidates } = getAllDiscountCandidates(cart);  // 표시용 전체 후보
 
     // Supabase에 견적 저장
     _sb.from('quotes').insert({
