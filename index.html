@@ -8225,10 +8225,7 @@ function showDetail(productId) {
 
     // 쿠폰 UI
     const basePrice = variantData[productId] ? variantData[productId][0].price : null;
-    const couponUi = !COUPON_NEVER.has(productId) && basePrice ? `
-        <div class="detail-coupon-row">
-            <span class="coupon-tag">🎁 신규가입 쿠폰 -5,000원 (장바구니에서 적용)</span>
-        </div>` : '';
+    const couponUi = '';
     const militaryUi = (MILITARY_STEPO.has(productId) || MILITARY_REPAIR.has(productId)) && basePrice ? `
         <div class="detail-coupon-row">
             <span class="coupon-tag">🎖️ 군인/소방관/경찰 쿠폰 -${MILITARY_STEPO.has(productId) ? '5,000' : '2,000'}원</span>
