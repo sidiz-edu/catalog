@@ -7976,7 +7976,7 @@ function switchDetailTab(panelId, btn) {
 }
 
 // ── 쿠폰 적용 불가 항목 ──
-const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','stepo','olly','atti']);
+const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','olly','atti']);
 // 군인/소방관/경찰 쿠폰 대상 (스테포 5,000원 / 이지리페어 2,000원)
 const MILITARY_STEPO   = new Set(['stepo']);
 const MILITARY_REPAIR  = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','seatBreakA','seatBreakB','glideA','glideB','hangerT50','hangerT60','hangerGX','armpadT20Tot','spray','pbag','t60Seat','t60AirSeat','t60Armpad','t60Headrest','ringo2Footrest','ringo2Seat','ringo2Back','t20Headrest','t20Seat','t50Seat','t50FixedArm','t55Armpad','attiBlock','ringo1Footrest','ringo1Lever','castorUreA','castorUreB','t20OldArm','t50AdjArm','t80Armpad','t80Seat','t20OldHeadrest','t50Headrest','t80Headrest','ringo1Seat','ringo1Back','moltiLeg','moltiInnerSeat']);
@@ -8492,11 +8492,13 @@ function updateCartBadge() {
 
 function toggleCoupon() {
     couponApplied = !couponApplied;
+    if (couponApplied) militaryCouponApplied = false;  // 신규가입 쿠폰 선택 시 군인쿠폰 해제
     renderCartItems();
 }
 
 function toggleMilitaryCoupon() {
     militaryCouponApplied = !militaryCouponApplied;
+    if (militaryCouponApplied) couponApplied = false;  // 군인쿠폰 선택 시 신규가입 쿠폰 해제
     renderCartItems();
 }
 
