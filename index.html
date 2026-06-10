@@ -8441,6 +8441,48 @@ function getBestDiscount(cart) {
     return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
 }
 
+// 견적서용: 적용 가능한 모든 할인 후보 반환 (쿠폰 toggle 무관하게 항상 포함)
+function getAllDiscountCandidates(cart) {
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const candidates = [];
+
+    // 1) 금액 기준 할인
+    const tier = DISCOUNT_TIERS.find(t => subtotal >= t.min);
+    if (tier) candidates.push({ label: tier.label + ' ' + (tier.rate * 100).toFixed(0) + '%', amt: Math.round(subtotal * tier.rate), type: 'tier' });
+
+    // 2) 그룹 수량 할인
+    const claimedIds = new Set();
+    let groupAmt = 0;
+    const groupLabels = [];
+    const evaluated = [];
+    for (const [, g] of Object.entries(GROUP_PROMOS)) {
+        const items = cart.filter(i => g.ids.includes(i.productId));
+        if (g.mainId && !items.some(i => i.productId === g.mainId)) continue;
+        const qty = items.reduce((s, i) => s + i.qty, 0);
+        const matched = g.tiers.find(t => qty >= t.minQty);
+        if (matched) evaluated.push({ g, rate: matched.rate, desc: matched.desc, items });
+    }
+    evaluated.sort((a, b) => b.rate - a.rate);
+    for (const ev of evaluated) {
+        const free = ev.items.filter(i => !claimedIds.has(i.id));
+        const freeQty = free.reduce((s, i) => s + i.qty, 0);
+        const reMatch = ev.g.tiers.find(t => freeQty >= t.minQty);
+        if (reMatch && free.length > 0) {
+            const amt = free.reduce((s, i) => s + Math.round(i.price * i.qty * reMatch.rate), 0);
+            if (amt > 0) { groupAmt += amt; groupLabels.push(ev.g.label + ' ' + reMatch.desc); free.forEach(i => claimedIds.add(i.id)); }
+        }
+    }
+    if (groupAmt > 0) candidates.push({ label: groupLabels.join(' / '), amt: groupAmt, type: 'group' });
+
+    // 3) 신규가입 쿠폰 (toggle 무관하게 항상 후보로)
+    const couponEligibleSubtotal = cart.filter(i => !COUPON_NEVER.has(i.productId)).reduce((s, i) => s + i.price * i.qty, 0);
+    if (couponEligibleSubtotal > 0) candidates.push({ label: '신규가입 쿠폰', amt: 5000, type: 'coupon' });
+
+    if (candidates.length === 0) return { best: null, candidates: [] };
+    const best = candidates.reduce((b, c) => c.amt > b.amt ? c : b);
+    return { best, candidates };
+}
+
 function getNextTier(subtotal) {
     const idx = DISCOUNT_TIERS.findIndex(t => subtotal >= t.min);
     const next = idx === -1 ? DISCOUNT_TIERS[DISCOUNT_TIERS.length - 1] : DISCOUNT_TIERS[idx - 1];
@@ -8648,12 +8690,9 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const quoteNo = 'SQ-' + Date.now().toString().slice(-8);
 
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const best = getBestDiscount(cart);
+    const { best, candidates: discCandidates } = getAllDiscountCandidates(cart);
     const discAmt = best ? best.amt : 0;
-    const couponAmt = couponApplied
-        ? cart.filter(i => !COUPON_NEVER.has(i.productId)).reduce((s, i) => s + i.price * i.qty, 0) > 0 ? 5000 : 0
-        : 0;
-    const final = subtotal - discAmt - couponAmt;
+    const final = subtotal - discAmt;
 
     // Supabase에 견적 저장
     _sb.from('quotes').insert({
@@ -8663,7 +8702,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
         staff_name: staffName || null,
         items: cart.map(i => ({ name: i.name, variantName: i.variantName, price: i.price, qty: i.qty })),
         subtotal,
-        discount_amt: discAmt + couponAmt,
+        discount_amt: discAmt,
         discount_label: best ? best.label : null,
         total_amt: final,
     }).then(({ error }) => { if (error) console.warn('견적 저장 실패:', error); });
@@ -8718,6 +8757,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
   .summary-row { display:flex; justify-content:space-between; padding:8px 14px; font-size:12px; border-bottom:1px solid #f0f0f0; }
   .summary-row:last-child { border-bottom:none; }
   .summary-row.disc { color:#16a34a; font-weight:600; }
+  .summary-row.disc-alt { color:#9ca3af; font-size:11px; text-decoration:line-through; }
   .summary-row.total { background:#0D3BFF; color:#fff; font-size:14px; font-weight:800; padding:11px 14px; }
   .footer { margin-top:28px; border-top:1px solid #e5e7eb; padding-top:14px; display:flex; justify-content:space-between; align-items:flex-end; color:#6b7280; font-size:10.5px; line-height:1.7; }
   .footer .note b { color:#1a1a1a; }
@@ -8760,8 +8800,12 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 <div class="summary">
     <div class="summary-box">
         <div class="summary-row"><span>소계</span><span>${f(subtotal)}</span></div>
-        ${best ? `<div class="summary-row disc"><span>할인 (${best.label})</span><span>− ${f(discAmt)}</span></div>` : ''}
-        ${couponAmt ? `<div class="summary-row disc"><span>신규가입 쿠폰</span><span>− ${f(couponAmt)}</span></div>` : ''}
+        ${discCandidates.map(c => {
+            const isApplied = best && c.label === best.label && c.amt === best.amt;
+            return isApplied
+                ? `<div class="summary-row disc"><span>✓ 할인 적용 (${c.label})</span><span>− ${f(c.amt)}</span></div>`
+                : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
+        }).join('')}
         <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
     </div>
 </div>
