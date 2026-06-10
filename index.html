@@ -8548,16 +8548,32 @@ function renderCartItems() {
     const final = subtotal - discAmt - milDiscAmt;
     const next = getNextTier(subtotal);
 
-    // 신규가입 쿠폰 적용 가능 여부 (쿠폰 불가 상품 제외)
+    // 신규가입 쿠폰 적용 가능 여부
     const hasNonPromo = cart.some(i => !COUPON_NEVER.has(i.productId));
     const hasMilItems = milCartAmt > 0;
     const milBadge = hasMilItems ? `−${fmt(milCartAmt)}` : '스테포 −5,000 / 이지리페어 −2,000';
 
+    // 쿠폰보다 더 큰 할인(tier/group)이 이미 있으면 쿠폰 비활성
+    const { candidates: allCandidates } = getAllDiscountCandidates(cart);
+    const nonCouponBestAmt = allCandidates.filter(c => c.type !== 'coupon').reduce((m, c) => Math.max(m, c.amt), 0);
+    const couponBeaten = nonCouponBestAmt > 5000;
+    if (couponBeaten && couponApplied) couponApplied = false;  // 더 큰 할인이 생기면 쿠폰 자동 해제
+    const couponDisabled = !hasNonPromo || couponBeaten;
+
     summaryEl.innerHTML = `
-        ${hasNonPromo ? `<div class="coupon-toggle" onclick="toggleCoupon()">
-            <span class="coupon-check ${couponApplied ? 'on' : ''}">${couponApplied ? '✅' : '☐'}</span>
-            <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
-        </div>` : ''}
+        ${hasNonPromo ? (() => {
+            if (couponBeaten) {
+                return `<div class="coupon-toggle disabled">
+                    <span class="coupon-check">☐</span>
+                    <span>신규가입 쿠폰 <span class="coupon-badge">−5,000원</span></span>
+                    <span style="font-size:0.75rem;color:#aaa;margin-left:4px">(현재 할인이 더 유리)</span>
+                </div>`;
+            }
+            return `<div class="coupon-toggle" onclick="toggleCoupon()">
+                <span class="coupon-check ${couponApplied ? 'on' : ''}">${couponApplied ? '✅' : '☐'}</span>
+                <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
+            </div>`;
+        })() : ''}
         <div class="coupon-toggle ${hasMilItems ? '' : 'disabled'}" onclick="${hasMilItems ? 'toggleMilitaryCoupon()' : ''}">
             <span class="coupon-check ${militaryCouponApplied && hasMilItems ? 'on' : ''}">${militaryCouponApplied && hasMilItems ? '✅' : '☐'}</span>
             <span>🎖️ 군인/소방관/경찰 쿠폰 <span class="coupon-badge">${milBadge}</span></span>
