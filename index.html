@@ -1938,6 +1938,54 @@
         }
         .link-preview-btn:hover { background: var(--sidiz-navy); color: white; }
 
+        /* ══ 견적서 미리보기 모달 ══ */
+        .quote-preview-modal {
+            display: none; position: fixed; inset: 0;
+            z-index: 9200; flex-direction: column;
+        }
+        .quote-preview-modal.open { display: flex; animation: fadeUp 0.2s ease; }
+        .quote-preview-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a1a2e; color: white;
+            padding: 10px 20px; gap: 10px; flex-shrink: 0; height: 52px;
+        }
+        .quote-preview-bar-left { display: flex; gap: 8px; }
+        .quote-preview-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            padding: 6px 14px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .quote-preview-btn:hover { background: rgba(255,255,255,0.25); }
+        .quote-preview-btn.accent { background: var(--sidiz-blue); }
+        .quote-preview-btn.accent:hover { background: #0a2ecc; }
+        .quote-share-panel {
+            background: #0f172a; color: white; padding: 16px 20px;
+            flex-shrink: 0; display: none;
+            flex-direction: row; align-items: center; gap: 20px; flex-wrap: wrap;
+        }
+        .quote-share-panel.open { display: flex; }
+        .quote-share-url-box {
+            flex: 1; min-width: 0;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 10px 14px;
+            font-size: 0.72rem; font-family: monospace; color: #a5f3fc;
+            word-break: break-all; line-height: 1.6;
+        }
+        .quote-share-copy-btn {
+            background: #16a34a; border: none; color: white;
+            padding: 8px 16px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+        }
+        .quote-share-qr { flex-shrink: 0; background: white; padding: 6px; border-radius: 8px; }
+        .quote-preview-frame {
+            flex: 1; overflow: hidden;
+            background: #f3f4f6;
+        }
+        .quote-preview-frame iframe {
+            width: 100%; height: 100%; border: none;
+        }
+
         /* ══ 미리보기 모달 ══ */
         .preview-overlay {
             display: none; position: fixed; inset: 0;
@@ -8830,9 +8878,51 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 </body>
 </html>`;
 
-    const w = window.open('', '_blank', 'width=794,height=1000');
-    w.document.write(html);
-    w.document.close();
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.getElementById('quotePreviewIframe');
+    if (iframe._blobUrl) URL.revokeObjectURL(iframe._blobUrl);
+    iframe._blobUrl = blobUrl;
+    iframe.src = blobUrl;
+    document.getElementById('quoteSharePanel').classList.remove('open');
+    document.getElementById('quotePreviewModal').classList.add('open');
+}
+
+function closeQuotePreview() {
+    const iframe = document.getElementById('quotePreviewIframe');
+    if (iframe._blobUrl) { URL.revokeObjectURL(iframe._blobUrl); iframe._blobUrl = null; }
+    iframe.src = '';
+    document.getElementById('quotePreviewModal').classList.remove('open');
+    document.getElementById('quoteSharePanel').classList.remove('open');
+}
+
+function printQuoteFromPreview() {
+    document.getElementById('quotePreviewIframe').contentWindow.print();
+}
+
+function toggleQuoteShare() {
+    const panel = document.getElementById('quoteSharePanel');
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) { panel.classList.remove('open'); return; }
+
+    const payload = cart.map(i => ({ pid: i.productId, vn: i.variantName, p: i.price, q: i.qty }));
+    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const url = `${location.origin}${location.pathname}?cart=${encoded}`;
+
+    document.getElementById('quoteShareUrlBox').textContent = url;
+    const qrDiv = document.getElementById('quoteShareQr');
+    qrDiv.innerHTML = '';
+    new QRCode(qrDiv, { text: url, width: 120, height: 120, colorDark: '#0D3BFF', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    panel.classList.add('open');
+}
+
+function copyQuoteShareLink() {
+    const url = document.getElementById('quoteShareUrlBox').textContent;
+    const btn = document.getElementById('quoteShareCopyBtn');
+    navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = '✅ 복사됨';
+        setTimeout(() => { btn.textContent = '복사'; }, 2000);
+    }).catch(() => { prompt('링크를 복사하세요:', url); });
 }
 
 function loadCartFromUrl() {
@@ -9247,7 +9337,7 @@ enterAdminMode = async function() {
 <div class="print-modal-overlay" id="printModalOverlay" onclick="closePrintModal(event)">
     <div class="print-modal" onclick="event.stopPropagation()">
         <div class="print-modal-handle"></div>
-        <h3>🖨 견적서 출력</h3>
+        <h3>📄 견적서 보기</h3>
         <div class="print-field">
             <label>고객명</label>
             <input type="text" id="pmCustomer" placeholder="예: 홍길동 고객님" autocomplete="off">
@@ -9264,8 +9354,27 @@ enterAdminMode = async function() {
         </div>
         <div class="print-btn-row">
             <button class="print-cancel" onclick="closePrintModal()">취소</button>
-            <button class="print-confirm" onclick="confirmPrintQuote()">출력하기</button>
+            <button class="print-confirm" onclick="confirmPrintQuote()">견적서 보기</button>
         </div>
+    </div>
+</div>
+
+<!-- ══ 견적서 미리보기 모달 ══ -->
+<div class="quote-preview-modal" id="quotePreviewModal">
+    <div class="quote-preview-bar">
+        <div class="quote-preview-bar-left">
+            <button class="quote-preview-btn accent" onclick="printQuoteFromPreview()">🖨 견적서 인쇄</button>
+            <button class="quote-preview-btn" id="quoteShareToggleBtn" onclick="toggleQuoteShare()">🔗 링크 공유</button>
+        </div>
+        <button class="quote-preview-btn" onclick="closeQuotePreview()">✕ 닫기</button>
+    </div>
+    <div class="quote-share-panel" id="quoteSharePanel">
+        <div class="quote-share-url-box" id="quoteShareUrlBox"></div>
+        <button class="quote-share-copy-btn" id="quoteShareCopyBtn" onclick="copyQuoteShareLink()">복사</button>
+        <div class="quote-share-qr" id="quoteShareQr"></div>
+    </div>
+    <div class="quote-preview-frame">
+        <iframe id="quotePreviewIframe" src="" frameborder="0"></iframe>
     </div>
 </div>
 
@@ -9363,7 +9472,7 @@ enterAdminMode = async function() {
             🔗 견적 링크 복사
         </button>
         <button class="quote-print-btn" onclick="printQuote()">
-            🖨 견적서 출력
+            📄 견적서 보기
         </button>
     </div>
 </div>
