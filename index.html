@@ -8541,7 +8541,9 @@ function addToCart(productId, variantName, price) {
         existing.qty++;
     } else {
         const p = products[productId];
-        cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, qty: 1 });
+        const vd = (variantData[productId] || []).find(v => v.name === variantName);
+        const comparePrice = vd?.comparePrice || null;
+        cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, comparePrice, qty: 1 });
     }
     updateCartBadge();
     renderCartItems();
@@ -8773,10 +8775,12 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 
     const f = n => n.toLocaleString('ko-KR') + '원';
 
+    const compareTotalAmt = cart.reduce((s, i) => s + (i.comparePrice || i.price) * i.qty, 0);
     const rowsHtml = cart.map((item, idx) => `
         <tr>
             <td class="tc">${idx + 1}</td>
             <td>${item.name}<br><span class="sub">${item.variantName}</span>${decodeOptionCode(item.variantName) ? `<span style="font-size:10px;color:#9ca3af;display:block;margin-top:2px;">${decodeOptionCode(item.variantName)}</span>` : ''}</td>
+            <td class="tr" style="color:#9ca3af;text-decoration:line-through;font-size:11px;">${item.comparePrice ? f(item.comparePrice) : '—'}</td>
             <td class="tr">${f(item.price)}</td>
             <td class="tc">${item.qty}</td>
             <td class="tr bold">${f(item.price * item.qty)}</td>
@@ -8853,9 +8857,10 @@ async function _doPrintQuote(customerName, storeName, staffName) {
         <tr>
             <th class="tc" style="width:36px">No.</th>
             <th>제품명 / 옵션</th>
-            <th class="tr" style="width:110px">단가</th>
-            <th class="tc" style="width:48px">수량</th>
-            <th class="tr" style="width:120px">금액</th>
+            <th class="tr" style="width:100px">소비자가</th>
+            <th class="tr" style="width:100px">공홈할인가</th>
+            <th class="tc" style="width:40px">수량</th>
+            <th class="tr" style="width:110px">금액</th>
         </tr>
     </thead>
     <tbody>${rowsHtml}</tbody>
@@ -8863,14 +8868,16 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 
 <div class="summary">
     <div class="summary-box">
-        <div class="summary-row"><span>소계</span><span>${f(subtotal)}</span></div>
+        ${compareTotalAmt > subtotal ? `<div class="summary-row" style="color:#9ca3af;font-size:11px;text-decoration:line-through;"><span>소비자가 합계</span><span>${f(compareTotalAmt)}</span></div>` : ''}
+        <div class="summary-row"><span>공홈할인가 소계</span><span>${f(subtotal)}</span></div>
         ${discCandidates.map(c => {
             const isApplied = best && c.label === best.label && c.amt === best.amt;
             return isApplied
-                ? `<div class="summary-row disc"><span>✓ 할인 적용 (${c.label})</span><span>− ${f(c.amt)}</span></div>`
+                ? `<div class="summary-row disc"><span>✓ 추가 할인 (${c.label})</span><span>− ${f(c.amt)}</span></div>`
                 : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
         }).join('')}
         <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
+        ${compareTotalAmt > final ? `<div class="summary-row" style="background:#f0fdf4;color:#16a34a;font-weight:700;font-size:11px;"><span>소비자가 대비 총 절감</span><span>− ${f(compareTotalAmt - final)}</span></div>` : ''}
     </div>
 </div>
 
