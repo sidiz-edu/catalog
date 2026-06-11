@@ -2854,7 +2854,11 @@
             border: 1.5px solid #fde8e3;
             box-shadow: 0 8px 32px rgba(255,107,82,0.09);
         }
-        .promo-banner-header { margin-bottom: 6px; }
+        .promo-banner-header { margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+        .promo-banner-toggle-icon { font-size: 0.85rem; color: #aaa; transition: transform 0.25s; flex-shrink: 0; }
+        .promo-banner.open .promo-banner-toggle-icon { transform: rotate(180deg); }
+        .promo-banner-body { overflow: hidden; max-height: 0; transition: max-height 0.35s ease; }
+        .promo-banner.open .promo-banner-body { max-height: 2000px; }
         .promo-banner-title {
             font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800;
             color: #1a1a1a; display: flex; align-items: center; gap: 10px;
@@ -3321,13 +3325,15 @@
 <div id="products" class="section active">
 
     <!-- 이달의 행사 배너 -->
-    <div class="promo-banner">
-        <div class="promo-banner-header">
+    <div class="promo-banner" id="promoBanner">
+        <div class="promo-banner-header" onclick="togglePromoBanner()">
             <div class="promo-banner-title">
                 <span class="month-chip">6월 행사</span>
                 이달의 행사 &amp; 쿠폰
             </div>
+            <span class="promo-banner-toggle-icon">▼</span>
         </div>
+        <div class="promo-banner-body">
         <div class="promo-rules-strip">
             <span class="promo-rule-pill">📌 쿠폰 기준가: 온라인 행사가</span>
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
@@ -3418,6 +3424,7 @@
                 <div class="promo-card-footer">⚡ 장바구니 구성 자동 판단</div>
             </div>
         </div>
+        </div><!-- /promo-banner-body -->
     </div>
 
     <div class="section-label">PRODUCT LINEUP</div>
@@ -8689,6 +8696,10 @@ function openCart() {
 function closeCart() {
     document.getElementById('cartDrawer').classList.remove('open');
     document.getElementById('cartOverlay').classList.remove('open');
+}
+
+function togglePromoBanner() {
+    document.getElementById('promoBanner').classList.toggle('open');
 }
 
 function toggleKakao(el) {
