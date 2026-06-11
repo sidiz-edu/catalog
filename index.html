@@ -6358,23 +6358,23 @@ const variantData = {
         { name: '스테포 커버형',  price: 62000, comparePrice: 69000 },
     ],
     pillo: [
-        { name: '필로 패브릭',   price: 99000 },
-        { name: '필로 인조가죽',  price: 99000 },
+        { name: '필로 패브릭',   price: 99000, comparePrice: 99000 },
+        { name: '필로 인조가죽',  price: 99000, comparePrice: 99000 },
     ],
     olly: [
-        { name: '올리 (토트넘)', price: 34900 },
+        { name: '올리 (토트넘)', price: 34900, comparePrice: 39900 },
     ],
     molti: [
-        { name: '몰티 하이체어', price: 259000 },
-        { name: '몰티 헬로베이비 세트', price: 379000 },
+        { name: '몰티 하이체어', price: 259000, comparePrice: 279000 },
+        { name: '몰티 헬로베이비 세트', price: 379000, comparePrice: 389000 },
         { name: '몰티 이너시트', price: 90000 },
         { name: '몰티 책상의자용 다리', price: 39000 },
     ],
     atti: [
-        { name: '아띠 의자 (소이밀크)',   price: 69000 },
-        { name: '아띠 의자 (멜로우피치)', price: 69000 },
-        { name: '아띠 의자 (세이지민트)', price: 69000 },
-        { name: '아띠 책상 (화이트)',     price: 89000 },
+        { name: '아띠 의자 (소이밀크)',   price: 69000, comparePrice: 79000 },
+        { name: '아띠 의자 (멜로우피치)', price: 69000, comparePrice: 79000 },
+        { name: '아띠 의자 (세이지민트)', price: 69000, comparePrice: 79000 },
+        { name: '아띠 책상 (화이트)',     price: 89000, comparePrice: 99000 },
     ],
     spray: [
         { name: '멀티스프레이 INFINITY', price: 29000 },
@@ -8805,7 +8805,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
         <tr>
             <td class="tc">${idx + 1}</td>
             <td>${item.name}<br><span class="sub">${item.variantName}</span>${decodeOptionCode(item.variantName) ? `<span style="font-size:10px;color:#9ca3af;display:block;margin-top:2px;">${decodeOptionCode(item.variantName)}</span>` : ''}</td>
-            <td class="tr" style="color:#9ca3af;text-decoration:line-through;font-size:11px;">${item.comparePrice ? f(item.comparePrice) : '—'}</td>
+            <td class="tr" style="font-size:11px;">${item.comparePrice ? (item.comparePrice > item.price ? `<span style="color:#9ca3af;text-decoration:line-through;">${f(item.comparePrice)}</span>` : f(item.comparePrice)) : '—'}</td>
             <td class="tr">${f(item.price)}</td>
             <td class="tc">${item.qty}</td>
             <td class="tr bold">${f(item.price * item.qty)}</td>
