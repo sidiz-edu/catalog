@@ -1069,60 +1069,6 @@
         }
 
         /* ══════════════════════════════════
-           최근 업데이트 알림
-        ══════════════════════════════════ */
-        .update-toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            z-index: 500;
-            background: #fff;
-            border: 1.5px solid var(--sidiz-light);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(13,59,255,0.12);
-            padding: 16px 20px;
-            width: calc(100% - 32px);
-            max-width: 400px;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-        }
-        .update-toast.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
-        .update-toast-head {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .update-toast-title {
-            font-size: 0.82rem; font-weight: 700; color: var(--sidiz-dark);
-            display: flex; align-items: center; gap: 6px;
-        }
-        .update-dot {
-            width: 7px; height: 7px; background: var(--sidiz-navy);
-            border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;
-        }
-        .update-toast-close {
-            background: none; border: none; cursor: pointer;
-            color: var(--text-secondary); font-size: 1rem; line-height: 1;
-            padding: 2px 4px;
-        }
-        .update-toast-date { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 8px; }
-        .update-list { list-style: none; }
-        .update-list li {
-            font-size: 0.8rem; color: var(--text-primary);
-            padding: 4px 0; border-bottom: 1px solid #f3f4f6;
-            display: flex; align-items: flex-start; gap: 6px; line-height: 1.4;
-        }
-        .update-list li:last-child { border-bottom: none; }
-        .update-tag {
-            font-size: 0.68rem; font-weight: 700; padding: 2px 6px;
-            border-radius: 4px; background: var(--sidiz-light); color: var(--sidiz-dark);
-            white-space: nowrap; margin-top: 1px;
-        }
-        .update-tag.fix { background:#fef3c7; color:#92400e; }
-        .update-tag.new { background:#dcfce7; color:#166534; }
-
-        /* ══════════════════════════════════
            견적서 출력 모달
         ══════════════════════════════════ */
         .print-modal-overlay {
@@ -9077,52 +9023,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCardSwatches();
     initCardPrices();
     loadCartFromUrl();
-    initUpdateToast();
 });
-
-// ══════════════════════════════════════════════
-//  업데이트 알림 시스템
-// ══════════════════════════════════════════════
-
-const CHANGELOG = [
-    {
-        date: '2026-05-28',
-        items: [
-            { tag: 'fix', text: 'T50 HF / T50 AIR 좌면높이·너비·깊이·전체높이·중량 수정' },
-            { tag: 'fix', text: 'T60 / T60 AIR 좌면높이·너비·깊이·전체높이·중량 수정' },
-            { tag: 'fix', text: 'T80 / T90 / GC PRO 치수 및 중량 수정' },
-            { tag: 'fix', text: 'RINGO 2 / T20 / GX / LINIE / IBLE 치수 및 중량 수정' },
-            { tag: 'new', text: '스펙 탭 전환 시 모델별 개별 수치 반영 (T50 HF↔AIR, T60↔T60 AIR)' },
-        ]
-    }
-];
-
-const UPDATE_SEEN_KEY = 'sidiz_update_seen';
-
-function initUpdateToast() {
-    const latest = CHANGELOG[0];
-    if (!latest) return;
-
-    // 이미 확인한 버전이면 표시 안 함
-    const seen = sessionStorage.getItem(UPDATE_SEEN_KEY);
-    if (seen === latest.date) return;
-
-    // 날짜/목록 채우기
-    document.getElementById('updateToastDate').textContent =
-        new Date(latest.date).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' }) + ' 업데이트';
-    document.getElementById('updateToastList').innerHTML = latest.items
-        .map(i => `<li><span class="update-tag ${i.tag}">${i.tag === 'fix' ? '수정' : '신규'}</span>${i.text}</li>`)
-        .join('');
-
-    // 2초 뒤 표시
-    setTimeout(() => document.getElementById('updateToast')?.classList.add('show'), 2000);
-}
-
-function dismissUpdateToast() {
-    const latest = CHANGELOG[0];
-    if (latest) sessionStorage.setItem(UPDATE_SEEN_KEY, latest.date);
-    document.getElementById('updateToast')?.classList.remove('show');
-}
 
 // ══════════════════════════════════════════════
 //  오류 신고 시스템 (Supabase 연동)
@@ -9430,15 +9331,6 @@ enterAdminMode = async function() {
     </div>
 </div>
 
-<!-- ══ 최근 업데이트 알림 ══ -->
-<div class="update-toast" id="updateToast">
-    <div class="update-toast-head">
-        <div class="update-toast-title"><span class="update-dot"></span> 카탈로그 업데이트</div>
-        <button class="update-toast-close" onclick="dismissUpdateToast()">✕</button>
-    </div>
-    <div class="update-toast-date" id="updateToastDate"></div>
-    <ul class="update-list" id="updateToastList"></ul>
-</div>
 
 <!-- ══ 퀵 네비 버튼 (우하단) ══ -->
 <button class="nav-fab" id="fabPromo" onclick="document.querySelector('.promo-banner').scrollIntoView({behavior:'smooth'})">
