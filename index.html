@@ -8562,7 +8562,8 @@ function addToCart(productId, variantName, price) {
         existing.qty++;
     } else {
         const p = products[productId];
-        const vd = (variantData[productId] || []).find(v => v.name === variantName);
+        const vdList = variantData[productId] || [];
+        const vd = vdList.find(v => v.name === variantName) || vdList.find(v => v.price === price);
         const comparePrice = vd?.comparePrice || null;
         cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, comparePrice, qty: 1 });
     }
