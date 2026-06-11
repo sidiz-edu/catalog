@@ -8908,7 +8908,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
                     : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
         }).join('')}
         <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
-        ${compareTotalAmt > final ? `<div class="summary-row" style="color:#ea580c;font-weight:700;font-size:11px;"><span>소비자가(정가) 대비 총 절감</span><span>(− ${f(compareTotalAmt - final)})</span></div>` : ''}
+        ${compareTotalAmt > final ? `<div class="summary-row" style="color:#ea580c;font-weight:700;font-size:11px;"><span>정가 대비 총 할인액</span><span>(− ${f(compareTotalAmt - final)})</span></div>` : ''}
     </div>
 </div>
 
