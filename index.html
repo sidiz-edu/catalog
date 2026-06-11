@@ -8042,6 +8042,20 @@ function switchDetailTab(panelId, btn) {
     btn.classList.add('active');
 }
 
+// ── 옵션 코드 디코더 ──
+const OPTION_LETTERS = {
+    H: { label: '헤드레스트', en: 'Headrest' },
+    L: { label: '럼버서포트', en: 'Lumbar' },
+    D: { label: '좌판깊이조절', en: 'Depth' },
+    A: { label: '조절형 팔걸이', en: 'Armrest' },
+    F: { label: '고정형 팔걸이', en: 'Fixed' },
+};
+function decodeOptionCode(name) {
+    const match = name.match(/\b([HLDAF]{2,5})\b/);
+    if (!match) return null;
+    return [...match[1]].filter(c => OPTION_LETTERS[c]).map(c => OPTION_LETTERS[c].label).join(' · ');
+}
+
 // ── 쿠폰 적용 불가 항목 ──
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','olly','atti']);
 // 군인/소방관/경찰 쿠폰 대상 (스테포 5,000원 / 이지리페어 2,000원)
@@ -8340,7 +8354,7 @@ function showDetail(productId) {
             <div class="variant-table">
                 ${variants.map(v => v.price ? `
                     <div class="variant-row">
-                        <span class="variant-name">${v.name}</span>
+                        <span class="variant-name">${v.name}${decodeOptionCode(v.name) ? `<span style="display:block;font-size:0.72rem;font-weight:400;color:#6b7280;margin-top:2px;">${decodeOptionCode(v.name)}</span>` : ''}</span>
                         <span class="variant-price">
                             ${v.comparePrice ? `<span class="compare-price">${fmt(v.comparePrice)}</span>` : ''}
                             <span class="sale-price-row">
@@ -8762,7 +8776,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const rowsHtml = cart.map((item, idx) => `
         <tr>
             <td class="tc">${idx + 1}</td>
-            <td>${item.name}<br><span class="sub">${item.variantName}</span></td>
+            <td>${item.name}<br><span class="sub">${item.variantName}</span>${decodeOptionCode(item.variantName) ? `<span style="font-size:10px;color:#9ca3af;display:block;margin-top:2px;">${decodeOptionCode(item.variantName)}</span>` : ''}</td>
             <td class="tr">${f(item.price)}</td>
             <td class="tc">${item.qty}</td>
             <td class="tr bold">${f(item.price * item.qty)}</td>
