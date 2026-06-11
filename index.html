@@ -8860,9 +8860,10 @@ async function _doPrintQuote(customerName, storeName, staffName) {
   .sign-label { color:#6b7280; margin-bottom:22px; }
   .sign-name { font-weight:700; font-size:12px; color:#1a1a1a; margin-top:2px; }
   @media print {
-    body { padding:20px 24px; }
+    body { padding:20px 24px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     @page { margin:12mm; size:A4; }
   }
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 </style>
 </head>
 <body>
