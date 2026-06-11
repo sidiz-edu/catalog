@@ -5368,6 +5368,20 @@ function applyGuestParams() {
                 card.style.display = 'none';
             }
         });
+
+        // 해당 제품이 속한 카테고리만 필터 탭에 표시
+        const visibleCats = new Set();
+        Object.entries(categoryMap).forEach(([catName, ids]) => {
+            if (ids.some(id => allowedProducts.includes(id))) {
+                visibleCats.add(catName);
+            }
+        });
+        document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+            const cat = btn.getAttribute('data-cat');
+            if (cat !== '전체' && !visibleCats.has(cat)) {
+                btn.style.display = 'none';
+            }
+        });
     }
 
     // ── 매장 파라미터 처리 ──
