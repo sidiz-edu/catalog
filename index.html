@@ -8885,8 +8885,8 @@ async function _doPrintQuote(customerName, storeName, staffName) {
         <tr>
             <th class="tc" style="width:36px">No.</th>
             <th>제품명 / 옵션</th>
-            <th class="tr" style="width:100px">소비자가</th>
-            <th class="tr" style="width:100px">공홈할인가</th>
+            <th class="tr" style="width:100px">소비자가(정가)</th>
+            <th class="tr" style="width:100px">회원할인가</th>
             <th class="tc" style="width:40px">수량</th>
             <th class="tr" style="width:110px">금액</th>
         </tr>
@@ -8896,8 +8896,8 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 
 <div class="summary">
     <div class="summary-box">
-        ${compareTotalAmt > subtotal ? `<div class="summary-row" style="font-size:12px;color:#9ca3af;"><span>소비자가 합계</span><span style="text-decoration:line-through;">${f(compareTotalAmt)}</span></div>` : ''}
-        <div class="summary-row" style="font-size:12px;"><span>공홈할인가 소계</span><span>${f(subtotal)}</span></div>
+        ${compareTotalAmt > subtotal ? `<div class="summary-row" style="font-size:12px;color:#9ca3af;"><span>소비자가(정가) 합계</span><span style="text-decoration:line-through;">${f(compareTotalAmt)}</span></div>` : ''}
+        <div class="summary-row" style="font-size:12px;"><span>회원할인가 소계</span><span>${f(subtotal)}</span></div>
         ${discCandidates.map(c => {
             const isApplied = best && c.label === best.label && c.amt === best.amt;
             const isCoupon = c.type === 'coupon';
@@ -8908,7 +8908,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
                     : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
         }).join('')}
         <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
-        ${compareTotalAmt > final ? `<div class="summary-row" style="color:#ea580c;font-weight:700;font-size:11px;"><span>소비자가 대비 총 절감</span><span>(− ${f(compareTotalAmt - final)})</span></div>` : ''}
+        ${compareTotalAmt > final ? `<div class="summary-row" style="color:#ea580c;font-weight:700;font-size:11px;"><span>소비자가(정가) 대비 총 절감</span><span>(− ${f(compareTotalAmt - final)})</span></div>` : ''}
     </div>
 </div>
 
