@@ -8852,7 +8852,8 @@ async function _doPrintQuote(customerName, storeName, staffName) {
   .summary-row:last-child { border-bottom:none; }
   .summary-row.disc { color:#16a34a; font-weight:600; }
   .summary-row.disc-alt { color:#9ca3af; font-size:11px; text-decoration:line-through; }
-  .summary-row.total { background:#0D3BFF; color:#fff; font-size:14px; font-weight:800; padding:11px 14px; }
+  .summary-row.disc-coupon { color:#16a34a; font-size:12px; }
+  .summary-row.total { background:#fff; color:#1a1a1a; font-size:14px; font-weight:900; padding:6px 14px 11px; border-top:2px solid #e6ebff; }
   .footer { margin-top:28px; border-top:1px solid #e5e7eb; padding-top:14px; display:flex; justify-content:space-between; align-items:flex-end; color:#6b7280; font-size:10.5px; line-height:1.7; }
   .footer .note b { color:#1a1a1a; }
   .sign-box { border:1px solid #d1d5db; border-radius:6px; padding:10px 28px; font-size:11px; text-align:center; }
@@ -8894,16 +8895,19 @@ async function _doPrintQuote(customerName, storeName, staffName) {
 
 <div class="summary">
     <div class="summary-box">
-        ${compareTotalAmt > subtotal ? `<div class="summary-row" style="color:#9ca3af;font-size:11px;text-decoration:line-through;"><span>소비자가 합계</span><span>${f(compareTotalAmt)}</span></div>` : ''}
-        <div class="summary-row"><span>공홈할인가 소계</span><span>${f(subtotal)}</span></div>
+        ${compareTotalAmt > subtotal ? `<div class="summary-row" style="font-size:12px;color:#9ca3af;"><span>소비자가 합계</span><span style="text-decoration:line-through;">${f(compareTotalAmt)}</span></div>` : ''}
+        <div class="summary-row" style="font-size:12px;"><span>공홈할인가 소계</span><span>${f(subtotal)}</span></div>
         ${discCandidates.map(c => {
             const isApplied = best && c.label === best.label && c.amt === best.amt;
+            const isCoupon = c.type === 'coupon';
             return isApplied
                 ? `<div class="summary-row disc"><span>✓ 추가 할인 (${c.label})</span><span>− ${f(c.amt)}</span></div>`
-                : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
+                : isCoupon
+                    ? `<div class="summary-row disc-coupon"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`
+                    : `<div class="summary-row disc-alt"><span>${c.label}</span><span>− ${f(c.amt)}</span></div>`;
         }).join('')}
         <div class="summary-row total"><span>최종 금액</span><span>${f(final)}</span></div>
-        ${compareTotalAmt > final ? `<div class="summary-row" style="background:#f0fdf4;color:#16a34a;font-weight:700;font-size:11px;"><span>소비자가 대비 총 절감</span><span>− ${f(compareTotalAmt - final)}</span></div>` : ''}
+        ${compareTotalAmt > final ? `<div class="summary-row" style="color:#ea580c;font-weight:700;font-size:11px;"><span>소비자가 대비 총 절감</span><span>(− ${f(compareTotalAmt - final)})</span></div>` : ''}
     </div>
 </div>
 
