@@ -2135,7 +2135,8 @@
             margin-bottom: 4px;
         }
         .link-section-sub { font-size: 0.74rem; color: #aaa; margin-bottom: 12px; }
-        .link-product-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+        .link-product-grid { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+        .link-prod-group-label { width: 100%; font-size: 0.72rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.5px; margin-top: 8px; margin-bottom: 2px; }
         .link-prod-chip {
             display: flex; align-items: center; gap: 6px;
             padding: 7px 13px; border-radius: 30px;
@@ -5379,16 +5380,25 @@ function enterDeployMode() {
     // 메뉴 체크박스 전부 해제 상태로 초기화
     document.querySelectorAll('#menuCheckGrid input[name="menu"]').forEach(cb => cb.checked = false);
 
-    // 제품 칩 초기화 (비활성 상태)
+    // 제품 칩 초기화 - 라인업별 그룹화
     const grid = document.getElementById('linkProductGrid');
     grid.innerHTML = '';
-    Object.entries(products).forEach(([id, p]) => {
-        const chip = document.createElement('div');
-        chip.className = 'link-prod-chip';
-        chip.dataset.id = id;
-        chip.textContent = p.name;
-        chip.addEventListener('click', () => chip.classList.toggle('on'));
-        grid.appendChild(chip);
+    const rendered = new Set();
+    Object.entries(categoryMap).forEach(([catName, ids]) => {
+        const label = document.createElement('div');
+        label.className = 'link-prod-group-label';
+        label.textContent = catName;
+        grid.appendChild(label);
+        ids.forEach(id => {
+            if (!products[id] || rendered.has(id)) return;
+            rendered.add(id);
+            const chip = document.createElement('div');
+            chip.className = 'link-prod-chip';
+            chip.dataset.id = id;
+            chip.textContent = products[id].name;
+            chip.addEventListener('click', () => chip.classList.toggle('on'));
+            grid.appendChild(chip);
+        });
     });
 
     // 매장 칩 초기화 (비활성 상태)
