@@ -2209,11 +2209,18 @@
         .guest-banner {
             display: none; position: fixed; top: 64px; left: 0; right: 0;
             background: linear-gradient(90deg, var(--sidiz-navy), var(--sidiz-accent));
-            color: white; padding: 9px 20px;
+            color: white; padding: 7px 16px;
             font-size: 0.8rem; font-weight: 600;
-            text-align: center; z-index: 400;
+            z-index: 400; display: none;
+            align-items: center; justify-content: space-between;
         }
-        .guest-banner.show { display: block; }
+        .guest-banner.show { display: flex; }
+        .guest-print-btn {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5);
+            color: white; font-size: 0.75rem; font-weight: 600;
+            padding: 4px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+        }
+        .guest-print-btn:active { background: rgba(255,255,255,0.35); }
         body.guest-mode .page-wrapper { padding-top: calc(64px + 36px); }
 
         /* ══ 게스트 모드: 한 페이지 스크롤 뷰 ══ */
@@ -3161,7 +3168,8 @@
 <!-- ══ 링크 생성 모달 ══ -->
 <!-- ══ 게스트 모드 배너 ══ -->
 <div class="guest-banner" id="guestBanner">
-    📎 시디즈 매장에서 맞춤 안내 링크를 보내드렸습니다
+    <span>📎 시디즈 매장에서 맞춤 안내 링크를 보내드렸습니다</span>
+    <button class="guest-print-btn" onclick="window.print()">🖨 카탈로그 인쇄</button>
 </div>
 
 <!-- ══ 배포 모드 전용 페이지 ══ -->
