@@ -2324,11 +2324,9 @@
             .pci-cover-sec-chip { font-size: 11px; color: #374151; }
             .pci-cover-sec-chip::before { content: '✓  '; color: #0D3BFF; font-weight: 700; }
 
-            /* ── 정보 섹션 1페이지 축소 + 매장 섹션 숨김(표지에 통합) ── */
-            body.guest-mode #posture,
-            body.guest-mode #process,
-            body.guest-mode #care { zoom: 0.65; }
-            body.guest-mode #stores { display: none !important; }
+            /* ── 정보 섹션 1페이지 축소 + 매장·토스트 숨김 ── */
+            body.guest-mode #stores,
+            .save-toast { display: none !important; }
 
             /* ── 표지 매장 목록 ── */
             .pci-cover-stores-grid {
@@ -8170,22 +8168,28 @@ function confirmCatalogPrint() {
     window.print();
 }
 
-// 인쇄 시 stores 섹션을 page-wrapper 앞으로 이동
+// 정보 섹션 1페이지 동적 스케일링
+const _INFO_SECTIONS = ['posture', 'process', 'care'];
 window.addEventListener('beforeprint', () => {
     if (!document.body.classList.contains('guest-mode')) return;
-    const stores = document.getElementById('stores');
-    const wrapper = document.querySelector('.page-wrapper');
-    if (stores && wrapper && stores.style.display !== 'none') {
-        wrapper.parentNode.insertBefore(stores, wrapper);
-    }
+    // A4 portrait 인쇄 기준 1페이지 높이 추정 (여백 포함)
+    const PAGE_H = 980;
+    _INFO_SECTIONS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.style.display === 'none') return;
+        el.style.zoom = '';
+        const h = el.scrollHeight;
+        if (h > PAGE_H) {
+            el.style.zoom = (PAGE_H / h).toFixed(4);
+        }
+    });
 });
 window.addEventListener('afterprint', () => {
     if (!document.body.classList.contains('guest-mode')) return;
-    const stores = document.getElementById('stores');
-    const wrapper = document.querySelector('.page-wrapper');
-    if (stores && wrapper) {
-        wrapper.parentNode.insertBefore(stores, wrapper.nextSibling);
-    }
+    _INFO_SECTIONS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.zoom = '';
+    });
 });
 
 function preparePrintCatalog(info = {}) {
