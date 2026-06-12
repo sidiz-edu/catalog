@@ -2235,6 +2235,12 @@
             background: #fff;
         }
         body.guest-mode .section + .section { border-top: 2px solid #f0f4ff; margin-top: 0; }
+        body.guest-mode #promoBanner,
+        body.guest-mode #products .section-label,
+        body.guest-mode #products .section-title,
+        body.guest-mode #products .section-desc,
+        body.guest-mode .product-search-wrap,
+        body.guest-mode .cat-filter-bar { display: none !important; }
 
         /* ══ 게스트 모드: 인쇄 카탈로그 형식 ══ */
         #printCatalog { display: none; }
@@ -2251,10 +2257,13 @@
             body.guest-mode .card-edit-btn,
             body.guest-mode .btn-add-cart,
             body.guest-mode .btn-color-cart,
-            body.guest-mode .coupon-toggle-row { display: none !important; }
+            body.guest-mode .coupon-toggle-row,
+            body.guest-mode #promoBanner,
+            body.guest-mode #products .section-label,
+            body.guest-mode #products .section-title,
+            body.guest-mode #products .section-desc,
+            body.guest-mode .product-search-wrap { display: none !important; }
             body.guest-mode .section { padding: 16px; }
-            body.guest-mode .section-label { font-size: 13px; break-after: avoid; page-break-after: avoid; }
-            body.guest-mode .section-title { break-after: avoid; page-break-after: avoid; }
             body.guest-mode .product-grid { display: none !important; }
             body.guest-mode #printCatalog { display: block; }
             body.guest-mode .section + .section {
