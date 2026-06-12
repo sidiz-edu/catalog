@@ -2295,8 +2295,8 @@
                 flex: 1; display: flex; flex-direction: column;
                 align-items: center; justify-content: center; gap: 8px;
             }
-            .pci-cover-hero-main { font-size: 52px; font-weight: 900; color: #001499; letter-spacing: -2px; }
-            .pci-cover-hero-sub  { font-size: 16px; color: #6b7280; letter-spacing: 0.15em; }
+            .pci-cover-hero-main { font-size: 42px; font-weight: 900; color: #001499; letter-spacing: -2px; }
+            .pci-cover-hero-sub  { font-size: 13px; color: #6b7280; letter-spacing: 0.15em; }
             .pci-cover-meta {
                 display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;
             }
@@ -2324,10 +2324,20 @@
             .pci-cover-sec-chip { font-size: 11px; color: #374151; }
             .pci-cover-sec-chip::before { content: '✓  '; color: #0D3BFF; font-weight: 700; }
 
-            /* ── 정보 섹션 1페이지 축소 ── */
+            /* ── 정보 섹션 1페이지 축소 + 매장 섹션 숨김(표지에 통합) ── */
             body.guest-mode #posture,
             body.guest-mode #process,
             body.guest-mode #care { zoom: 0.65; }
+            body.guest-mode #stores { display: none !important; }
+
+            /* ── 표지 매장 목록 ── */
+            .pci-cover-stores-grid {
+                display: grid; grid-template-columns: repeat(3, 1fr);
+                gap: 5px 14px;
+            }
+            .pci-cover-store-row { font-size: 10px; }
+            .pci-cover-store-nm  { font-weight: 700; color: #1a1a1a; }
+            .pci-cover-store-inf { color: #6b7280; margin-top: 1px; }
             .pci-block {
                 display: grid; grid-template-columns: 100px 1fr; gap: 10px;
                 padding: 10px; margin-bottom: 8px;
@@ -8206,6 +8216,12 @@ function preparePrintCatalog(info = {}) {
             return el && el.style.display !== 'none';
         });
 
+    // 표지에 포함할 매장 목록 (URL 파라미터 기준)
+    const storeParam = new URLSearchParams(location.search).get('st');
+    const coverStores = storeParam
+        ? (storeParam === 'all' ? storeData : storeData.filter(s => storeParam.split(',').includes(s.id)))
+        : [];
+
     const productChips = visibleIds.map(id =>
         `<span class="pci-cover-chip">${products[id]?.name || id}</span>`
     ).join('');
@@ -8240,6 +8256,19 @@ function preparePrintCatalog(info = {}) {
             ${sectionChips ? `<div class="pci-cover-summary">
                 <div class="pci-cover-summary-label" style="color:#6b7280">포함 정보</div>
                 <div class="pci-cover-chips">${sectionChips}</div>
+            </div>` : ''}
+            ${coverStores.length ? `<div class="pci-cover-summary" style="background:#fff;border:1px solid #e6ebff;margin-top:10px;">
+                <div class="pci-cover-summary-label">더프로그레시브 매장 안내</div>
+                <div class="pci-cover-stores-grid">
+                    ${coverStores.map(s => {
+                        const shortName = s.name.replace('시디즈 더 프로그레시브 ', '').replace('시디즈 ', '').replace('스타필드 ', '').replace('커넥트현대 ', '');
+                        return `<div class="pci-cover-store-row">
+                            <div class="pci-cover-store-nm">${shortName}</div>
+                            <div class="pci-cover-store-inf">${s.phone}</div>
+                            <div class="pci-cover-store-inf">${s.address.split(' ').slice(0,3).join(' ')}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
             </div>` : ''}
         </div>`;
     }
