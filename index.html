@@ -2324,9 +2324,22 @@
             .pci-cover-sec-chip { font-size: 11px; color: #374151; }
             .pci-cover-sec-chip::before { content: '✓  '; color: #0D3BFF; font-weight: 700; }
 
-            /* ── 정보 섹션 1페이지 축소 + 매장·토스트 숨김 ── */
+            /* ── 정보 섹션 1페이지 축소 + 매장·토스트·비교칩 숨김 ── */
             body.guest-mode #stores,
             .save-toast { display: none !important; }
+            body.guest-mode #compare #comparePicker,
+            body.guest-mode #compare .section-label,
+            body.guest-mode #compare .section-title,
+            body.guest-mode #compare .section-desc { display: none !important; }
+            body.guest-mode #compare .compare-wrapper {
+                overflow: visible;
+                max-height: none;
+            }
+            body.guest-mode #compare .compare-table {
+                min-width: unset;
+                width: 100%;
+                table-layout: fixed;
+            }
 
             /* ── 표지 매장 목록 ── */
             .pci-cover-stores-grid {
@@ -8175,7 +8188,7 @@ function confirmCatalogPrint() {
 }
 
 // 정보 섹션 1페이지 동적 스케일링
-const _INFO_SECTIONS = ['posture', 'process', 'care'];
+const _INFO_SECTIONS = ['compare', 'posture', 'process', 'care'];
 window.addEventListener('beforeprint', () => {
     if (!document.body.classList.contains('guest-mode')) return;
     // A4 portrait 인쇄 기준 1페이지 높이 추정 (여백 포함)
