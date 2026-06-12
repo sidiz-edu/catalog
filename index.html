@@ -5481,12 +5481,18 @@ function applyGuestParams() {
             }
         });
 
-        // 비교 탭 칩도 허용된 제품만 표시
+        // 비교 탭 칩도 허용된 제품만 표시 + 자동 선택
         document.querySelectorAll('.compare-chip').forEach(chip => {
-            if (!allowedProducts.includes(chip.dataset.id)) {
+            const id = chip.dataset.id;
+            if (!allowedProducts.includes(id)) {
                 chip.style.display = 'none';
+            } else {
+                // 허용된 제품은 선택 상태로 초기화
+                if (!selectedModels.includes(id)) selectedModels.push(id);
+                chip.classList.add('selected');
             }
         });
+        renderCompareTable();
         // 그룹 라벨도 표시할 칩이 없으면 숨김
         document.querySelectorAll('#comparePicker .chip-group').forEach(row => {
             const hasVisible = [...row.querySelectorAll('.compare-chip')].some(c => c.style.display !== 'none');
