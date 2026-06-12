@@ -2253,7 +2253,8 @@
             body.guest-mode .btn-color-cart,
             body.guest-mode .coupon-toggle-row { display: none !important; }
             body.guest-mode .section { padding: 16px; }
-            body.guest-mode .section-label { font-size: 13px; page-break-after: avoid; }
+            body.guest-mode .section-label { font-size: 13px; break-after: avoid; page-break-after: avoid; }
+            body.guest-mode .section-title { break-after: avoid; page-break-after: avoid; }
             body.guest-mode .product-grid { display: none !important; }
             body.guest-mode #printCatalog { display: block; }
             body.guest-mode .stores-section { page-break-before: always; }
@@ -2266,11 +2267,16 @@
                 border-bottom: 2px solid #0D3BFF;
                 break-after: avoid; page-break-after: avoid;
             }
+            #printCatalog .pci-category:not(:first-child) {
+                break-before: always; page-break-before: always;
+                margin-top: 0;
+            }
             .pci-block {
                 display: grid; grid-template-columns: 100px 1fr; gap: 10px;
                 padding: 10px; margin-bottom: 8px;
                 border: 1px solid #e5e7eb; border-radius: 6px;
                 break-inside: avoid; page-break-inside: avoid;
+                overflow: hidden;
             }
             .pci-img { width: 100px; height: 100px; object-fit: contain; }
             .pci-name { font-size: 14px; font-weight: 700; }
