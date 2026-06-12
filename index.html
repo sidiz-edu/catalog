@@ -2257,8 +2257,9 @@
             body.guest-mode .section-title { break-after: avoid; page-break-after: avoid; }
             body.guest-mode .product-grid { display: none !important; }
             body.guest-mode #printCatalog { display: block; }
-            body.guest-mode .stores-section { page-break-before: always; }
-            body.guest-mode .section + .section { border-top: 1px solid #e5e7eb; }
+            body.guest-mode .section + .section {
+                break-before: always; page-break-before: always;
+            }
 
             /* ── 인쇄 카탈로그 상세 블록 ── */
             .pci-category {
@@ -2266,10 +2267,6 @@
                 color: #0D3BFF; margin: 14px 0 6px; padding-bottom: 4px;
                 border-bottom: 2px solid #0D3BFF;
                 break-after: avoid; page-break-after: avoid;
-            }
-            #printCatalog .pci-category:not(:first-child) {
-                break-before: always; page-break-before: always;
-                margin-top: 0;
             }
             .pci-block {
                 display: grid; grid-template-columns: 100px 1fr; gap: 10px;
