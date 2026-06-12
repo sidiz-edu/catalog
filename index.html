@@ -2260,6 +2260,7 @@
         #printCover   { display: none; }
 
         @media print {
+            @page { size: A4 portrait; margin: 10mm 15mm; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             body.guest-mode header,
             body.guest-mode .guest-banner,
@@ -2290,11 +2291,11 @@
             .pci-category { display: none; }
 
             /* ── 표지 ── */
-            #printCover { display: block; break-after: always; page-break-after: always; }
+            #printCover { display: block; break-after: always; page-break-after: always; overflow: hidden; }
             .pci-cover {
-                height: 100vh; display: flex; flex-direction: column;
-                padding: 32px 36px; font-family: 'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-                color: #1a1a1a;
+                height: 257mm; display: flex; flex-direction: column;
+                padding: 28px 32px; font-family: 'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+                color: #1a1a1a; overflow: hidden;
             }
             .pci-cover-header {
                 display: flex; justify-content: space-between; align-items: flex-start;
