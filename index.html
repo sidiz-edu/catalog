@@ -5368,6 +5368,18 @@ function applyGuestParams() {
                 btn.style.display = 'none';
             }
         });
+
+        // 비교 탭 칩도 허용된 제품만 표시
+        document.querySelectorAll('.compare-chip').forEach(chip => {
+            if (!allowedProducts.includes(chip.dataset.id)) {
+                chip.style.display = 'none';
+            }
+        });
+        // 그룹 라벨도 표시할 칩이 없으면 숨김
+        document.querySelectorAll('#comparePicker .chip-group').forEach(row => {
+            const hasVisible = [...row.querySelectorAll('.compare-chip')].some(c => c.style.display !== 'none');
+            if (!hasVisible) row.style.display = 'none';
+        });
     }
 
     // ── 매장 파라미터 처리 ──
