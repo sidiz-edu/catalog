@@ -2247,6 +2247,7 @@
 
         @media print {
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body.guest-mode header,
             body.guest-mode .guest-banner,
             body.guest-mode .header-nav,
             body.guest-mode .cat-filter-bar,
@@ -2262,7 +2263,8 @@
             body.guest-mode #products .section-label,
             body.guest-mode #products .section-title,
             body.guest-mode #products .section-desc,
-            body.guest-mode .product-search-wrap { display: none !important; }
+            body.guest-mode .product-search-wrap,
+            body.guest-mode .report-fab { display: none !important; }
             body.guest-mode .section { padding: 16px; }
             body.guest-mode .product-grid { display: none !important; }
             body.guest-mode #printCatalog { display: block; }
@@ -2272,6 +2274,16 @@
 
             /* ── 인쇄 카탈로그 상세 블록 ── */
             .pci-category { display: none; }
+            .pci-print-header {
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 10px 14px; margin-bottom: 14px;
+                border: 1px solid #e5e7eb; border-radius: 6px;
+                font-size: 11px; color: #374151;
+            }
+            .pci-print-header .phi-brand { font-size: 13px; font-weight: 700; color: #0D3BFF; }
+            .pci-print-header .phi-meta { display: flex; gap: 16px; }
+            .pci-print-header .phi-item { display: flex; gap: 4px; }
+            .pci-print-header .phi-label { color: #9ca3af; font-weight: 600; }
             .pci-block {
                 display: grid; grid-template-columns: 100px 1fr; gap: 10px;
                 padding: 10px; margin-bottom: 8px;
@@ -3198,7 +3210,7 @@
 <!-- ══ 게스트 모드 배너 ══ -->
 <div class="guest-banner" id="guestBanner">
     <span>📎 시디즈 매장에서 맞춤 안내 링크를 보내드렸습니다</span>
-    <button class="guest-print-btn" onclick="preparePrintCatalog(); window.print()">🖨 카탈로그 인쇄</button>
+    <button class="guest-print-btn" onclick="openCatalogPrintModal()">🖨 카탈로그 인쇄</button>
 </div>
 
 <!-- ══ 배포 모드 전용 페이지 ══ -->
@@ -8070,12 +8082,56 @@ function closeDetailBack() {
     }
 }
 
-function preparePrintCatalog() {
+function openCatalogPrintModal() {
+    const sel = document.getElementById('cpStore');
+    if (sel && sel.options.length <= 1) {
+        storeData.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name;
+            opt.textContent = `${s.name} (${s.region})`;
+            sel.appendChild(opt);
+        });
+    }
+    document.getElementById('cpCustomer').value = '';
+    document.getElementById('cpStaff').value = '';
+    if (sel) sel.value = '';
+    document.getElementById('catalogPrintModalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('cpCustomer').focus(), 100);
+}
+
+function closeCatalogPrintModal(e) {
+    if (e && e.target !== document.getElementById('catalogPrintModalOverlay')) return;
+    document.getElementById('catalogPrintModalOverlay').classList.remove('open');
+}
+
+function confirmCatalogPrint() {
+    const customer = document.getElementById('cpCustomer').value.trim();
+    const store    = document.getElementById('cpStore').value;
+    const staff    = document.getElementById('cpStaff').value.trim();
+    document.getElementById('catalogPrintModalOverlay').classList.remove('open');
+    preparePrintCatalog({ customer, store, staff });
+    window.print();
+}
+
+function preparePrintCatalog(info = {}) {
     const container = document.getElementById('printCatalog');
     if (!container) return;
     const f = n => n ? n.toLocaleString('ko-KR') + '원' : '';
+    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const html = [];
+
+    // 인쇄 헤더 (고객/매장/담당자 정보)
+    html.push(`<div class="pci-print-header">
+        <span class="phi-brand">SIDIZ 제품 카탈로그</span>
+        <div class="phi-meta">
+            ${info.customer ? `<div class="phi-item"><span class="phi-label">고객</span><span>${info.customer}</span></div>` : ''}
+            ${info.store    ? `<div class="phi-item"><span class="phi-label">매장</span><span>${info.store}</span></div>` : ''}
+            ${info.staff    ? `<div class="phi-item"><span class="phi-label">담당자</span><span>${info.staff}</span></div>` : ''}
+            <div class="phi-item"><span class="phi-label">날짜</span><span>${today}</span></div>
+        </div>
+    </div>`);
+
     let pendingCat = null;
 
     document.querySelectorAll('#productGrid > *').forEach(el => {
@@ -9448,6 +9504,32 @@ enterAdminMode = async function() {
 };
 
 </script>
+<!-- ══ 카탈로그 인쇄 정보 입력 모달 ══ -->
+<div class="print-modal-overlay" id="catalogPrintModalOverlay" onclick="closeCatalogPrintModal(event)">
+    <div class="print-modal" onclick="event.stopPropagation()">
+        <div class="print-modal-handle"></div>
+        <h3>🖨 카탈로그 인쇄</h3>
+        <div class="print-field">
+            <label>고객명</label>
+            <input type="text" id="cpCustomer" placeholder="예: 홍길동 고객님" autocomplete="off">
+        </div>
+        <div class="print-field">
+            <label>매장명</label>
+            <select id="cpStore">
+                <option value="">매장 선택</option>
+            </select>
+        </div>
+        <div class="print-field">
+            <label>담당자명</label>
+            <input type="text" id="cpStaff" placeholder="예: 김철수" autocomplete="off">
+        </div>
+        <div class="print-btn-row">
+            <button class="print-cancel" onclick="closeCatalogPrintModal()">취소</button>
+            <button class="print-confirm" onclick="confirmCatalogPrint()">인쇄</button>
+        </div>
+    </div>
+</div>
+
 <!-- ══ 견적서 출력 정보 입력 모달 ══ -->
 <div class="print-modal-overlay" id="printModalOverlay" onclick="closePrintModal(event)">
     <div class="print-modal" onclick="event.stopPropagation()">
