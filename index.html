@@ -2335,7 +2335,8 @@
                 background: #fff; border: 1px solid #c7d2fe; border-radius: 20px;
                 padding: 3px 10px; font-size: 11px; font-weight: 600;
             }
-            .pci-cover-sec-chip { font-size: 11px; color: #374151; }
+            .pci-cover-sec-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+            .pci-cover-sec-chip { font-size: 13px; color: #374151; }
             .pci-cover-sec-chip::before { content: '✓  '; color: #0D3BFF; font-weight: 700; }
 
             /* ── 정보 섹션 1페이지 축소 + 매장·토스트·비교칩 숨김 ── */
@@ -8237,11 +8238,11 @@ function preparePrintCatalog(info = {}) {
     });
 
     const sectionLabelMap = {
-        products: '제품 상세 카탈로그', compare: '모델 비교',
-        posture: '올바른 의자 사용법', process: '배송 안내',
-        care: '자가 점검 및 관리법', stores: '매장 안내'
+        products: '제품 라인업', compare: '모델 비교',
+        stores: '매장 안내', process: '구매 후 안내',
+        posture: '올바른 사용법', care: '관리법'
     };
-    const visibleSections = ['products','compare','posture','process','care','stores']
+    const visibleSections = ['products','compare','stores','process','posture','care']
         .filter(id => {
             const el = document.getElementById(id);
             return el && el.style.display !== 'none';
@@ -8286,7 +8287,7 @@ function preparePrintCatalog(info = {}) {
             </div>` : ''}
             ${sectionChips ? `<div class="pci-cover-summary">
                 <div class="pci-cover-summary-label" style="color:#6b7280">포함 정보</div>
-                <div class="pci-cover-chips">${sectionChips}</div>
+                <div class="pci-cover-sec-chips">${sectionChips}</div>
             </div>` : ''}
             ${coverStores.length ? `<div class="pci-cover-summary" style="background:#fff;border:1px solid #e6ebff;margin-top:10px;">
                 <div class="pci-cover-summary-label">더프로그레시브 매장 안내</div>
