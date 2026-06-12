@@ -2232,7 +2232,20 @@
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 400;
             overflow-y: auto;
-            background: #fff;
+            background: #f3f5fb;
+            padding-top: 100px;
+        }
+        body.guest-mode #detail.active .back-link {
+            top: 100px;
+            background: rgba(243,245,251,0.97);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--sidiz-navy);
+            padding: 14px 20px;
+            border-bottom: 1px solid #e0e5f0;
+        }
+        body.guest-mode #detail.active .detail-hero {
+            background: #f3f5fb;
         }
         body.guest-mode .section + .section { border-top: 2px solid #f0f4ff; margin-top: 0; }
         body.guest-mode #promoBanner,
