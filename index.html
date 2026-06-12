@@ -5387,6 +5387,19 @@ function applyGuestParams() {
             }
         });
 
+        // 보이는 제품이 없는 카테고리 헤더 숨김
+        document.querySelectorAll('#productGrid .product-category-header').forEach(header => {
+            let next = header.nextElementSibling;
+            let hasVisible = false;
+            while (next && !next.classList.contains('product-category-header')) {
+                if (next.classList.contains('product-card') && next.style.display !== 'none') {
+                    hasVisible = true; break;
+                }
+                next = next.nextElementSibling;
+            }
+            if (!hasVisible) header.style.display = 'none';
+        });
+
         // 해당 제품이 속한 카테고리만 필터 탭에 표시
         const visibleCats = new Set();
         Object.entries(categoryMap).forEach(([catName, ids]) => {
