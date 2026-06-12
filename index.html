@@ -2216,6 +2216,44 @@
         .guest-banner.show { display: block; }
         body.guest-mode .page-wrapper { padding-top: calc(64px + 36px); }
 
+        /* ══ 게스트 모드: 한 페이지 스크롤 뷰 ══ */
+        body.guest-mode .section { display: block; }
+        body.guest-mode #detail { display: none; }
+        body.guest-mode #detail.active {
+            display: block !important;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 400;
+            overflow-y: auto;
+            background: #fff;
+        }
+        body.guest-mode .section + .section { border-top: 2px solid #f0f4ff; margin-top: 0; }
+
+        /* ══ 게스트 모드: 인쇄 카탈로그 형식 ══ */
+        @media print {
+            body.guest-mode .guest-banner,
+            body.guest-mode .header-nav,
+            body.guest-mode .cat-filter-bar,
+            body.guest-mode .cart-fab,
+            body.guest-mode #fabPromo,
+            body.guest-mode #fabLineup,
+            body.guest-mode #heroSection,
+            body.guest-mode .card-edit-btn,
+            body.guest-mode .btn-add-cart,
+            body.guest-mode .btn-color-cart,
+            body.guest-mode .coupon-toggle-row { display: none !important; }
+            body.guest-mode .section { padding: 20px 16px; }
+            body.guest-mode .section-label { font-size: 13px; page-break-after: avoid; }
+            body.guest-mode .product-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            body.guest-mode .product-card { break-inside: avoid; page-break-inside: avoid; }
+            body.guest-mode .stores-section { page-break-before: always; }
+            body.guest-mode .section + .section { border-top: 1px solid #e5e7eb; }
+        }
+
         /* 초기화 확인 모달 */
         .reset-modal {
             display: none;
@@ -4380,7 +4418,7 @@
 
 <!-- ──────── PRODUCT DETAILS (Hidden by default) ──────── -->
 <div id="detail" class="section">
-    <a class="back-link" onclick="navigate('products', document.querySelector('.header-nav a:first-child'))">← 제품 목록으로 돌아가기</a>
+    <a class="back-link" onclick="closeDetailBack()">← 제품 목록으로 돌아가기</a>
     <div class="detail-hero" id="detailContent">
         <!-- Filled by JS -->
     </div>
@@ -5269,13 +5307,13 @@ function applyGuestParams() {
     // 허용된 제품 파싱
     const allowedProducts = params.get('p') ? params.get('p').split(',') : null;
 
-    // ── 섹션 표시 제어 ──
+    // ── 섹션 표시 제어 (한 페이지 스크롤 방식) ──
     if (allowedSections) {
-        // 모든 섹션 숨김 처리 후 허용된 것만 유지
+        // 허용되지 않은 섹션 숨김 (#detail은 CSS로 별도 관리)
         document.querySelectorAll('.section').forEach(sec => {
+            if (sec.id === 'detail') return;
             if (!allowedSections.includes(sec.id)) {
-                sec.classList.remove('active');
-                sec.style.display = 'none'; // active 못 받게도 차단
+                sec.style.display = 'none';
             }
         });
         // heroSection: products가 허용됐을 때만 표시
@@ -5290,15 +5328,9 @@ function applyGuestParams() {
             }
         });
 
-        // 허용된 첫 섹션 활성화
+        // 첫 섹션 네비 active 표시
         const firstSec = allowedSections.find(s => s !== 'stores');
         if (firstSec) {
-            const el = document.getElementById(firstSec);
-            if (el) {
-                el.style.display = ''; // 차단 해제
-                el.classList.add('active');
-            }
-            // 네비 active 표시
             const navLink = [...nav.querySelectorAll('a')].find(a =>
                 a.getAttribute('onclick')?.includes(`'${firstSec}'`)
             );
@@ -5358,19 +5390,6 @@ function applyGuestParams() {
     const detail = params.get('detail');
     if (detail) {
         setTimeout(() => showDetail(detail), 100);
-    } else if (allowedSections) {
-        const first = allowedSections[0];
-        if (first === 'stores') {
-            setTimeout(() => {
-                const el = document.getElementById('stores');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }, 150);
-        } else {
-            const navLink = [...nav.querySelectorAll('a')].find(a =>
-                a.getAttribute('onclick')?.includes(`'${first}'`)
-            );
-            if (navLink) navigate(first, navLink);
-        }
     }
 }
 let generatedUrl = '';
@@ -7976,10 +7995,28 @@ function heroClear(focus = true) {
 }
 
 // ── NAVIGATION ──
+let _savedScrollY = 0;
+function closeDetailBack() {
+    if (document.body.classList.contains('guest-mode')) {
+        document.getElementById('detail').classList.remove('active');
+        setTimeout(() => window.scrollTo({ top: _savedScrollY, behavior: 'smooth' }), 50);
+    } else {
+        navigate('products', document.querySelector('.header-nav a:first-child'));
+    }
+}
+
 function navigate(sectionId, navEl) {
-    // 게스트 모드에서 차단된 섹션은 이동 불가
+    // 게스트 모드: 탭 전환 대신 해당 섹션으로 스크롤
+    if (document.body.classList.contains('guest-mode')) {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        document.querySelectorAll('.header-nav a').forEach(a => a.classList.remove('active'));
+        if (navEl) navEl.classList.add('active');
+        return;
+    }
+    // 일반 모드에서 차단된 섹션은 이동 불가
     const el = document.getElementById(sectionId);
-    if (el && el.style.display === 'none' && document.body.classList.contains('guest-mode')) return;
+    if (el && el.style.display === 'none') return;
 
     // Show hero only on products page
     document.getElementById('heroSection').style.display = sectionId === 'products' ? 'block' : 'none';
@@ -8381,13 +8418,19 @@ function showDetail(productId) {
     document.querySelector('.detail-tab').classList.add('active');
 
     // 화면 전환
-    document.getElementById('heroSection').style.display = 'none';
-    ['fabPromo','fabLineup'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('detail').classList.add('active');
-    document.querySelectorAll('.header-nav a').forEach(a => a.classList.remove('active'));
-    document.querySelector('.header-nav a:first-child').classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (document.body.classList.contains('guest-mode')) {
+        _savedScrollY = window.scrollY;
+        document.getElementById('detail').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+        document.getElementById('heroSection').style.display = 'none';
+        ['fabPromo','fabLineup'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('detail').classList.add('active');
+        document.querySelectorAll('.header-nav a').forEach(a => a.classList.remove('active'));
+        document.querySelector('.header-nav a:first-child').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 // ── CART ──
