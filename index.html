@@ -2237,7 +2237,10 @@
         body.guest-mode .section + .section { border-top: 2px solid #f0f4ff; margin-top: 0; }
 
         /* ══ 게스트 모드: 인쇄 카탈로그 형식 ══ */
+        #printCatalog { display: none; }
+
         @media print {
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             body.guest-mode .guest-banner,
             body.guest-mode .header-nav,
             body.guest-mode .cat-filter-bar,
@@ -2249,16 +2252,35 @@
             body.guest-mode .btn-add-cart,
             body.guest-mode .btn-color-cart,
             body.guest-mode .coupon-toggle-row { display: none !important; }
-            body.guest-mode .section { padding: 20px 16px; }
+            body.guest-mode .section { padding: 16px; }
             body.guest-mode .section-label { font-size: 13px; page-break-after: avoid; }
-            body.guest-mode .product-grid {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-            }
-            body.guest-mode .product-card { break-inside: avoid; page-break-inside: avoid; }
+            body.guest-mode .product-grid { display: none !important; }
+            body.guest-mode #printCatalog { display: block; }
             body.guest-mode .stores-section { page-break-before: always; }
             body.guest-mode .section + .section { border-top: 1px solid #e5e7eb; }
+
+            /* ── 인쇄 카탈로그 상세 블록 ── */
+            .pci-category {
+                font-size: 12px; font-weight: 700; letter-spacing: .06em;
+                color: #0D3BFF; margin: 14px 0 6px; padding-bottom: 4px;
+                border-bottom: 2px solid #0D3BFF;
+                break-after: avoid; page-break-after: avoid;
+            }
+            .pci-block {
+                display: grid; grid-template-columns: 100px 1fr; gap: 10px;
+                padding: 10px; margin-bottom: 8px;
+                border: 1px solid #e5e7eb; border-radius: 6px;
+                break-inside: avoid; page-break-inside: avoid;
+            }
+            .pci-img { width: 100px; height: 100px; object-fit: contain; }
+            .pci-name { font-size: 14px; font-weight: 700; }
+            .pci-tagline { font-size: 10px; color: #6b7280; margin: 2px 0 4px; }
+            .pci-desc { font-size: 10px; color: #555; margin-bottom: 6px; line-height: 1.5; }
+            .pci-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            .pci-table th { background: #f0f4ff; padding: 3px 6px; text-align: left; font-weight: 600; }
+            .pci-table td { padding: 2px 6px; border-bottom: 1px solid #f0f0f0; }
+            .pci-table .pv-orig { text-align: right; color: #9ca3af; text-decoration: line-through; }
+            .pci-table .pv-price { text-align: right; font-weight: 600; color: #0D3BFF; }
         }
 
         /* 초기화 확인 모달 */
@@ -3169,7 +3191,7 @@
 <!-- ══ 게스트 모드 배너 ══ -->
 <div class="guest-banner" id="guestBanner">
     <span>📎 시디즈 매장에서 맞춤 안내 링크를 보내드렸습니다</span>
-    <button class="guest-print-btn" onclick="window.print()">🖨 카탈로그 인쇄</button>
+    <button class="guest-print-btn" onclick="preparePrintCatalog(); window.print()">🖨 카탈로그 인쇄</button>
 </div>
 
 <!-- ══ 배포 모드 전용 페이지 ══ -->
@@ -4422,6 +4444,9 @@
         </div>
 
     </div>
+
+    <!-- ══ 인쇄 전용 상세 카탈로그 (guest-mode print에서만 표시) ══ -->
+    <div id="printCatalog"></div>
 </div>
 
 <!-- ──────── PRODUCT DETAILS (Hidden by default) ──────── -->
@@ -8023,6 +8048,60 @@ function closeDetailBack() {
     } else {
         navigate('products', document.querySelector('.header-nav a:first-child'));
     }
+}
+
+function preparePrintCatalog() {
+    const container = document.getElementById('printCatalog');
+    if (!container) return;
+    const f = n => n ? n.toLocaleString('ko-KR') + '원' : '';
+
+    const html = [];
+    let pendingCat = null;
+
+    document.querySelectorAll('#productGrid > *').forEach(el => {
+        if (el.classList.contains('product-category-header')) {
+            pendingCat = el.querySelector('h2, h3')?.textContent || '';
+            return;
+        }
+        if (!el.classList.contains('product-card')) return;
+        if (el.style.display === 'none') return;
+
+        const m = el.getAttribute('onclick')?.match(/showDetail\('(\w+)'/);
+        const id = m?.[1];
+        if (!id || !products[id]) return;
+
+        if (pendingCat !== null) {
+            html.push(`<div class="pci-category">${pendingCat}</div>`);
+            pendingCat = null;
+        }
+
+        const p = products[id];
+        const vd = (variantData[id] || []).filter(v => v.price > 0);
+        const hasDiscount = vd.some(v => v.comparePrice && v.comparePrice !== v.price);
+
+        const rows = vd.map(v => {
+            const origCell = hasDiscount
+                ? `<td class="pv-orig">${(v.comparePrice && v.comparePrice !== v.price) ? f(v.comparePrice) : ''}</td>`
+                : '';
+            return `<tr><td>${v.name}</td>${origCell}<td class="pv-price">${f(v.price)}</td></tr>`;
+        }).join('');
+
+        const tableHtml = rows
+            ? `<table class="pci-table"><thead><tr><th>옵션</th>${hasDiscount ? '<th style="text-align:right">소비자가(정가)</th>' : ''}<th style="text-align:right">회원할인가</th></tr></thead><tbody>${rows}</tbody></table>`
+            : '';
+
+        html.push(`<div class="pci-block">
+            <img class="pci-img" src="${p.img || ''}" onerror="this.style.display='none'">
+            <div>
+                <div class="pci-name">${p.name}</div>
+                ${p.tagline ? `<div class="pci-tagline">${p.tagline}</div>` : ''}
+                ${p.desc ? `<div class="pci-desc">${p.desc}</div>` : ''}
+                ${tableHtml}
+            </div>
+        </div>`);
+    });
+
+    container.innerHTML = html.join('');
 }
 
 function navigate(sectionId, navEl) {
