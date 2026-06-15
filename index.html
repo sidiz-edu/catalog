@@ -3648,7 +3648,7 @@
                 <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
             </div>
             <!-- 6월 행사 -->
-            <div class="promo-card" style="--pc-accent:#3b82f6;">
+            <div class="promo-card" id="promoBaseDiscount" style="--pc-accent:#3b82f6;">
                 <span class="promo-card-icon">📦</span>
                 <div class="promo-card-series">전 시리즈 · 6월 행사</div>
                 <div class="promo-card-name">금액대 기본 할인</div>
@@ -5502,6 +5502,10 @@ function rebuildProductGrid() {
 
 // 페이지 로드 시 저장된 편집 내용 적용
 document.addEventListener('DOMContentLoaded', () => {
+    if (!_baseDiscountActive) {
+        const el = document.getElementById('promoBaseDiscount');
+        if (el) el.style.display = 'none';
+    }
     applyStoredEdits();
     initComparePicker();
     applyGuestParams();
@@ -6669,13 +6673,17 @@ const variantData = {
     });
 })();
 
+// 금액대 기본 할인: 2026-06-16 하루 제외, 6/17부터 자동 재개
+const _baseDiscountActive = new Date().toISOString().slice(0,10) !== '2026-06-16';
 const DISCOUNT_TIERS = [
     { min: 5000000, rate: 0.15, label: '500만원 이상' },
     { min: 3000000, rate: 0.13, label: '300만원 이상' },
     { min: 1500000, rate: 0.10, label: '150만원 이상' },
-    { min: 700000,  rate: 0.07, label: '70만원 이상' },
-    { min: 500000,  rate: 0.05, label: '50만원 이상' },
-    { min: 300000,  rate: 0.03, label: '30만원 이상' },
+    ...(_baseDiscountActive ? [
+        { min: 700000, rate: 0.07, label: '70만원 이상' },
+        { min: 500000, rate: 0.05, label: '50만원 이상' },
+        { min: 300000, rate: 0.03, label: '30만원 이상' },
+    ] : []),
 ];
 
 // 그룹별 수량 프로모션 (예쁜 의자도 시디즈 + 세트 할인)
