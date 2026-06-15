@@ -3148,6 +3148,115 @@
         }
         .btn-add-cart:hover { background: var(--sidiz-blue); }
         .btn-add-cart:focus-visible { outline: 3px solid var(--sidiz-accent); outline-offset: 2px; }
+
+        /* ════ SE GUIDE ════ */
+        .se-pw-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .se-pw-box {
+            background: #fff; border-radius: 20px;
+            padding: 28px 24px; width: 300px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.25); text-align: center;
+        }
+        .se-pw-logo { font-size: 1.2rem; font-weight: 900; color: #001499; margin-bottom: 4px; }
+        .se-pw-sub  { font-size: 0.8rem; color: #9ca3af; margin-bottom: 16px; }
+        .se-pw-box input {
+            width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb;
+            border-radius: 10px; font-size: 1.1rem; text-align: center;
+            letter-spacing: 4px; margin-bottom: 6px; outline: none; box-sizing: border-box;
+        }
+        .se-pw-box input:focus { border-color: #0D3BFF; }
+        .se-pw-error { font-size: 0.8rem; color: #ef4444; margin-bottom: 10px; }
+        .se-pw-btns { display: flex; gap: 8px; margin-top: 8px; }
+        .se-pw-btns button { flex: 1; padding: 11px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; }
+        .se-pw-cancel  { background: #f3f4f6; color: #374151; }
+        .se-pw-confirm { background: #001499; color: #fff; }
+
+        .se-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding: 16px 20px 48px; z-index: 9900;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 -4px 40px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .se-panel.open { transform: translateY(0); }
+        .se-panel-handle {
+            width: 40px; height: 4px; background: #e5e7eb;
+            border-radius: 99px; margin: 0 auto 18px;
+        }
+        .se-panel-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+        }
+        .se-panel-title { font-size: 1.05rem; font-weight: 800; color: #001499; }
+        .se-voice-btn {
+            padding: 6px 12px; border-radius: 99px;
+            border: 1.5px solid #e5e7eb; background: #fff;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #374151;
+            transition: all 0.2s;
+        }
+        .se-voice-btn.on { border-color: #0D3BFF; color: #0D3BFF; background: #f0f4ff; }
+        .se-tour-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #001499, #0D3BFF);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 18px;
+        }
+        .se-section-label {
+            font-size: 0.72rem; font-weight: 700; color: #9ca3af;
+            letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px;
+        }
+        .se-scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .se-scenario-card {
+            border: 1.5px solid #e5e7eb; border-radius: 14px;
+            padding: 14px 12px; cursor: pointer; transition: all 0.15s;
+        }
+        .se-scenario-card:active { transform: scale(0.97); border-color: #0D3BFF; background: #f0f4ff; }
+        .se-scenario-emoji { font-size: 1.6rem; margin-bottom: 6px; }
+        .se-scenario-title { font-size: 0.85rem; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+        .se-scenario-desc  { font-size: 0.72rem; color: #9ca3af; line-height: 1.4; }
+        .se-scenario-steps { font-size: 0.72rem; color: #0D3BFF; margin-top: 6px; font-weight: 600; }
+        .se-close-btn {
+            width: 100%; margin-top: 16px; padding: 12px;
+            background: #f3f4f6; border: none; border-radius: 12px;
+            font-size: 0.9rem; color: #6b7280; cursor: pointer; font-weight: 600;
+        }
+
+        /* 투어 */
+        .tour-dim {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.72); z-index: 9950; pointer-events: none;
+        }
+        .tour-highlight {
+            position: fixed; background: transparent;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.72);
+            border-radius: 10px; z-index: 9951;
+            transition: all 0.35s cubic-bezier(0.4,0,0.2,1); pointer-events: none;
+        }
+        .tour-card {
+            position: fixed; background: #fff; border-radius: 18px;
+            padding: 20px; z-index: 9960;
+            width: calc(100% - 32px); max-width: 400px;
+            left: 50%; transform: translateX(-50%);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+            bottom: 20px;
+        }
+        .tour-card-tag {
+            font-size: 0.72rem; font-weight: 700; color: #0D3BFF;
+            letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;
+        }
+        .tour-card-title { font-size: 1rem; font-weight: 800; color: #1a1a1a; margin-bottom: 8px; }
+        .tour-card-text  { font-size: 0.85rem; color: #6b7280; line-height: 1.6; margin-bottom: 12px; }
+        .tour-progress   { font-size: 0.75rem; color: #c4c9d4; text-align: center; margin-bottom: 10px; }
+        .tour-nav { display: flex; gap: 8px; align-items: center; }
+        .tour-skip { padding: 10px 12px; background: #f3f4f6; border: none; border-radius: 10px; font-size: 0.8rem; color: #9ca3af; cursor: pointer; }
+        .tour-prev { padding: 10px 12px; background: #f3f4f6; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #374151; cursor: pointer; }
+        .tour-next { flex: 1; padding: 12px; background: #001499; color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+
+        @media print { .se-panel, .se-pw-overlay, .tour-dim, .tour-highlight, .tour-card { display: none !important; } }
     </style>
 
     <!-- Favicon -->
@@ -9605,6 +9714,279 @@ enterAdminMode = async function() {
     });
 };
 
+/* ════ SE GUIDE ════ */
+const _SE_PW = 'SE2026';
+let _seVoiceOn = true;
+let _tourStep  = 0;
+let _tourActive = false;
+
+/* ── 진입: 헤더 로고 3탭 ── */
+(function(){
+    let _taps = 0, _tapTimer = null;
+    const logoEl = document.querySelector('header .nav-brand') ||
+                   document.querySelector('header a') ||
+                   document.querySelector('header');
+    if (!logoEl) return;
+    logoEl.addEventListener('click', () => {
+        _taps++;
+        if (_tapTimer) clearTimeout(_tapTimer);
+        _tapTimer = setTimeout(() => { _taps = 0; }, 800);
+        if (_taps >= 3) { _taps = 0; _openSEPw(); }
+    });
+})();
+
+/* ── 진입: URL 파라미터 ── */
+if (new URLSearchParams(location.search).get('se') === _SE_PW) {
+    window.addEventListener('DOMContentLoaded', () => setTimeout(_openSEPanel, 500));
+}
+
+function _openSEPw() {
+    const ov = document.getElementById('seGuidePwOverlay');
+    ov.style.display = 'flex';
+    document.getElementById('seGuidePwInput').value = '';
+    document.getElementById('seGuidePwError').style.display = 'none';
+    setTimeout(() => document.getElementById('seGuidePwInput').focus(), 150);
+}
+function closeSEGuidePw() {
+    document.getElementById('seGuidePwOverlay').style.display = 'none';
+}
+function checkSEGuidePw() {
+    if (document.getElementById('seGuidePwInput').value === _SE_PW) {
+        closeSEGuidePw();
+        _openSEPanel();
+    } else {
+        document.getElementById('seGuidePwInput').value = '';
+        document.getElementById('seGuidePwError').style.display = 'block';
+    }
+}
+
+function _openSEPanel() {
+    _renderScenarios();
+    const panel = document.getElementById('seGuidePanel');
+    panel.style.display = 'block';
+    requestAnimationFrame(() => panel.classList.add('open'));
+}
+function closeSEGuide() {
+    const panel = document.getElementById('seGuidePanel');
+    panel.classList.remove('open');
+    setTimeout(() => { panel.style.display = 'none'; }, 350);
+}
+
+/* ── TTS ── */
+function _speak(text) {
+    if (!_seVoiceOn || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR'; u.rate = 0.93; u.pitch = 1.0;
+    window.speechSynthesis.speak(u);
+}
+function toggleSEVoice() {
+    _seVoiceOn = !_seVoiceOn;
+    if (!_seVoiceOn) window.speechSynthesis.cancel();
+    const btn = document.getElementById('seVoiceBtn');
+    btn.textContent = _seVoiceOn ? '🔊 음성 켜짐' : '🔇 음성 꺼짐';
+    btn.classList.toggle('on', _seVoiceOn);
+}
+
+/* ── 투어 스텝 정의 ── */
+const _tourSteps = [
+    {
+        target: null,
+        title: 'SE 가이드 시작',
+        text: '시디즈 카탈로그의 주요 기능을 안내합니다. 고객 응대에 바로 활용해 보세요.',
+        voice: '안녕하세요. 시디즈 카탈로그 SE 가이드입니다. 고객 응대에 활용할 주요 기능들을 차례로 안내해 드릴게요.',
+        action: null
+    },
+    {
+        target: '.cat-filter-bar',
+        title: '① 카테고리 필터',
+        text: '워크, 게이밍, 이지리페어 등 카테고리를 탭 하나로 빠르게 필터링합니다.',
+        voice: '제품 라인업에서 카테고리 탭을 눌러 원하는 제품군만 볼 수 있습니다. 이지리페어 탭에서는 교체 부품만 모아볼 수 있어요.',
+        action: () => { try { navigate('products', null); } catch(e){} }
+    },
+    {
+        target: '#compare',
+        title: '② 모델 비교',
+        text: '2개 이상 모델을 선택하면 스펙·가격을 한눈에 비교합니다. 고민하는 고객에게 바로 보여주세요.',
+        voice: '모델 비교 탭에서 두 가지 이상 모델을 선택하면 스펙과 가격을 나란히 비교할 수 있습니다. 어떤 모델이 자신에게 맞는지 고민하는 고객에게 특히 효과적입니다.',
+        action: () => { try { navigate('compare', null); } catch(e){} }
+    },
+    {
+        target: null,
+        title: '③ 맞춤 안내 링크',
+        text: '보여줄 제품과 섹션만 골라 개인화 링크를 만들고 카카오톡으로 바로 전송합니다.',
+        voice: '맞춤 안내 링크 기능으로 고객에게 딱 필요한 제품과 정보만 담긴 링크를 만들어 카카오톡으로 바로 전송할 수 있습니다. 상담 후 팔로업에 활용해 보세요.',
+        action: null
+    },
+    {
+        target: '.cart-fab',
+        title: '④ 장바구니 & 견적',
+        text: '제품을 담고 쿠폰을 적용한 뒤 견적 링크나 QR코드로 공유합니다.',
+        voice: '장바구니에 제품을 담고 쿠폰까지 적용한 최종 가격을 확인한 후, 견적 링크나 QR코드로 고객에게 공유할 수 있습니다.',
+        action: null
+    },
+    {
+        target: null,
+        title: '⑤ 카탈로그 인쇄',
+        text: '고객명과 매장명이 담긴 표지를 포함한 맞춤 카탈로그를 인쇄해 전달하세요.',
+        voice: '카탈로그 인쇄 기능으로 고객 이름과 매장명이 담긴 표지를 포함한 맞춤 카탈로그를 인쇄해 드릴 수 있습니다. 방문 기념으로 전달하면 좋습니다.',
+        action: null
+    },
+    {
+        target: null,
+        title: '투어 완료 🎉',
+        text: '모든 기능을 살펴봤습니다. 이제 상황별 시나리오로 고객 응대를 바로 시작해 보세요!',
+        voice: '기능 투어가 끝났습니다. 상황별 시나리오를 선택하면 카탈로그가 자동으로 설정됩니다. 오늘도 좋은 상담 되세요!',
+        action: null
+    },
+];
+
+function startTour() {
+    closeSEGuide();
+    _tourStep = 0;
+    _tourActive = true;
+    setTimeout(() => _showTourStep(0), 400);
+}
+
+function _showTourStep(idx) {
+    const s = _tourSteps[idx];
+    if (!s) { endTour(); return; }
+    if (s.action) { try { s.action(); } catch(e){} }
+
+    const highlight  = document.getElementById('tourHighlight');
+    const dimOverlay = document.getElementById('tourDimOverlay');
+    const card       = document.getElementById('tourCard');
+
+    if (s.target) {
+        const el = document.querySelector(s.target);
+        if (el) {
+            const r = el.getBoundingClientRect();
+            const pad = 8;
+            highlight.style.cssText = `
+                display:block; top:${r.top-pad}px; left:${r.left-pad}px;
+                width:${r.width+pad*2}px; height:${r.height+pad*2}px;
+            `;
+            dimOverlay.style.display = 'none';
+        } else {
+            highlight.style.display = 'none';
+            dimOverlay.style.display = 'block';
+        }
+    } else {
+        highlight.style.display = 'none';
+        dimOverlay.style.display = 'block';
+    }
+
+    document.getElementById('tourTitle').textContent    = s.title;
+    document.getElementById('tourText').textContent     = s.text;
+    document.getElementById('tourProgress').textContent = `${idx+1} / ${_tourSteps.length}`;
+    document.getElementById('tourPrevBtn').style.display = idx > 0 ? 'inline-block' : 'none';
+    document.getElementById('tourNextBtn').textContent   = idx === _tourSteps.length-1 ? '완료 ✓' : '다음 →';
+    card.style.display = 'block';
+
+    if (s.voice) setTimeout(() => _speak(s.voice), 300);
+}
+
+function nextTourStep() {
+    if (_tourStep >= _tourSteps.length - 1) { endTour(); return; }
+    _tourStep++;
+    _showTourStep(_tourStep);
+}
+function prevTourStep() {
+    if (_tourStep <= 0) return;
+    _tourStep--;
+    _showTourStep(_tourStep);
+}
+function endTour() {
+    _tourActive = false;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    document.getElementById('tourHighlight').style.display  = 'none';
+    document.getElementById('tourCard').style.display       = 'none';
+    document.getElementById('tourDimOverlay').style.display = 'none';
+    setTimeout(() => _openSEPanel(), 200);
+}
+
+/* ── 시나리오 ── */
+const _seScenarios = [
+    {
+        id: 'first-visit', emoji: '👋',
+        title: '처음 방문한 고객',
+        desc: '브랜드·제품을 처음 접하는 고객',
+        steps: '워크 카테고리 → T20부터 소개',
+        voice: '처음 방문한 고객 시나리오입니다. 워크 카테고리의 T20부터 차례로 소개해 보세요.',
+        action: () => {
+            try { navigate('products', null); } catch(e){}
+            setTimeout(() => { try { filterProducts('워크'); } catch(e){} }, 400);
+        }
+    },
+    {
+        id: 'compare', emoji: '🤔',
+        title: '두 모델 고민 중',
+        desc: '예) T50 vs T60 비교가 필요한 고객',
+        steps: '모델 비교 탭 → 두 모델 선택',
+        voice: '두 모델을 고민 중인 고객 시나리오입니다. 모델 비교 탭으로 이동합니다.',
+        action: () => { try { navigate('compare', null); } catch(e){} }
+    },
+    {
+        id: 'send-link', emoji: '📱',
+        title: '상담 후 링크 전송',
+        desc: '방문 후 맞춤 정보를 카카오톡으로',
+        steps: '배포 모드 → 제품·섹션 선택 → 전송',
+        voice: '상담 후 맞춤 링크를 전송하는 시나리오입니다. 배포 모드를 열어 고객에게 맞는 제품과 섹션을 선택하세요.',
+        action: () => { try { enterDeployMode(); } catch(e){} }
+    },
+    {
+        id: 'quote', emoji: '📋',
+        title: '견적이 필요한 고객',
+        desc: '법인·단체 구매 또는 여러 제품 견적',
+        steps: '장바구니 → 제품 담기 → 견적 공유',
+        voice: '견적이 필요한 고객 시나리오입니다. 장바구니를 열어 제품을 담고 견적 링크를 공유하세요.',
+        action: () => {
+            const cartBtn = document.querySelector('.cart-fab') || document.querySelector('[onclick*="openCart"]');
+            if (cartBtn) cartBtn.click();
+        }
+    },
+    {
+        id: 'easyrepair', emoji: '🔧',
+        title: '부품 교체 필요 고객',
+        desc: '기존 의자 부품 교체·액세서리',
+        steps: '이지리페어 카테고리 → 제품별 부품',
+        voice: '부품 교체가 필요한 고객 시나리오입니다. 이지리페어 카테고리로 이동합니다.',
+        action: () => {
+            try { navigate('products', null); } catch(e){}
+            setTimeout(() => { try { filterProducts('이지리페어'); } catch(e){} }, 400);
+        }
+    },
+    {
+        id: 'print', emoji: '🖨️',
+        title: '인쇄 자료가 필요할 때',
+        desc: '고객에게 맞춤 카탈로그 인쇄',
+        steps: '인쇄 버튼 → 고객명·매장명 입력',
+        voice: '카탈로그 인쇄 시나리오입니다. 고객명과 매장명을 입력해 맞춤 표지가 있는 카탈로그를 인쇄해 드리세요.',
+        action: () => { try { openCatalogPrintModal(); } catch(e){} }
+    },
+];
+
+function _renderScenarios() {
+    const grid = document.getElementById('seScenarioGrid');
+    if (!grid || grid.children.length > 0) return;
+    _seScenarios.forEach(sc => {
+        const card = document.createElement('div');
+        card.className = 'se-scenario-card';
+        card.innerHTML = `
+            <div class="se-scenario-emoji">${sc.emoji}</div>
+            <div class="se-scenario-title">${sc.title}</div>
+            <div class="se-scenario-desc">${sc.desc}</div>
+            <div class="se-scenario-steps">${sc.steps}</div>
+        `;
+        card.addEventListener('click', () => {
+            closeSEGuide();
+            _speak(sc.voice);
+            setTimeout(() => { try { sc.action(); } catch(e){} }, 350);
+        });
+        grid.appendChild(card);
+    });
+}
+
 </script>
 <!-- ══ 카탈로그 인쇄 정보 입력 모달 ══ -->
 <div class="print-modal-overlay" id="catalogPrintModalOverlay" onclick="closeCatalogPrintModal(event)">
@@ -9764,6 +10146,47 @@ enterAdminMode = async function() {
         <button class="quote-print-btn" onclick="printQuote()">
             📄 견적서 보기
         </button>
+    </div>
+</div>
+
+<!-- ══ SE GUIDE ══ -->
+<div id="seGuidePwOverlay" style="display:none" class="se-pw-overlay" onclick="if(event.target===this)closeSEGuidePw()">
+    <div class="se-pw-box">
+        <div class="se-pw-logo">SE 가이드</div>
+        <p class="se-pw-sub">SIDIZ 매장 직원 전용</p>
+        <input type="password" id="seGuidePwInput" placeholder="비밀번호 입력"
+            onkeydown="if(event.key==='Enter')checkSEGuidePw()">
+        <div id="seGuidePwError" style="display:none" class="se-pw-error">비밀번호가 틀렸습니다</div>
+        <div class="se-pw-btns">
+            <button class="se-pw-cancel" onclick="closeSEGuidePw()">취소</button>
+            <button class="se-pw-confirm" onclick="checkSEGuidePw()">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="seGuidePanel" class="se-panel" style="display:none">
+    <div class="se-panel-handle"></div>
+    <div class="se-panel-header">
+        <div class="se-panel-title">📖 SE 가이드</div>
+        <button id="seVoiceBtn" class="se-voice-btn on" onclick="toggleSEVoice()">🔊 음성 켜짐</button>
+    </div>
+    <button class="se-tour-btn" onclick="startTour()">▶ 기능 투어 시작하기</button>
+    <div class="se-section-label">상황별 시나리오</div>
+    <div class="se-scenario-grid" id="seScenarioGrid"></div>
+    <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
+</div>
+
+<div id="tourDimOverlay" class="tour-dim" style="display:none"></div>
+<div id="tourHighlight" class="tour-highlight" style="display:none"></div>
+<div id="tourCard" class="tour-card" style="display:none">
+    <div class="tour-card-tag">SE 기능 투어</div>
+    <div class="tour-card-title" id="tourTitle"></div>
+    <div class="tour-card-text" id="tourText"></div>
+    <div class="tour-progress" id="tourProgress"></div>
+    <div class="tour-nav">
+        <button class="tour-skip" onclick="endTour()">건너뛰기</button>
+        <button class="tour-prev" id="tourPrevBtn" onclick="prevTourStep()" style="display:none">← 이전</button>
+        <button class="tour-next" id="tourNextBtn" onclick="nextTourStep()">다음 →</button>
     </div>
 </div>
 </body>
