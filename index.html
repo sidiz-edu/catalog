@@ -3205,7 +3205,12 @@
             width: 100%; padding: 14px;
             background: linear-gradient(135deg, #001499, #0D3BFF);
             color: #fff; border: none; border-radius: 12px;
-            font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 18px;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+        }
+        .se-pdf-btn {
+            width: 100%; padding: 11px;
+            background: #fff; border: 1.5px solid #0D3BFF; border-radius: 12px;
+            color: #0D3BFF; font-size: 0.88rem; font-weight: 700; cursor: pointer; margin-bottom: 18px;
         }
         .se-section-label {
             font-size: 0.72rem; font-weight: 700; color: #9ca3af;
@@ -9830,7 +9835,7 @@ const _tourSteps = [
     {
         demo: true,
         title: '④ 장바구니 & 견적 — 실제 화면',
-        text: '제품 담기 → 쿠폰 선택 → 최종 금액 확인 → 견적 링크·QR코드로 고객에게 공유. 법인 구매나 다수 제품 견적에 활용하세요.',
+        text: '제품 담기 → 쿠폰 선택 → 최종 금액 확인 → 견적 링크·QR코드로 고객에게 공유. 다수 제품 견적 및 지류 용지를 원하시는 고객들에게 적극적으로 활용해주세요.',
         voice: '이것이 장바구니 화면입니다. 제품을 담고 쿠폰을 선택하면 할인 금액이 자동으로 계산됩니다. 하단의 견적 링크 버튼으로 고객과 바로 공유할 수 있습니다.',
         action: () => { try { openCart(); } catch(e){} },
         cleanup: () => { try { closeCart(); } catch(e){} }
@@ -9943,6 +9948,47 @@ function endTour() {
     document.getElementById('tourCard').style.display       = 'none';
     document.getElementById('tourDimOverlay').style.display = 'none';
     setTimeout(() => _openSEPanel(), 200);
+}
+
+function openSEGuidePDF() {
+    const items = _tourSteps.slice(1, -1);
+    const cards = items.map(s => `
+        <div class="card${s.demo ? ' demo' : ''}">
+            ${s.demo ? '<span class="badge">LIVE DEMO</span>' : ''}
+            <div class="card-title">${s.title}</div>
+            <div class="card-text">${s.text}</div>
+        </div>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>SIDIZ SE 기능 가이드</title>
+<style>
+@page { size: A4 portrait; margin: 15mm 18mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
+body { background:#fff; color:#1a1a1a; }
+.header { border-bottom: 3px solid #001499; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end; }
+.logo { font-size:1.4rem; font-weight:900; color:#001499; letter-spacing:2px; }
+.subtitle { font-size:1rem; font-weight:800; margin-top:4px; }
+.header-right { font-size:0.72rem; color:#9ca3af; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.card { border:1.5px solid #e5e7eb; border-radius:12px; padding:14px 16px; }
+.card.demo { border-color:#0D3BFF; background:#f8f9ff; }
+.badge { display:inline-block; background:#0D3BFF; color:#fff; font-size:0.6rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:6px; letter-spacing:0.5px; }
+.card-title { font-size:0.82rem; font-weight:800; color:#001499; margin-bottom:6px; }
+.card-text { font-size:0.75rem; color:#4b5563; line-height:1.65; }
+.footer { margin-top:18px; border-top:1px solid #e5e7eb; padding-top:10px; font-size:0.68rem; color:#9ca3af; text-align:center; }
+</style></head><body>
+<div class="header">
+  <div><div class="logo">SIDIZ</div><div class="subtitle">SE 기능 가이드</div></div>
+  <div class="header-right">시디즈 카탈로그 · 매장 전용</div>
+</div>
+<div class="grid">${cards}</div>
+<div class="footer">본 문서는 시디즈 카탈로그 SE 가이드 내부 배포용입니다.</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 800);
 }
 
 /* ── 시나리오 ── */
@@ -10214,6 +10260,7 @@ function _renderScenarios() {
         <button id="seVoiceBtn" class="se-voice-btn on" onclick="toggleSEVoice()">🔊 음성 켜짐</button>
     </div>
     <button class="se-tour-btn" onclick="startTour()">▶ 기능 투어 시작하기</button>
+    <button class="se-pdf-btn" onclick="openSEGuidePDF()">📄 기능 가이드 PDF 저장</button>
     <div class="se-section-label">상황별 시나리오</div>
     <div class="se-scenario-grid" id="seScenarioGrid"></div>
     <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
