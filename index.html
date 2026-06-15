@@ -9766,7 +9766,10 @@ function _speak(text) {
     if (!_seVoiceOn || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ko-KR'; u.rate = 0.93; u.pitch = 1.0;
+    u.lang = 'ko-KR'; u.rate = 1.05; u.pitch = 1.0;
+    const maleVoice = window.speechSynthesis.getVoices()
+        .find(v => v.lang.startsWith('ko') && /injoon|male/i.test(v.name));
+    if (maleVoice) u.voice = maleVoice;
     window.speechSynthesis.speak(u);
 }
 function toggleSEVoice() {
@@ -9778,6 +9781,8 @@ function toggleSEVoice() {
 }
 
 /* ── 투어 스텝 정의 ── */
+// demo:true → 오버레이 숨기고 카드를 상단 배치, 실제 UI를 그대로 보여줌
+// cleanup() → 다음 스텝으로 넘어갈 때 열었던 UI 닫기
 const _tourSteps = [
     {
         target: null,
@@ -9789,37 +9794,61 @@ const _tourSteps = [
     {
         target: '.cat-filter-bar',
         title: '① 카테고리 필터',
-        text: '워크, 게이밍, 이지리페어 등 카테고리를 탭 하나로 빠르게 필터링합니다.',
-        voice: '제품 라인업에서 카테고리 탭을 눌러 원하는 제품군만 볼 수 있습니다. 이지리페어 탭에서는 교체 부품만 모아볼 수 있어요.',
+        text: '워크, 게이밍, 이지리페어 등 카테고리를 탭 하나로 빠르게 필터링합니다. 이지리페어 탭에서는 교체 부품만 모아볼 수 있어요.',
+        voice: '제품 라인업의 카테고리 탭을 눌러 원하는 제품군만 볼 수 있습니다. 이지리페어 탭에서는 교체 부품만 모아볼 수 있어요.',
         action: () => { try { navigate('products', null); } catch(e){} }
     },
     {
         target: '#compare',
         title: '② 모델 비교',
         text: '2개 이상 모델을 선택하면 스펙·가격을 한눈에 비교합니다. 고민하는 고객에게 바로 보여주세요.',
-        voice: '모델 비교 탭에서 두 가지 이상 모델을 선택하면 스펙과 가격을 나란히 비교할 수 있습니다. 어떤 모델이 자신에게 맞는지 고민하는 고객에게 특히 효과적입니다.',
+        voice: '모델 비교 탭에서 두 가지 이상 모델을 선택하면 스펙과 가격을 나란히 비교할 수 있습니다.',
         action: () => { try { navigate('compare', null); } catch(e){} }
     },
     {
-        target: null,
-        title: '③ 맞춤 안내 링크',
-        text: '보여줄 제품과 섹션만 골라 개인화 링크를 만들고 카카오톡으로 바로 전송합니다.',
-        voice: '맞춤 안내 링크 기능으로 고객에게 딱 필요한 제품과 정보만 담긴 링크를 만들어 카카오톡으로 바로 전송할 수 있습니다. 상담 후 팔로업에 활용해 보세요.',
+        target: '#deployTrigger',
+        title: '③ 맞춤 안내 링크 — 진입',
+        text: '헤더의 SIDIZ 로고를 1.8초 길게 누르면 배포 모드가 열립니다. 다음 화면에서 실제 모습을 확인하세요.',
+        voice: '헤더의 시디즈 로고를 길게 누르면 맞춤 안내 링크를 만드는 배포 모드가 열립니다.',
+        action: () => { try { navigate('products', null); } catch(e){} }
+    },
+    {
+        demo: true,
+        title: '③ 맞춤 안내 링크 — 실제 화면',
+        text: '① 표시할 메뉴 선택 → ② 보여줄 제품 선택 → ③ 링크 생성 → ④ 카카오톡 전송. 고객 상담 후 바로 팔로업하세요.',
+        voice: '이것이 맞춤 안내 링크 화면입니다. 메뉴와 제품을 선택한 뒤 링크를 생성하고 카카오톡으로 전송하면 됩니다.',
+        action: () => { try { enterDeployMode(); } catch(e){} },
+        cleanup: () => { try { exitDeployMode(); } catch(e){} }
+    },
+    {
+        target: '.cart-trigger',
+        title: '④ 장바구니 & 견적 — 진입',
+        text: '우상단 장바구니 버튼을 눌러 제품을 담고, 쿠폰 적용 후 견적을 만들 수 있습니다.',
+        voice: '우상단 장바구니 버튼을 눌러 원하는 제품을 담아보세요. 쿠폰 적용과 견적 공유가 가능합니다.',
         action: null
     },
     {
-        target: '.cart-fab',
-        title: '④ 장바구니 & 견적',
-        text: '제품을 담고 쿠폰을 적용한 뒤 견적 링크나 QR코드로 공유합니다.',
-        voice: '장바구니에 제품을 담고 쿠폰까지 적용한 최종 가격을 확인한 후, 견적 링크나 QR코드로 고객에게 공유할 수 있습니다.',
-        action: null
+        demo: true,
+        title: '④ 장바구니 & 견적 — 실제 화면',
+        text: '제품 담기 → 쿠폰 선택 → 최종 금액 확인 → 견적 링크·QR코드로 고객에게 공유. 법인 구매나 다수 제품 견적에 활용하세요.',
+        voice: '이것이 장바구니 화면입니다. 제품을 담고 쿠폰을 선택하면 할인 금액이 자동으로 계산됩니다. 하단의 견적 링크 버튼으로 고객과 바로 공유할 수 있습니다.',
+        action: () => { try { openCart(); } catch(e){} },
+        cleanup: () => { try { closeCart(); } catch(e){} }
     },
     {
         target: null,
-        title: '⑤ 카탈로그 인쇄',
-        text: '고객명과 매장명이 담긴 표지를 포함한 맞춤 카탈로그를 인쇄해 전달하세요.',
-        voice: '카탈로그 인쇄 기능으로 고객 이름과 매장명이 담긴 표지를 포함한 맞춤 카탈로그를 인쇄해 드릴 수 있습니다. 방문 기념으로 전달하면 좋습니다.',
+        title: '⑤ 카탈로그 인쇄 — 안내',
+        text: '고객명·매장명을 넣은 맞춤 표지가 포함된 카탈로그를 인쇄할 수 있습니다. 방문 고객에게 실물 자료로 전달해 보세요.',
+        voice: '카탈로그 인쇄 기능으로 고객 이름과 매장명이 담긴 표지를 포함한 카탈로그를 인쇄할 수 있습니다.',
         action: null
+    },
+    {
+        demo: true,
+        title: '⑤ 카탈로그 인쇄 — 실제 화면',
+        text: '고객명, 매장명(드롭다운), 담당자명을 입력하고 [인쇄] 버튼을 누르면 맞춤 표지가 포함된 카탈로그가 출력됩니다.',
+        voice: '이것이 카탈로그 인쇄 화면입니다. 고객 이름과 매장, 담당자를 입력하고 인쇄 버튼을 누르면 맞춤 표지가 붙은 카탈로그가 출력됩니다.',
+        action: () => { try { openCatalogPrintModal(); } catch(e){} },
+        cleanup: () => { try { document.getElementById('catalogPrintModalOverlay').classList.remove('open'); } catch(e){} }
     },
     {
         target: null,
@@ -9840,29 +9869,43 @@ function startTour() {
 function _showTourStep(idx) {
     const s = _tourSteps[idx];
     if (!s) { endTour(); return; }
+
+    // 이전 스텝 cleanup
+    if (idx > 0) {
+        const prev = _tourSteps[idx - 1];
+        if (prev && prev.cleanup) { try { prev.cleanup(); } catch(e){} }
+    }
+
     if (s.action) { try { s.action(); } catch(e){} }
 
     const highlight  = document.getElementById('tourHighlight');
     const dimOverlay = document.getElementById('tourDimOverlay');
     const card       = document.getElementById('tourCard');
 
-    if (s.target) {
+    if (s.demo) {
+        // 데모 모드: 오버레이 없이 실제 UI 위에 카드만 상단 배치
+        highlight.style.display  = 'none';
+        dimOverlay.style.display = 'none';
+        card.style.bottom = 'auto';
+        card.style.top    = '70px';
+    } else if (s.target) {
         const el = document.querySelector(s.target);
         if (el) {
             const r = el.getBoundingClientRect();
             const pad = 8;
-            highlight.style.cssText = `
-                display:block; top:${r.top-pad}px; left:${r.left-pad}px;
-                width:${r.width+pad*2}px; height:${r.height+pad*2}px;
-            `;
+            highlight.style.cssText = `display:block;top:${r.top-pad}px;left:${r.left-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px;`;
             dimOverlay.style.display = 'none';
         } else {
-            highlight.style.display = 'none';
+            highlight.style.display  = 'none';
             dimOverlay.style.display = 'block';
         }
+        card.style.top    = 'auto';
+        card.style.bottom = '20px';
     } else {
-        highlight.style.display = 'none';
+        highlight.style.display  = 'none';
         dimOverlay.style.display = 'block';
+        card.style.top    = 'auto';
+        card.style.bottom = '20px';
     }
 
     document.getElementById('tourTitle').textContent    = s.title;
@@ -9870,9 +9913,11 @@ function _showTourStep(idx) {
     document.getElementById('tourProgress').textContent = `${idx+1} / ${_tourSteps.length}`;
     document.getElementById('tourPrevBtn').style.display = idx > 0 ? 'inline-block' : 'none';
     document.getElementById('tourNextBtn').textContent   = idx === _tourSteps.length-1 ? '완료 ✓' : '다음 →';
+    // 데모 스텝은 태그 표시
+    document.getElementById('tourCard').querySelector('.tour-card-tag').textContent = s.demo ? '🔴 LIVE DEMO' : 'SE 기능 투어';
     card.style.display = 'block';
 
-    if (s.voice) setTimeout(() => _speak(s.voice), 300);
+    if (s.voice) setTimeout(() => _speak(s.voice), s.demo ? 600 : 300);
 }
 
 function nextTourStep() {
@@ -9882,10 +9927,16 @@ function nextTourStep() {
 }
 function prevTourStep() {
     if (_tourStep <= 0) return;
+    // 현재 스텝 cleanup 후 이전으로
+    const cur = _tourSteps[_tourStep];
+    if (cur && cur.cleanup) { try { cur.cleanup(); } catch(e){} }
     _tourStep--;
     _showTourStep(_tourStep);
 }
 function endTour() {
+    // 마지막 스텝 cleanup
+    const cur = _tourSteps[_tourStep];
+    if (cur && cur.cleanup) { try { cur.cleanup(); } catch(e){} }
     _tourActive = false;
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     document.getElementById('tourHighlight').style.display  = 'none';
