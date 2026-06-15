@@ -1,0 +1,28 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#001499"/>
+  <circle cx="980" cy="490" r="420" fill="#0D3BFF" opacity="0.25"/>
+  <circle cx="1090" cy="105" r="175" fill="#0D3BFF" opacity="0.18"/>
+  <circle cx="840" cy="565" r="140" fill="#ffffff" opacity="0.04"/>
+  <rect x="100" y="100" width="5" height="430" fill="#ffffff" opacity="0.2"/>
+  <text x="136" y="218" font-family="Outfit,sans-serif" font-size="120" font-weight="900" fill="#ffffff" letter-spacing="6">SIDIZ</text>
+  <text x="140" y="278" font-family="Noto Sans KR,sans-serif" font-size="36" font-weight="400" fill="#ffffff" opacity="0.7" letter-spacing="2">디지털 카탈로그</text>
+  <rect x="140" y="308" width="600" height="2" fill="#ffffff" opacity="0.2"/>
+  <text x="140" y="370" font-family="Noto Sans KR,sans-serif" font-size="26" font-weight="400" fill="#ffffff" opacity="0.55">인체공학 의자 전문 브랜드 · 제품 라인업 · 모델 비교 · 맞춤 안내</text>
+  <g transform="translate(140,410)">
+    <rect width="155" height="48" rx="24" fill="#ffffff" opacity="0.12"/>
+    <text x="77" y="32" font-family="Noto Sans KR,sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">제품 라인업</text>
+  </g>
+  <g transform="translate(306,410)">
+    <rect width="135" height="48" rx="24" fill="#ffffff" opacity="0.12"/>
+    <text x="67" y="32" font-family="Noto Sans KR,sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">모델 비교</text>
+  </g>
+  <g transform="translate(452,410)">
+    <rect width="178" height="48" rx="24" fill="#ffffff" opacity="0.12"/>
+    <text x="89" y="32" font-family="Noto Sans KR,sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">맞춤 안내 링크</text>
+  </g>
+  <g transform="translate(642,410)">
+    <rect width="155" height="48" rx="24" fill="#ffffff" opacity="0.12"/>
+    <text x="77" y="32" font-family="Noto Sans KR,sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">카탈로그 인쇄</text>
+  </g>
+  <text x="140" y="548" font-family="Outfit,sans-serif" font-size="22" font-weight="400" fill="#ffffff" opacity="0.35" letter-spacing="3">kr.sidiz.com</text>
+</svg>
