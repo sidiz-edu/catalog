@@ -1158,6 +1158,7 @@
             transition: var(--transition); letter-spacing: -0.2px;
         }
         .nav-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
+        #fabSEGuide { bottom: 168px; }
         #fabPromo   { bottom: 120px; }
         #fabLineup  { bottom: 72px; }
 
@@ -2267,6 +2268,7 @@
             body.guest-mode .header-nav,
             body.guest-mode .cat-filter-bar,
             body.guest-mode .cart-fab,
+            body.guest-mode #fabSEGuide,
             body.guest-mode #fabPromo,
             body.guest-mode #fabLineup,
             body.guest-mode #heroSection,
@@ -9720,20 +9722,7 @@ let _seVoiceOn = true;
 let _tourStep  = 0;
 let _tourActive = false;
 
-/* ── 진입: 헤더 로고 3탭 ── */
-(function(){
-    let _taps = 0, _tapTimer = null;
-    const logoEl = document.querySelector('header .nav-brand') ||
-                   document.querySelector('header a') ||
-                   document.querySelector('header');
-    if (!logoEl) return;
-    logoEl.addEventListener('click', () => {
-        _taps++;
-        if (_tapTimer) clearTimeout(_tapTimer);
-        _tapTimer = setTimeout(() => { _taps = 0; }, 800);
-        if (_taps >= 3) { _taps = 0; _openSEPw(); }
-    });
-})();
+/* ── 진입: 우하단 버튼 ── */
 
 /* ── 진입: URL 파라미터 ── */
 if (new URLSearchParams(location.search).get('se') === _SE_PW) {
@@ -10061,6 +10050,9 @@ function _renderScenarios() {
 
 
 <!-- ══ 퀵 네비 버튼 (우하단) ══ -->
+<button class="nav-fab" id="fabSEGuide" onclick="_openSEPw()">
+    📖 SE 가이드
+</button>
 <button class="nav-fab" id="fabPromo" onclick="document.querySelector('.promo-banner').scrollIntoView({behavior:'smooth'})">
     🎁 이달의 행사
 </button>
