@@ -9744,6 +9744,10 @@ enterAdminMode = async function() {
 };
 
 /* ════ SE GUIDE ════ */
+const _supabase = supabase.createClient(
+    'https://dvlrzbckneucpvlacdll.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE'
+);
 const _SE_PW = 'SE2026';
 let _seVoiceOn = true;
 let _tourStep  = 0;
@@ -9793,9 +9797,12 @@ function confirmSEName() {
     closeSEGuidePw();
     _openSEPanel();
 }
-function completeSEGuide() {
+async function completeSEGuide() {
     const elapsed = _seStartTime ? Math.round((Date.now() - _seStartTime) / 1000) : 0;
     closeSEGuide();
+    try {
+        await _supabase.from('se_learning_logs').insert({ name: _seName, duration_seconds: elapsed });
+    } catch(e) { console.error('Supabase 저장 오류:', e); }
     const ov = document.getElementById('seCompleteOverlay');
     document.getElementById('seCompleteName').textContent = _seName;
     document.getElementById('seCompleteTime').textContent = `학습 시간 : ${elapsed}초`;
