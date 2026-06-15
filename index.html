@@ -3285,6 +3285,36 @@
         .se-complete-time { font-size: 0.88rem; color: rgba(255,255,255,0.6); margin-bottom: 48px; }
         .se-complete-exit { padding: 14px 48px; background: #fff; color: #001499; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; cursor: pointer; }
 
+        /* SE 학습 기록 모달 */
+        .se-logs-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 10200;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .se-logs-overlay.open { display: flex; }
+        .se-logs-modal {
+            background: #fff; border-radius: 20px; width: 100%; max-width: 480px;
+            max-height: 80vh; display: flex; flex-direction: column;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+        }
+        .se-logs-header {
+            padding: 20px 24px 14px; border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .se-logs-title { font-size: 1rem; font-weight: 800; color: #001499; }
+        .se-logs-count { font-size: 0.8rem; color: #9ca3af; }
+        .se-logs-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #9ca3af; }
+        .se-logs-body { overflow-y: auto; flex: 1; }
+        .se-logs-table { width: 100%; border-collapse: collapse; }
+        .se-logs-table th {
+            padding: 10px 16px; text-align: left; font-size: 0.72rem;
+            font-weight: 700; color: #9ca3af; text-transform: uppercase;
+            letter-spacing: 0.5px; background: #f9fafb; position: sticky; top: 0;
+        }
+        .se-logs-table td { padding: 12px 16px; font-size: 0.85rem; color: #374151; border-top: 1px solid #f3f4f6; }
+        .se-logs-table tr:hover td { background: #f9fafb; }
+        .se-logs-empty { padding: 40px; text-align: center; color: #9ca3af; font-size: 0.85rem; }
+
         @media print { .se-panel, .se-pw-overlay, .tour-dim, .tour-highlight, .tour-card { display: none !important; } }
     </style>
 
@@ -3321,6 +3351,7 @@
         <button class="admin-bar-btn" onclick="document.querySelector('.section-label').scrollIntoView({behavior:'smooth'})">📦 제품 라인업</button>
         <button class="admin-bar-btn" onclick="openReportPanel()" id="adminReportBtn">🚩 신고<span class="report-badge" id="adminBadge" style="display:none"></span></button>
         <button class="admin-bar-btn" onclick="openQuotePanel()">📋 견적 이력</button>
+        <button class="admin-bar-btn" onclick="openSELogs()">📊 SE 학습 기록</button>
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
         <button class="admin-bar-btn danger" onclick="openResetModal()">↺ 초기화</button>
         <button class="admin-bar-btn" onclick="exitAdminMode()">✕ 나가기</button>
@@ -9797,6 +9828,35 @@ function confirmSEName() {
     closeSEGuidePw();
     _openSEPanel();
 }
+async function openSELogs() {
+    const overlay = document.getElementById('seLogsOverlay');
+    overlay.classList.add('open');
+    const tbody = document.getElementById('seLogsBody');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:#9ca3af;">불러오는 중...</td></tr>';
+
+    const { data, error } = await _supabase
+        .from('se_learning_logs')
+        .select('*')
+        .order('completed_at', { ascending: false });
+
+    if (error || !data) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:#ef4444;">불러오기 실패</td></tr>';
+        return;
+    }
+    document.getElementById('seLogsCount').textContent = `총 ${data.length}명 완료`;
+    tbody.innerHTML = data.length ? data.map(r => {
+        const dt = new Date(r.completed_at);
+        const dateStr = dt.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const min = Math.floor(r.duration_seconds / 60);
+        const sec = r.duration_seconds % 60;
+        const dur = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
+        return `<tr><td><strong>${r.name}</strong></td><td>${dur}</td><td style="color:#9ca3af;font-size:0.78rem;">${dateStr}</td></tr>`;
+    }).join('') : '<tr><td colspan="3" class="se-logs-empty">기록이 없습니다</td></tr>';
+}
+function closeSELogs() {
+    document.getElementById('seLogsOverlay').classList.remove('open');
+}
+
 async function completeSEGuide() {
     const elapsed = _seStartTime ? Math.round((Date.now() - _seStartTime) / 1000) : 0;
     closeSEGuide();
@@ -10401,6 +10461,30 @@ function _renderScenarios() {
     <div class="se-scenario-grid" id="seScenarioGrid"></div>
     <button class="se-finish-btn" onclick="completeSEGuide()">✅ 가이드 학습 완료</button>
     <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
+</div>
+
+<div id="seLogsOverlay" class="se-logs-overlay" onclick="if(event.target===this)closeSELogs()">
+    <div class="se-logs-modal">
+        <div class="se-logs-header">
+            <div>
+                <div class="se-logs-title">📊 SE 학습 기록</div>
+                <div class="se-logs-count" id="seLogsCount"></div>
+            </div>
+            <button class="se-logs-close" onclick="closeSELogs()">✕</button>
+        </div>
+        <div class="se-logs-body">
+            <table class="se-logs-table">
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>학습 시간</th>
+                        <th>완료 일시</th>
+                    </tr>
+                </thead>
+                <tbody id="seLogsBody"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <div id="seCompleteOverlay" style="display:none" class="se-complete-overlay">
