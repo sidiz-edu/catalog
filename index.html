@@ -3263,6 +3263,28 @@
         .tour-prev { padding: 10px 12px; background: #f3f4f6; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #374151; cursor: pointer; }
         .tour-next { flex: 1; padding: 12px; background: #001499; color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
 
+        .se-name-input {
+            width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb;
+            border-radius: 10px; font-size: 1rem; text-align: center;
+            margin-bottom: 6px; outline: none; box-sizing: border-box;
+        }
+        .se-name-input:focus { border-color: #0D3BFF; }
+        .se-finish-btn {
+            width: 100%; padding: 11px; margin-bottom: 8px;
+            background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 12px;
+            color: #16a34a; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+        }
+        .se-complete-overlay {
+            position: fixed; inset: 0; background: #001499;
+            z-index: 10100; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 32px;
+        }
+        .se-complete-icon { font-size: 3.5rem; margin-bottom: 20px; }
+        .se-complete-name { font-size: 1.5rem; font-weight: 900; color: #fff; margin-bottom: 8px; }
+        .se-complete-msg  { font-size: 1rem; color: rgba(255,255,255,0.85); margin-bottom: 6px; line-height: 1.6; }
+        .se-complete-time { font-size: 0.88rem; color: rgba(255,255,255,0.6); margin-bottom: 48px; }
+        .se-complete-exit { padding: 14px 48px; background: #fff; color: #001499; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; cursor: pointer; }
+
         @media print { .se-panel, .se-pw-overlay, .tour-dim, .tour-highlight, .tour-card { display: none !important; } }
     </style>
 
@@ -9734,9 +9756,14 @@ if (new URLSearchParams(location.search).get('se') === _SE_PW) {
     window.addEventListener('DOMContentLoaded', () => setTimeout(_openSEPanel, 500));
 }
 
+let _seName = '';
+let _seStartTime = null;
+
 function _openSEPw() {
     const ov = document.getElementById('seGuidePwOverlay');
     ov.style.display = 'flex';
+    document.getElementById('sePwStep').style.display = 'block';
+    document.getElementById('seNameStep').style.display = 'none';
     document.getElementById('seGuidePwInput').value = '';
     document.getElementById('seGuidePwError').style.display = 'none';
     setTimeout(() => document.getElementById('seGuidePwInput').focus(), 150);
@@ -9746,16 +9773,43 @@ function closeSEGuidePw() {
 }
 function checkSEGuidePw() {
     if (document.getElementById('seGuidePwInput').value === _SE_PW) {
-        closeSEGuidePw();
-        _openSEPanel();
+        document.getElementById('sePwStep').style.display = 'none';
+        document.getElementById('seNameStep').style.display = 'block';
+        document.getElementById('seNameError').style.display = 'none';
+        document.getElementById('seNameInput').value = '';
+        setTimeout(() => document.getElementById('seNameInput').focus(), 150);
     } else {
         document.getElementById('seGuidePwInput').value = '';
         document.getElementById('seGuidePwError').style.display = 'block';
     }
 }
+function confirmSEName() {
+    const name = document.getElementById('seNameInput').value.trim();
+    if (!name) {
+        document.getElementById('seNameError').style.display = 'block';
+        return;
+    }
+    _seName = name;
+    closeSEGuidePw();
+    _openSEPanel();
+}
+function completeSEGuide() {
+    const elapsed = _seStartTime ? Math.round((Date.now() - _seStartTime) / 1000) : 0;
+    closeSEGuide();
+    const ov = document.getElementById('seCompleteOverlay');
+    document.getElementById('seCompleteName').textContent = _seName;
+    document.getElementById('seCompleteTime').textContent = `학습 시간 : ${elapsed}초`;
+    ov.style.display = 'flex';
+}
+function exitSEComplete() {
+    document.getElementById('seCompleteOverlay').style.display = 'none';
+    _seName = '';
+    _seStartTime = null;
+}
 
 function _openSEPanel() {
     _renderScenarios();
+    _seStartTime = Date.now();
     const panel = document.getElementById('seGuidePanel');
     panel.style.display = 'block';
     requestAnimationFrame(() => panel.classList.add('open'));
@@ -10306,12 +10360,24 @@ function _renderScenarios() {
     <div class="se-pw-box">
         <div class="se-pw-logo">SE 가이드</div>
         <p class="se-pw-sub">SIDIZ 매장 직원 전용</p>
-        <input type="password" id="seGuidePwInput" placeholder="비밀번호 입력"
-            onkeydown="if(event.key==='Enter')checkSEGuidePw()">
-        <div id="seGuidePwError" style="display:none" class="se-pw-error">비밀번호가 틀렸습니다</div>
-        <div class="se-pw-btns">
-            <button class="se-pw-cancel" onclick="closeSEGuidePw()">취소</button>
-            <button class="se-pw-confirm" onclick="checkSEGuidePw()">확인</button>
+        <div id="sePwStep">
+            <input type="password" id="seGuidePwInput" placeholder="비밀번호 입력"
+                onkeydown="if(event.key==='Enter')checkSEGuidePw()">
+            <div id="seGuidePwError" style="display:none" class="se-pw-error">비밀번호가 틀렸습니다</div>
+            <div class="se-pw-btns">
+                <button class="se-pw-cancel" onclick="closeSEGuidePw()">취소</button>
+                <button class="se-pw-confirm" onclick="checkSEGuidePw()">확인</button>
+            </div>
+        </div>
+        <div id="seNameStep" style="display:none">
+            <p style="font-size:0.82rem;color:#6b7280;margin-bottom:10px;">이름을 입력해 주세요</p>
+            <input type="text" id="seNameInput" class="se-name-input" placeholder="이름 입력"
+                onkeydown="if(event.key==='Enter')confirmSEName()">
+            <div id="seNameError" style="display:none" class="se-pw-error">이름을 입력해 주세요</div>
+            <div class="se-pw-btns">
+                <button class="se-pw-cancel" onclick="closeSEGuidePw()">취소</button>
+                <button class="se-pw-confirm" onclick="confirmSEName()">시작하기</button>
+            </div>
         </div>
     </div>
 </div>
@@ -10326,7 +10392,16 @@ function _renderScenarios() {
     <button class="se-pdf-btn" onclick="openSEGuidePDF()">📄 기능 가이드 PDF 저장</button>
     <div class="se-section-label">상황별 시나리오</div>
     <div class="se-scenario-grid" id="seScenarioGrid"></div>
+    <button class="se-finish-btn" onclick="completeSEGuide()">✅ 가이드 학습 완료</button>
     <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
+</div>
+
+<div id="seCompleteOverlay" style="display:none" class="se-complete-overlay">
+    <div class="se-complete-icon">🎓</div>
+    <div class="se-complete-name" id="seCompleteName"></div>
+    <div class="se-complete-msg">님, 가이드 학습을 완료하셨습니다!</div>
+    <div class="se-complete-time" id="seCompleteTime"></div>
+    <button class="se-complete-exit" onclick="exitSEComplete()">나가기</button>
 </div>
 
 <div id="tourDimOverlay" class="tour-dim" style="display:none"></div>
