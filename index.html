@@ -9951,38 +9951,101 @@ function endTour() {
 }
 
 function openSEGuidePDF() {
-    const items = _tourSteps.slice(1, -1);
-    const cards = items.map(s => `
-        <div class="card${s.demo ? ' demo' : ''}">
-            ${s.demo ? '<span class="badge">LIVE DEMO</span>' : ''}
-            <div class="card-title">${s.title}</div>
-            <div class="card-text">${s.text}</div>
-        </div>`).join('');
+    const features = [
+        {
+            num: '①', icon: '🗂', title: '카테고리 필터',
+            desc: '워크, 게이밍, 이지리페어 등 원하는 제품군을 탭 하나로 빠르게 필터링합니다.',
+            target: '어떤 카테고리 제품이 있는지 궁금해하는 고객, 특정 용도의 제품을 찾는 고객',
+            steps: ['제품 라인업 탭으로 이동', '상단 카테고리 탭 선택', '원하는 제품군만 표시됨'],
+            tip: '이지리페어 탭에서는 교체 부품만 모아볼 수 있어 부품 구매 고객 응대에도 활용하세요.'
+        },
+        {
+            num: '②', icon: '⚖️', title: '모델 비교',
+            desc: '2개 이상 모델을 선택하면 스펙·가격을 나란히 한눈에 비교합니다.',
+            target: '비슷한 가격대의 여러 모델 사이에서 고민 중인 고객',
+            steps: ['모델 비교 탭으로 이동', '비교할 모델 선택 (최대 3개)', '스펙·가격·특징 나란히 확인'],
+            tip: '말로 설명하는 것보다 직접 화면을 보여주면 훨씬 설득력 있어요.'
+        },
+        {
+            num: '③', icon: '🔗', title: '맞춤 안내 링크',
+            desc: '보여줄 메뉴와 제품만 선택해 개인화 링크를 만들고 카카오톡으로 바로 전송합니다.',
+            target: '상담 후 팔로업이 필요한 고객, 매장 방문이 어려운 고객',
+            steps: ['헤더 SIDIZ 로고를 1.8초 길게 누름', '표시할 메뉴 선택 (제품라인업·비교·배송 등)', '보여줄 제품 선택', '링크 생성 후 카카오톡 전송'],
+            tip: '"오늘 안내드린 내용 링크로 보내드릴게요" 한 마디로 상담 후 자연스럽게 팔로업하세요.'
+        },
+        {
+            num: '④', icon: '🛒', title: '장바구니 & 견적',
+            desc: '제품을 담고 쿠폰을 적용한 최종 금액을 확인 후 견적 링크·QR코드로 공유합니다.',
+            target: '다수 제품 견적 및 지류 용지를 원하시는 고객',
+            steps: ['우상단 장바구니 버튼 탭', '원하는 제품 추가', '쿠폰 선택 후 최종 금액 확인', '견적 링크 또는 QR코드로 고객에게 공유'],
+            tip: '할인 쿠폰 적용 전후 금액을 나란히 보여주면 구매 결정에 도움이 됩니다.'
+        },
+        {
+            num: '⑤', icon: '🖨️', title: '카탈로그 인쇄',
+            desc: '고객명·매장명이 담긴 맞춤 표지가 포함된 카탈로그를 인쇄해 전달합니다.',
+            target: '실물 자료를 선호하는 고객, 장시간 상담 후 방문 마무리 고객',
+            steps: ['하단 카탈로그 인쇄 메뉴 진입', '고객명·매장명·담당자명 입력', '인쇄 버튼 → 프린터 출력 또는 PDF 저장'],
+            tip: '고객 이름이 적힌 카탈로그를 건네면 기억에 남는 특별한 경험이 됩니다.'
+        }
+    ];
+
+    const rows = features.map(f => `
+    <div class="row">
+      <div class="row-head">
+        <span class="num">${f.num}</span>
+        <span class="icon">${f.icon}</span>
+        <span class="ftitle">${f.title}</span>
+      </div>
+      <div class="row-body">
+        <div class="col-left">
+          <div class="fdesc">${f.desc}</div>
+          <div class="section-label">이런 고객에게</div>
+          <div class="ftarget">${f.target}</div>
+        </div>
+        <div class="col-right">
+          <div class="section-label">사용 방법</div>
+          <div class="fsteps">${f.steps.map((s,i) => `<div class="fstep"><span class="snum">${i+1}</span>${s}</div>`).join('')}</div>
+          <div class="ftip">💡 ${f.tip}</div>
+        </div>
+      </div>
+    </div>`).join('');
 
     const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
 <title>SIDIZ SE 기능 가이드</title>
 <style>
-@page { size: A4 portrait; margin: 15mm 18mm; }
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
-body { background:#fff; color:#1a1a1a; }
-.header { border-bottom: 3px solid #001499; padding-bottom: 12px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end; }
-.logo { font-size:1.4rem; font-weight:900; color:#001499; letter-spacing:2px; }
-.subtitle { font-size:1rem; font-weight:800; margin-top:4px; }
-.header-right { font-size:0.72rem; color:#9ca3af; }
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.card { border:1.5px solid #e5e7eb; border-radius:12px; padding:14px 16px; }
-.card.demo { border-color:#0D3BFF; background:#f8f9ff; }
-.badge { display:inline-block; background:#0D3BFF; color:#fff; font-size:0.6rem; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:6px; letter-spacing:0.5px; }
-.card-title { font-size:0.82rem; font-weight:800; color:#001499; margin-bottom:6px; }
-.card-text { font-size:0.75rem; color:#4b5563; line-height:1.65; }
-.footer { margin-top:18px; border-top:1px solid #e5e7eb; padding-top:10px; font-size:0.68rem; color:#9ca3af; text-align:center; }
+@page { size: A4 portrait; margin: 13mm 16mm; }
+* { box-sizing:border-box; margin:0; padding:0; font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
+body { background:#fff; color:#1a1a1a; font-size:10px; }
+.header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:3px solid #001499; padding-bottom:10px; margin-bottom:14px; }
+.logo { font-size:18px; font-weight:900; color:#001499; letter-spacing:2px; }
+.htitle { font-size:13px; font-weight:800; margin-top:3px; }
+.hright { font-size:9px; color:#9ca3af; text-align:right; line-height:1.6; }
+.row { border:1.5px solid #e5e7eb; border-radius:10px; margin-bottom:10px; overflow:hidden; }
+.row-head { background:#001499; padding:7px 14px; display:flex; align-items:center; gap:7px; }
+.num { color:#fff; font-size:11px; font-weight:800; }
+.icon { font-size:13px; }
+.ftitle { color:#fff; font-size:12px; font-weight:800; }
+.row-body { display:flex; padding:10px 14px; gap:16px; }
+.col-left { flex:1.1; border-right:1px solid #f0f0f0; padding-right:14px; }
+.col-right { flex:1; }
+.fdesc { font-size:9.5px; color:#374151; line-height:1.6; margin-bottom:8px; font-weight:500; }
+.section-label { font-size:8px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.ftarget { font-size:9px; color:#4b5563; line-height:1.6; }
+.fsteps { margin-bottom:7px; }
+.fstep { display:flex; align-items:flex-start; gap:5px; font-size:9px; color:#374151; line-height:1.5; margin-bottom:3px; }
+.snum { background:#001499; color:#fff; font-size:8px; font-weight:700; min-width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.ftip { font-size:8.5px; color:#0D3BFF; background:#f0f4ff; border-radius:6px; padding:5px 8px; line-height:1.55; }
+.footer { border-top:1px solid #e5e7eb; padding-top:8px; font-size:8px; color:#9ca3af; text-align:center; margin-top:10px; }
 </style></head><body>
 <div class="header">
-  <div><div class="logo">SIDIZ</div><div class="subtitle">SE 기능 가이드</div></div>
-  <div class="header-right">시디즈 카탈로그 · 매장 전용</div>
+  <div>
+    <div class="logo">SIDIZ</div>
+    <div class="htitle">SE 기능 가이드</div>
+  </div>
+  <div class="hright">시디즈 카탈로그 · 매장 전용<br>본 문서는 SE 내부 배포용입니다</div>
 </div>
-<div class="grid">${cards}</div>
-<div class="footer">본 문서는 시디즈 카탈로그 SE 가이드 내부 배포용입니다.</div>
+${rows}
+<div class="footer">시디즈 카탈로그 SE 가이드 · 무단 배포 금지</div>
 </body></html>`;
 
     const win = window.open('', '_blank');
