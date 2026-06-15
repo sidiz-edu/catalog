@@ -6674,7 +6674,7 @@ const variantData = {
 })();
 
 // 금액대 기본 할인: 2026-06-16 하루 제외, 6/17부터 자동 재개
-const _baseDiscountActive = new Date().toISOString().slice(0,10) !== '2026-06-16';
+const _baseDiscountActive = new Date().toISOString().slice(0,10) >= '2026-06-17';
 const DISCOUNT_TIERS = [
     { min: 5000000, rate: 0.15, label: '500만원 이상' },
     { min: 3000000, rate: 0.13, label: '300만원 이상' },
