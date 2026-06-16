@@ -3768,6 +3768,19 @@
                 <div class="price">279,000원<span>부터</span></div>
             </div>
         </div>
+        <!-- T50 2세대 -->
+        <div class="product-card" onclick="showDetail('t50gen2')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t50gen2')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HDA_451M_00.jpg'); background-color: #eef2f7;">
+                <div class="badge">NEW</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T50 2세대</h3>
+                <div class="subtitle">밀리언 셀러의 진화</div>
+                <p>국민 의자 T50의 2세대. 헤드레스트·4D 팔걸이 기본 탑재, 검증된 인체공학에 최신 마감이 더해졌습니다.</p>
+                <div class="price">439,000원<span>부터</span></div>
+            </div>
+        </div>
         <!-- T60 -->
         <div class="product-card" onclick="showDetail('t60')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t60')">✏️ 편집</button>
@@ -6117,6 +6130,17 @@ const compareData = {
         착좌텐션: '★★★☆',
         메쉬특징: '안정적인 밸런스 · 호불호 없는 편안함',
     },
+    t50gen2: {
+        label: 'T50 2세대', badge: 'NEW',
+        포지셔닝: '올라운더 (2세대)', 가격대: priceLabel('t50gen2'), 틸팅방식: '싱크 틸팅',
+        요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
+        헤드레스트: true, 특수기능: '헤드레스트 기본 탑재', 추천대상: '직장인·범용',
+        좌판높이: '435~505mm', 제품최대폭: '740mm', 중량: '17.9kg', 최대하중: '125kg',
+        메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
+        메쉬성분: '폴리에스터 64% · 폴리엘라스토머 36%',
+        착좌텐션: '★★★☆',
+        메쉬특징: '안정적인 밸런스 · 호불호 없는 편안함',
+    },
     t60: {
         label: 'T60', badge: 'NEW',
         포지셔닝: '퍼스널 피팅', 가격대: priceLabel('t60'), 틸팅방식: '싱크 틸팅',
@@ -6302,7 +6326,7 @@ function initComparePicker() {
     picker.innerHTML = '';
 
     const groups = [
-        { label: '워크',       ids: ['t20', 't50', 't60', 't80', 't90'] },
+        { label: '워크',       ids: ['t20', 't50', 't50gen2', 't60', 't80', 't90'] },
         { label: '게이밍',     ids: ['gx', 'gcpro'] },
         { label: '스터디',     ids: ['ible', 'ringo2', 'trevo'] },
         { label: '라이트워크', ids: ['linie', 'muuve', 'button', 'ega'] },
@@ -6490,6 +6514,10 @@ const variantData = {
         { name: 'T50HDA',             price: 329000, comparePrice: 349000 },
         { name: 'T50 HLDA (풀옵션)',  price: 359000, comparePrice: 379000 },
         { name: 'T50 AIR',            price: 389000, comparePrice: 409000 },
+    ],
+    t50gen2: [
+        { name: 'T50 2세대',     price: 439000, comparePrice: 459000 },
+        { name: 'T50 AIR 2세대', price: 454000, comparePrice: 474000 },
     ],
     t60: [
         { name: 'T60 LDA (헤드레스트 없음)', price: 399000, comparePrice: 409000 },
@@ -6736,6 +6764,15 @@ const productSpecs = {
         tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
         armrest:'4D 조절', headrest:'높이·각도 조절',
     },
+    t50gen2: {
+        seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+        back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
+        arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
+        head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+        weight:'17.9kg', max_load:'125kg',
+        tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'4D 조절', headrest:'높이·각도 조절',
+    },
     t60: {
         seat_h:'455~525mm', seat_w:'515mm', seat_d:'510mm',
         back_h:'990mm', back_w:'480mm', back_d:'595~660mm',
@@ -6952,6 +6989,20 @@ const productSpecsByGroup = {
             tilt:'4000G 틸트', cylinder:'HIGH CONE', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
         },
     },
+    t50gen2: {
+        'T50 2세대': {
+            seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
+            arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
+            head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+            weight:'17.9kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+        'T50 AIR 2세대': {
+            weight:'18kg', max_load:'125kg',
+            tilt:'4000G 틸트', cylinder:'HIGH CONE', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
+        },
+    },
     t60: {
         'T60': {
             seat_h:'455~525mm', seat_w:'515mm', seat_d:'510mm',
@@ -6974,7 +7025,8 @@ const productSpecsByGroup = {
 
 // ── 제품별 관련 악세서리 ──
 const productAccessories = {
-    t50:   ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
+    t50:     ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
+    t50gen2: ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
     t60:   ['hangerT60', 'seatBreakA', 'coverT60Air', 'spray', 'pbag'],
     t80:   ['spray', 'pbag'],
     t90:   ['spray', 'pbag'],
@@ -7077,6 +7129,22 @@ const productSpecGroups = {
                 { name: '그레이/블랙',   code: '#6a6a6a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_TXA520HLDA_2D1_00_a347c2d6-d7ec-438a-a2a8-cdc147c6b2ea.jpg' },
                 { name: '블루/블랙',     code: '#2a4a80', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_TXA520HLDA_2D4_00_5bdfb895-9cdd-4a6c-a589-6b6a519fd829.jpg' },
                 { name: '블랙/블랙',     code: '#1a1a1a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_TXA520HLDA_2D6_00_35bf50f6-7329-4016-84b3-0637d6b66131.jpg' },
+            ]
+        },
+    ],
+    t50gen2: [
+        {
+            name: 'T50 2세대', price: 439000,
+            colors: [
+                { name: '애쉬화이트', code: '#e8e4de', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HDA_451M_00.jpg' },
+                { name: '카본블랙',   code: '#2a2a2a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNE500HDA_451M_00.jpg' },
+            ]
+        },
+        {
+            name: 'T50 AIR 2세대', price: 454000,
+            colors: [
+                { name: '애쉬화이트', code: '#e8e4de', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_TXB520HLDA_2D1_00_67c8a5b7-02e3-4cf9-ba4e-cfcf91b67fa6.jpg' },
+                { name: '카본블랙',   code: '#2a2a2a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50AIR_TXA520HLDA_2D1_00_a347c2d6-d7ec-438a-a2a8-cdc147c6b2ea.jpg' },
             ]
         },
     ],
@@ -7364,6 +7432,20 @@ const products = {
             { icon: '🎯', title: '헤드레스트', desc: '높이 및 각도 조절 가능한 헤드레스트로 목과 어깨 부담을 줄여줍니다.' }
         ],
         tags: ['장시간 업무', '직장인', '수험생', '올라운더'],
+    },
+    t50gen2: {
+        name: 'T50 2세대',
+        tagline: '밀리언 셀러가 더 완성된 모습으로 돌아왔습니다',
+        desc: '전 세계 누적 100만 개 판매의 국민 의자 T50이 2세대로 새로워졌습니다. 헤드레스트와 4D 팔걸이를 기본 탑재하고, 검증된 인체공학 설계에 최신 소재와 마감이 더해졌습니다. T50 AIR 2세대는 통기성 메쉬 소재로 더욱 시원한 착석감을 제공합니다.',
+        price: '439,000원',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50_TNF500HDA_451M_00.jpg',
+        features: [
+            { icon: '🔄', title: '멀티 싱크 틸팅', desc: '등판과 좌판이 독립적으로 움직여 자연스러운 기대기 동작을 지원합니다.' },
+            { icon: '🦴', title: '요추 지지대 조절', desc: '높이와 강도를 조절하여 허리를 최적으로 받쳐줍니다.' },
+            { icon: '📐', title: '좌판 깊이/각도 조절', desc: '허벅지 길이에 맞춰 좌판을 앞뒤로 조절할 수 있습니다.' },
+            { icon: '🎯', title: '헤드레스트 기본 탑재', desc: '높이 및 각도 조절 가능한 헤드레스트가 기본 포함되어 목·어깨 부담을 줄여줍니다.' }
+        ],
+        tags: ['장시간 업무', '직장인', '올라운더', 'NEW'],
     },
     t60: {
         name: 'T60',
@@ -8089,7 +8171,7 @@ const products = {
 
 // ── CATEGORY FILTER ──
 const categoryMap = {
-    워크:     ['t20', 't50', 't60', 't90', 't80'],
+    워크:     ['t20', 't50', 't50gen2', 't60', 't90', 't80'],
     게이밍:   ['gcpro', 'gx'],
     스터디:   ['ible', 'ringo2', 'trevo', 'linie'],
     라이트워크: ['linie', 'button', 'muuve', 'ega'],
@@ -8150,6 +8232,7 @@ function filterProducts(category) {
 // ── HERO SEARCH ──
 const SEARCH_ALIASES = {
     t50:        ['t50','티50','티오십'],
+    t50gen2:    ['t50 2세대','T50 2세대','t502세대','티50 2세대','티502세대'],
     t60:        ['t60','티60','티육십'],
     t80:        ['t80','티80','티팔십'],
     t90:        ['t90','티90','티구십'],
