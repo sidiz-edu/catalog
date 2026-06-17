@@ -3147,6 +3147,22 @@
             transition: border-color 0.2s;
         }
         .b2b-price-input:focus { border-color: var(--sidiz-navy); }
+        .b2b-qty-ctrl { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .b2b-qty-btn {
+            width: 26px; height: 26px; border: 1.5px solid #e5e7eb; border-radius: 6px;
+            background: #fff; font-size: 1rem; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-primary); transition: border-color 0.15s;
+            flex-shrink: 0;
+        }
+        .b2b-qty-btn:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); }
+        .b2b-qty-num {
+            width: 32px; border: 1.5px solid #e5e7eb; border-radius: 6px;
+            padding: 4px 2px; font-size: 0.82rem; font-family: inherit;
+            text-align: center; color: var(--text-primary); outline: none;
+            transition: border-color 0.2s;
+        }
+        .b2b-qty-num:focus { border-color: var(--sidiz-navy); }
         .b2b-rate-badge {
             display: inline-block; font-size: 0.75rem; font-weight: 700;
             color: #16a34a; text-align: center; min-width: 44px;
@@ -9385,7 +9401,14 @@ function openB2BModal() {
                 <div style="font-weight:600;font-size:0.82rem">${item.name}</div>
                 <div style="font-size:0.73rem;color:#6b7280">${item.variantName}</div>
             </td>
-            <td style="text-align:center">${item.qty}</td>
+            <td>
+                <div class="b2b-qty-ctrl">
+                    <button class="b2b-qty-btn" onclick="changeB2BQty(${i},-1)">−</button>
+                    <input class="b2b-qty-num" id="b2bQty_${i}" type="number"
+                        value="${item.qty}" min="1" oninput="onB2BQtyInput(${i})">
+                    <button class="b2b-qty-btn" onclick="changeB2BQty(${i},1)">+</button>
+                </div>
+            </td>
             <td style="text-align:right;font-size:0.82rem">${f(listPrice)}원</td>
             <td>
                 <input class="b2b-price-input" id="b2bPrice_${i}"
@@ -9406,6 +9429,18 @@ function openB2BModal() {
     setTimeout(() => document.getElementById('b2bCompany').focus(), 100);
 }
 
+function changeB2BQty(i, delta) {
+    const input = document.getElementById(`b2bQty_${i}`);
+    const val = Math.max(1, (parseInt(input.value) || 1) + delta);
+    input.value = val;
+    _updateB2BSummary();
+}
+function onB2BQtyInput(i) {
+    const input = document.getElementById(`b2bQty_${i}`);
+    if (!input.value || parseInt(input.value) < 1) input.value = 1;
+    _updateB2BSummary();
+}
+
 function updateB2BRow(i) {
     const item = cart[i];
     const listPrice = item.comparePrice || item.price;
@@ -9422,11 +9457,15 @@ function updateB2BRow(i) {
 
 function _updateB2BSummary() {
     const f = n => n.toLocaleString('ko-KR') + '원';
-    const totalOriginal = cart.reduce((s, item) => s + (item.comparePrice || item.price) * item.qty, 0);
+    const totalOriginal = cart.reduce((s, item, i) => {
+        const qty = parseInt(document.getElementById(`b2bQty_${i}`)?.value) || item.qty;
+        return s + (item.comparePrice || item.price) * qty;
+    }, 0);
     const totalDisc = cart.reduce((s, item, i) => {
         const listPrice = item.comparePrice || item.price;
-        const v = parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || listPrice;
-        return s + v * item.qty;
+        const v   = parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || listPrice;
+        const qty = parseInt(document.getElementById(`b2bQty_${i}`)?.value) || item.qty;
+        return s + v * qty;
     }, 0);
     const saved = totalOriginal - totalDisc;
     document.getElementById('b2bSummary').innerHTML = `
@@ -9461,7 +9500,8 @@ function confirmB2BQuote() {
     const store   = storeData.find(s => s.id === storeId) || null;
     const items = cart.map((item, i) => ({
         ...item,
-        discPrice: parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || item.price,
+        qty:       parseInt(document.getElementById(`b2bQty_${i}`)?.value)   || item.qty,
+        discPrice: parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || (item.comparePrice || item.price),
     }));
     closeB2BModal();
     _doPrintB2BQuote(company, staff, store, items);
