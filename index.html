@@ -9362,6 +9362,19 @@ function openB2BModal() {
     if (!cart.length) return;
     const f = n => n.toLocaleString('ko-KR');
 
+    // 매장 드롭다운 초기화
+    const sel = document.getElementById('b2bStore');
+    if (sel && sel.options.length <= 1) {
+        storeData.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name} (${s.region})`;
+            sel.appendChild(opt);
+        });
+    }
+    sel.value = '';
+    document.getElementById('b2bStoreInfo').style.display = 'none';
+
     // 테이블 행 생성
     const tbody = document.getElementById('b2bItemsBody');
     tbody.innerHTML = cart.map((item, i) => `
@@ -9417,6 +9430,21 @@ function _updateB2BSummary() {
         <div class="b2b-summary-row total"><span>최종 합계</span><span>${f(totalDisc)}</span></div>`;
 }
 
+function updateB2BStoreInfo() {
+    const sel = document.getElementById('b2bStore');
+    const infoBox = document.getElementById('b2bStoreInfo');
+    const store = storeData.find(s => s.id === sel.value);
+    if (store) {
+        infoBox.style.display = 'block';
+        infoBox.innerHTML = `
+            <strong style="color:var(--text-primary)">${store.name}</strong><br>
+            📍 ${store.address}<br>
+            📞 ${store.phone}`;
+    } else {
+        infoBox.style.display = 'none';
+    }
+}
+
 function closeB2BModal() {
     document.getElementById('b2bModalOverlay').classList.remove('open');
 }
@@ -9424,15 +9452,17 @@ function closeB2BModal() {
 function confirmB2BQuote() {
     const company = document.getElementById('b2bCompany').value.trim();
     const staff   = document.getElementById('b2bStaff').value.trim();
+    const storeId = document.getElementById('b2bStore').value;
+    const store   = storeData.find(s => s.id === storeId) || null;
     const items = cart.map((item, i) => ({
         ...item,
         discPrice: parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || item.price,
     }));
     closeB2BModal();
-    _doPrintB2BQuote(company, staff, items);
+    _doPrintB2BQuote(company, staff, store, items);
 }
 
-function _doPrintB2BQuote(company, staff, items) {
+function _doPrintB2BQuote(company, staff, store, items) {
     const f = n => n.toLocaleString('ko-KR') + '원';
     const dateStr = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
     const quoteNo = 'B2B-' + Date.now().toString().slice(-8);
@@ -9501,7 +9531,7 @@ function _doPrintB2BQuote(company, staff, items) {
 <div class="header">
     <div>
         <div class="brand">SIDIZ<span>.</span></div>
-        <div style="font-size:11px;color:#6b7280;margin-top:3px;">인체공학 의자 전문 브랜드</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px;">${store ? store.name : '인체공학 의자 전문 브랜드'}</div>
     </div>
     <div>
         <div class="doc-title">공 급 견 적 서</div>
@@ -9541,9 +9571,9 @@ function _doPrintB2BQuote(company, staff, items) {
 </div>
 <div class="footer">
     <div class="note" style="line-height:1.8">
-        <b>㈜퍼시스</b> 시디즈 사업부<br>
-        서울시 강남구 테헤란로 521 (파르나스타워 21F)<br>
-        www.sidiz.com
+        ${store
+            ? `<b>${store.name}</b><br>${store.address}<br>📞 ${store.phone}`
+            : `<b>시디즈 (SIDIZ)</b><br>www.sidiz.com`}
     </div>
     <div class="sign-box">
         <div class="sign-label">담당자 확인</div>
@@ -10680,6 +10710,14 @@ function _renderScenarios() {
                     <label>담당 SE</label>
                     <input type="text" id="b2bStaff" placeholder="예: 김철수" autocomplete="off">
                 </div>
+            </div>
+            <div class="print-field">
+                <label>매장 선택</label>
+                <select id="b2bStore" onchange="updateB2BStoreInfo()">
+                    <option value="">매장을 선택하세요</option>
+                </select>
+            </div>
+            <div id="b2bStoreInfo" style="display:none;background:#f8f9ff;border:1px solid #e6ebff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:0.82rem;color:var(--text-secondary);line-height:1.8;">
             </div>
             <table class="b2b-items-table">
                 <thead>
