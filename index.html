@@ -9537,7 +9537,10 @@ function _doPrintB2BQuote(company, staff, store, items) {
             <td class="tr" style="color:#6b7280">${f(listPrice)}</td>
             <td class="tr" style="font-weight:700;color:#1a1a1a">${f(item.discPrice)}</td>
             <td class="tc" style="color:${rate > 0 ? '#16a34a' : '#9ca3af'};font-weight:700">${rate > 0 ? `-${rate}%` : '—'}</td>
-            <td class="tr bold">${f(item.discPrice * item.qty)}</td>
+            <td class="tr bold">
+                ${f(item.discPrice * item.qty)}
+                ${item.qty > 1 ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;margin-top:2px">개당 ${f(item.discPrice)}</div>` : ''}
+            </td>
         </tr>`;
     }).join('');
 
