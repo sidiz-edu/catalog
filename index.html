@@ -9415,6 +9415,7 @@ function openB2BModal() {
                     type="number" value="${listPrice}"
                     min="0" max="${listPrice}"
                     oninput="updateB2BRow(${i})">
+                <div id="b2bDisc_${i}" style="font-size:0.72rem;color:#9ca3af;text-align:right;margin-top:3px;min-height:14px;"></div>
             </td>
             <td style="text-align:center">
                 <span class="b2b-rate-badge zero" id="b2bRate_${i}">0%</span>
@@ -9433,25 +9434,31 @@ function changeB2BQty(i, delta) {
     const input = document.getElementById(`b2bQty_${i}`);
     const val = Math.max(1, (parseInt(input.value) || 1) + delta);
     input.value = val;
-    _updateB2BSummary();
+    updateB2BRow(i);
 }
 function onB2BQtyInput(i) {
     const input = document.getElementById(`b2bQty_${i}`);
     if (!input.value || parseInt(input.value) < 1) input.value = 1;
-    _updateB2BSummary();
+    updateB2BRow(i);
 }
 
 function updateB2BRow(i) {
     const item = cart[i];
     const listPrice = item.comparePrice || item.price;
-    const input = document.getElementById(`b2bPrice_${i}`);
-    const rateEl = document.getElementById(`b2bRate_${i}`);
+    const input   = document.getElementById(`b2bPrice_${i}`);
+    const rateEl  = document.getElementById(`b2bRate_${i}`);
+    const discEl  = document.getElementById(`b2bDisc_${i}`);
     let discPrice = parseInt(input.value) || 0;
     if (discPrice > listPrice) { discPrice = listPrice; input.value = listPrice; }
     if (discPrice < 0) { discPrice = 0; input.value = 0; }
-    const rate = listPrice > 0 ? Math.round((1 - discPrice / listPrice) * 100) : 0;
+    const rate    = listPrice > 0 ? Math.round((1 - discPrice / listPrice) * 100) : 0;
+    const saved   = (listPrice - discPrice) * (parseInt(document.getElementById(`b2bQty_${i}`)?.value) || item.qty);
     rateEl.textContent = rate > 0 ? `-${rate}%` : '0%';
-    rateEl.className = `b2b-rate-badge${rate > 0 ? '' : ' zero'}`;
+    rateEl.className   = `b2b-rate-badge${rate > 0 ? '' : ' zero'}`;
+    if (discEl) {
+        discEl.style.color = saved > 0 ? '#16a34a' : '#9ca3af';
+        discEl.textContent = saved > 0 ? `↓ ${saved.toLocaleString('ko-KR')}원 절약` : '';
+    }
     _updateB2BSummary();
 }
 
