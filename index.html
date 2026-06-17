@@ -3095,6 +3095,83 @@
             gap: 6px; transition: var(--transition);
         }
         .quote-print-btn:hover { border-color: var(--sidiz-navy); background: var(--sidiz-light); }
+        .quote-b2b-btn {
+            flex: 1; background: var(--sidiz-navy); color: #fff; border: none;
+            border-radius: 10px; padding: 10px; font-size: 0.82rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 6px; transition: var(--transition);
+        }
+        .quote-b2b-btn:hover { background: var(--sidiz-blue); }
+
+        /* ══ B2B 견적서 모달 ══ */
+        .b2b-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 1300;
+            align-items: flex-end; justify-content: center;
+        }
+        .b2b-modal-overlay.open { display: flex; }
+        .b2b-modal {
+            background: #fff; border-radius: 24px 24px 0 0;
+            width: 100%; max-width: 520px;
+            max-height: 90vh; display: flex; flex-direction: column;
+            animation: slideUp 0.28s cubic-bezier(0.4,0,0.2,1);
+        }
+        .b2b-modal-handle {
+            width: 40px; height: 4px; background: #e5e7eb;
+            border-radius: 2px; margin: 14px auto 0; flex-shrink: 0;
+        }
+        .b2b-modal-header {
+            padding: 16px 20px 12px; flex-shrink: 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .b2b-modal-header h3 { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+        .b2b-modal-header p { font-size: 0.78rem; color: var(--text-secondary); margin-top: 3px; }
+        .b2b-modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+        .b2b-info-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .b2b-info-row .print-field { flex: 1; margin-bottom: 0; }
+        .b2b-items-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 4px; }
+        .b2b-items-table thead th {
+            background: var(--sidiz-navy); color: #fff;
+            padding: 8px 8px; font-size: 0.75rem; font-weight: 600; text-align: left;
+        }
+        .b2b-items-table thead th.tr { text-align: right; }
+        .b2b-items-table thead th.tc { text-align: center; }
+        .b2b-items-table tbody td {
+            padding: 9px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle;
+        }
+        .b2b-items-table tbody tr:nth-child(even) { background: #f8f9ff; }
+        .b2b-price-input {
+            width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px;
+            padding: 6px 8px; font-size: 0.82rem; font-family: inherit;
+            text-align: right; color: var(--text-primary); outline: none;
+            transition: border-color 0.2s;
+        }
+        .b2b-price-input:focus { border-color: var(--sidiz-navy); }
+        .b2b-rate-badge {
+            display: inline-block; font-size: 0.75rem; font-weight: 700;
+            color: #16a34a; text-align: center; min-width: 44px;
+        }
+        .b2b-rate-badge.zero { color: #9ca3af; }
+        .b2b-summary {
+            background: #f8f9ff; border: 1px solid #e6ebff; border-radius: 10px;
+            padding: 12px 14px; margin-top: 14px;
+        }
+        .b2b-summary-row {
+            display: flex; justify-content: space-between;
+            font-size: 0.83rem; padding: 3px 0; color: var(--text-secondary);
+        }
+        .b2b-summary-row.total {
+            font-size: 0.95rem; font-weight: 800; color: var(--text-primary);
+            border-top: 1px solid #e6ebff; margin-top: 6px; padding-top: 8px;
+        }
+        .b2b-summary-row.save { color: #16a34a; font-weight: 600; }
+        .b2b-modal-footer {
+            padding: 12px 20px 28px; flex-shrink: 0;
+            border-top: 1px solid #f0f0f0; display: flex; gap: 10px;
+        }
+        .b2b-cancel { flex:1; padding:13px; border:1.5px solid #e5e7eb; border-radius:12px; background:#fff; font-size:0.9rem; font-weight:600; color:var(--text-secondary); cursor:pointer; }
+        .b2b-confirm { flex:2; padding:13px; border:none; border-radius:12px; background:var(--sidiz-navy); color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer; transition:background 0.2s; }
+        .b2b-confirm:hover { background: var(--sidiz-blue); }
 
         .coupon-badge {
             background: #16a34a; color: #fff;
@@ -9280,6 +9357,207 @@ function copyQuoteLink() {
     });
 }
 
+// ── B2B 견적서 ──
+function openB2BModal() {
+    if (!cart.length) return;
+    const f = n => n.toLocaleString('ko-KR');
+
+    // 테이블 행 생성
+    const tbody = document.getElementById('b2bItemsBody');
+    tbody.innerHTML = cart.map((item, i) => `
+        <tr>
+            <td>
+                <div style="font-weight:600;font-size:0.82rem">${item.name}</div>
+                <div style="font-size:0.73rem;color:#6b7280">${item.variantName}</div>
+            </td>
+            <td style="text-align:center">${item.qty}</td>
+            <td style="text-align:right;font-size:0.82rem">${f(item.price)}원</td>
+            <td>
+                <input class="b2b-price-input" id="b2bPrice_${i}"
+                    type="number" value="${item.price}"
+                    min="0" max="${item.price}"
+                    oninput="updateB2BRow(${i})">
+            </td>
+            <td style="text-align:center">
+                <span class="b2b-rate-badge zero" id="b2bRate_${i}">0%</span>
+            </td>
+        </tr>`).join('');
+
+    _updateB2BSummary();
+    document.getElementById('b2bCompany').value = '';
+    document.getElementById('b2bStaff').value = '';
+    document.getElementById('b2bModalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('b2bCompany').focus(), 100);
+}
+
+function updateB2BRow(i) {
+    const item = cart[i];
+    const input = document.getElementById(`b2bPrice_${i}`);
+    const rateEl = document.getElementById(`b2bRate_${i}`);
+    let discPrice = parseInt(input.value) || 0;
+    if (discPrice > item.price) { discPrice = item.price; input.value = item.price; }
+    if (discPrice < 0) { discPrice = 0; input.value = 0; }
+    const rate = item.price > 0 ? Math.round((1 - discPrice / item.price) * 100) : 0;
+    rateEl.textContent = rate > 0 ? `-${rate}%` : '0%';
+    rateEl.className = `b2b-rate-badge${rate > 0 ? '' : ' zero'}`;
+    _updateB2BSummary();
+}
+
+function _updateB2BSummary() {
+    const f = n => n.toLocaleString('ko-KR') + '원';
+    const totalOriginal = cart.reduce((s, item) => s + item.price * item.qty, 0);
+    const totalDisc = cart.reduce((s, item, i) => {
+        const v = parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || item.price;
+        return s + v * item.qty;
+    }, 0);
+    const saved = totalOriginal - totalDisc;
+    document.getElementById('b2bSummary').innerHTML = `
+        <div class="b2b-summary-row"><span>총 정가</span><span>${f(totalOriginal)}</span></div>
+        ${saved > 0 ? `<div class="b2b-summary-row save"><span>할인 금액</span><span>-${f(saved)}</span></div>` : ''}
+        <div class="b2b-summary-row total"><span>최종 합계</span><span>${f(totalDisc)}</span></div>`;
+}
+
+function closeB2BModal() {
+    document.getElementById('b2bModalOverlay').classList.remove('open');
+}
+
+function confirmB2BQuote() {
+    const company = document.getElementById('b2bCompany').value.trim();
+    const staff   = document.getElementById('b2bStaff').value.trim();
+    const items = cart.map((item, i) => ({
+        ...item,
+        discPrice: parseInt(document.getElementById(`b2bPrice_${i}`)?.value) || item.price,
+    }));
+    closeB2BModal();
+    _doPrintB2BQuote(company, staff, items);
+}
+
+function _doPrintB2BQuote(company, staff, items) {
+    const f = n => n.toLocaleString('ko-KR') + '원';
+    const dateStr = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+    const quoteNo = 'B2B-' + Date.now().toString().slice(-8);
+
+    const totalOriginal = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const totalDisc     = items.reduce((s, i) => s + i.discPrice * i.qty, 0);
+    const saved = totalOriginal - totalDisc;
+    const overallRate = totalOriginal > 0 ? Math.round((1 - totalDisc / totalOriginal) * 100) : 0;
+
+    const rowsHtml = items.map((item, idx) => {
+        const rate = item.price > 0 ? Math.round((1 - item.discPrice / item.price) * 100) : 0;
+        return `<tr>
+            <td class="tc" style="color:#6b7280">${idx + 1}</td>
+            <td>
+                <div style="font-weight:600">${item.name}</div>
+                <div class="sub">${item.variantName}</div>
+            </td>
+            <td class="tc">${item.qty}</td>
+            <td class="tr" style="color:#6b7280">${f(item.price)}</td>
+            <td class="tr" style="font-weight:700;color:#1a1a1a">${f(item.discPrice)}</td>
+            <td class="tc" style="color:${rate > 0 ? '#16a34a' : '#9ca3af'};font-weight:700">${rate > 0 ? `-${rate}%` : '—'}</td>
+            <td class="tr bold">${f(item.discPrice * item.qty)}</td>
+        </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SIDIZ B2B 견적서 ${quoteNo}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; color:#1a1a1a; background:#fff; padding:32px 36px; font-size:13px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2.5px solid #0D3BFF; padding-bottom:16px; margin-bottom:20px; }
+  .brand { font-size:22px; font-weight:900; color:#001499; letter-spacing:-0.5px; }
+  .brand span { color:#0D3BFF; }
+  .doc-title { font-size:20px; font-weight:800; color:#0D3BFF; text-align:right; }
+  .doc-sub { font-size:11px; color:#6b7280; text-align:right; margin-top:3px; }
+  .meta { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:20px; }
+  .meta-box { background:#f8f9ff; border:1px solid #e6ebff; border-radius:8px; padding:10px 12px; }
+  .meta-box .label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .meta-box .val { font-size:13px; font-weight:600; color:#1a1a1a; }
+  table { width:100%; border-collapse:collapse; margin-bottom:18px; }
+  thead th { background:#0D3BFF; color:#fff; padding:9px 10px; font-size:11px; font-weight:700; text-align:left; }
+  thead th.tc { text-align:center; } thead th.tr { text-align:right; }
+  tbody tr:nth-child(even) { background:#f8f9ff; }
+  tbody td { padding:10px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .tc { text-align:center; } .tr { text-align:right; } .bold { font-weight:700; }
+  .sub { font-size:11px; color:#6b7280; margin-top:2px; display:block; }
+  .summary { display:flex; justify-content:flex-end; }
+  .summary-box { width:280px; border:1px solid #e6ebff; border-radius:8px; overflow:hidden; }
+  .s-row { display:flex; justify-content:space-between; padding:8px 14px; font-size:12px; border-bottom:1px solid #f0f0f0; }
+  .s-row:last-child { border-bottom:none; }
+  .s-row.save { color:#16a34a; font-weight:600; }
+  .s-row.total { background:#0D3BFF; color:#fff; font-size:14px; font-weight:900; padding:10px 14px; }
+  .notice { margin-top:22px; background:#fff9e6; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:11px; color:#92400e; line-height:1.7; }
+  .footer { margin-top:20px; border-top:1px solid #e5e7eb; padding-top:14px; display:flex; justify-content:space-between; align-items:flex-end; color:#6b7280; font-size:10.5px; line-height:1.7; }
+  .sign-box { border:1px solid #d1d5db; border-radius:6px; padding:10px 28px; font-size:11px; text-align:center; }
+  .sign-label { color:#6b7280; margin-bottom:22px; }
+  .sign-name { font-weight:700; font-size:12px; color:#1a1a1a; margin-top:2px; }
+  @media print { body { padding:20px 24px; -webkit-print-color-adjust:exact; print-color-adjust:exact; } @page { margin:12mm; size:A4; } }
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+</style>
+</head>
+<body>
+<div class="header">
+    <div>
+        <div class="brand">SIDIZ<span>.</span></div>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px;">인체공학 의자 전문 브랜드</div>
+    </div>
+    <div>
+        <div class="doc-title">공 급 견 적 서</div>
+        <div class="doc-sub">No. ${quoteNo}</div>
+    </div>
+</div>
+<div class="meta">
+    <div class="meta-box"><div class="label">고객사</div><div class="val">${company || '—'}</div></div>
+    <div class="meta-box"><div class="label">담당 SE</div><div class="val">${staff || '—'}</div></div>
+    <div class="meta-box"><div class="label">견적일</div><div class="val">${dateStr}</div></div>
+    <div class="meta-box"><div class="label">전체 할인율</div><div class="val" style="color:${overallRate > 0 ? '#16a34a' : '#1a1a1a'}">${overallRate > 0 ? `-${overallRate}%` : '—'}</div></div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th class="tc" style="width:30px">No.</th>
+            <th>제품명</th>
+            <th class="tc" style="width:36px">수량</th>
+            <th class="tr" style="width:90px">정가</th>
+            <th class="tr" style="width:90px">할인가</th>
+            <th class="tc" style="width:52px">할인율</th>
+            <th class="tr" style="width:90px">소계</th>
+        </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+</table>
+<div class="summary">
+    <div class="summary-box">
+        <div class="s-row"><span>총 정가</span><span>${f(totalOriginal)}</span></div>
+        ${saved > 0 ? `<div class="s-row save"><span>총 할인 금액</span><span>-${f(saved)}</span></div>` : ''}
+        <div class="s-row total"><span>최종 합계</span><span>${f(totalDisc)}</span></div>
+    </div>
+</div>
+<div class="notice">
+    ※ 본 견적서는 참고용이며, 실제 공급가는 계약 조건에 따라 달라질 수 있습니다.<br>
+    ※ 부가세(VAT 10%) 별도 적용 가능합니다. 유효기간: 발행일로부터 <b>7일</b>.
+</div>
+<div class="footer">
+    <div class="note" style="line-height:1.8">
+        <b>㈜퍼시스</b> 시디즈 사업부<br>
+        서울시 강남구 테헤란로 521 (파르나스타워 21F)<br>
+        www.sidiz.com
+    </div>
+    <div class="sign-box">
+        <div class="sign-label">담당자 확인</div>
+        <div class="sign-name">${staff || ''}</div>
+    </div>
+</div>
+</body></html>`;
+
+    const win = window.open('', '_blank', 'width=820,height=1060');
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => setTimeout(() => win.print(), 300);
+}
+
 // ── 견적서 출력 ──
 function printQuote() {
     if (!cart.length) return;
@@ -10384,6 +10662,46 @@ function _renderScenarios() {
     </div>
 </div>
 
+<!-- ══ B2B 견적서 모달 ══ -->
+<div class="b2b-modal-overlay" id="b2bModalOverlay" onclick="if(event.target===this)closeB2BModal()">
+    <div class="b2b-modal" onclick="event.stopPropagation()">
+        <div class="b2b-modal-handle"></div>
+        <div class="b2b-modal-header">
+            <h3>🏢 B2B 견적서</h3>
+            <p>할인가를 직접 입력하면 할인율이 자동 계산됩니다.</p>
+        </div>
+        <div class="b2b-modal-body">
+            <div class="b2b-info-row">
+                <div class="print-field">
+                    <label>고객사명</label>
+                    <input type="text" id="b2bCompany" placeholder="예: (주)시디즈" autocomplete="off">
+                </div>
+                <div class="print-field">
+                    <label>담당 SE</label>
+                    <input type="text" id="b2bStaff" placeholder="예: 김철수" autocomplete="off">
+                </div>
+            </div>
+            <table class="b2b-items-table">
+                <thead>
+                    <tr>
+                        <th>제품</th>
+                        <th class="tc" style="width:34px">수량</th>
+                        <th class="tr" style="width:80px">정가</th>
+                        <th class="tr" style="width:90px">할인가</th>
+                        <th class="tc" style="width:48px">할인율</th>
+                    </tr>
+                </thead>
+                <tbody id="b2bItemsBody"></tbody>
+            </table>
+            <div class="b2b-summary" id="b2bSummary"></div>
+        </div>
+        <div class="b2b-modal-footer">
+            <button class="b2b-cancel" onclick="closeB2BModal()">취소</button>
+            <button class="b2b-confirm" onclick="confirmB2BQuote()">🖨 견적서 인쇄</button>
+        </div>
+    </div>
+</div>
+
 <!-- ══ 견적서 출력 정보 입력 모달 ══ -->
 <div class="print-modal-overlay" id="printModalOverlay" onclick="closePrintModal(event)">
     <div class="print-modal" onclick="event.stopPropagation()">
@@ -10518,6 +10836,9 @@ function _renderScenarios() {
         </button>
         <button class="quote-print-btn" onclick="printQuote()">
             📄 견적서 보기
+        </button>
+        <button class="quote-b2b-btn" onclick="openB2BModal()">
+            🏢 B2B 견적서
         </button>
     </div>
 </div>
