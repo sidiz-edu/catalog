@@ -9909,7 +9909,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     <div class="summary-box">
         ${compareTotalAmt > subtotal ? `<div class="summary-row" style="font-size:12px;color:#9ca3af;"><span>소비자가(정가) 합계</span><span style="text-decoration:line-through;">${f(compareTotalAmt)}</span></div>` : ''}
         <div class="summary-row" style="font-size:12px;"><span>회원할인가 소계</span><span>${f(subtotal)}</span></div>
-        ${discCandidates.map(c => {
+        ${discCandidates.filter(c => c.type !== 'coupon' || couponApplied).map(c => {
             const isApplied = best && c.label === best.label && c.amt === best.amt;
             const isCoupon = c.type === 'coupon';
             return isApplied
