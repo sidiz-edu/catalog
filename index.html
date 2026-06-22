@@ -3938,13 +3938,13 @@
         <!-- T50 2세대 -->
         <div class="product-card" onclick="showDetail('t50gen2')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t50gen2')">✏️ 편집</button>
-            <div class="product-card-img" style="background-color: #eef2f7;">
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_WG_2.png?v=1781826386'); background-color: #eef2f7;">
                 <div class="badge">NEW</div>
             </div>
             <div class="product-card-body">
                 <h3>T50 2세대</h3>
                 <div class="subtitle">밀리언 셀러의 진화</div>
-                <p>국민 의자 T50의 2세대. 헤드레스트·4D 팔걸이 기본 탑재, 검증된 인체공학에 최신 마감이 더해졌습니다.</p>
+                <p>국민 의자 T50의 2세대. 310mm 메쉬 헤드레스트·4D 팔걸이 기본 탑재, 에이플로우 틸팅과 보울형 좌판으로 진화했습니다.</p>
                 <div class="price">419,000원<span>부터</span></div>
             </div>
         </div>
@@ -6337,14 +6337,14 @@ const compareData = {
     },
     t50gen2: {
         label: 'T50 2세대', badge: 'NEW',
-        포지셔닝: '올라운더 (2세대)', 가격대: priceLabel('t50gen2'), 틸팅방식: '싱크 틸팅',
+        포지셔닝: '올라운더 (2세대)', 가격대: priceLabel('t50gen2'), 틸팅방식: '에이플로우 메인',
         요추지지대: true, 좌판깊이조절: true, '4D암레스트': true,
-        헤드레스트: true, 특수기능: '헤드레스트 기본 탑재', 추천대상: '직장인·범용',
-        좌판높이: '435~505mm', 제품최대폭: '740mm', 중량: '17.9kg', 최대하중: '125kg',
-        메쉬명칭: '프로텐션 메쉬', 자재코드: 'KATE-C',
-        메쉬성분: '폴리에스터 64% · 폴리엘라스토머 36%',
-        착좌텐션: '★★★☆',
-        메쉬특징: '안정적인 밸런스 · 호불호 없는 편안함',
+        헤드레스트: true, 특수기능: '310mm메쉬헤드·4D팔걸이·클라우드폼', 추천대상: '직장인·범용',
+        좌판높이: '440~510mm', 제품최대폭: '705mm', 중량: '17.9kg', 최대하중: '125kg',
+        메쉬명칭: '에어플렉스 메쉬 (AIR)', 자재코드: '5HX',
+        메쉬성분: '폴리에스터 35% · 폴리엘라스토머 65%',
+        착좌텐션: '★★★★☆',
+        메쉬특징: '탱탱한 탄력 · 이지리페어 자가교체 가능',
     },
     t60: {
         label: 'T60', badge: 'NEW',
@@ -6970,13 +6970,13 @@ const productSpecs = {
         armrest:'4D 조절', headrest:'높이·각도 조절',
     },
     t50gen2: {
-        seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
-        back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
-        arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
-        head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+        seat_h:'440~510mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+        back_h:'960~1030mm', back_w:'480mm', back_d:'580~640mm',
+        arm_h:'610~670mm', arm_in:'500mm', arm_out:'705mm',
+        head_h:'1135~1205mm', max_w:'705mm', rot_r:'525mm',
         weight:'17.9kg', max_load:'125kg',
-        tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
-        armrest:'4D 조절', headrest:'높이·각도 조절',
+        tilt:'에이플로우 메인', cylinder:'30G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+        armrest:'4D 조절 (높이60·앞뒤30·각도20°·너비180)', headrest:'310mm 메쉬·높이55mm·각도55° 조절',
     },
     t60: {
         seat_h:'455~525mm', seat_w:'515mm', seat_d:'510mm',
@@ -7196,16 +7196,20 @@ const productSpecsByGroup = {
     },
     t50gen2: {
         'T50 2세대': {
-            seat_h:'435~505mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
-            back_h:'960~1030mm', back_w:'480mm', back_d:'580~650mm',
-            arm_h:'610~680mm', arm_in:'500mm', arm_out:'680mm',
-            head_h:'1120~1210mm', max_w:'740mm', rot_r:'345mm',
+            seat_h:'440~510mm', seat_w:'510mm', seat_d:'485mm', seat_adj:'485~555mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'580~640mm',
+            arm_h:'610~670mm', arm_in:'500mm', arm_out:'705mm',
+            head_h:'1135~1205mm', max_w:'705mm', rot_r:'525mm',
             weight:'17.9kg', max_load:'125kg',
-            tilt:'4000G 틸트', cylinder:'70G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
+            tilt:'에이플로우 메인', cylinder:'30G', base:'플라스틱 690 플랫베이스', wheel:'우레탄 바퀴 (65파이)',
         },
         'T50 AIR 2세대': {
+            seat_h:'440~510mm', seat_w:'500mm', seat_d:'480mm', seat_adj:'480~545mm',
+            back_h:'960~1030mm', back_w:'480mm', back_d:'580~640mm',
+            arm_h:'610~670mm', arm_in:'470mm', arm_out:'525mm',
+            head_h:'1135~1205mm', max_w:'700mm', rot_r:'520mm',
             weight:'18kg', max_load:'125kg',
-            tilt:'4000G 틸트', cylinder:'HIGH CONE', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
+            tilt:'에이플로우 메인', cylinder:'30G', base:'플라스틱 690 마운틴 베이스', wheel:'우레탄 바퀴 (65파이)',
         },
     },
     t60: {
@@ -7339,21 +7343,21 @@ const productSpecGroups = {
     ],
     t50gen2: [
         {
-            name: 'T50 2세대', price: 419000,
+            name: 'T50 2세대', price: 419000, comparePrice: 439000,
             colors: [
-                { name: '애쉬화이트/화이트프레임',    code: '#e8e4de', img: '' },
-                { name: '카본블랙/블랙프레임',        code: '#2e2e2e', img: '' },
-                { name: '미네랄그레이/블랙프레임',    code: '#7a8088', img: '' },
-                { name: '애쉬화이트/웜그레이프레임',  code: '#e0dbd4', img: '' },
+                { name: '애쉬화이트',   code: '#e8e4de', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_WG_2.png?v=1781826386' },
+                { name: '카본블랙',     code: '#2e2e2e', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_IG_2.png?v=1781826093' },
+                { name: '미네랄그레이', code: '#7a8088', img: '' },
+                { name: '웜그레이 (8월 출시)', code: '#b0a89e', img: '' },
             ]
         },
         {
-            name: 'T50 AIR 2세대', price: 434000,
+            name: 'T50 AIR 2세대', price: 434000, comparePrice: 454000,
             colors: [
-                { name: '애쉬화이트/화이트프레임',    code: '#e8e4de', img: '' },
-                { name: '카본블랙/블랙프레임',        code: '#2e2e2e', img: '' },
-                { name: '미네랄그레이/블랙프레임',    code: '#7a8088', img: '' },
-                { name: '애쉬화이트/웜그레이프레임',  code: '#e0dbd4', img: '' },
+                { name: '애쉬화이트',   code: '#e8e4de', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_Air_WG_2.png?v=1781826152' },
+                { name: '카본블랙',     code: '#2e2e2e', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_Air_IG_2.png?v=1781826166' },
+                { name: '미네랄그레이', code: '#7a8088', img: '' },
+                { name: '웜그레이 (8월 출시)', code: '#b0a89e', img: '' },
             ]
         },
     ],
@@ -7644,15 +7648,15 @@ const products = {
     },
     t50gen2: {
         name: 'T50 2세대',
-        tagline: '밀리언 셀러가 더 완성된 모습으로 돌아왔습니다',
-        desc: '전 세계 누적 100만 개 판매의 국민 의자 T50이 2세대로 새로워졌습니다. 헤드레스트와 4D 팔걸이를 기본 탑재하고, 검증된 인체공학 설계에 최신 소재와 마감이 더해졌습니다. T50 AIR 2세대는 통기성 메쉬 소재로 더욱 시원한 착석감을 제공합니다.',
+        tagline: '300만 대 국민 의자, 완전히 새로워진 2세대',
+        desc: '2007년 출시 이래 누적 300만 대 판매의 시디즈 국민 의자 T50이 2세대로 완전히 새롭게 태어났습니다. 310mm 와이드 메쉬 헤드레스트와 4D 팔걸이(높이·앞뒤·각도·너비)를 기본 탑재하고, 새로운 에이플로우 메인 틸팅과 290×160mm 럼버서포트로 1세대 대비 전면 업그레이드됩니다. T50 패브릭은 보울(Bowl)형 스프링 성형 좌판, T50 AIR는 에어플렉스 메쉬 좌판으로 선택할 수 있습니다.',
         price: '419,000원',
-        img: '',
+        img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T50_WG_2.png?v=1781826386',
         features: [
-            { icon: '🔄', title: '멀티 싱크 틸팅', desc: '등판과 좌판이 독립적으로 움직여 자연스러운 기대기 동작을 지원합니다.' },
-            { icon: '🦴', title: '요추 지지대 조절', desc: '높이와 강도를 조절하여 허리를 최적으로 받쳐줍니다.' },
-            { icon: '📐', title: '좌판 깊이/각도 조절', desc: '허벅지 길이에 맞춰 좌판을 앞뒤로 조절할 수 있습니다.' },
-            { icon: '🎯', title: '헤드레스트 기본 탑재', desc: '높이 및 각도 조절 가능한 헤드레스트가 기본 포함되어 목·어깨 부담을 줄여줍니다.' }
+            { icon: '🎯', title: '310mm 와이드 메쉬 헤드레스트', desc: '1세대(245mm 인조가죽) 대비 65mm 넓어진 310mm 메쉬 소재로, 높이 55mm·각도 55° 조절이 가능합니다.' },
+            { icon: '💪', title: '4D 팔걸이 (기본 탑재)', desc: '높이 60mm·앞뒤 30mm·각도 20°·너비 180mm 4방향 조절. 앞으로 기대거나 옆으로 눕는 자세에도 팔뚝이 눌리지 않는 폭포수형 곡면 패드 적용.' },
+            { icon: '🦴', title: '290×160mm 럼버서포트', desc: '1세대(270×90mm) 대비 넓어진 럼버서포트로 허리를 더 넓게 지지합니다. 높이 50mm·깊이 10mm 조절, 탈부착 가능.' },
+            { icon: '🪑', title: '보울형 스프링 성형 좌판 / 에어플렉스 메쉬 (AIR)', desc: 'T50 패브릭은 Bowl 형태 스프링 성형 기법으로 엉덩이를 안정적으로 감싸고, T50 AIR는 이지리페어 설계의 에어플렉스 메쉬 좌판으로 시원한 통기성을 제공합니다.' }
         ],
         tags: ['장시간 업무', '직장인', '올라운더', 'NEW'],
         생산지: '평택', 품질보증: '5년', 배송: '시공 (기사님 직접 설치)',
