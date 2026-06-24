@@ -3777,7 +3777,6 @@
         <a onclick="navigate('process', this)">구매 후 안내</a>
         <a onclick="navigate('posture', this)">올바른 사용법</a>
         <a onclick="navigate('care', this)">관리법</a>
-        <a onclick="navigate('promo', this)">이달의 행사</a>
         <a class="faq-nav-link" onclick="openFAQSection(this)">FAQ</a>
         <div class="nav-deploy-trigger" id="deployTrigger"
             onmousedown="startDeployPress()" onmouseup="cancelDeployPress()" onmouseleave="cancelDeployPress()"
@@ -3825,6 +3824,28 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
+            <!-- T50 2세대 오프라인 선출시 -->
+            <div class="promo-card promo-card-wide" style="--pc-accent:#0D3BFF;">
+                <span class="promo-card-icon">🪑</span>
+                <div class="promo-card-series">T50 2세대 · T50 AIR 2세대 · 오프라인 단독</div>
+                <div class="promo-card-name">T50 2세대 오프라인 선출시 &nbsp;<span style="font-size:0.72rem;font-weight:500;color:#999;">06.19 ~ 07.05</span></div>
+                <div class="promo-card-desc">
+                    <div style="font-size:0.8rem;font-weight:600;color:#555;margin-bottom:8px;">시디즈를?</div>
+                    <div class="ev-chips" id="promoCustomerChips">
+                        <button class="ev-chip" onclick="selectPromo('customer','new',this)">처음 구매</button>
+                        <button class="ev-chip" onclick="selectPromo('customer','existing',this)">이미 사용 중</button>
+                    </div>
+                    <div id="promoProductStep" style="display:none;margin-top:14px;">
+                        <div style="font-size:0.8rem;font-weight:600;color:#555;margin-bottom:8px;">어떤 제품?</div>
+                        <div class="ev-chips" id="promoProductChips">
+                            <button class="ev-chip" onclick="selectPromo('product','t50',this)">T50 2세대</button>
+                            <button class="ev-chip" onclick="selectPromo('product','t50air',this)">T50 AIR 2세대</button>
+                        </div>
+                    </div>
+                    <div id="promoResult" style="display:none;margin-top:14px;"></div>
+                </div>
+                <div class="promo-card-footer">📌 오프라인 단독 · T50 2세대 구매 고객 한정</div>
+            </div>
             <!-- 신규가입 -->
             <div class="promo-card" style="--pc-accent:#10b981;">
                 <span class="promo-card-icon">🎁</span>
@@ -5439,47 +5460,6 @@ OOO 고객님, 오늘 방문 예정입니다.
         <div class="se-pw-btns">
             <button class="se-pw-cancel" onclick="closeFAQPw()">취소</button>
             <button class="se-pw-confirm" onclick="checkFAQPw()">확인</button>
-        </div>
-    </div>
-</div>
-
-<!-- ──────── 이달의 행사 & 쿠폰 ──────── -->
-<div id="promo" class="section">
-    <div class="section-label">PROMOTIONS</div>
-    <div class="section-title">이달의 행사 &amp; 쿠폰</div>
-    <div class="section-desc">현재 진행 중인 프로모션과 쿠폰 혜택을 확인하세요.</div>
-
-    <div class="ev-list">
-        <!-- T50 2세대 오프라인 선출시 -->
-        <div class="ev-card">
-            <div class="ev-card-header">
-                <div class="ev-badge-wrap">
-                    <span class="ev-badge-offline">오프라인 단독</span>
-                    <span class="ev-badge-period">06.19 ~ 07.05</span>
-                </div>
-                <h2 class="ev-card-title">T50 2세대 오프라인 선출시</h2>
-                <p class="ev-card-sub">THE ORIGINAL STANDARD</p>
-            </div>
-
-            <div class="ev-steps">
-                <div class="ev-step">
-                    <div class="ev-step-label">시디즈를?</div>
-                    <div class="ev-chips" id="promoCustomerChips">
-                        <button class="ev-chip" onclick="selectPromo('customer','new',this)">처음 구매</button>
-                        <button class="ev-chip" onclick="selectPromo('customer','existing',this)">이미 사용 중</button>
-                    </div>
-                </div>
-
-                <div class="ev-step" id="promoProductStep" style="display:none">
-                    <div class="ev-step-label">어떤 제품?</div>
-                    <div class="ev-chips" id="promoProductChips">
-                        <button class="ev-chip" onclick="selectPromo('product','t50',this)">T50 2세대</button>
-                        <button class="ev-chip" onclick="selectPromo('product','t50air',this)">T50 AIR 2세대</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="promoResult" style="display:none"></div>
         </div>
     </div>
 </div>
