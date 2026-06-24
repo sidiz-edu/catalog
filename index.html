@@ -9599,9 +9599,10 @@ function renderCartItems() {
     `).join('');
 
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const best = getBestDiscount(cart);
-    // T50 오프라인 쿠폰 적용 시 tier/group 할인과 중복 불가 → tier 할인 0 처리
-    const discAmt = t50OfflineCouponApplied ? 0 : (best ? best.amt : 0);
+    // T50 오프라인 쿠폰 적용 시 → tier 할인은 T50 제외 나머지 상품에만 적용
+    const tierCart = t50OfflineCouponApplied ? cart.filter(i => i.productId !== 't50gen2') : cart;
+    const best = getBestDiscount(tierCart);
+    const discAmt = best ? best.amt : 0;
 
     // 군인/소방관/경찰 쿠폰 — 스테포·이지리페어 품목에만 별도 적용
     const milCartAmt = (() => {
@@ -9642,22 +9643,11 @@ function renderCartItems() {
     const couponDisabled = !hasNonPromo || couponBeaten;
 
     summaryEl.innerHTML = `
-        ${t50GenItems.length > 0 ? (() => {
-            const tierAmt = best ? best.amt : 0;
-            const t50Beaten = tierAmt > t50OfflineDiscTotal;
-            if (t50Beaten && t50OfflineCouponApplied) t50OfflineCouponApplied = false;
-            if (t50Beaten) {
-                return `<div class="coupon-toggle disabled">
-                    <span class="coupon-check">☐</span>
-                    <span>🪑 T50 2세대 오프라인 선출시 쿠폰 <span class="coupon-badge">−${fmt(t50OfflineDiscTotal)}</span></span>
-                    <span style="font-size:0.75rem;color:#aaa;margin-left:4px">(현재 할인이 더 유리)</span>
-                </div>`;
-            }
-            return `<div class="coupon-toggle" onclick="toggleT50OfflineCoupon()">
-                <span class="coupon-check ${t50OfflineCouponApplied ? 'on' : ''}">${t50OfflineCouponApplied ? '✅' : '☐'}</span>
-                <span>🪑 T50 2세대 오프라인 선출시 쿠폰 <span class="coupon-badge">−${fmt(t50OfflineDiscTotal)}</span></span>
-            </div>`;
-        })() : ''}
+        ${t50GenItems.length > 0 ? `
+        <div class="coupon-toggle" onclick="toggleT50OfflineCoupon()">
+            <span class="coupon-check ${t50OfflineCouponApplied ? 'on' : ''}">${t50OfflineCouponApplied ? '✅' : '☐'}</span>
+            <span>🪑 T50 2세대 오프라인 선출시 쿠폰 <span class="coupon-badge">−${fmt(t50OfflineDiscTotal)}</span></span>
+        </div>` : ''}
         ${hasStepoCouponItem ? `
         <div class="coupon-toggle" onclick="toggleStepoT50Coupon()">
             <span class="coupon-check ${stepoT50CouponApplied ? 'on' : ''}">${stepoT50CouponApplied ? '✅' : '☐'}</span>
