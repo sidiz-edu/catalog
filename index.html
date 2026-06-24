@@ -3830,9 +3830,9 @@
                 <div class="promo-card-series">T50 2세대 · 오프라인 단독 · 06.19~07.05</div>
                 <div class="promo-card-name">T50 2세대 오프라인 선출시</div>
                 <div class="promo-card-desc">
-                    <div class="promo-rate-row"><span class="rate-label">T50 2세대</span><span class="rate-val">398,050원</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">T50 AIR 2세대</span><span class="rate-val">412,300원</span></div>
-                    <div style="font-size:0.72rem;color:#aaa;margin-top:6px;">정상가 대비 약 9% 할인</div>
+                    <div class="promo-rate-row"><span class="rate-label">T50 2세대</span><span class="rate-val">419,000원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T50 AIR 2세대</span><span class="rate-val">434,000원</span></div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-top:6px;">장바구니 쿠폰 적용 시 추가 5% 할인</div>
                 </div>
                 <div class="promo-card-footer">⚡ 오프라인 매장 단독 행사</div>
             </div>
@@ -9025,6 +9025,9 @@ const MILITARY_REPAIR_AMT = 2000;
 let militaryCouponApplied = false;
 let stepoT50CouponApplied = false;
 const STEPO_T50_DISCOUNT = 44000; // 54,000 → 10,000원
+let t50OfflineCouponApplied = false;
+// T50 2세대 오프라인 선출시: 419,000→398,050(-20,950) / AIR 434,000→412,300(-21,700)
+const T50_OFFLINE_DISC    = { normal: 20950, air: 21700 };
 
 // ── SPEC SELECTOR STATE ──
 const _currentSpec = {};
@@ -9559,6 +9562,12 @@ function toggleStepoT50Coupon() {
     renderCartItems();
 }
 
+function toggleT50OfflineCoupon() {
+    t50OfflineCouponApplied = !t50OfflineCouponApplied;
+    if (t50OfflineCouponApplied) couponApplied = false;
+    renderCartItems();
+}
+
 function renderCartItems() {
     const el = document.getElementById('cartItems');
     const summaryEl = document.getElementById('cartSummary');
@@ -9607,7 +9616,16 @@ function renderCartItems() {
     if (!hasStepoCouponItem) stepoT50CouponApplied = false;
     const stepoDiscAmt = (stepoT50CouponApplied && hasStepoCouponItem) ? STEPO_T50_DISCOUNT : 0;
 
-    const final = subtotal - discAmt - milDiscAmt - stepoDiscAmt;
+    // T50 2세대 오프라인 선출시 쿠폰 (t50gen2 담겼을 때만)
+    const t50GenItems = cart.filter(i => i.productId === 't50gen2');
+    if (t50GenItems.length === 0) t50OfflineCouponApplied = false;
+    const t50OfflineDiscTotal = t50GenItems.reduce((sum, i) => {
+        const disc = i.variantName && i.variantName.includes('AIR') ? T50_OFFLINE_DISC.air : T50_OFFLINE_DISC.normal;
+        return sum + disc * i.qty;
+    }, 0);
+    const t50OfflineDiscAmt = t50OfflineCouponApplied ? t50OfflineDiscTotal : 0;
+
+    const final = subtotal - discAmt - milDiscAmt - stepoDiscAmt - t50OfflineDiscAmt;
     const next = getNextTier(subtotal);
 
     // 신규가입 쿠폰 적용 가능 여부
@@ -9623,6 +9641,11 @@ function renderCartItems() {
     const couponDisabled = !hasNonPromo || couponBeaten;
 
     summaryEl.innerHTML = `
+        ${t50GenItems.length > 0 ? `
+        <div class="coupon-toggle" onclick="toggleT50OfflineCoupon()">
+            <span class="coupon-check ${t50OfflineCouponApplied ? 'on' : ''}">${t50OfflineCouponApplied ? '✅' : '☐'}</span>
+            <span>🪑 T50 2세대 오프라인 선출시 쿠폰 <span class="coupon-badge">−${fmt(t50OfflineDiscTotal)}</span></span>
+        </div>` : ''}
         ${hasStepoCouponItem ? `
         <div class="coupon-toggle" onclick="toggleStepoT50Coupon()">
             <span class="coupon-check ${stepoT50CouponApplied ? 'on' : ''}">${stepoT50CouponApplied ? '✅' : '☐'}</span>
@@ -9656,6 +9679,10 @@ function renderCartItems() {
         ${milDiscAmt > 0 ? `<div class="cart-summary-row discount">
             <span>🎖️ 군인/소방관/경찰 쿠폰</span>
             <span>−${fmt(milDiscAmt)}</span>
+        </div>` : ''}
+        ${t50OfflineDiscAmt > 0 ? `<div class="cart-summary-row discount">
+            <span>🪑 T50 2세대 오프라인 선출시 쿠폰</span>
+            <span>−${fmt(t50OfflineDiscAmt)}</span>
         </div>` : ''}
         ${stepoDiscAmt > 0 ? `<div class="cart-summary-row discount">
             <span>🪑 T50 2세대 기존고객 쿠폰</span>
