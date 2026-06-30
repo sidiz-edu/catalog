@@ -4,3 +4,4 @@
 *.jpeg
 .env
 node_modules/
+.fursys-deploy-hub/

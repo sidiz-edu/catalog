@@ -1,0 +1,48 @@
+{
+  "commit": "c3f310964c7bee27cc097eb1f0bb46f2592cfd08",
+  "tree": "1e662305cc2049ad95707b3dfc650c704abec758",
+  "branch": "main",
+  "security": "caution",
+  "deployable": true,
+  "final": "ok",
+  "report": "_workspace/dogfooding-sidiz-catalog/02_grace_deployfix.md",
+  "generated_at": "2026-06-30 15:59",
+  "env_plan": [
+    {
+      "name": "DATABASE_URL",
+      "class": "locked",
+      "note": "ask",
+      "scope": "container"
+    },
+    {
+      "name": "ADMIN_PW_HASH",
+      "class": "runtime",
+      "note": "ask",
+      "scope": "container"
+    }
+  ],
+  "volumes_plan": [],
+  "deploy_fixes": [
+    {
+      "type": "sec-llm",
+      "severity": "high",
+      "file": "server.js",
+      "message": "API 엔드포인트 전체(quotes/error-reports/se-logs) 인증 없음. 외부 접근 시 DB 데이터 무단 조회·삭제 가능.",
+      "aiPrompt": null
+    },
+    {
+      "type": "sec-llm",
+      "severity": "high",
+      "file": "server.js",
+      "message": "DB 에러 메시지(e.message)를 500 응답에 그대로 반환 — DB 스키마/쿼리 정보 유출 가능.",
+      "aiPrompt": null
+    },
+    {
+      "type": "sec-llm",
+      "severity": "high",
+      "file": "index.html",
+      "message": "관리자 비밀번호 '1234'의 SHA-256 해시가 index.html에 하드코딩됨. 클라이언트 사이드 인증은 F12 devtools로 즉시 우회 가능.",
+      "aiPrompt": null
+    }
+  ]
+}
