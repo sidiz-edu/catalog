@@ -10349,8 +10349,9 @@ document.addEventListener('DOMContentLoaded', () => {
 //  오류 신고 시스템 (Supabase 연동)
 // ══════════════════════════════════════════════
 
-const SUPABASE_URL  = 'https://dvlrzbckneucpvlacdll.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE';
+/* [deploy-fix] Supabase 자격증명 제거 — 사내 배포(IS_FURSYS)에서는 _sb를 사용하지 않음 */
+const SUPABASE_URL  = '';
+const SUPABASE_ANON = '';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const IS_FURSYS = location.hostname.includes('fursys.com');
@@ -10661,10 +10662,8 @@ enterAdminMode = async function() {
 };
 
 /* ════ SE GUIDE ════ */
-const _supabase = supabase.createClient(
-    'https://dvlrzbckneucpvlacdll.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE'
-);
+/* [deploy-fix] Supabase 자격증명 제거 — 사내 배포(IS_FURSYS)에서는 _supabase를 사용하지 않음 */
+const _supabase = supabase.createClient('', '');
 const _SE_PW = 'SE2026';
 let _seVoiceOn = true;
 let _tourStep  = 0;
