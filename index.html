@@ -16,7 +16,6 @@
     <meta name="twitter:title" content="SIDIZ Digital Catalog">
     <meta name="twitter:description" content="시디즈 인체공학 의자 디지털 카탈로그">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --sidiz-navy: #0D3BFF;
@@ -10053,7 +10052,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const final = subtotal - discAmt;
     const { candidates: discCandidates } = getAllDiscountCandidates(cart);  // 표시용 전체 후보
 
-    // Supabase에 견적 저장
+    // 견적 저장
     _db.insertQuote({
         quote_no: quoteNo,
         store_name: storeName || null,
@@ -10346,74 +10345,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ══════════════════════════════════════════════
-//  오류 신고 시스템 (Supabase 연동)
+//  오류 신고 시스템 (Express+pg 백엔드 단일화)
 // ══════════════════════════════════════════════
-
-/* [deploy-fix] Supabase 자격증명 제거 — 사내 배포(IS_FURSYS)에서는 _sb를 사용하지 않음 */
-const SUPABASE_URL  = '';
-const SUPABASE_ANON = '';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-const IS_FURSYS = location.hostname.includes('fursys.com');
 
 const _db = {
   async insertQuote(data) {
-    if (IS_FURSYS) {
-      const r = await fetch('/api/quotes', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-      return { error: r.ok ? null : await r.json() };
-    }
-    return _sb.from('quotes').insert(data);
+    const r = await fetch('/api/quotes', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    return { error: r.ok ? null : await r.json() };
   },
   async listQuotes() {
-    if (IS_FURSYS) {
-      const r = await fetch('/api/quotes');
-      return { data: await r.json(), error: null };
-    }
-    return _sb.from('quotes').select('*').order('created_at', { ascending: false }).limit(100);
+    const r = await fetch('/api/quotes');
+    return { data: await r.json(), error: null };
   },
   async deleteQuote(id) {
-    if (IS_FURSYS) return fetch(`/api/quotes/${id}`, { method:'DELETE' });
-    return _sb.from('quotes').delete().eq('id', id);
+    return fetch(`/api/quotes/${id}`, { method:'DELETE' });
   },
   async insertErrorReport(data) {
-    if (IS_FURSYS) {
-      const r = await fetch('/api/error-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-      return { error: r.ok ? null : await r.json() };
-    }
-    return _sb.from('error_reports').insert(data);
+    const r = await fetch('/api/error-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    return { error: r.ok ? null : await r.json() };
   },
   async listErrorReports(status) {
-    if (IS_FURSYS) {
-      const r = await fetch(`/api/error-reports?status=${status}`);
-      return { data: await r.json(), error: null };
-    }
-    return _sb.from('error_reports').select('*').eq('status', status).order('created_at', { ascending: false });
+    const r = await fetch(`/api/error-reports?status=${status}`);
+    return { data: await r.json(), error: null };
   },
   async countNewReports() {
-    if (IS_FURSYS) {
-      const r = await fetch('/api/error-reports/count');
-      return r.json();
-    }
-    return _sb.from('error_reports').select('*', { count: 'exact', head: true }).eq('status', 'new');
+    const r = await fetch('/api/error-reports/count');
+    return r.json();
   },
   async resolveReport(id) {
-    if (IS_FURSYS) return fetch(`/api/error-reports/${id}/resolve`, { method:'PATCH' });
-    return _sb.from('error_reports').update({ status: 'resolved' }).eq('id', id);
+    return fetch(`/api/error-reports/${id}/resolve`, { method:'PATCH' });
   },
   async deleteReport(id) {
-    if (IS_FURSYS) return fetch(`/api/error-reports/${id}`, { method:'DELETE' });
-    return _sb.from('error_reports').delete().eq('id', id);
+    return fetch(`/api/error-reports/${id}`, { method:'DELETE' });
   },
   async insertSeLog(data) {
-    if (IS_FURSYS) return fetch('/api/se-logs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-    return _supabase.from('se_learning_logs').insert(data);
+    return fetch('/api/se-logs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
   },
   async listSeLogs() {
-    if (IS_FURSYS) {
-      const r = await fetch('/api/se-logs');
-      return { data: await r.json(), error: null };
-    }
-    return _supabase.from('se_learning_logs').select('*').order('completed_at', { ascending: false });
+    const r = await fetch('/api/se-logs');
+    return { data: await r.json(), error: null };
   },
 };
 
@@ -10662,8 +10632,6 @@ enterAdminMode = async function() {
 };
 
 /* ════ SE GUIDE ════ */
-/* [deploy-fix] Supabase 자격증명 제거 — 사내 배포(IS_FURSYS)에서는 _supabase를 사용하지 않음 */
-const _supabase = supabase.createClient('', '');
 const _SE_PW = 'SE2026';
 let _seVoiceOn = true;
 let _tourStep  = 0;
@@ -10744,7 +10712,7 @@ async function completeSEGuide() {
     closeSEGuide();
     try {
         await _db.insertSeLog({ name: _seName, duration_seconds: elapsed });
-    } catch(e) { console.error('Supabase 저장 오류:', e); }
+    } catch(e) { console.error('SE 로그 저장 오류:', e); }
     const ov = document.getElementById('seCompleteOverlay');
     document.getElementById('seCompleteName').textContent = _seName;
     document.getElementById('seCompleteTime').textContent = `학습 시간 : ${elapsed}초`;
