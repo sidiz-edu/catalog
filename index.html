@@ -10056,7 +10056,6 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     // Supabase에 견적 저장
     _sb.from('quotes').insert({
         quote_no: quoteNo,
-        customer_name: customerName || null,
         store_name: storeName || null,
         staff_name: staffName || null,
         items: cart.map(i => ({ name: i.name, variantName: i.variantName, price: i.price, qty: i.qty })),
