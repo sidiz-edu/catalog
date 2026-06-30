@@ -10054,7 +10054,7 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const { candidates: discCandidates } = getAllDiscountCandidates(cart);  // 표시용 전체 후보
 
     // Supabase에 견적 저장
-    _sb.from('quotes').insert({
+    _db.insertQuote({
         quote_no: quoteNo,
         store_name: storeName || null,
         staff_name: staffName || null,
@@ -10353,6 +10353,69 @@ const SUPABASE_URL  = 'https://dvlrzbckneucpvlacdll.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+const IS_FURSYS = location.hostname.includes('fursys.com');
+
+const _db = {
+  async insertQuote(data) {
+    if (IS_FURSYS) {
+      const r = await fetch('/api/quotes', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+      return { error: r.ok ? null : await r.json() };
+    }
+    return _sb.from('quotes').insert(data);
+  },
+  async listQuotes() {
+    if (IS_FURSYS) {
+      const r = await fetch('/api/quotes');
+      return { data: await r.json(), error: null };
+    }
+    return _sb.from('quotes').select('*').order('created_at', { ascending: false }).limit(100);
+  },
+  async deleteQuote(id) {
+    if (IS_FURSYS) return fetch(`/api/quotes/${id}`, { method:'DELETE' });
+    return _sb.from('quotes').delete().eq('id', id);
+  },
+  async insertErrorReport(data) {
+    if (IS_FURSYS) {
+      const r = await fetch('/api/error-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+      return { error: r.ok ? null : await r.json() };
+    }
+    return _sb.from('error_reports').insert(data);
+  },
+  async listErrorReports(status) {
+    if (IS_FURSYS) {
+      const r = await fetch(`/api/error-reports?status=${status}`);
+      return { data: await r.json(), error: null };
+    }
+    return _sb.from('error_reports').select('*').eq('status', status).order('created_at', { ascending: false });
+  },
+  async countNewReports() {
+    if (IS_FURSYS) {
+      const r = await fetch('/api/error-reports/count');
+      return r.json();
+    }
+    return _sb.from('error_reports').select('*', { count: 'exact', head: true }).eq('status', 'new');
+  },
+  async resolveReport(id) {
+    if (IS_FURSYS) return fetch(`/api/error-reports/${id}/resolve`, { method:'PATCH' });
+    return _sb.from('error_reports').update({ status: 'resolved' }).eq('id', id);
+  },
+  async deleteReport(id) {
+    if (IS_FURSYS) return fetch(`/api/error-reports/${id}`, { method:'DELETE' });
+    return _sb.from('error_reports').delete().eq('id', id);
+  },
+  async insertSeLog(data) {
+    if (IS_FURSYS) return fetch('/api/se-logs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    return _supabase.from('se_learning_logs').insert(data);
+  },
+  async listSeLogs() {
+    if (IS_FURSYS) {
+      const r = await fetch('/api/se-logs');
+      return { data: await r.json(), error: null };
+    }
+    return _supabase.from('se_learning_logs').select('*').order('completed_at', { ascending: false });
+  },
+};
+
 let _reportTab = 'new'; // 현재 관리자 탭
 
 // ── 현재 컨텍스트(제품/페이지) 추출 ──
@@ -10426,7 +10489,7 @@ async function submitReport() {
     btn.textContent = '전송 중...';
 
     const ctx = _getReportContext();
-    const { error } = await _sb.from('error_reports').insert({
+    const { error } = await _db.insertErrorReport({
         product_id:   ctx.product_id,
         product_name: ctx.product_name,
         category:     document.getElementById('reportCategory').value,
@@ -10458,11 +10521,7 @@ async function loadQuotes() {
     const listEl = document.getElementById('quoteList');
     listEl.innerHTML = '<div class="quote-empty">불러오는 중...</div>';
 
-    const { data, error } = await _sb
-        .from('quotes')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+    const { data, error } = await _db.listQuotes();
 
     if (error) { listEl.innerHTML = '<div class="quote-empty">❌ 불러오기 실패</div>'; return; }
     if (!data.length) { listEl.innerHTML = '<div class="quote-empty">저장된 견적이 없습니다</div>'; return; }
@@ -10492,7 +10551,7 @@ async function loadQuotes() {
     }).join('');
 }
 async function deleteQuote(id) {
-    await _sb.from('quotes').delete().eq('id', id);
+    await _db.deleteQuote(id);
     document.getElementById(`qi-${id}`)?.remove();
     if (!document.querySelector('.quote-item')) {
         document.getElementById('quoteList').innerHTML = '<div class="quote-empty">저장된 견적이 없습니다</div>';
@@ -10524,11 +10583,7 @@ async function loadReports() {
     listEl.innerHTML = '<div class="report-empty">불러오는 중...</div>';
 
     const status = _reportTab === 'new' ? 'new' : 'resolved';
-    const { data, error } = await _sb
-        .from('error_reports')
-        .select('*')
-        .eq('status', status)
-        .order('created_at', { ascending: false });
+    const { data, error } = await _db.listErrorReports(status);
 
     if (error) { listEl.innerHTML = '<div class="report-empty">❌ 불러오기 실패</div>'; return; }
 
@@ -10569,7 +10624,7 @@ async function loadReports() {
 }
 
 async function resolveReport(id) {
-    await _sb.from('error_reports').update({ status: 'resolved' }).eq('id', id);
+    await _db.resolveReport(id);
     document.getElementById(`ri-${id}`)?.remove();
     showToast('✅ 처리 완료로 변경했습니다');
     // 배지 재계산
@@ -10584,7 +10639,7 @@ async function resolveReport(id) {
 }
 
 async function deleteReport(id) {
-    await _sb.from('error_reports').delete().eq('id', id);
+    await _db.deleteReport(id);
     document.getElementById(`ri-${id}`)?.remove();
     showToast('🗑 삭제 완료');
     if (!document.querySelector('#reportList .report-item')) {
@@ -10596,7 +10651,7 @@ async function deleteReport(id) {
 const _origEnterAdmin = enterAdminMode;
 enterAdminMode = async function() {
     _origEnterAdmin();
-    const { count } = await _sb.from('error_reports').select('*', { count: 'exact', head: true }).eq('status', 'new');
+    const { count } = await _db.countNewReports();
     ['reportBadge','adminBadge'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -10665,10 +10720,7 @@ async function openSELogs() {
     const tbody = document.getElementById('seLogsBody');
     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:#9ca3af;">불러오는 중...</td></tr>';
 
-    const { data, error } = await _supabase
-        .from('se_learning_logs')
-        .select('*')
-        .order('completed_at', { ascending: false });
+    const { data, error } = await _db.listSeLogs();
 
     if (error || !data) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:#ef4444;">불러오기 실패</td></tr>';
@@ -10692,7 +10744,7 @@ async function completeSEGuide() {
     const elapsed = _seStartTime ? Math.round((Date.now() - _seStartTime) / 1000) : 0;
     closeSEGuide();
     try {
-        await _supabase.from('se_learning_logs').insert({ name: _seName, duration_seconds: elapsed });
+        await _db.insertSeLog({ name: _seName, duration_seconds: elapsed });
     } catch(e) { console.error('Supabase 저장 오류:', e); }
     const ov = document.getElementById('seCompleteOverlay');
     document.getElementById('seCompleteName').textContent = _seName;
