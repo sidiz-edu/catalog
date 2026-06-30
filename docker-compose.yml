@@ -1,8 +1,0 @@
-services:
-  app:
-    build: .
-    ports:
-      - "80:80"
-    environment:
-      - DATABASE_URL=postgresql://app_260610_ba2g_user.flkklzekfisqdfjhcsel:9nT4axfv9CsQQn6ozbSwPRKW@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
-    restart: unless-stopped
