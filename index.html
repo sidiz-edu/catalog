@@ -3823,18 +3823,6 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
-            <!-- T50 2세대 오프라인 행사가 -->
-            <div class="promo-card" style="--pc-accent:#0D3BFF;">
-                <span class="promo-card-icon">🪑</span>
-                <div class="promo-card-series">T50 2세대 · 오프라인 단독 · 06.19~07.05</div>
-                <div class="promo-card-name">T50 2세대 오프라인 선출시</div>
-                <div class="promo-card-desc">
-                    <div class="promo-rate-row"><span class="rate-label">T50 2세대</span><span class="rate-val">419,000원</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">T50 AIR 2세대</span><span class="rate-val">434,000원</span></div>
-                    <div style="font-size:0.72rem;color:#aaa;margin-top:6px;">신규고객 및 기존 시디즈 제품 사용 고객 추가 5% 할인</div>
-                </div>
-                <div class="promo-card-footer">⚡ 오프라인 매장 단독 행사</div>
-            </div>
             <!-- T50 2세대 기존 고객 스테포 쿠폰 -->
             <div class="promo-card" style="--pc-accent:#f59e0b;">
                 <span class="promo-card-icon">🎁</span>
@@ -9028,9 +9016,6 @@ function decodeOptionCode(name) {
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','olly','atti']);
 let stepoT50CouponApplied = false;
 const STEPO_T50_DISCOUNT = 44000; // 54,000 → 10,000원
-let t50OfflineCouponApplied = false;
-// T50 2세대 오프라인 선출시: 419,000→398,050(-20,950) / AIR 434,000→412,300(-21,700)
-const T50_OFFLINE_DISC    = { normal: 20950, air: 21700 };
 
 // ── SPEC SELECTOR STATE ──
 const _currentSpec = {};
@@ -9556,11 +9541,6 @@ function toggleStepoT50Coupon() {
     renderCartItems();
 }
 
-function toggleT50OfflineCoupon() {
-    t50OfflineCouponApplied = !t50OfflineCouponApplied;
-    if (t50OfflineCouponApplied) couponApplied = false;
-    renderCartItems();
-}
 
 function renderCartItems() {
     const el = document.getElementById('cartItems');
@@ -9594,7 +9574,7 @@ function renderCartItems() {
 
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     // T50 오프라인 쿠폰 적용 시 → tier 할인은 T50 제외 나머지 상품에만 적용
-    const tierCart = t50OfflineCouponApplied ? cart.filter(i => i.productId !== 't50gen2') : cart;
+    const tierCart = cart;
     const best = getBestDiscount(tierCart);
     const discAmt = best ? best.amt : 0;
 
@@ -9606,16 +9586,8 @@ function renderCartItems() {
     if (!hasStepoCouponItem) stepoT50CouponApplied = false;
     const stepoDiscAmt = (stepoT50CouponApplied && hasStepoCouponItem) ? STEPO_T50_DISCOUNT : 0;
 
-    // T50 2세대 오프라인 선출시 쿠폰 (t50gen2 담겼을 때만)
     const t50GenItems = cart.filter(i => i.productId === 't50gen2');
-    if (t50GenItems.length === 0) t50OfflineCouponApplied = false;
-    const t50OfflineDiscTotal = t50GenItems.reduce((sum, i) => {
-        const disc = i.variantName && i.variantName.includes('AIR') ? T50_OFFLINE_DISC.air : T50_OFFLINE_DISC.normal;
-        return sum + disc * i.qty;
-    }, 0);
-    const t50OfflineDiscAmt = t50OfflineCouponApplied ? t50OfflineDiscTotal : 0;
-
-    const final = subtotal - discAmt - milDiscAmt - stepoDiscAmt - t50OfflineDiscAmt;
+    const final = subtotal - discAmt - milDiscAmt - stepoDiscAmt;
     const next = getNextTier(subtotal);
 
     // 신규가입 쿠폰 적용 가능 여부
@@ -9629,11 +9601,6 @@ function renderCartItems() {
     const couponDisabled = !hasNonPromo || couponBeaten;
 
     summaryEl.innerHTML = `
-        ${t50GenItems.length > 0 ? `
-        <div class="coupon-toggle" onclick="toggleT50OfflineCoupon()">
-            <span class="coupon-check ${t50OfflineCouponApplied ? 'on' : ''}">${t50OfflineCouponApplied ? '✅' : '☐'}</span>
-            <span>🪑 T50 2세대 오프라인 선출시 쿠폰 <span class="coupon-badge">−${fmt(t50OfflineDiscTotal)}</span></span>
-        </div>` : ''}
         ${hasStepoCouponItem ? `
         <div class="coupon-toggle" onclick="toggleStepoT50Coupon()">
             <span class="coupon-check ${stepoT50CouponApplied ? 'on' : ''}">${stepoT50CouponApplied ? '✅' : '☐'}</span>
@@ -9658,10 +9625,6 @@ function renderCartItems() {
         ${best ? `<div class="cart-summary-row discount">
             <span>할인 (${best.label})</span>
             <span>−${fmt(discAmt)}</span>
-        </div>` : ''}
-        ${t50OfflineDiscAmt > 0 ? `<div class="cart-summary-row discount">
-            <span>🪑 T50 2세대 오프라인 선출시 쿠폰</span>
-            <span>−${fmt(t50OfflineDiscAmt)}</span>
         </div>` : ''}
         ${stepoDiscAmt > 0 ? `<div class="cart-summary-row discount">
             <span>🪑 T50 2세대 기존고객 쿠폰</span>
