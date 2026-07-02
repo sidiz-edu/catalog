@@ -3858,18 +3858,6 @@
                 </div>
                 <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
             </div>
-            <!-- 군인/소방관/경찰 -->
-            <div class="promo-card" style="--pc-accent:#ef4444;">
-                <span class="promo-card-icon">🎖️</span>
-                <div class="promo-card-series">스테포 · 이지리페어 · 6월 신규</div>
-                <div class="promo-card-name">군인/소방관/경찰 쿠폰</div>
-                <div class="promo-card-desc">
-                    인증 완료 후 장바구니에서 선택<br>
-                    <div class="promo-rate-row"><span class="rate-label">스테포</span><span class="rate-val" style="background:#ef4444;">−5,000원</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">이지리페어</span><span class="rate-val" style="background:#ef4444;">−2,000원</span></div>
-                </div>
-                <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
-            </div>
             <!-- 6월 행사 -->
             <div class="promo-card" id="promoBaseDiscount" style="--pc-accent:#3b82f6;">
                 <span class="promo-card-icon">📦</span>
@@ -9016,12 +9004,6 @@ function decodeOptionCode(name) {
 
 // ── 쿠폰 적용 불가 항목 ──
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','olly','atti']);
-// 군인/소방관/경찰 쿠폰 대상 (스테포 5,000원 / 이지리페어 2,000원)
-const MILITARY_STEPO   = new Set(['stepo']);
-const MILITARY_REPAIR  = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','seatBreakA','seatBreakB','glideA','glideB','hangerT50','hangerT60','hangerGX','armpadT20Tot','spray','pbag','t60Seat','t60AirSeat','t60Armpad','t60Headrest','ringo2Footrest','ringo2Seat','ringo2Back','t20Headrest','t20Seat','t50Seat','t50FixedArm','t55Armpad','attiBlock','ringo1Footrest','ringo1Lever','castorUreA','castorUreB','t20OldArm','t50AdjArm','t80Armpad','t80Seat','t20OldHeadrest','t50Headrest','t80Headrest','ringo1Seat','ringo1Back','moltiLeg','moltiInnerSeat']);
-const MILITARY_STEPO_AMT  = 5000;
-const MILITARY_REPAIR_AMT = 2000;
-let militaryCouponApplied = false;
 let stepoT50CouponApplied = false;
 const STEPO_T50_DISCOUNT = 44000; // 54,000 → 10,000원
 let t50OfflineCouponApplied = false;
@@ -9270,10 +9252,7 @@ function showDetail(productId) {
     // 쿠폰 UI
     const basePrice = variantData[productId] ? variantData[productId][0].price : null;
     const couponUi = '';
-    const militaryUi = (MILITARY_STEPO.has(productId) || MILITARY_REPAIR.has(productId)) && basePrice ? `
-        <div class="detail-coupon-row">
-            <span class="coupon-tag">🎖️ 군인/소방관/경찰 쿠폰 -${MILITARY_STEPO.has(productId) ? '5,000' : '2,000'}원</span>
-        </div>` : '';
+    const militaryUi = '';
 
     document.getElementById('detailContent').innerHTML = `
         <div class="detail-img" id="detailMainImg" style="background-image: url('${p.img}'); background-color: #eef2f7;">
@@ -9545,19 +9524,13 @@ function updateCartBadge() {
 
 function toggleCoupon() {
     couponApplied = !couponApplied;
-    if (couponApplied) militaryCouponApplied = false;  // 신규가입 쿠폰 선택 시 군인쿠폰 해제
     renderCartItems();
 }
 
-function toggleMilitaryCoupon() {
-    militaryCouponApplied = !militaryCouponApplied;
-    if (militaryCouponApplied) { couponApplied = false; stepoT50CouponApplied = false; }
-    renderCartItems();
-}
 
 function toggleStepoT50Coupon() {
     stepoT50CouponApplied = !stepoT50CouponApplied;
-    if (stepoT50CouponApplied) { couponApplied = false; militaryCouponApplied = false; }
+    if (stepoT50CouponApplied) { couponApplied = false; }
     renderCartItems();
 }
 
@@ -9603,14 +9576,8 @@ function renderCartItems() {
     const best = getBestDiscount(tierCart);
     const discAmt = best ? best.amt : 0;
 
-    // 군인/소방관/경찰 쿠폰 — 스테포·이지리페어 품목에만 별도 적용
-    const milCartAmt = (() => {
-        let amt = 0;
-        if (cart.some(i => MILITARY_STEPO.has(i.productId)))  amt += MILITARY_STEPO_AMT;
-        if (cart.some(i => MILITARY_REPAIR.has(i.productId))) amt += MILITARY_REPAIR_AMT;
-        return amt;
-    })();
-    const milDiscAmt = (militaryCouponApplied && milCartAmt > 0) ? milCartAmt : 0;
+    const milCartAmt = 0;
+    const milDiscAmt = 0;
 
     // T50 2세대 기존고객 스테포 쿠폰 (스테포 담겼을 때만)
     const hasStepoCouponItem = cart.some(i => i.productId === 'stepo');
@@ -9631,8 +9598,6 @@ function renderCartItems() {
 
     // 신규가입 쿠폰 적용 가능 여부
     const hasNonPromo = cart.some(i => !COUPON_NEVER.has(i.productId));
-    const hasMilItems = milCartAmt > 0;
-    const milBadge = hasMilItems ? `−${fmt(milCartAmt)}` : '스테포 −5,000 / 이지리페어 −2,000';
 
     // 쿠폰보다 더 큰 할인(tier/group)이 이미 있으면 쿠폰 비활성
     const { candidates: allCandidates } = getAllDiscountCandidates(cart);
@@ -9665,21 +9630,12 @@ function renderCartItems() {
                 <span>신규가입 쿠폰 적용 <span class="coupon-badge">−5,000원</span></span>
             </div>`;
         })() : ''}
-        <div class="coupon-toggle ${hasMilItems ? '' : 'disabled'}" onclick="${hasMilItems ? 'toggleMilitaryCoupon()' : ''}">
-            <span class="coupon-check ${militaryCouponApplied && hasMilItems ? 'on' : ''}">${militaryCouponApplied && hasMilItems ? '✅' : '☐'}</span>
-            <span>🎖️ 군인/소방관/경찰 쿠폰 <span class="coupon-badge">${milBadge}</span></span>
-            ${!hasMilItems ? '<span style="font-size:0.75rem;color:#aaa;margin-left:4px">(스테포·이지리페어 담기 시 적용)</span>' : ''}
-        </div>
         <div class="cart-summary-row">
             <span>소계</span><span>${fmt(subtotal)}</span>
         </div>
         ${best ? `<div class="cart-summary-row discount">
             <span>할인 (${best.label})</span>
             <span>−${fmt(discAmt)}</span>
-        </div>` : ''}
-        ${milDiscAmt > 0 ? `<div class="cart-summary-row discount">
-            <span>🎖️ 군인/소방관/경찰 쿠폰</span>
-            <span>−${fmt(milDiscAmt)}</span>
         </div>` : ''}
         ${t50OfflineDiscAmt > 0 ? `<div class="cart-summary-row discount">
             <span>🪑 T50 2세대 오프라인 선출시 쿠폰</span>
