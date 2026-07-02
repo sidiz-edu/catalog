@@ -3823,6 +3823,18 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
+            <!-- T50 2세대 오프라인 선출시 (07.05까지 노출) -->
+            <div class="promo-card" id="promoT50Offline" style="--pc-accent:#0D3BFF;">
+                <span class="promo-card-icon">🪑</span>
+                <div class="promo-card-series">T50 2세대 · 오프라인 단독 · 06.19~07.05</div>
+                <div class="promo-card-name">T50 2세대 오프라인 선출시</div>
+                <div class="promo-card-desc">
+                    <div class="promo-rate-row"><span class="rate-label">T50 2세대</span><span class="rate-val">419,000원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T50 AIR 2세대</span><span class="rate-val">434,000원</span></div>
+                    <div style="font-size:0.72rem;color:#aaa;margin-top:6px;">신규고객 및 기존 시디즈 제품 사용 고객 추가 5% 할인</div>
+                </div>
+                <div class="promo-card-footer">⚡ 오프라인 매장 단독 행사</div>
+            </div>
             <!-- T50 2세대 기존 고객 스테포 쿠폰 -->
             <div class="promo-card" style="--pc-accent:#f59e0b;">
                 <span class="promo-card-icon">🎁</span>
@@ -5864,6 +5876,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (new Date() >= new Date('2026-07-06')) {
         const t50c = document.getElementById('promoT50Challenge');
         if (t50c) t50c.style.display = '';
+        const t50off = document.getElementById('promoT50Offline');
+        if (t50off) t50off.style.display = 'none';
     }
     applyStoredEdits();
     initComparePicker();
