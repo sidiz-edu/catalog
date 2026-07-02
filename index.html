@@ -3858,6 +3858,24 @@
                 </div>
                 <div class="promo-card-footer">📌 장바구니에서 적용 가능</div>
             </div>
+            <!-- T50 챌린지 (7월 6일부터 노출) -->
+            <div class="promo-card" id="promoT50Challenge" style="display:none; --pc-accent:#f59e0b;">
+                <span class="promo-card-icon">🏆</span>
+                <div class="promo-card-series">T50 2세대 · 7월 챌린지</div>
+                <div class="promo-card-name">T50 챌린지</div>
+                <div class="promo-card-desc">
+                    7일간 매일 다른 테마 후기 작성<br>
+                    <div style="font-size:0.74rem;color:#d97706;font-weight:700;margin:8px 0 4px;">🎁 네이버 포인트 리워드</div>
+                    <div class="promo-rate-row"><span class="rate-label">1개 게시글</span><span class="rate-val" style="background:#f59e0b;">3만원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">4개 게시글</span><span class="rate-val" style="background:#f59e0b;">5만원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">7개 게시글</span><span class="rate-val" style="background:#f59e0b;">10만원</span></div>
+                    <div style="font-size:0.72rem;color:#9ca3af;margin-top:8px;line-height:1.5;">
+                        1일 체험기 · 2일 좌판호환 · 3일 레이싱행사<br>
+                        4일 헤리티지필름 · 5일 기능소개 · 6일 일상공유 · 7일 비교후기
+                    </div>
+                </div>
+                <div class="promo-card-footer">📌 SE에게 참여 방법 문의</div>
+            </div>
             <!-- 7월 행사 -->
             <div class="promo-card" id="promoBaseDiscount" style="--pc-accent:#3b82f6;">
                 <span class="promo-card-icon">📦</span>
@@ -5854,6 +5872,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!_baseDiscountActive) {
         const el = document.getElementById('promoBaseDiscount');
         if (el) el.style.display = 'none';
+    }
+    if (new Date() >= new Date('2026-07-06')) {
+        const t50c = document.getElementById('promoT50Challenge');
+        if (t50c) t50c.style.display = '';
     }
     applyStoredEdits();
     initComparePicker();
