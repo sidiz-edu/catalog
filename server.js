@@ -9,7 +9,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  options: '-c search_path=app_260610_ba2g',
 });
 
 const q = (sql, params) => pool.query(sql, params);
