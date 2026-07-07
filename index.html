@@ -8146,7 +8146,7 @@ const products = {
         name: 'ATTI',
         tagline: '아이와 함께 자라는 책상·의자 세트',
         desc: '초등학생을 위한 성장형 의자와 책상 세트입니다. 아띠 의자와 아띠 책상을 함께 구매하면 세트 할인 혜택을 받을 수 있습니다. 높이 조절 기능으로 아이의 성장에 맞춰 오래 사용할 수 있습니다.',
-        price: '69,000원',
+        price: '73,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_atti_A441P_00_587b38d9-e6a7-4e35-a56a-08ef9308307e.jpg',
         features: [
             { icon: '📏', title: '높이 조절', desc: '아이의 성장에 맞춰 의자와 책상 높이를 조절할 수 있습니다.' },
@@ -9440,8 +9440,10 @@ function showDetail(productId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 첫 색상 가격 자동 활성화
-    if (colors.length > 0 && colors[0]?.price) {
+    // 초기 가격 활성화
+    if (specs) {
+        switchDetailSpec(productId, initSpecIdx);
+    } else if (colors.length > 0 && colors[0]?.price) {
         switchDetailColor(productId, 0);
     }
 }
