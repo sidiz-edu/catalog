@@ -9439,6 +9439,11 @@ function showDetail(productId) {
         document.querySelector('.header-nav a:first-child').classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // 첫 색상 가격 자동 활성화
+    if (colors.length > 0 && colors[0]?.price) {
+        switchDetailColor(productId, 0);
+    }
 }
 
 // ── CART ──
