@@ -3889,31 +3889,6 @@
                 </div>
                 <div class="promo-card-footer">⚡ 주문 금액 기준 자동 적용</div>
             </div>
-            <!-- LIVING DINING -->
-            <div class="promo-card" style="--pc-accent:#ff6b52;">
-                <span class="promo-card-icon">🏡</span>
-                <div class="promo-card-series">LIVING DINING 🆕</div>
-                <div class="promo-card-name">리빙다이닝 수량 할인</div>
-                <div class="promo-card-desc">
-                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">트레보 · 위 바스툴 · 마네 · 플릿</div>
-                    <div class="promo-rate-row"><span class="rate-label">1개</span><span class="rate-val" style="background:#ccc;">-</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">2~3개</span><span class="rate-val">5%</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">4개 이상</span><span class="rate-val">10%</span></div>
-                </div>
-                <div class="promo-card-footer">⚡ 수량 기준 자동 적용</div>
-            </div>
-            <!-- HOME OFFICE -->
-            <div class="promo-card" style="--pc-accent:#06b6d4;">
-                <span class="promo-card-icon">💼</span>
-                <div class="promo-card-series">HOME OFFICE 🆕</div>
-                <div class="promo-card-name">홈오피스 수량 할인</div>
-                <div class="promo-card-desc">
-                    <div style="font-size:0.74rem;color:#aaa;margin-bottom:8px;">에가 · 버튼 · 리니에 · 뮤브</div>
-                    <div class="promo-rate-row"><span class="rate-label">1개</span><span class="rate-val" style="background:#06b6d4;">3%</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">2개 이상</span><span class="rate-val" style="background:#06b6d4;">5%</span></div>
-                </div>
-                <div class="promo-card-footer">⚡ 수량 기준 자동 적용</div>
-            </div>
             <!-- 혜택 더하기 -->
             <div class="promo-card" style="--pc-accent:#8b5cf6;">
                 <span class="promo-card-icon">💎</span>
@@ -7111,23 +7086,6 @@ const DISCOUNT_TIERS = [
 
 // 그룹별 수량 프로모션 (예쁜 의자도 시디즈 + 세트 할인)
 const GROUP_PROMOS = {
-    homeOffice: {
-        ids: ['muuve', 'ega', 'button', 'linie'],
-        label: 'HOME OFFICE',
-        tiers: [
-            { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
-            { minQty: 1, rate: 0.03, desc: '1개 3%' },
-        ]
-    },
-    livingDining: {
-        ids: ['trevo', 'oui', 'mane', 'plit'],
-        label: 'LIVING DINING',
-        tiers: [
-            { minQty: 4, rate: 0.10, desc: '4개 이상 10%' },
-            { minQty: 2, rate: 0.05, desc: '2개 이상 5%' },
-            // 1개는 할인 없음 (trevoSet 단독 할인과 분리)
-        ]
-    },
     attiSet: {
         ids: ['atti'],
         label: '아띠 세트 할인',
