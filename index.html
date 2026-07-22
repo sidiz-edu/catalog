@@ -10113,12 +10113,15 @@ async function _doPrintQuote(customerName, storeName, staffName, insertToDB = tr
 </body>
 </html>`;
 
-    const blob = new Blob([html], { type: 'text/html' });
-    const blobUrl = URL.createObjectURL(blob);
     const iframe = document.getElementById('quotePreviewIframe');
-    if (iframe._blobUrl) URL.revokeObjectURL(iframe._blobUrl);
-    iframe._blobUrl = blobUrl;
-    iframe.src = blobUrl;
+    if (iframe._blobUrl) { URL.revokeObjectURL(iframe._blobUrl); iframe._blobUrl = null; }
+    iframe.src = 'about:blank';
+    iframe._htmlContent = html;
+    iframe.onload = function() {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open(); doc.write(html); doc.close();
+        iframe.onload = null;
+    };
     document.getElementById('quoteSharePanel').classList.remove('open');
     document.getElementById('quotePreviewModal').classList.add('open');
     const isSharedView = !insertToDB;
