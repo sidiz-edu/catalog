@@ -3836,18 +3836,6 @@
                 </div>
                 <div class="promo-card-footer">⚡ 오프라인 매장 단독 행사</div>
             </div>
-            <!-- T50 2세대 기존 고객 스테포 쿠폰 -->
-            <div class="promo-card" style="--pc-accent:#f59e0b;">
-                <span class="promo-card-icon">🎁</span>
-                <div class="promo-card-series">시디즈 기존 고객 한정 · T50 2세대 구매 시</div>
-                <div class="promo-card-name">스테포 발받침대 쿠폰</div>
-                <div class="promo-card-desc">
-                    <div class="promo-rate-row"><span class="rate-label">스테포</span><span class="rate-val" style="background:#f59e0b;">10,000원</span></div>
-                    <div style="font-size:0.72rem;color:#aaa;margin-top:6px;"><s>정상가 54,000원</s></div>
-                    <div style="font-size:0.72rem;color:#aaa;margin-top:2px;">정품 등록 내역 인증 후 쿠폰 발급</div>
-                </div>
-                <div class="promo-card-footer">📌 장바구니에서 쿠폰 코드 적용</div>
-            </div>
             <!-- 신규가입 -->
             <div class="promo-card" style="--pc-accent:#10b981;">
                 <span class="promo-card-icon">🎁</span>
@@ -4205,7 +4193,7 @@
             <div class="product-card-body">
                 <h3>FUNGUS</h3>
                 <div class="subtitle">골반 교정 싯부스터</div>
-                <p>기존 의자 위에 올려 사용하는 자세교정 방석. 골반을 앞으로 기울여 허리 곡선을 자연스럽게 만들어 줍니다.</p>
+                <p>의자 좌판에 올려 사용하는 자세교정 방석. 골반을 앞으로 기울여 허리 곡선을 자연스럽게 만들어 줍니다.</p>
                 <div class="price">119,000원<span>부터</span></div>
             </div>
         </div>
@@ -8019,7 +8007,7 @@ const products = {
     fungus: {
         name: 'FUNGUS',
         tagline: '앉는 자세를 바로잡는 싯부스터',
-        desc: '장시간 앉아 있을 때 허리와 골반을 올바른 위치로 유지시켜 주는 시디즈의 대표 싯부스터입니다. 기존 의자 위에 올려 사용하며, 바퀴형과 고정형 중 선택 가능합니다.',
+        desc: '장시간 앉아 있을 때 허리와 골반을 올바른 위치로 유지시켜 주는 시디즈의 대표 싯부스터입니다. 의자 좌판에 올려 사용하며, 바퀴형과 고정형 중 선택 가능합니다.',
         price: '119,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_FUNGUS_M130_454_00_acd68f3f-2563-4ad1-8018-ca7d0a102264.jpg',
         features: [
@@ -8983,16 +8971,6 @@ function renderPromoResult() {
                     <span class="ev-result-pct">-${pct}%</span>
                 </div>
             </div>
-            ${d.bonus ? `
-            <div class="ev-result-bonus">
-                <span class="ev-bonus-icon">🎁</span>
-                <div>
-                    <div class="ev-bonus-title">스테포 발받침대 쿠폰</div>
-                    <div class="ev-bonus-price"><s>54,000원</s> → <b>10,000원</b></div>
-                    <div class="ev-bonus-note">정품 등록 내역 인증 후 쿠폰 발급</div>
-                    <div class="ev-bonus-note" style="margin-top:4px;">📌 장바구니에서 쿠폰 코드 적용</div>
-                </div>
-            </div>` : ''}
             <div class="ev-result-note">* 오프라인 단독 행사 · T50 2세대 구매 고객 한정</div>
         </div>
     `;
@@ -9022,8 +9000,6 @@ function decodeOptionCode(name) {
 
 // ── 쿠폰 적용 불가 항목 ──
 const COUPON_NEVER = new Set(['coverTrevo','coverRingo2','coverRingo1','coverT50Air','coverT60Air','coverPlit','spray','pbag','olly','atti']);
-let stepoT50CouponApplied = false;
-const STEPO_T50_DISCOUNT = 44000; // 54,000 → 10,000원
 
 // ── SPEC SELECTOR STATE ──
 const _currentSpec = {};
@@ -9068,7 +9044,7 @@ function switchDetailColor(productId, idx) {
         const specName = (productSpecGroups[productId] && specIdx !== undefined)
             ? productSpecGroups[productId][specIdx]?.name : null;
         const variantLabel = specName ? `${specName} — ${c.name}` : c.name;
-        const usePrice = c.price || variantData[productId]?.[0]?.price || 0;
+        const usePrice = c.price || _currentDetailPrice || variantData[productId]?.[0]?.price || 0;
         colorCartBtn.style.display = 'inline-flex';
         colorCartBtn.onclick = () => addToCart(productId, variantLabel, usePrice);
     }
@@ -9550,11 +9526,6 @@ function toggleCoupon() {
 }
 
 
-function toggleStepoT50Coupon() {
-    stepoT50CouponApplied = !stepoT50CouponApplied;
-    if (stepoT50CouponApplied) { couponApplied = false; }
-    renderCartItems();
-}
 
 
 function renderCartItems() {
@@ -9596,13 +9567,7 @@ function renderCartItems() {
     const milCartAmt = 0;
     const milDiscAmt = 0;
 
-    // T50 2세대 기존고객 스테포 쿠폰 (스테포 담겼을 때만)
-    const hasStepoCouponItem = cart.some(i => i.productId === 'stepo');
-    if (!hasStepoCouponItem) stepoT50CouponApplied = false;
-    const stepoDiscAmt = (stepoT50CouponApplied && hasStepoCouponItem) ? STEPO_T50_DISCOUNT : 0;
-
-    const t50GenItems = cart.filter(i => i.productId === 't50gen2');
-    const final = subtotal - discAmt - milDiscAmt - stepoDiscAmt;
+    const final = subtotal - discAmt - milDiscAmt;
     const next = getNextTier(subtotal);
 
     // 신규가입 쿠폰 적용 가능 여부
@@ -9616,11 +9581,6 @@ function renderCartItems() {
     const couponDisabled = !hasNonPromo || couponBeaten;
 
     summaryEl.innerHTML = `
-        ${hasStepoCouponItem ? `
-        <div class="coupon-toggle" onclick="toggleStepoT50Coupon()">
-            <span class="coupon-check ${stepoT50CouponApplied ? 'on' : ''}">${stepoT50CouponApplied ? '✅' : '☐'}</span>
-            <span>🪑 T50 2세대 기존고객 쿠폰 <span class="coupon-badge">−${fmt(STEPO_T50_DISCOUNT)}</span></span>
-        </div>` : ''}
         ${hasNonPromo ? (() => {
             if (couponBeaten) {
                 return `<div class="coupon-toggle disabled">
@@ -9640,10 +9600,6 @@ function renderCartItems() {
         ${best ? `<div class="cart-summary-row discount">
             <span>할인 (${best.label})</span>
             <span>−${fmt(discAmt)}</span>
-        </div>` : ''}
-        ${stepoDiscAmt > 0 ? `<div class="cart-summary-row discount">
-            <span>🪑 T50 2세대 기존고객 쿠폰</span>
-            <span>−${fmt(stepoDiscAmt)}</span>
         </div>` : ''}
         <div class="cart-summary-row total">
             <span>최종 금액</span><span>${fmt(final)}</span>
@@ -9991,14 +9947,19 @@ function closePrintModal(e) {
     if (e && e.target !== document.getElementById('printModalOverlay')) return;
     document.getElementById('printModalOverlay').classList.remove('open');
 }
+let _lastStoreName = '';
+let _lastStaffName = '';
+
 function confirmPrintQuote() {
     const customerName = document.getElementById('pmCustomer').value.trim();
     const storeName    = document.getElementById('pmStore').value;
     const staffName    = document.getElementById('pmStaff').value.trim();
+    _lastStoreName = storeName;
+    _lastStaffName = staffName;
     document.getElementById('printModalOverlay').classList.remove('open');
     _doPrintQuote(customerName, storeName, staffName);
 }
-async function _doPrintQuote(customerName, storeName, staffName) {
+async function _doPrintQuote(customerName, storeName, staffName, insertToDB = true) {
     const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
     const quoteNo = 'SQ-' + Date.now().toString().slice(-8);
 
@@ -10008,16 +9969,18 @@ async function _doPrintQuote(customerName, storeName, staffName) {
     const final = subtotal - discAmt;
     const { candidates: discCandidates } = getAllDiscountCandidates(cart);  // 표시용 전체 후보
 
-    _sb.from('quotes').insert({
-        quote_no: quoteNo,
-        store_name: storeName || null,
-        staff_name: staffName || null,
-        items: cart.map(i => ({ name: i.name, variantName: i.variantName, price: i.price, qty: i.qty })),
-        subtotal,
-        discount_amt: discAmt,
-        discount_label: best ? best.label : null,
-        total_amt: final,
-    }).then(({ error }) => { if (error) console.warn('견적 저장 실패', error); });
+    if (insertToDB) {
+        _sb.from('quotes').insert({
+            quote_no: quoteNo,
+            store_name: storeName || null,
+            staff_name: staffName || null,
+            items: cart.map(i => ({ name: i.name, variantName: i.variantName, price: i.price, qty: i.qty })),
+            subtotal,
+            discount_amt: discAmt,
+            discount_label: best ? best.label : null,
+            total_amt: final,
+        }).then(({ error }) => { if (error) console.warn('견적 저장 실패', error); });
+    }
 
     const f = n => n.toLocaleString('ko-KR') + '원';
 
@@ -10178,8 +10141,8 @@ function toggleQuoteShare() {
     if (isOpen) { panel.classList.remove('open'); return; }
 
     const payload = cart.map(i => ({ pid: i.productId, vn: i.variantName, p: i.price, q: i.qty }));
-    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
-    const url = `${location.origin}${location.pathname}?cart=${encoded}`;
+    const encoded = btoa(encodeURIComponent(JSON.stringify({ items: payload, meta: { store: _lastStoreName, staff: _lastStaffName } })));
+    const url = `${location.origin}${location.pathname}?cart=${encoded}&quote=1`;
 
     document.getElementById('quoteShareUrlBox').textContent = url;
     const qrDiv = document.getElementById('quoteShareQr');
@@ -10202,7 +10165,10 @@ function loadCartFromUrl() {
         const params = new URLSearchParams(location.search);
         const encoded = params.get('cart');
         if (!encoded) return;
-        const payload = JSON.parse(decodeURIComponent(atob(encoded)));
+        const showQuote = params.get('quote') === '1';
+        const raw = JSON.parse(decodeURIComponent(atob(encoded)));
+        const payload = Array.isArray(raw) ? raw : raw.items;
+        const meta = Array.isArray(raw) ? {} : (raw.meta || {});
         if (!Array.isArray(payload)) return;
         cart = [];
         cartIdCounter = 0;
@@ -10218,9 +10184,14 @@ function loadCartFromUrl() {
         });
         updateCartBadge();
         renderCartItems();
-        if (cart.length) openCart();
-        // URL 파라미터 제거 (뒤로가기 UX 개선)
         history.replaceState(null, '', location.pathname);
+        if (cart.length) {
+            if (showQuote) {
+                setTimeout(() => _doPrintQuote('', meta.store || '', meta.staff || '', false), 300);
+            } else {
+                openCart();
+            }
+        }
     } catch(e) { /* 잘못된 링크 무시 */ }
 }
 
