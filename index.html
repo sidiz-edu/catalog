@@ -10121,6 +10121,9 @@ async function _doPrintQuote(customerName, storeName, staffName, insertToDB = tr
     iframe.src = blobUrl;
     document.getElementById('quoteSharePanel').classList.remove('open');
     document.getElementById('quotePreviewModal').classList.add('open');
+    const isSharedView = !insertToDB;
+    document.querySelector('#quotePreviewModal .quote-preview-btn.accent').style.display = isSharedView ? 'none' : '';
+    document.getElementById('quoteShareToggleBtn').style.display = isSharedView ? 'none' : '';
 }
 
 function closeQuotePreview() {
