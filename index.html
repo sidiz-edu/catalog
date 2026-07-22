@@ -10148,7 +10148,7 @@ function toggleQuoteShare() {
 
     const payload = cart.map(i => ({ pid: i.productId, vn: i.variantName, p: i.price, q: i.qty }));
     const encoded = btoa(encodeURIComponent(JSON.stringify({ items: payload, meta: { store: _lastStoreName, staff: _lastStaffName } })));
-    const url = `${location.origin}${location.pathname}?cart=${encoded}&quote=1`;
+    const url = `https://sidiz-edu.github.io/catalog/?cart=${encoded}&quote=1`;
 
     document.getElementById('quoteShareUrlBox').textContent = url;
     const qrDiv = document.getElementById('quoteShareQr');
