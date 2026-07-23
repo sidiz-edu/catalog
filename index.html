@@ -7365,23 +7365,49 @@ const productAccessories = {
     atti:  ['pbag'],
 };
 
+// ── 색상별 제품 코드 (productColors 인덱스와 1:1 대응) ──
+const productSkus = {
+    t50:    ['T50HLDA0VK-451MWW','T50HLDA0VK-457BWW','T50HLDA0VK-452MWW','T50HLDA0VK-458DWW','T50HLDA0VK-451MBK','T50HLDA0VK-456BK','T50HLDA0VK-457BBK'],
+    t60:    ['T61HLDAM0KK-5G1BWW','T61HLDAM0KK-5G1CSG','T61HLDAM0KK-5G1DIG','T61LDAM0KK-5G1BWW'],
+    t80:    ['T80HLDA1KK-456BK','T80HLDA1KK-451NWW','T80HLDA1KK-L846BK','T80HLDA1KK-L841LW','T80HLDA1KK-L846CR','T80HLDA1KK-L841LC'],
+    t90:    ['T90HLDA2KK-4B1LMN','T90HLDA2KK-4B6BKM','T90HLDA2KK-9I2MNI','T90HLDA2KK-9I7BKM','T90HLDA2KK-L941AC','T90HLDA2KK-L945AC','T90HLDA2KK-L738AC','T90HLDA2KK-L735LC','T90HLDA2KK-L744AC','T90HLDA2KK-L734CR','T90HLDA2KK-L734AC'],
+    t20:    ['T21HF2VG-5G1WW','T21HF2VG-5G1CWW','T21HF2VG-5G6AIG',''],
+    linie:  ['TXNA250NF-451M','TXNA250NF-452N','TXNA250NF-457L','T250NF-456','TXNA250F-451M','TXNA250F-452N','TXNA250F-457L','T250F-456'],
+    gcpro:  ['G10HDAWJ2KK-A446BK','G10HDAWJ2KK-A441QW','G10HDA2CC2-TOT7A'],
+    gx:     ['G20HDA2KK-CN9WW','G20HDA2KK-CN9BK','G20HDA2KK-4D1BWW','G20HDA2KK-4D6BK'],
+    ible:   ['S60FEGU0KK-451MWW','S60FEGU0KK-452NWW','S60FEGU0KK-456BK','S60SFU0KK-451MWW','S60SFU0KK-452NWW','S60SFU0KK-456BK'],
+    ringo2: ['S51ACF1VG-A442BW','S51ACF1VG-A447BW','S51ACF1VG-A443BW'],
+    trevo:  ['S40DNE0KK-WW','S40DNE0KK-DSP','S40DNE0KK-DSG'],
+    muuve:  ['L10SU0KK-5F1G','L10SU0KK-5F1ALG','L10SG0KK-5F1G','L10SG0KK-5F1ALG'],
+    ega:    ['TN603FY-452N','TN603FY-451M','TN603FY-457L','TN603FY-458D','TN603FY-A490L'],
+    button: ['MN803G-BK','M803G-WW','M803G-831','MN803G-371','MN803G-452'],
+    mane:   ['M071E-A845AC','MN021E-IBLWW','MN021E-MGNWW','MN021E-RPKWW','MN021E-WWWWL'],
+    plit:   ['N10E0KK-5F2BG','N10E0KK-5F1WW'],
+    oui:    ['M171EZ-BW','M171EZ-371LBW','M171EZ-452BW','MN171EZ-BW','MN171EZ-371LBW','MN171EZ-452BW'],
+    fungus: ['M130-454','M130-456','M130-458','MN130-451L','MN130-454B','MN130-457L','MN130YCC4-TOT'],
+    stepo:  ['SB01F1-3D1','SB01F1-3D2','SB01F1-3D7','SB01F-MM'],
+    pillo:  ['M090-831A','M090-832','M090-838','M090-838B'],
+    olly:   ['',''],
+    atti:   ['K30F1KG-A441P','K30F1KG-A443S','K30F1KG-A444D'],
+};
+
 // ── T50/T60/GC PRO 스펙 그룹 데이터 ──
 const productSpecGroups = {
     molti: [
         {
             name: '하이체어', price: 279000,
             colors: [
-                { name: '소이밀크',     code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A441P_00.jpg' },
-                { name: '코랄핑크',     code: '#e89090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A443R_00.jpg' },
-                { name: '아보카도그린', code: '#788a60', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A447Q_00.jpg' },
+                { name: '소이밀크',     code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A441P_00.jpg', sku: 'K50HC0KG-A441P' },
+                { name: '코랄핑크',     code: '#e89090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A443R_00.jpg', sku: 'K50HC0KG-A443R' },
+                { name: '아보카도그린', code: '#788a60', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A447Q_00.jpg', sku: 'K50HC0KG-A447Q' },
             ]
         },
         {
             name: '헬로베이비세트', price: 399000,
             colors: [
-                { name: '소이밀크',     code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A441P_00.jpg' },
-                { name: '코랄핑크',     code: '#e89090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A443R_00.jpg' },
-                { name: '아보카도그린', code: '#788a60', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A447Q_00.jpg' },
+                { name: '소이밀크',     code: '#f0e8d8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A441P_00.jpg', sku: 'K50HB0KG-A441P' },
+                { name: '코랄핑크',     code: '#e89090', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A443R_00.jpg', sku: 'K50HB0KG-A443R' },
+                { name: '아보카도그린', code: '#788a60', img: 'https://kr.sidiz.com/cdn/shop/files/thum_molti_K50HB0KG_A447Q_00.jpg', sku: 'K50HB0KG-A447Q' },
             ]
         },
     ],
@@ -9006,6 +9032,7 @@ const _currentSpec = {};
 const _currentSpecColors = {};
 
 let _currentDetailPrice = null;   // 현재 선택된 가격 추적
+let _currentDetailSku   = '';     // 현재 선택된 제품 코드 추적
 
 // ── DETAIL COLOR SWITCH ──
 function switchDetailColor(productId, idx) {
@@ -9037,10 +9064,15 @@ function switchDetailColor(productId, idx) {
         priceWrap?.classList.remove('detail-price-active');
         // 스펙 기반 제품은 spec.price가 _currentDetailPrice에 이미 세팅됨
     }
+    // SKU 업데이트
+    const specIdx = _currentSpec[productId];
+    const specColors = productSpecGroups[productId]?.[specIdx]?.colors;
+    _currentDetailSku = c.sku || (specColors ? (specColors[idx]?.sku || '') : (productSkus[productId]?.[idx] || ''));
+    const skuEl = document.getElementById('detailSkuDisplay');
+    if (skuEl) skuEl.textContent = _currentDetailSku;
     // 색상 담기 버튼 업데이트
     const colorCartBtn = document.getElementById('detailColorCartBtn');
     if (colorCartBtn) {
-        const specIdx = _currentSpec[productId];
         const specName = (productSpecGroups[productId] && specIdx !== undefined)
             ? productSpecGroups[productId][specIdx]?.name : null;
         const variantLabel = specName ? `${specName} — ${c.name}` : c.name;
@@ -9255,6 +9287,7 @@ function showDetail(productId) {
             <div class="desc">${p.desc}</div>
             <div class="price-tag">
                 <span id="detailColorPrice" style="display:none"></span>
+                <div id="detailSkuDisplay" style="font-size:0.72rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.5px;margin-top:2px;display:block;"></div>
                 <span id="detailBasePrice">${(() => {
                     const vd = variantData[productId];
                     let cpHtml = '';
@@ -9490,7 +9523,7 @@ function addToCart(productId, variantName, price) {
         const vdList = variantData[productId] || [];
         const vd = vdList.find(v => v.name === variantName) || vdList.find(v => v.price === price);
         const comparePrice = vd?.comparePrice || null;
-        cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, comparePrice, qty: 1 });
+        cart.push({ id: cartIdCounter++, productId, name: p.name, variantName, price, comparePrice, sku: _currentDetailSku, qty: 1 });
     }
     updateCartBadge();
     renderCartItems();
@@ -9547,6 +9580,7 @@ function renderCartItems() {
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-variant">${item.variantName}</div>
+                ${item.sku ? `<div style="font-size:0.7rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.3px;">${item.sku}</div>` : ''}
                 <div class="cart-item-price">${fmt(item.price * item.qty)}</div>
             </div>
             <div class="cart-item-actions">
@@ -9988,7 +10022,7 @@ async function _doPrintQuote(customerName, storeName, staffName, insertToDB = tr
     const rowsHtml = cart.map((item, idx) => `
         <tr>
             <td class="tc">${idx + 1}</td>
-            <td>${item.name}<br><span class="sub">${item.variantName}</span>${decodeOptionCode(item.variantName) ? `<span style="font-size:10px;color:#9ca3af;display:block;margin-top:2px;">${decodeOptionCode(item.variantName)}</span>` : ''}</td>
+            <td>${item.name}<br><span class="sub">${item.variantName}</span>${decodeOptionCode(item.variantName) ? `<span style="font-size:10px;color:#9ca3af;display:block;margin-top:2px;">${decodeOptionCode(item.variantName)}</span>` : ''}${item.sku ? `<span style="font-size:10px;color:#0D3BFF;font-family:monospace;display:block;margin-top:1px;letter-spacing:0.3px;">${item.sku}</span>` : ''}</td>
             <td class="tr" style="font-size:11px;">${item.comparePrice ? (item.comparePrice > item.price ? `<span style="color:#9ca3af;text-decoration:line-through;">${f(item.comparePrice)}</span>` : f(item.comparePrice)) : '—'}</td>
             <td class="tr">${f(item.price)}</td>
             <td class="tc">${item.qty}</td>
