@@ -9170,7 +9170,6 @@ function switchDetailSpec(productId, specIdx) {
 
     // 가격 업데이트
     const priceEl = document.getElementById('detailColorPrice');
-    const baseEl = document.getElementById('detailBasePrice');
     const priceWrap = priceEl?.closest('.detail-color-info');
     if (priceEl && firstColor?.price) {
         const vd2 = variantData[productId] || [];
@@ -9184,9 +9183,7 @@ function switchDetailSpec(productId, specIdx) {
         priceWrap?.classList.add('detail-price-active');
         _currentDetailPrice = firstColor.price;
     } else if (priceEl) {
-        priceWrap?.classList.remove('detail-price-active');
-        // 스펙 가격으로 detailBasePrice 업데이트 (comparePrice 마크업 포함)
-        if (baseEl && spec.price) {
+        if (spec.price) {
             const vd3 = variantData[productId] || [];
             const mv3 = vd3.find(v => v.price === spec.price);
             const cp3 = mv3?.comparePrice;
@@ -9194,9 +9191,9 @@ function switchDetailSpec(productId, specIdx) {
                 ? `<del class="detail-compare-price">${fmt(cp3)}</del>` : '';
             const badge3 = (cp3 && cp3 > spec.price)
                 ? `<span class="discount-badge">${Math.round((1 - spec.price/cp3)*100)}%</span>` : '';
-            baseEl.innerHTML = cpHtml3 + badge3 + fmt(spec.price);
+            priceEl.innerHTML = cpHtml3 + badge3 + fmt(spec.price);
+            _currentDetailPrice = spec.price;
         }
-        _currentDetailPrice = spec.price || _currentDetailPrice;
     }
     if (detailCouponState.applied) _refreshCouponDisplay();
 
