@@ -3347,6 +3347,24 @@
         .faq-pw-overlay.open { display: flex; }
 
         /* ══ 응대 참고 자료 ══ */
+        .ref-acc-list { display: flex; flex-direction: column; gap: 10px; }
+        .ref-accordion { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+        .ref-acc-btn {
+            width: 100%; display: flex; align-items: center; gap: 12px;
+            padding: 15px 18px; background: #f8f9ff; border: none; cursor: pointer;
+            text-align: left; transition: background 0.15s;
+        }
+        .ref-acc-btn:hover { background: #eef2ff; }
+        .ref-acc-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .ref-acc-title-wrap { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .ref-acc-title { font-size: 0.9rem; font-weight: 800; color: var(--sidiz-dark); }
+        .ref-acc-sub { font-size: 0.72rem; color: #9ca3af; font-weight: 400; }
+        .ref-acc-arrow { font-size: 0.8rem; color: #9ca3af; transition: transform 0.2s; margin-left: auto; flex-shrink: 0; }
+        .ref-accordion.open .ref-acc-arrow { transform: rotate(180deg); }
+        .ref-accordion.open .ref-acc-btn { background: #eef2ff; }
+        .ref-acc-body { display: none; padding: 16px; border-top: 1px solid #e5e7eb; }
+        .ref-accordion.open .ref-acc-body { display: block; }
+
         .ref-spec-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1.5px solid #e5e7eb; }
         .ref-spec-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 700px; }
         .ref-spec-table th { background: var(--sidiz-navy); color: white; font-weight: 700; padding: 10px 12px; text-align: center; white-space: nowrap; font-size: 0.75rem; letter-spacing: 0.3px; }
@@ -3355,11 +3373,21 @@
         .ref-spec-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
         .ref-spec-table td:first-child { font-weight: 700; color: var(--sidiz-dark); white-space: nowrap; }
         .ref-spec-table td:not(:first-child) { text-align: center; color: var(--text-secondary); font-size: 0.78rem; }
-        .ref-spec-table td strong { color: var(--sidiz-dark); font-weight: 700; }
         .ref-spec-table tr:last-child td { border-bottom: none; }
         .ref-spec-table tr:hover td { background: #f8f9ff; }
-        .ref-cat-label { background: #f0f4ff; font-size: 0.68rem; font-weight: 800; color: var(--sidiz-navy); letter-spacing: 0.8px; text-transform: uppercase; padding: 6px 12px !important; }
-        .ref-cat-label td { background: transparent; border-bottom: none; }
+        .ref-as-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1.5px solid #e5e7eb; }
+        .ref-as-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .ref-as-table th { background: var(--sidiz-navy); color: white; font-weight: 700; padding: 10px 14px; font-size: 0.75rem; letter-spacing: 0.3px; }
+        .ref-as-table th:first-child { border-radius: 10px 0 0 0; }
+        .ref-as-table th:last-child { border-radius: 0 10px 0 0; text-align: center; }
+        .ref-as-table td { padding: 8px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        .ref-as-table tr:last-child td { border-bottom: none; }
+        .ref-as-table tr:hover td { background: #f8f9ff; }
+        .ref-cat-label td { background: #f0f4ff !important; font-size: 0.68rem; font-weight: 800; color: var(--sidiz-navy); letter-spacing: 0.8px; text-transform: uppercase; border-bottom: none; }
+        .ref-notice { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.7; }
+        .ref-notice-title { font-weight: 800; color: #92400e; margin-bottom: 8px; font-size: 0.85rem; }
+        .ref-notice-item { color: #78350f; margin-bottom: 6px; }
+        .ref-notice-item:last-child { margin-bottom: 0; }
 
         .se-pw-overlay {
             position: fixed; inset: 0;
@@ -5488,12 +5516,39 @@ OOO 고객님, 오늘 방문 예정입니다.
 <!-- ══ 응대 참고 자료 섹션 (SE 전용) ══ -->
 <div id="reference" class="section">
     <div class="section-title">응대 참고 자료</div>
-    <div class="section-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px;margin-bottom:24px;">고객 응대 시 참고할 제품 스펙 및 자료입니다.</div>
+    <div class="section-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px;margin-bottom:20px;">고객 응대 시 참고할 제품 스펙 및 자료입니다.</div>
 
-    <!-- 제품 스펙 일람표 -->
-    <div style="font-size:1rem;font-weight:800;color:var(--sidiz-dark);margin-bottom:12px;">📋 제품 스펙 일람표</div>
-    <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;">이지리페어 제외 전 제품 · 하중·무게 기준 정리</div>
-    <div id="refSpecTable"></div>
+    <div class="ref-acc-list">
+        <!-- 1. 제품 스펙 일람표 -->
+        <div class="ref-accordion">
+            <button class="ref-acc-btn" data-render="spec" onclick="toggleRefAcc(this)">
+                <span class="ref-acc-icon">📋</span>
+                <span class="ref-acc-title-wrap">
+                    <span class="ref-acc-title">제품 스펙 일람표</span>
+                    <span class="ref-acc-sub">이지리페어 제외 전 제품 · 하중·무게·사이즈 정리</span>
+                </span>
+                <span class="ref-acc-arrow">▾</span>
+            </button>
+            <div class="ref-acc-body">
+                <div id="refSpecTable"></div>
+            </div>
+        </div>
+
+        <!-- 2. 제품별 AS 비용 -->
+        <div class="ref-accordion">
+            <button class="ref-acc-btn" data-render="as" onclick="toggleRefAcc(this)">
+                <span class="ref-acc-icon">🔧</span>
+                <span class="ref-acc-title-wrap">
+                    <span class="ref-acc-title">제품별 AS 비용</span>
+                    <span class="ref-acc-sub">Ver.251219 · 대외비 · VAT 포함 · 이지리페어 제외</span>
+                </span>
+                <span class="ref-acc-arrow">▾</span>
+            </button>
+            <div class="ref-acc-body">
+                <div id="refAsTable"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ══ FAQ 비밀번호 모달 ══ -->
@@ -9007,8 +9062,6 @@ function navigate(sectionId, navEl) {
     // Close mobile nav
     document.getElementById('headerNav').classList.remove('open');
 
-    // 섹션별 렌더링
-    if (sectionId === 'reference') renderRefSpecTable();
 }
 
 function toggleMobileNav() {
@@ -11390,9 +11443,20 @@ function _doNavigateFAQ(navEl) {
     navigate('faq', navEl);
     renderFAQ();
 }
+function toggleRefAcc(btn) {
+    const acc = btn.closest('.ref-accordion');
+    const isOpen = acc.classList.toggle('open');
+    const render = btn.dataset.render;
+    if (isOpen) {
+        if (render === 'spec') renderRefSpecTable();
+        else if (render === 'as') renderRefAsTable();
+    }
+}
+
 function renderRefSpecTable() {
     const el = document.getElementById('refSpecTable');
-    if (!el) return;
+    if (!el || el.dataset.rendered) return;
+    el.dataset.rendered = '1';
 
     const groups = [
         { label: 'WORK', ids: ['t50', 't50gen2', 't60', 't80', 't90', 't20'] },
@@ -11445,6 +11509,126 @@ function renderRefSpecTable() {
             </table>
         </div>
         <div style="font-size:0.72rem;color:#9ca3af;margin-top:8px;">※ 스펙은 기본 옵션 기준이며, 옵션 구성에 따라 일부 상이할 수 있습니다.</div>
+    `;
+}
+
+function renderRefAsTable() {
+    const el = document.getElementById('refAsTable');
+    if (!el || el.dataset.rendered) return;
+    el.dataset.rendered = '1';
+
+    const AS_DATA = [
+        { product: 'T90', items: [
+            { part: '더블라셀 등판', price: '16.5', note: '' },
+            { part: '더블라셀 좌판', price: '5.0', note: '' },
+            { part: '더블라셀 헤드', price: '2.0', note: '' },
+            { part: '천연가죽 등판', price: '28.5', note: '' },
+            { part: '천연가죽 좌판', price: '10.0', note: '' },
+            { part: '천연가죽 헤드', price: '3.0', note: '' },
+            { part: '아쿠아텍스 등판', price: '17.5', note: '' },
+            { part: '아쿠아텍스 좌판', price: '5.5', note: '' },
+            { part: '아쿠아텍스 헤드', price: '2.0', note: '' },
+            { part: '팔걸이 아세이', price: '7.5', note: '한쪽당' },
+            { part: '중심봉', price: '1.0', note: '' },
+        ]},
+        { product: 'T80', items: [
+            { part: '메쉬 등판', price: '14.5~15.0', note: '' },
+            { part: '천연가죽 등판', price: '18.5~19.0', note: '' },
+            { part: '천연가죽 좌판', price: '6.0~7.5', note: '' },
+            { part: '헤드레스트 (천연가죽)', price: '4.0', note: '' },
+            { part: '헤드레스트 (패브릭)', price: '2.5', note: '' },
+            { part: '틸트+중심봉', price: '15.5', note: '' },
+        ]},
+        { product: 'T60 HLDA 차콜/그레이', items: [
+            { part: '등판', price: '5.5', note: '' },
+            { part: '좌판', price: '2.0', note: '' },
+            { part: '헤드', price: '2.5', note: '' },
+        ]},
+        { product: 'T60 HLDA 화이트', items: [
+            { part: '등판', price: '5.5', note: '' },
+            { part: '좌판', price: '2.0', note: '' },
+            { part: '헤드', price: '2.5', note: '' },
+        ]},
+        { product: 'T60 AIR HLDA 차콜/그레이', items: [
+            { part: '좌판', price: '3.0', note: '' },
+        ]},
+        { product: 'T60 AIR HLDA 화이트', items: [
+            { part: '좌판', price: '5.0', note: '' },
+        ]},
+        { product: 'T50 AIR', items: [
+            { part: '등판', price: '5.5~6.0', note: '' },
+            { part: '좌판', price: '5.5~7.0', note: '색상별 차이 있음' },
+        ]},
+        { product: 'T50 / T50 AIR 공통', items: [
+            { part: '팔걸이 아세이', price: '1.5', note: '' },
+        ]},
+        { product: 'T50(AIR) / T60(AIR) 공통', items: [
+            { part: '틸트+중심봉', price: '5.5', note: '4000G' },
+        ]},
+        { product: 'GX', items: [
+            { part: '등판', price: '8.5', note: '' },
+            { part: '좌판', price: '4.5', note: '' },
+            { part: '헤드', price: '2.2~2.3', note: '' },
+            { part: '틸트+중심봉', price: '4.5', note: '' },
+        ]},
+        { product: 'GC PRO', items: [
+            { part: '등판 (LED)', price: '37.0', note: '' },
+            { part: '등판 (LED 미포함)', price: '27.0', note: '' },
+            { part: '좌판 (쿨링)', price: '20.0', note: '' },
+            { part: '좌판 (쿨링 미포함)', price: '8.0', note: '' },
+            { part: '헤드', price: '2.3', note: '' },
+            { part: '팔걸이 아세이', price: '2.0', note: '한쪽당' },
+            { part: '틸트+중심봉', price: '4.5', note: '' },
+        ]},
+        { product: 'IBLE (고정형)', items: [
+            { part: '등판', price: '3.0', note: '' },
+            { part: '좌판', price: '3.0', note: '' },
+        ]},
+        { product: 'IBLE (높이조절형)', items: [
+            { part: '등판', price: '3.5', note: '' },
+            { part: '좌판', price: '3.0', note: '' },
+        ]},
+        { product: 'EGA', items: [
+            { part: '등좌판', price: '11.2~11.3', note: '일체형' },
+            { part: '캐스터 (높이조절형)', price: '1.3', note: '4개 1세트' },
+        ]},
+        { product: 'BUTTON', items: [
+            { part: '등판 (패브릭)', price: '4.0', note: '' },
+            { part: '좌판 (패브릭)', price: '1.8~1.9', note: '' },
+            { part: '캐스터 (높이조절형)', price: '1.3', note: '4개 1세트' },
+        ]},
+        { product: 'LINIE', items: [
+            { part: '좌판', price: '3.2', note: '' },
+        ]},
+    ];
+
+    const rows = AS_DATA.map(g =>
+        `<tr class="ref-cat-label"><td colspan="3">${g.product}</td></tr>` +
+        g.items.map(i => `<tr>
+            <td style="padding-left:20px;color:var(--text-secondary)">${i.part}</td>
+            <td style="text-align:center;font-weight:700;color:var(--sidiz-dark)">${i.price}<span style="font-size:0.7rem;font-weight:400;color:#9ca3af">만원</span></td>
+            <td style="text-align:center;font-size:0.75rem;color:#9ca3af">${i.note}</td>
+        </tr>`).join('')
+    ).join('');
+
+    el.innerHTML = `
+        <div class="ref-notice">
+            <div class="ref-notice-title">⚠️ 응대 시 주의 사항 (필독)</div>
+            <div class="ref-notice-item">고객이 AS 비용을 물어볼 때는 정확한 금액보다 <strong>안심</strong>이 목적입니다. 구매 후 부담이 클까 걱정하는 마음에서 묻는 경우가 많습니다.</div>
+            <div class="ref-notice-item"><strong>① 가격 안내 + 이지리페어 안내</strong> — 아래 표를 참고해 범위를 자연스럽게 안내하세요. (예: "T60의 경우 좌판 교체는 보통 2~3만 원대입니다")</div>
+            <div class="ref-notice-item"><strong>② 컨택센터 시스템 안내</strong> — "실제 AS 건 발생 시 자세한 비용은 제품 상태를 확인 후 컨택센터에서 상담해드리고 있습니다"라고 안내하세요.</div>
+        </div>
+        <div class="ref-as-wrap">
+            <table class="ref-as-table">
+                <thead><tr>
+                    <th style="min-width:180px">제품 / 부품</th>
+                    <th style="min-width:110px;text-align:center">가격대 (단위: 만원)</th>
+                    <th style="min-width:120px;text-align:center">비고</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <div style="font-size:0.72rem;color:#9ca3af;margin-top:8px;">※ 이지리페어 항목은 시디즈닷컴 홈페이지에서 확인 · 대외비 · VAT 포함 기준</div>
     `;
 }
 
