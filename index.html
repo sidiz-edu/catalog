@@ -3236,7 +3236,7 @@
         }
         .discount-badge {
             display: inline-block;
-            background: #ff4444; color: white;
+            background: #111; color: white;
             font-size: 0.68rem; font-weight: 700;
             padding: 1px 5px; border-radius: 4px;
         }
@@ -9092,7 +9092,9 @@ function switchDetailColor(productId, idx) {
         const cp = c.comparePrice || matchedVariant?.comparePrice;
         const cpHtml = (cp && cp > c.price)
             ? `<del class="detail-compare-price">${fmt(cp)}</del>` : '';
-        priceEl.innerHTML = cpHtml + fmt(c.price);
+        const badge = (cp && cp > c.price)
+            ? `<span class="discount-badge">${Math.round((1 - c.price/cp)*100)}%</span>` : '';
+        priceEl.innerHTML = cpHtml + badge + fmt(c.price);
         priceWrap?.classList.add('detail-price-active');
         _currentDetailPrice = c.price;
         if (detailCouponState.applied) _refreshCouponDisplay();
@@ -9164,7 +9166,9 @@ function switchDetailSpec(productId, specIdx) {
         const cp2 = firstColor.comparePrice || mv2?.comparePrice;
         const cpHtml = (cp2 && cp2 > firstColor.price)
             ? `<del class="detail-compare-price">${fmt(cp2)}</del>` : '';
-        priceEl.innerHTML = cpHtml + fmt(firstColor.price);
+        const badge2 = (cp2 && cp2 > firstColor.price)
+            ? `<span class="discount-badge">${Math.round((1 - firstColor.price/cp2)*100)}%</span>` : '';
+        priceEl.innerHTML = cpHtml + badge2 + fmt(firstColor.price);
         priceWrap?.classList.add('detail-price-active');
         _currentDetailPrice = firstColor.price;
     } else if (priceEl) {
@@ -9176,7 +9180,9 @@ function switchDetailSpec(productId, specIdx) {
             const cp3 = mv3?.comparePrice;
             const cpHtml3 = (cp3 && cp3 > spec.price)
                 ? `<del class="detail-compare-price">${fmt(cp3)}</del>` : '';
-            baseEl.innerHTML = cpHtml3 + fmt(spec.price);
+            const badge3 = (cp3 && cp3 > spec.price)
+                ? `<span class="discount-badge">${Math.round((1 - spec.price/cp3)*100)}%</span>` : '';
+            baseEl.innerHTML = cpHtml3 + badge3 + fmt(spec.price);
         }
         _currentDetailPrice = spec.price || _currentDetailPrice;
     }
