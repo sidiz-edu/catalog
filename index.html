@@ -9315,8 +9315,9 @@ function showDetail(productId) {
         </div>
     `;
 
-    // 옵션 및 가격
+    // 옵션 및 가격 (spec-group 제품은 색상칩으로 담기 → 담기 버튼 숨김)
     const variants = variantData[productId];
+    const hasSpecGroup = !!productSpecGroups[productId];
     document.getElementById('detailVariants').innerHTML = variants ? `
         <div class="variant-pricing">
             <h3 class="variant-title">옵션 및 가격</h3>
@@ -9331,7 +9332,7 @@ function showDetail(productId) {
                                 ${fmt(v.price)}
                             </span>
                         </span>
-                        <button class="btn-add-cart" onclick="addToCart('${productId}', '${v.name}', ${v.price})">+ 담기</button>
+                        ${hasSpecGroup ? '' : `<button class="btn-add-cart" onclick="addToCart('${productId}', '${v.name}', ${v.price})">+ 담기</button>`}
                     </div>
                 ` : `
                     <div class="variant-row" style="opacity:0.7">
