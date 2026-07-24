@@ -11458,6 +11458,33 @@ function renderRefSpecTable() {
     if (!el || el.dataset.rendered) return;
     el.dataset.rendered = '1';
 
+    const PRODUCT_URLS = {
+        t50:     'https://kr.sidiz.com/products/t50',
+        t50gen2: 'https://kr.sidiz.com/products/t50-2',
+        t60:     'https://kr.sidiz.com/products/t60',
+        t80:     'https://kr.sidiz.com/products/t80',
+        t90:     'https://kr.sidiz.com/products/t90',
+        t20:     'https://kr.sidiz.com/products/t20',
+        gcpro:   'https://kr.sidiz.com/products/gc-pro',
+        gx:      'https://kr.sidiz.com/products/gx',
+        linie:   'https://kr.sidiz.com/products/linie',
+        muuve:   'https://kr.sidiz.com/products/muuve',
+        ega:     'https://kr.sidiz.com/products/ega',
+        button:  'https://kr.sidiz.com/products/button',
+        ible:    'https://kr.sidiz.com/products/ible',
+        ringo2:  'https://kr.sidiz.com/products/ringo-2',
+        trevo:   'https://kr.sidiz.com/products/trevo',
+        mane:    'https://kr.sidiz.com/products/mane',
+        plit:    'https://kr.sidiz.com/products/plit',
+        oui:     'https://kr.sidiz.com/products/oui',
+        fungus:  'https://kr.sidiz.com/products/fungus',
+        stepo:   'https://kr.sidiz.com/products/stepo',
+        pillo:   'https://kr.sidiz.com/products/pillo',
+        olly:    'https://kr.sidiz.com/products/olly',
+        molti:   'https://kr.sidiz.com/products/molti',
+        atti:    'https://kr.sidiz.com/products/atti',
+    };
+
     const groups = [
         { label: 'WORK', ids: ['t50', 't50gen2', 't60', 't80', 't90', 't20'] },
         { label: 'GAMING', ids: ['gcpro', 'gx'] },
@@ -11474,8 +11501,12 @@ function renderRefSpecTable() {
             const s = productSpecs[id];
             const p = products[id];
             if (!s || !p) return '';
+            const url = PRODUCT_URLS[id];
+            const nameCell = url
+                ? `<a href="${url}" target="_blank" rel="noopener" style="color:var(--sidiz-navy);font-weight:700;text-decoration:none;display:flex;align-items:center;gap:4px;">${p.name}<span style="font-size:0.65rem;opacity:0.5">↗</span></a>`
+                : p.name;
             return `<tr>
-                <td>${p.name}</td>
+                <td>${nameCell}</td>
                 <td>${s.max_load || '—'}</td>
                 <td>${s.weight || '—'}</td>
                 <td>${s.seat_h || '—'}</td>
