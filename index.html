@@ -545,6 +545,9 @@
         .detail-selector-label { font-size: 0.65rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 7px; }
         .detail-color-section { padding-left: 14px; border-left: 2px solid #dde3f0; margin-top: 10px; }
         .detail-color-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .detail-color-group { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+        .detail-color-group-label { font-size: 0.65rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.7px; text-transform: uppercase; }
+        .detail-color-group-chips { display: flex; flex-wrap: wrap; gap: 8px; }
         .detail-color-chip {
             display: flex; align-items: center; gap: 6px;
             padding: 6px 12px; border-radius: 20px; cursor: pointer;
@@ -9038,6 +9041,35 @@ const _currentSpecColors = {};
 let _currentDetailPrice = null;   // 현재 선택된 가격 추적
 let _currentDetailSku   = '';     // 현재 선택된 제품 코드 추적
 
+function buildColorChips(colors, productId, activeIdx = 0) {
+    const hasGroups = colors.some(c => /\([^)]+\)$/.test(c.name));
+    if (!hasGroups) {
+        return colors.map((c, i) => `
+            <div class="detail-color-chip ${i === activeIdx ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
+                <span class="detail-color-dot" style="background:${c.code}"></span>
+                ${c.name}
+            </div>`).join('');
+    }
+    const groups = {}, groupOrder = [];
+    colors.forEach((c, i) => {
+        const m = c.name.match(/\(([^)]+)\)$/);
+        const g = m ? m[1] : '';
+        if (!groups[g]) { groups[g] = []; groupOrder.push(g); }
+        groups[g].push({ c, i });
+    });
+    return groupOrder.map(g => `
+        <div class="detail-color-group">
+            ${g ? `<div class="detail-color-group-label">${g}</div>` : ''}
+            <div class="detail-color-group-chips">
+                ${groups[g].map(({ c, i }) => `
+                    <div class="detail-color-chip ${i === activeIdx ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
+                        <span class="detail-color-dot" style="background:${c.code}"></span>
+                        ${c.name.replace(/\s*\([^)]+\)$/, '')}
+                    </div>`).join('')}
+            </div>
+        </div>`).join('');
+}
+
 // ── DETAIL COLOR SWITCH ──
 function switchDetailColor(productId, idx) {
     const colors = _currentSpecColors[productId] || productColors[productId];
@@ -9104,12 +9136,7 @@ function switchDetailSpec(productId, specIdx) {
     // 컬러 칩 재생성
     const colorBarEl = document.querySelector('.detail-color-bar');
     if (colorBarEl) {
-        colorBarEl.innerHTML = specColors.map((c, i) => `
-            <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
-                <span class="detail-color-dot" style="background:${c.code}"></span>
-                ${c.name}
-            </div>
-        `).join('');
+        colorBarEl.innerHTML = buildColorChips(specColors, productId);
     }
 
     // color-cart-row 재생성
@@ -9270,12 +9297,7 @@ function showDetail(productId) {
         <div class="${specs ? 'detail-color-section' : 'detail-selector-group'}">
             ${specs ? '<div class="detail-selector-label">색상</div>' : ''}
             <div class="detail-color-bar">
-                ${colors.map((c, i) => `
-                    <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
-                        <span class="detail-color-dot" style="background:${c.code}"></span>
-                        ${c.name}
-                    </div>
-                `).join('')}
+                ${buildColorChips(colors, productId)}
             </div>
         </div>
         <div class="detail-color-info">
