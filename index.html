@@ -444,8 +444,9 @@
             color: var(--text-secondary);
             line-height: 1.8;
             font-size: 0.92rem;
-            margin-bottom: 24px;
+            margin-bottom: 8px;
         }
+        .detail-tags { margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 6px; }
         .detail-info .price-tag {
             font-family: 'Outfit', sans-serif;
             font-size: 1.8rem;
@@ -9334,7 +9335,7 @@ function showDetail(productId) {
             <div class="name">${p.name}</div>
             <div class="tagline">${p.tagline}</div>
             <div class="desc">${p.desc}</div>
-            <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
+            <div class="detail-tags">${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
             <div id="detailVariants"></div>
             ${colorBar}
             ${couponUi}
