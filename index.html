@@ -3852,7 +3852,7 @@
             <a class="nav-dropdown-toggle" onclick="toggleNavDropdown(this)">자료실 <span style="font-size:0.7em;opacity:0.7">▾</span></a>
             <div class="nav-dropdown-menu">
                 <a onclick="openFAQSection(this)">FAQ</a>
-                <a onclick="navigate('reference', this)">응대 참고 자료</a>
+                <a onclick="openReferenceSection(this)">응대 참고 자료</a>
             </div>
         </div>
         <div class="nav-deploy-trigger" id="deployTrigger"
@@ -5562,6 +5562,21 @@ OOO 고객님, 오늘 방문 예정입니다.
         <div class="se-pw-btns">
             <button class="se-pw-cancel" onclick="closeFAQPw()">취소</button>
             <button class="se-pw-confirm" onclick="checkFAQPw()">확인</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 응대 참고 자료 비밀번호 모달 ══ -->
+<div class="faq-pw-overlay" id="refPwOverlay" onclick="if(event.target===this)closeRefPw()">
+    <div class="se-pw-box">
+        <div class="se-pw-logo">🔒 응대 참고 자료</div>
+        <p class="se-pw-sub">SIDIZ 매장 직원 전용</p>
+        <input type="password" id="refPwInput" placeholder="비밀번호 입력"
+            onkeydown="if(event.key==='Enter')checkRefPw()">
+        <div id="refPwError" style="display:none" class="se-pw-error">비밀번호가 틀렸습니다</div>
+        <div class="se-pw-btns">
+            <button class="se-pw-cancel" onclick="closeRefPw()">취소</button>
+            <button class="se-pw-confirm" onclick="checkRefPw()">확인</button>
         </div>
     </div>
 </div>
@@ -11406,6 +11421,38 @@ const FAQ_DATA = [
       q:'의자 사용법 알림을 제품 구매 후 고객이 못 받았다는 경우?',
       a:'시디즈에서는 의자 구매 고객에게 시공 및 택배 일주일 후 의자 사용법에 대한 알림톡(카카오톡 또는 문자)을 자동 발송하고 있습니다. 고객이 미확인한 경우 직접 안내드리거나, 필요시 문자로 제품 정보와 정품등록 안내를 추가로 발송해 드릴 수도 있습니다.' },
 ];
+
+let _refUnlocked = false;
+let _pendingRefNavEl = null;
+
+function openReferenceSection(navEl) {
+    if (_refUnlocked) {
+        navigate('reference', navEl);
+    } else {
+        _pendingRefNavEl = navEl;
+        const ov = document.getElementById('refPwOverlay');
+        ov.classList.add('open');
+        const inp = document.getElementById('refPwInput');
+        inp.value = '';
+        document.getElementById('refPwError').style.display = 'none';
+        setTimeout(() => inp.focus(), 150);
+    }
+}
+function closeRefPw() {
+    document.getElementById('refPwOverlay').classList.remove('open');
+    _pendingRefNavEl = null;
+}
+function checkRefPw() {
+    if (document.getElementById('refPwInput').value === _SE_PW) {
+        _refUnlocked = true;
+        document.getElementById('refPwOverlay').classList.remove('open');
+        navigate('reference', _pendingRefNavEl);
+        _pendingRefNavEl = null;
+    } else {
+        document.getElementById('refPwInput').value = '';
+        document.getElementById('refPwError').style.display = 'block';
+    }
+}
 
 let _faqUnlocked = false;
 let _faqCat = '전체';
