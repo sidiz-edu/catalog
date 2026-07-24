@@ -105,9 +105,10 @@
         .nav-dropdown { position: relative; display: flex; align-items: center; }
         .nav-dropdown-toggle { display: flex; align-items: center; gap: 4px; }
         .nav-dropdown-menu {
-            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            display: none; position: absolute; top: 100%; left: 0;
             background: white; border: 1.5px solid #e5e7eb; border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1); min-width: 160px; z-index: 300; padding: 6px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1); min-width: 160px; z-index: 300;
+            padding: 10px 0 6px;
         }
         .nav-dropdown:hover .nav-dropdown-menu { display: block; }
         .nav-dropdown-menu a { border-radius: 0; width: 100%; display: block; }
