@@ -9098,7 +9098,6 @@ function switchDetailColor(productId, idx) {
         if (detailCouponState.applied) _refreshCouponDisplay();
     } else if (priceEl) {
         if (_currentDetailPrice) {
-            priceEl.innerHTML = fmt(_currentDetailPrice);
             priceWrap?.classList.add('detail-price-active');
         } else {
             priceWrap?.classList.remove('detail-price-active');
@@ -9259,6 +9258,7 @@ function renderDetailSpecs(productId, specGroupName) {
 function showDetail(productId) {
     const p = products[productId];
     if (!p) return;
+    _currentDetailPrice = null;
     // 신고 컨텍스트용 현재 제품 ID 추적
     const detailWrapper = document.getElementById('productDetail');
     if (detailWrapper) detailWrapper.dataset.currentProductId = productId;
