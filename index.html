@@ -473,8 +473,10 @@
             color: var(--sidiz-coral);
         }
         .detail-color-info { margin-top: 10px; padding-left: 14px; border-left: 2px solid #dde3f0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
-        .detail-color-info #detailColorPrice { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--sidiz-coral); display: none; flex-shrink: 0; }
-        .detail-price-active #detailColorPrice { display: block !important; }
+        .detail-color-info #detailColorPrice { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--sidiz-coral); display: none; flex-shrink: 0; gap: 10px; align-items: center; }
+        .detail-price-active #detailColorPrice { display: flex !important; }
+        #detailSkuDisplay { cursor: pointer; transition: color 0.2s; }
+        #detailSkuDisplay:hover { color: var(--sidiz-navy) !important; }
         .color-cart-row { margin: 8px 0 16px; }
         .btn-color-cart {
             display: inline-flex; align-items: center; gap: 6px;
@@ -9320,7 +9322,8 @@ function showDetail(productId) {
             </div>
         </div>
         <div class="detail-color-info">
-            <div id="detailSkuDisplay" style="font-size:0.72rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.5px;"></div>
+            <div id="detailSkuDisplay" style="font-size:0.72rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.5px;" title="클릭하여 복사"
+                onclick="const t=this.textContent;if(!t)return;navigator.clipboard.writeText(t).then(()=>{const o=this.textContent;this.textContent='복사됨!';this.style.color='#22c55e';setTimeout(()=>{this.textContent=o;this.style.color='';},1200);})"></div>
             <span id="detailColorPrice"></span>
         </div>
         <div class="color-cart-row">
