@@ -9317,7 +9317,7 @@ function showDetail(productId) {
 
     // 옵션 및 가격 (spec-group 제품은 색상칩으로 담기 → 담기 버튼 숨김)
     const variants = variantData[productId];
-    const hasSpecGroup = !!productSpecGroups[productId];
+    const hasSpecGroup = !!productSpecGroups[productId] || productId === 't20';
     document.getElementById('detailVariants').innerHTML = variants ? `
         <div class="variant-pricing">
             <h3 class="variant-title">옵션 및 가격</h3>
