@@ -9754,6 +9754,7 @@ function openB2BModal() {
             <td>
                 <div style="font-weight:600;font-size:0.82rem">${item.name}</div>
                 <div style="font-size:0.73rem;color:#6b7280">${item.variantName}</div>
+                ${item.sku ? `<div style="font-size:0.68rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.3px;margin-top:2px;">${item.sku}</div>` : ''}
             </td>
             <td>
                 <div class="b2b-qty-ctrl">
@@ -9886,6 +9887,7 @@ function _doPrintB2BQuote(company, staff, store, items) {
             <td>
                 <div style="font-weight:600">${item.name}</div>
                 <div class="sub">${item.variantName}</div>
+                ${item.sku ? `<div style="font-size:10px;color:#0D3BFF;font-family:monospace;letter-spacing:0.3px;margin-top:1px;">${item.sku}</div>` : ''}
             </td>
             <td class="tc">${item.qty}</td>
             <td class="tr" style="color:#6b7280">${f(listPrice)}</td>
