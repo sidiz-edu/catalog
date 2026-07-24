@@ -102,6 +102,17 @@
         }
         .header-nav a:hover { background: var(--sidiz-light); color: var(--sidiz-blue); }
         .header-nav a.active { background: var(--sidiz-navy); color: white; }
+        .nav-dropdown { position: relative; display: flex; align-items: center; }
+        .nav-dropdown-toggle { display: flex; align-items: center; gap: 4px; }
+        .nav-dropdown-menu {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            background: white; border: 1.5px solid #e5e7eb; border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1); min-width: 160px; z-index: 300; padding: 6px 0;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { display: block; }
+        .nav-dropdown-menu a { border-radius: 0; width: 100%; display: block; }
+        .nav-dropdown-menu a:first-child { border-radius: 8px 8px 0 0; }
+        .nav-dropdown-menu a:last-child { border-radius: 0 0 8px 8px; }
 
         /* ── LAYOUT ── */
         .page-wrapper {
@@ -967,6 +978,11 @@
                 gap: 2px;
             }
             .header-nav.open { display: flex; }
+            /* 모바일 드롭다운: 인라인으로 펼침 */
+            .nav-dropdown { flex-direction: column; align-items: stretch; width: 100%; }
+            .nav-dropdown-toggle { justify-content: space-between; }
+            .nav-dropdown-menu { display: none !important; position: static; box-shadow: none; border: none; padding: 0 0 0 12px; background: transparent; }
+            .nav-dropdown.open .nav-dropdown-menu { display: flex !important; flex-direction: column; }
             /* 네비 탭 — 터치 영역 충분히 */
             .header-nav a {
                 padding: 16px 18px;
@@ -2268,6 +2284,7 @@
         body.guest-mode .cat-filter-bar { display: none !important; }
         body.guest-mode .faq-nav-link { display: none !important; }
         body.guest-mode #faq { display: none !important; }
+        body.guest-mode #reference { display: none !important; }
 
         /* ══ 게스트 모드: 인쇄 카탈로그 형식 ══ */
         #printCatalog { display: none; }
@@ -3788,7 +3805,13 @@
         <a onclick="navigate('process', this)">구매 후 안내</a>
         <a onclick="navigate('posture', this)">올바른 사용법</a>
         <a onclick="navigate('care', this)">관리법</a>
-        <a class="faq-nav-link" onclick="openFAQSection(this)">FAQ</a>
+        <div class="nav-dropdown faq-nav-link">
+            <a class="nav-dropdown-toggle" onclick="toggleNavDropdown(this)">자료실 <span style="font-size:0.7em;opacity:0.7">▾</span></a>
+            <div class="nav-dropdown-menu">
+                <a onclick="openFAQSection(this)">FAQ</a>
+                <a onclick="navigate('reference', this)">응대 참고 자료</a>
+            </div>
+        </div>
         <div class="nav-deploy-trigger" id="deployTrigger"
             onmousedown="startDeployPress()" onmouseup="cancelDeployPress()" onmouseleave="cancelDeployPress()"
             ontouchstart="startDeployPress(event)" ontouchend="cancelDeployPress()"
@@ -5445,6 +5468,12 @@ OOO 고객님, 오늘 방문 예정입니다.
     </div>
 
     <div class="faq-list" id="faqList"></div>
+</div>
+
+<!-- ══ 응대 참고 자료 섹션 (SE 전용) ══ -->
+<div id="reference" class="section">
+    <div class="section-title">응대 참고 자료</div>
+    <div class="section-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:8px;">고객 응대에 참고할 자료를 여기에 추가할 예정입니다.</div>
 </div>
 
 <!-- ══ FAQ 비밀번호 모달 ══ -->
@@ -8961,6 +8990,13 @@ function navigate(sectionId, navEl) {
 
 function toggleMobileNav() {
     document.getElementById('headerNav').classList.toggle('open');
+}
+function toggleNavDropdown(toggleEl) {
+    const dropdown = toggleEl.closest('.nav-dropdown');
+    if (!dropdown) return;
+    // 데스크톱(hover): 아무 동작 안 함
+    if (window.innerWidth > 768) return;
+    dropdown.classList.toggle('open');
 }
 
 // ── 이달의 행사 & 쿠폰 ──
