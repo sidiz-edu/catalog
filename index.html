@@ -9334,11 +9334,11 @@ function showDetail(productId) {
             <div class="name">${p.name}</div>
             <div class="tagline">${p.tagline}</div>
             <div class="desc">${p.desc}</div>
+            <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
             <div id="detailVariants"></div>
             ${colorBar}
             ${couponUi}
             ${militaryUi}
-            <div>${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
         </div>
     `;
 
