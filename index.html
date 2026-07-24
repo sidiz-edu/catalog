@@ -3346,6 +3346,21 @@
         }
         .faq-pw-overlay.open { display: flex; }
 
+        /* ══ 응대 참고 자료 ══ */
+        .ref-spec-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1.5px solid #e5e7eb; }
+        .ref-spec-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 700px; }
+        .ref-spec-table th { background: var(--sidiz-navy); color: white; font-weight: 700; padding: 10px 12px; text-align: center; white-space: nowrap; font-size: 0.75rem; letter-spacing: 0.3px; }
+        .ref-spec-table th:first-child { text-align: left; border-radius: 10px 0 0 0; }
+        .ref-spec-table th:last-child { border-radius: 0 10px 0 0; }
+        .ref-spec-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        .ref-spec-table td:first-child { font-weight: 700; color: var(--sidiz-dark); white-space: nowrap; }
+        .ref-spec-table td:not(:first-child) { text-align: center; color: var(--text-secondary); font-size: 0.78rem; }
+        .ref-spec-table td strong { color: var(--sidiz-dark); font-weight: 700; }
+        .ref-spec-table tr:last-child td { border-bottom: none; }
+        .ref-spec-table tr:hover td { background: #f8f9ff; }
+        .ref-cat-label { background: #f0f4ff; font-size: 0.68rem; font-weight: 800; color: var(--sidiz-navy); letter-spacing: 0.8px; text-transform: uppercase; padding: 6px 12px !important; }
+        .ref-cat-label td { background: transparent; border-bottom: none; }
+
         .se-pw-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.6); z-index: 10000;
@@ -5473,7 +5488,12 @@ OOO 고객님, 오늘 방문 예정입니다.
 <!-- ══ 응대 참고 자료 섹션 (SE 전용) ══ -->
 <div id="reference" class="section">
     <div class="section-title">응대 참고 자료</div>
-    <div class="section-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:8px;">고객 응대에 참고할 자료를 여기에 추가할 예정입니다.</div>
+    <div class="section-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px;margin-bottom:24px;">고객 응대 시 참고할 제품 스펙 및 자료입니다.</div>
+
+    <!-- 제품 스펙 일람표 -->
+    <div style="font-size:1rem;font-weight:800;color:var(--sidiz-dark);margin-bottom:12px;">📋 제품 스펙 일람표</div>
+    <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;">이지리페어 제외 전 제품 · 하중·무게 기준 정리</div>
+    <div id="refSpecTable"></div>
 </div>
 
 <!-- ══ FAQ 비밀번호 모달 ══ -->
@@ -8983,9 +9003,12 @@ function navigate(sectionId, navEl) {
     if (navEl) navEl.classList.add('active');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
+
     // Close mobile nav
     document.getElementById('headerNav').classList.remove('open');
+
+    // 섹션별 렌더링
+    if (sectionId === 'reference') renderRefSpecTable();
 }
 
 function toggleMobileNav() {
@@ -11367,6 +11390,64 @@ function _doNavigateFAQ(navEl) {
     navigate('faq', navEl);
     renderFAQ();
 }
+function renderRefSpecTable() {
+    const el = document.getElementById('refSpecTable');
+    if (!el) return;
+
+    const groups = [
+        { label: 'WORK', ids: ['t50', 't50gen2', 't60', 't80', 't90', 't20'] },
+        { label: 'GAMING', ids: ['gcpro', 'gx'] },
+        { label: 'LIGHT WORK', ids: ['linie', 'muuve', 'ega', 'button'] },
+        { label: 'STUDY', ids: ['ible', 'ringo2', 'trevo'] },
+        { label: 'LIVING · DINING', ids: ['mane', 'plit', 'oui'] },
+        { label: 'SIT BOOSTER', ids: ['fungus', 'stepo', 'pillo', 'olly'] },
+        { label: 'GROWING', ids: ['molti', 'atti'] },
+    ];
+
+    const rows = groups.map(g => {
+        const catRow = `<tr><td colspan="9" class="ref-cat-label" style="padding:6px 12px;font-size:0.68rem;font-weight:800;color:var(--sidiz-navy);letter-spacing:0.8px;background:#f0f4ff;">${g.label}</td></tr>`;
+        const productRows = g.ids.map(id => {
+            const s = productSpecs[id];
+            const p = products[id];
+            if (!s || !p) return '';
+            return `<tr>
+                <td>${p.name}</td>
+                <td>${s.max_load || '—'}</td>
+                <td>${s.weight || '—'}</td>
+                <td>${s.seat_h || '—'}</td>
+                <td>${s.seat_w ? s.seat_w + ' × ' + (s.seat_d || '?') : '—'}</td>
+                <td>${s.back_w ? s.back_w + ' × ' + (s.back_h || '?') : '—'}</td>
+                <td>${s.armrest || '—'}</td>
+                <td>${s.headrest || '—'}</td>
+                <td>${s.tilt || '—'}</td>
+            </tr>`;
+        }).join('');
+        return catRow + productRows;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="ref-spec-wrap">
+            <table class="ref-spec-table">
+                <thead>
+                    <tr>
+                        <th style="min-width:90px">제품명</th>
+                        <th>최대 하중</th>
+                        <th>제품 무게</th>
+                        <th>좌판 높이</th>
+                        <th>좌판 (가로×세로)</th>
+                        <th>등판 (가로×높이)</th>
+                        <th>팔걸이</th>
+                        <th>헤드레스트</th>
+                        <th>틸팅</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <div style="font-size:0.72rem;color:#9ca3af;margin-top:8px;">※ 스펙은 기본 옵션 기준이며, 옵션 구성에 따라 일부 상이할 수 있습니다.</div>
+    `;
+}
+
 function setFAQCat(cat, btn) {
     _faqCat = cat;
     document.querySelectorAll('.faq-cat-btn').forEach(b => b.classList.remove('active'));
