@@ -446,7 +446,8 @@
             font-size: 0.92rem;
             margin-bottom: 8px;
         }
-        .detail-tags { margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .detail-tags { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .detail-base-price { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
         .detail-info .price-tag {
             font-family: 'Outfit', sans-serif;
             font-size: 1.8rem;
@@ -9324,6 +9325,10 @@ function showDetail(productId) {
 
     // 쿠폰 UI
     const basePrice = variantData[productId] ? variantData[productId][0].price : null;
+    const baseCp = variantData[productId]?.[0]?.comparePrice;
+    const baseCpHtml = (baseCp && baseCp > basePrice) ? `<del class="detail-compare-price">${fmt(baseCp)}</del>` : '';
+    const baseBadge = (baseCp && baseCp > basePrice) ? `<span class="discount-badge">${Math.round((1 - basePrice/baseCp)*100)}%</span>` : '';
+    const basePriceHtml = basePrice ? `<div class="detail-base-price">${baseCpHtml}${baseBadge}<span>${fmt(basePrice)}</span></div>` : '';
     const couponUi = '';
     const militaryUi = '';
 
@@ -9336,6 +9341,7 @@ function showDetail(productId) {
             <div class="tagline">${p.tagline}</div>
             <div class="desc">${p.desc}</div>
             <div class="detail-tags">${p.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
+            ${basePriceHtml}
             <div id="detailVariants"></div>
             ${colorBar}
             ${couponUi}
