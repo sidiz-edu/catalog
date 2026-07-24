@@ -9101,6 +9101,16 @@ function switchDetailColor(productId, idx) {
         _currentDetailPrice = c.price;
         if (detailCouponState.applied) _refreshCouponDisplay();
     } else if (priceEl) {
+        if (!_currentDetailPrice) {
+            const vdFb = variantData[productId]?.[0];
+            if (vdFb?.price) {
+                const cp = vdFb.comparePrice;
+                const cpHtml = (cp && cp > vdFb.price) ? `<del class="detail-compare-price">${fmt(cp)}</del>` : '';
+                const bdg = (cp && cp > vdFb.price) ? `<span class="discount-badge">${Math.round((1 - vdFb.price/cp)*100)}%</span>` : '';
+                priceEl.innerHTML = cpHtml + bdg + fmt(vdFb.price);
+                _currentDetailPrice = vdFb.price;
+            }
+        }
         if (_currentDetailPrice) {
             priceWrap?.classList.add('detail-price-active');
         } else {
