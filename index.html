@@ -540,7 +540,10 @@
         .color-dot-label { font-size: 0.75rem; color: var(--text-secondary); }
 
         /* ── COLOR GALLERY IN DETAIL ── */
-        .detail-color-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+        .detail-selector-group { margin-top: 14px; }
+        .detail-selector-label { font-size: 0.65rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 7px; }
+        .detail-color-section { padding-left: 14px; border-left: 2px solid #dde3f0; margin-top: 10px; }
+        .detail-color-bar { display: flex; gap: 8px; flex-wrap: wrap; }
         .detail-color-chip {
             display: flex; align-items: center; gap: 6px;
             padding: 6px 12px; border-radius: 20px; cursor: pointer;
@@ -551,7 +554,7 @@
         .detail-color-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 
         /* ── SPEC SELECTOR ── */
-        .detail-spec-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .detail-spec-bar { display: flex; flex-wrap: wrap; gap: 6px; }
         .detail-spec-btn { padding: 5px 12px; border-radius: 16px; border: 1.5px solid #ddd; background: white; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
         .detail-spec-btn.active { border-color: var(--sidiz-navy); background: var(--sidiz-light); color: var(--sidiz-dark); font-weight: 600; }
 
@@ -9242,11 +9245,14 @@ function showDetail(productId) {
         colors = specs[initSpecIdx].colors;
         _currentSpecColors[productId] = colors;
         specBar = `
-        <div class="detail-spec-bar">
-            ${specs.map((s, i) => `
-                <button class="detail-spec-btn ${i === initSpecIdx ? 'active' : ''}"
-                    onclick="switchDetailSpec('${productId}', ${i})">${s.name}</button>
-            `).join('')}
+        <div class="detail-selector-group">
+            <div class="detail-selector-label">제품</div>
+            <div class="detail-spec-bar">
+                ${specs.map((s, i) => `
+                    <button class="detail-spec-btn ${i === initSpecIdx ? 'active' : ''}"
+                        onclick="switchDetailSpec('${productId}', ${i})">${s.name}</button>
+                `).join('')}
+            </div>
         </div>`;
     } else {
         colors = productColors[productId] || [];
@@ -9260,13 +9266,16 @@ function showDetail(productId) {
     const initPrice = firstColor?.price || variantData[productId]?.[0]?.price || 0;
     const colorBar = colors.length > 1 ? `
         ${specBar}
-        <div class="detail-color-bar">
-            ${colors.map((c, i) => `
-                <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
-                    <span class="detail-color-dot" style="background:${c.code}"></span>
-                    ${c.name}
-                </div>
-            `).join('')}
+        <div class="${specs ? 'detail-color-section' : 'detail-selector-group'}">
+            ${specs ? '<div class="detail-selector-label">색상</div>' : ''}
+            <div class="detail-color-bar">
+                ${colors.map((c, i) => `
+                    <div class="detail-color-chip ${i === 0 ? 'active' : ''}" onclick="switchDetailColor('${productId}', ${i})">
+                        <span class="detail-color-dot" style="background:${c.code}"></span>
+                        ${c.name}
+                    </div>
+                `).join('')}
+            </div>
         </div>
         <div class="color-cart-row">
             <button id="detailColorCartBtn" class="btn-color-cart"
