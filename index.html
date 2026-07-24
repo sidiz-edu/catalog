@@ -470,8 +470,9 @@
         #detailColorPrice {
             color: var(--sidiz-coral);
         }
-        .detail-price-active #detailBasePrice { display: none; }
-        .detail-price-active #detailColorPrice { display: inline !important; }
+        .detail-color-info { margin-top: 10px; padding-left: 14px; border-left: 2px solid #dde3f0; display: flex; flex-direction: column; gap: 2px; }
+        .detail-color-info #detailColorPrice { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--sidiz-coral); display: none; }
+        .detail-price-active #detailColorPrice { display: block !important; }
         .color-cart-row { margin: 8px 0 16px; }
         .btn-color-cart {
             display: inline-flex; align-items: center; gap: 6px;
@@ -9051,7 +9052,7 @@ function switchDetailColor(productId, idx) {
     });
     // 색상별 가격 업데이트
     const priceEl = document.getElementById('detailColorPrice');
-    const priceWrap = priceEl?.closest('.price-tag');
+    const priceWrap = priceEl?.closest('.detail-color-info');
     if (priceEl && c.price) {
         // productColors에 comparePrice 없으면 variantData에서 가격 매칭으로 보완
         const vd = variantData[productId] || [];
@@ -9126,7 +9127,7 @@ function switchDetailSpec(productId, specIdx) {
     // 가격 업데이트
     const priceEl = document.getElementById('detailColorPrice');
     const baseEl = document.getElementById('detailBasePrice');
-    const priceWrap = priceEl?.closest('.price-tag');
+    const priceWrap = priceEl?.closest('.detail-color-info');
     if (priceEl && firstColor?.price) {
         const vd2 = variantData[productId] || [];
         const mv2 = vd2.find(v => v.price === firstColor.price);
@@ -9277,6 +9278,10 @@ function showDetail(productId) {
                 `).join('')}
             </div>
         </div>
+        <div class="detail-color-info">
+            <span id="detailColorPrice"></span>
+            <div id="detailSkuDisplay" style="font-size:0.72rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.5px;"></div>
+        </div>
         <div class="color-cart-row">
             <button id="detailColorCartBtn" class="btn-color-cart"
                 onclick="addToCart('${productId}', '${initVariantName}', ${initPrice})">
@@ -9298,8 +9303,6 @@ function showDetail(productId) {
             <div class="tagline">${p.tagline}</div>
             <div class="desc">${p.desc}</div>
             <div class="price-tag">
-                <span id="detailColorPrice" style="display:none"></span>
-                <div id="detailSkuDisplay" style="font-size:0.72rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.5px;margin-top:2px;display:block;"></div>
                 <span id="detailBasePrice">${(() => {
                     const vd = variantData[productId];
                     let cpHtml = '';
