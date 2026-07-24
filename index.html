@@ -470,8 +470,8 @@
         #detailColorPrice {
             color: var(--sidiz-coral);
         }
-        .detail-color-info { margin-top: 10px; padding-left: 14px; border-left: 2px solid #dde3f0; display: flex; flex-direction: column; gap: 2px; }
-        .detail-color-info #detailColorPrice { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--sidiz-coral); display: none; }
+        .detail-color-info { margin-top: 10px; padding-left: 14px; border-left: 2px solid #dde3f0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+        .detail-color-info #detailColorPrice { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--sidiz-coral); display: none; flex-shrink: 0; }
         .detail-price-active #detailColorPrice { display: block !important; }
         .color-cart-row { margin: 8px 0 16px; }
         .btn-color-cart {
@@ -9097,8 +9097,12 @@ function switchDetailColor(productId, idx) {
         _currentDetailPrice = c.price;
         if (detailCouponState.applied) _refreshCouponDisplay();
     } else if (priceEl) {
-        priceWrap?.classList.remove('detail-price-active');
-        // 스펙 기반 제품은 spec.price가 _currentDetailPrice에 이미 세팅됨
+        if (_currentDetailPrice) {
+            priceEl.innerHTML = fmt(_currentDetailPrice);
+            priceWrap?.classList.add('detail-price-active');
+        } else {
+            priceWrap?.classList.remove('detail-price-active');
+        }
     }
     // SKU 업데이트
     const specIdx = _currentSpec[productId];
