@@ -1196,6 +1196,38 @@
         }
         .report-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
         .report-fab-icon { font-size: 1rem; }
+        .qbox-fab {
+            position: fixed; bottom: 68px; right: 24px; z-index: 90;
+            background: #fff; border: 1.5px solid #e5e7eb; border-radius: 24px;
+            padding: 9px 16px; font-size: 0.78rem; font-weight: 600;
+            color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.10); transition: var(--transition);
+            letter-spacing: -0.2px;
+        }
+        .qbox-fab:hover { border-color: var(--sidiz-navy); color: var(--sidiz-navy); transform: translateY(-1px); }
+        .qbox-modal-overlay {
+            position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.35);
+            display: none; align-items: flex-end; justify-content: center;
+        }
+        .qbox-modal-overlay.open { display: flex; }
+        .qbox-modal {
+            background: #fff; border-radius: 20px 20px 0 0; padding: 24px 20px 32px;
+            width: 100%; max-width: 480px; box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+        }
+        .qbox-modal h3 { font-size: 1rem; font-weight: 800; margin: 0 0 16px; color: #1a1a1a; }
+        .qbox-modal input, .qbox-modal textarea {
+            width: 100%; box-sizing: border-box; padding: 11px 12px;
+            border: 1.5px solid #e5e7eb; border-radius: 10px;
+            font-size: 0.88rem; font-family: inherit; color: #1a1a1a;
+            background: #fafafa; margin-bottom: 10px;
+        }
+        .qbox-modal input:focus, .qbox-modal textarea:focus { outline: none; border-color: #0D3BFF; background: #fff; }
+        .qbox-modal textarea { height: 100px; resize: none; }
+        .qbox-modal-btns { display: flex; gap: 8px; }
+        .qbox-modal-cancel { flex:1; padding:12px; border:1.5px solid #e5e7eb; border-radius:10px; background:#fff; font-size:0.88rem; font-weight:600; cursor:pointer; }
+        .qbox-modal-submit { flex:2; padding:12px; background:#0D3BFF; color:#fff; border:none; border-radius:10px; font-size:0.88rem; font-weight:700; cursor:pointer; }
+        .qbox-modal-submit:disabled { background:#c0c8f0; cursor:default; }
         .nav-fab {
             position: fixed; right: 24px; z-index: 90;
             background: #fff; border: 1.5px solid #e5e7eb; border-radius: 24px;
@@ -11566,21 +11598,27 @@ function exitSEComplete() {
     _seStartTime = null;
 }
 
-async function seSubmitQuestion() {
-    const input = document.getElementById('seQuestionInput');
-    const q = input.value.trim();
-    if (!q) { input.focus(); return; }
-    const btn = document.getElementById('seQboxBtn');
+function openQboxModal() {
+    document.getElementById('qboxOverlay').classList.add('open');
+    const nameEl = document.getElementById('qboxName');
+    if (_seName) nameEl.value = _seName;
+    setTimeout(() => (nameEl.value ? document.getElementById('qboxText') : nameEl).focus(), 100);
+}
+function closeQboxModal() {
+    document.getElementById('qboxOverlay').classList.remove('open');
+    document.getElementById('qboxText').value = '';
+}
+async function submitQbox() {
+    const name = document.getElementById('qboxName').value.trim();
+    const q = document.getElementById('qboxText').value.trim();
+    if (!name) { document.getElementById('qboxName').focus(); return; }
+    if (!q)    { document.getElementById('qboxText').focus(); return; }
+    const btn = document.getElementById('qboxSubmitBtn');
     btn.disabled = true;
     try {
-        await _sb.from('se_questions').insert({
-            se_name: _seName || '(미입력)',
-            question: q
-        });
-        input.value = '';
-        const done = document.getElementById('seQboxDone');
-        done.style.display = 'block';
-        setTimeout(() => { done.style.display = 'none'; }, 3000);
+        await _sb.from('se_questions').insert({ se_name: name, question: q });
+        closeQboxModal();
+        showToast('✓ 질문이 전달되었습니다!');
     } catch(e) {
         showToast('⚠️ 전송에 실패했습니다. 다시 시도해 주세요.');
     }
@@ -12671,6 +12709,22 @@ function _highlight(text, query) {
     <span class="report-fab-icon">🚩</span> 오류 신고
 </button>
 
+<!-- ══ 질문 상자 버튼 ══ -->
+<button class="qbox-fab" onclick="openQboxModal()">💬 질문 상자</button>
+
+<!-- ══ 질문 상자 모달 ══ -->
+<div class="qbox-modal-overlay" id="qboxOverlay" onclick="if(event.target===this)closeQboxModal()">
+    <div class="qbox-modal">
+        <h3>💬 질문 상자</h3>
+        <input type="text" id="qboxName" placeholder="이름 (예: 홍길동 SE)" maxlength="30">
+        <textarea id="qboxText" placeholder="궁금한 점이나 건의사항을 자유롭게 남겨주세요."></textarea>
+        <div class="qbox-modal-btns">
+            <button class="qbox-modal-cancel" onclick="closeQboxModal()">취소</button>
+            <button class="qbox-modal-submit" id="qboxSubmitBtn" onclick="submitQbox()">보내기</button>
+        </div>
+    </div>
+</div>
+
 <!-- ══ 오류 신고 모달 ══ -->
 <div class="report-modal-overlay" id="reportModalOverlay" onclick="closeReportModal(event)">
     <div class="report-modal" onclick="event.stopPropagation()">
@@ -12787,12 +12841,6 @@ function _highlight(text, query) {
     <div class="se-section-label">상황별 시나리오</div>
     <div class="se-scenario-grid" id="seScenarioGrid"></div>
     <button class="se-finish-btn" onclick="completeSEGuide()">✅ 가이드 학습 완료</button>
-    <div class="se-qbox-section">
-        <div class="se-section-label">💬 질문 상자</div>
-        <textarea class="se-qbox-textarea" id="seQuestionInput" placeholder="궁금한 점이나 건의사항을 자유롭게 남겨주세요."></textarea>
-        <button class="se-qbox-submit" id="seQboxBtn" onclick="seSubmitQuestion()">질문 보내기</button>
-        <div class="se-qbox-done" id="seQboxDone">✓ 질문이 전달되었습니다!</div>
-    </div>
     <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
 </div>
 
