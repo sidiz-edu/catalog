@@ -13360,6 +13360,26 @@ async function seRenderList(storeId) {
     }
 }
 
+function seCompressImage(file, maxPx, quality) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            let w = img.naturalWidth, h = img.naturalHeight;
+            if (w > maxPx || h > maxPx) {
+                if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+                else        { w = Math.round(w * maxPx / h); h = maxPx; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+        };
+        img.src = url;
+    });
+}
+
 function sePopulateSkuList(productId) {
     const dl = document.getElementById('seSkuList');
     const cl = document.getElementById('seColorCodeList');
@@ -13400,9 +13420,9 @@ async function seAddDisplay() {
         let imageUrl = null;
         const photoFile = document.getElementById('seAddPhoto').files[0];
         if (photoFile) {
-            const ext = photoFile.name.split('.').pop();
-            const path = `${storeId}/${productId}_${Date.now()}.${ext}`;
-            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, photoFile, { upsert: true });
+            const compressed = await seCompressImage(photoFile, 1200, 0.8);
+            const path = `${storeId}/${productId}_${Date.now()}.jpg`;
+            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
             if (upErr) throw upErr;
             const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
             imageUrl = urlData.publicUrl;
