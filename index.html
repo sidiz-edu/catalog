@@ -13090,7 +13090,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-table">
                         <thead>
                             <tr>
-                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>전시 시작일</th><th>메모</th><th>최종 수정</th><th></th>
+                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -13111,6 +13111,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <div class="se-add-grid" style="grid-template-columns: 80px 1fr;">
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
+                    </div>
+                    <div class="se-add-grid" style="grid-template-columns: 1fr;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
+                            <span>📷 사진 첨부 (선택)</span>
+                            <input type="file" id="seAddPhoto" accept="image/*" style="font-size:0.75rem;">
+                        </label>
                     </div>
                     <div class="se-add-row">
                         <input type="text" id="seAddUpdater" placeholder="수정자 이름">
@@ -13283,23 +13289,27 @@ async function seLoadStore() {
 
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="8" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
         const { data, error } = await _sb.from('store_displays').select('*')
             .eq('store_id', storeId).order('display_since', { ascending: false });
         if (error) throw error;
         if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="8" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => {
             const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
             const dt = new Date(row.updated_at).toLocaleDateString('ko-KR');
+            const imgCell = row.image_url
+                ? `<td><a href="${row.image_url}" target="_blank"><img src="${row.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;"></a></td>`
+                : `<td style="color:#94a3b8;">-</td>`;
             return `<tr>
                 <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
                 <td style="font-size:0.78rem;color:#475569;">${row.sku || '-'}</td>
                 <td style="font-size:0.78rem;">${row.color_code || '-'}</td>
                 <td style="text-align:center;">${row.quantity ?? 1}</td>
+                ${imgCell}
                 <td>${row.display_since || '-'}</td>
                 <td style="color:#94a3b8;">${row.memo || '-'}</td>
                 <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
@@ -13307,7 +13317,7 @@ async function seRenderList(storeId) {
             </tr>`;
         }).join('');
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 
@@ -13348,12 +13358,21 @@ async function seAddDisplay() {
     if (!updater)   { msg.className='se-msg err'; msg.textContent='수정자 이름을 입력하세요.'; return; }
     msg.textContent='저장 중...'; msg.className='se-msg';
     try {
-        const { error } = await _sb.from('store_displays').upsert(
-            { store_id: storeId, product_id: productId, display_since: date, memo,
+        let imageUrl = null;
+        const photoFile = document.getElementById('seAddPhoto').files[0];
+        if (photoFile) {
+            const ext = photoFile.name.split('.').pop();
+            const path = `${storeId}/${productId}_${Date.now()}.${ext}`;
+            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, photoFile, { upsert: true });
+            if (upErr) throw upErr;
+            const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
+            imageUrl = urlData.publicUrl;
+        }
+        const record = { store_id: storeId, product_id: productId, display_since: date, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
-              sku, color_code: colorCode, quantity },
-            { onConflict: 'store_id,product_id' }
-        );
+              sku, color_code: colorCode, quantity };
+        if (imageUrl) record.image_url = imageUrl;
+        const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
         if (error) throw error;
         msg.className='se-msg ok'; msg.textContent='✓ 저장되었습니다.';
         document.getElementById('seAddProduct').value = '';
@@ -13363,6 +13382,7 @@ async function seAddDisplay() {
         document.getElementById('seColorCodeList').innerHTML = '';
         document.getElementById('seAddQty').value = '1';
         document.getElementById('seAddMemo').value = '';
+        document.getElementById('seAddPhoto').value = '';
         await seRenderList(storeId);
         setTimeout(() => msg.textContent='', 3000);
     } catch(e) { msg.className='se-msg err'; msg.textContent='오류: '+e.message; }
