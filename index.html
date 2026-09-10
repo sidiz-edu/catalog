@@ -3726,6 +3726,7 @@
         <button class="admin-bar-btn" onclick="document.querySelector('.section-label').scrollIntoView({behavior:'smooth'})">📦 제품 라인업</button>
         <button class="admin-bar-btn" onclick="openReportPanel()" id="adminReportBtn">🚩 신고<span class="report-badge" id="adminBadge" style="display:none"></span></button>
         <button class="admin-bar-btn" onclick="openQuotePanel()">📋 견적 이력</button>
+        <button class="admin-bar-btn" onclick="openAdminQuestions()">💬 질문함</button>
         <button class="admin-bar-btn" onclick="openSELogs()">📊 SE 학습 기록</button>
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
         <button class="admin-bar-btn danger" onclick="openResetModal()">↺ 초기화</button>
@@ -11581,6 +11582,36 @@ function closeSELogs() {
     document.getElementById('seLogsOverlay').classList.remove('open');
 }
 
+async function openAdminQuestions() {
+    const overlay = document.getElementById('adminQuestionsOverlay');
+    overlay.classList.add('open');
+    const body = document.getElementById('adminQBody');
+    body.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:24px;">불러오는 중...</p>';
+    try {
+        const { data, error } = await _sb.from('se_questions')
+            .select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) throw error;
+        document.getElementById('adminQCount').textContent = `총 ${data?.length || 0}건`;
+        body.innerHTML = !data?.length
+            ? '<p style="color:#9ca3af;text-align:center;padding:24px;">등록된 질문이 없습니다.</p>'
+            : data.map(q => {
+                const dt = new Date(q.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+                return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                        <strong style="font-size:0.88rem;">${q.se_name}</strong>
+                        <span style="font-size:0.76rem;color:#9ca3af;">${dt}</span>
+                    </div>
+                    <p style="margin:0;font-size:0.88rem;white-space:pre-wrap;">${q.question}</p>
+                </div>`;
+            }).join('');
+    } catch(e) {
+        body.innerHTML = `<p style="color:#f87171;text-align:center;">오류: ${e.message}</p>`;
+    }
+}
+function closeAdminQuestions() {
+    document.getElementById('adminQuestionsOverlay').classList.remove('open');
+}
+
 async function completeSEGuide() {
     const elapsed = _seStartTime ? Math.round((Date.now() - _seStartTime) / 1000) : 0;
     closeSEGuide();
@@ -12868,6 +12899,19 @@ function _highlight(text, query) {
     </div>
 </div>
 
+<div id="adminQuestionsOverlay" class="se-logs-overlay" onclick="if(event.target===this)closeAdminQuestions()">
+    <div class="se-logs-modal">
+        <div class="se-logs-header">
+            <div>
+                <div class="se-logs-title">💬 SE 질문함</div>
+                <div class="se-logs-count" id="adminQCount"></div>
+            </div>
+            <button class="se-logs-close" onclick="closeAdminQuestions()">✕</button>
+        </div>
+        <div class="se-logs-body" id="adminQBody" style="padding:16px;"></div>
+    </div>
+</div>
+
 <div id="seCompleteOverlay" style="display:none" class="se-complete-overlay">
     <div class="se-complete-icon">🎓</div>
     <div class="se-complete-name" id="seCompleteName"></div>
@@ -13075,7 +13119,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab active" onclick="seSwitchTab('store')">내 매장 관리</button>
             <button class="se-tab" onclick="seSwitchTab('layout')">레이아웃 편집</button>
             <button class="se-tab" onclick="seSwitchTab('overview')">전체 현황</button>
-            <button class="se-tab" onclick="seSwitchTab('questions')">💬 질문함</button>
         </div>
     </div>
     <div class="se-panel-body">
@@ -13189,12 +13232,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div class="se-overview-grid" id="seOverviewGrid"></div>
         </div>
-        <div id="seTabQuestions" style="display:none;">
-            <div style="margin-bottom:12px; display:flex; justify-content:flex-end;">
-                <button class="se-save-btn" onclick="seLoadQuestions()">🔄 새로고침</button>
-            </div>
-            <div id="seQuestionsBody"></div>
-        </div>
     </div>
 </div>
 
@@ -13242,16 +13279,14 @@ function openSEPanel() {
 function closeSEPanel() { document.getElementById('seMgmtPanel').classList.remove('open'); }
 
 function seSwitchTab(tab) {
-    const tabs = ['store','layout','overview','questions'];
+    const tabs = ['store','layout','overview'];
     document.querySelectorAll('.se-tab').forEach((t, i) =>
         t.classList.toggle('active', tabs[i] === tab));
     document.getElementById('seTabStore').style.display      = tab==='store'     ? '' : 'none';
     document.getElementById('seTabLayout').style.display     = tab==='layout'    ? 'flex' : 'none';
     document.getElementById('seTabOverview').style.display   = tab==='overview'  ? '' : 'none';
-    document.getElementById('seTabQuestions').style.display  = tab==='questions' ? '' : 'none';
     if (tab === 'overview')  seLoadOverview();
     if (tab === 'layout')    seLayoutInit();
-    if (tab === 'questions') seLoadQuestions();
 }
 
 async function seLoadQuestions() {
