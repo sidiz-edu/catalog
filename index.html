@@ -3475,6 +3475,22 @@
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
         }
         .se-panel-title { font-size: 1.05rem; font-weight: 800; color: #001499; }
+        .se-qbox-section { margin-top: 18px; }
+        .se-section-label { font-size: 0.78rem; font-weight: 700; color: #6b7280; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+        .se-qbox-textarea {
+            width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px solid #e5e7eb;
+            border-radius: 10px; font-size: 0.88rem; resize: none; height: 90px;
+            font-family: inherit; color: #1a1a1a; background: #fafafa;
+            transition: border-color 0.2s;
+        }
+        .se-qbox-textarea:focus { outline: none; border-color: #0D3BFF; background: #fff; }
+        .se-qbox-submit {
+            width: 100%; padding: 11px; margin-top: 8px;
+            background: #0D3BFF; color: #fff; border: none; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 700; cursor: pointer;
+        }
+        .se-qbox-submit:disabled { background: #c0c8f0; cursor: default; }
+        .se-qbox-done { text-align: center; font-size: 0.85rem; color: #059669; font-weight: 600; margin-top: 8px; display: none; }
 .se-tour-btn {
             width: 100%; padding: 14px;
             background: linear-gradient(135deg, #001499, #0D3BFF);
@@ -11550,6 +11566,27 @@ function exitSEComplete() {
     _seStartTime = null;
 }
 
+async function seSubmitQuestion() {
+    const input = document.getElementById('seQuestionInput');
+    const q = input.value.trim();
+    if (!q) { input.focus(); return; }
+    const btn = document.getElementById('seQboxBtn');
+    btn.disabled = true;
+    try {
+        await _sb.from('se_questions').insert({
+            se_name: _seName || '(미입력)',
+            question: q
+        });
+        input.value = '';
+        const done = document.getElementById('seQboxDone');
+        done.style.display = 'block';
+        setTimeout(() => { done.style.display = 'none'; }, 3000);
+    } catch(e) {
+        showToast('⚠️ 전송에 실패했습니다. 다시 시도해 주세요.');
+    }
+    btn.disabled = false;
+}
+
 function _openSEPanel() {
     _renderScenarios();
     _seStartTime = Date.now();
@@ -12750,6 +12787,12 @@ function _highlight(text, query) {
     <div class="se-section-label">상황별 시나리오</div>
     <div class="se-scenario-grid" id="seScenarioGrid"></div>
     <button class="se-finish-btn" onclick="completeSEGuide()">✅ 가이드 학습 완료</button>
+    <div class="se-qbox-section">
+        <div class="se-section-label">💬 질문 상자</div>
+        <textarea class="se-qbox-textarea" id="seQuestionInput" placeholder="궁금한 점이나 건의사항을 자유롭게 남겨주세요."></textarea>
+        <button class="se-qbox-submit" id="seQboxBtn" onclick="seSubmitQuestion()">질문 보내기</button>
+        <div class="se-qbox-done" id="seQboxDone">✓ 질문이 전달되었습니다!</div>
+    </div>
     <button class="se-close-btn" onclick="closeSEGuide()">닫기</button>
 </div>
 
@@ -12984,6 +13027,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab active" onclick="seSwitchTab('store')">내 매장 관리</button>
             <button class="se-tab" onclick="seSwitchTab('layout')">레이아웃 편집</button>
             <button class="se-tab" onclick="seSwitchTab('overview')">전체 현황</button>
+            <button class="se-tab" onclick="seSwitchTab('questions')">💬 질문함</button>
         </div>
     </div>
     <div class="se-panel-body">
@@ -13084,6 +13128,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div class="se-overview-grid" id="seOverviewGrid"></div>
         </div>
+        <div id="seTabQuestions" style="display:none;">
+            <div style="margin-bottom:12px; display:flex; justify-content:flex-end;">
+                <button class="se-save-btn" onclick="seLoadQuestions()">🔄 새로고침</button>
+            </div>
+            <div id="seQuestionsBody"></div>
+        </div>
     </div>
 </div>
 
@@ -13131,13 +13181,36 @@ function openSEPanel() {
 function closeSEPanel() { document.getElementById('seMgmtPanel').classList.remove('open'); }
 
 function seSwitchTab(tab) {
+    const tabs = ['store','layout','overview','questions'];
     document.querySelectorAll('.se-tab').forEach((t, i) =>
-        t.classList.toggle('active', (i===0&&tab==='store')||(i===1&&tab==='layout')||(i===2&&tab==='overview')));
-    document.getElementById('seTabStore').style.display   = tab==='store'    ? '' : 'none';
-    document.getElementById('seTabLayout').style.display  = tab==='layout'   ? 'flex' : 'none';
-    document.getElementById('seTabOverview').style.display= tab==='overview' ? '' : 'none';
-    if (tab === 'overview') seLoadOverview();
-    if (tab === 'layout')   seLayoutInit();
+        t.classList.toggle('active', tabs[i] === tab));
+    document.getElementById('seTabStore').style.display      = tab==='store'     ? '' : 'none';
+    document.getElementById('seTabLayout').style.display     = tab==='layout'    ? 'flex' : 'none';
+    document.getElementById('seTabOverview').style.display   = tab==='overview'  ? '' : 'none';
+    document.getElementById('seTabQuestions').style.display  = tab==='questions' ? '' : 'none';
+    if (tab === 'overview')  seLoadOverview();
+    if (tab === 'layout')    seLayoutInit();
+    if (tab === 'questions') seLoadQuestions();
+}
+
+async function seLoadQuestions() {
+    const body = document.getElementById('seQuestionsBody');
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.85rem;">불러오는 중...</p>';
+    const { data, error } = await _sb.from('se_questions')
+        .select('*').order('created_at', { ascending: false }).limit(100);
+    if (error || !data || !data.length) {
+        body.innerHTML = '<p style="color:var(--se-muted);font-size:0.85rem;">등록된 질문이 없습니다.</p>';
+        return;
+    }
+    body.innerHTML = data.map(q => `
+        <div style="border:1px solid var(--se-border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--se-surface);">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-weight:700;font-size:0.88rem;">${q.se_name}</span>
+                <span style="font-size:0.76rem;color:var(--se-muted);">${new Date(q.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+            </div>
+            <p style="font-size:0.88rem;margin:0;white-space:pre-wrap;">${q.question}</p>
+        </div>
+    `).join('');
 }
 
 async function seLoadStore() {
