@@ -13147,7 +13147,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <h4>+ 전시 제품 추가</h4>
                     <div class="se-add-grid">
                         <select id="seAddProduct" onchange="sePopulateSkuList(this.value)"><option value="">제품 선택</option></select>
-                        <input type="date" id="seAddDate">
+                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
+                            <span>전시 시작일</span>
+                            <input type="date" id="seAddDate">
+                        </label>
                     </div>
                     <div class="se-add-grid">
                         <input type="text" id="seAddSku" list="seSkuList" placeholder="단품코드 (예: T50HDA3KK)" autocomplete="off" onchange="sePopulateColorCodes(this.value)">
