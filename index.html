@@ -13090,7 +13090,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-table">
                         <thead>
                             <tr>
-                                <th>제품명</th><th>제품 코드</th><th>색상</th><th>개수</th><th>전시 시작일</th><th>메모</th><th>최종 수정</th><th></th>
+                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>전시 시작일</th><th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -13099,12 +13099,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div class="se-add-box">
                     <h4>+ 전시 제품 추가</h4>
                     <div class="se-add-grid">
-                        <select id="seAddProduct"><option value="">제품 선택</option></select>
+                        <select id="seAddProduct" onchange="sePopulateSkuList(this.value)"><option value="">제품 선택</option></select>
                         <input type="date" id="seAddDate">
                     </div>
                     <div class="se-add-grid">
-                        <input type="text" id="seAddSku" placeholder="제품 코드 (예: T50HDA3KK-5G1WW)">
-                        <input type="text" id="seAddColor" placeholder="색상 코드 (예: 라이트그레이)">
+                        <input type="text" id="seAddSku" list="seSkuList" placeholder="단품코드 선택 또는 직접 입력" autocomplete="off">
+                        <datalist id="seSkuList"></datalist>
+                        <input type="text" id="seAddColor" placeholder="색상 (예: 라이트그레이)">
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 80px 1fr;">
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
@@ -13307,6 +13308,19 @@ async function seRenderList(storeId) {
     } catch(e) {
         tbody.innerHTML = `<tr><td colspan="8" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
+}
+
+function sePopulateSkuList(productId) {
+    const dl = document.getElementById('seSkuList');
+    dl.innerHTML = '';
+    document.getElementById('seAddSku').value = '';
+    document.getElementById('seAddColor').value = '';
+    if (!productId || !productSkus[productId]) return;
+    productSkus[productId].forEach(sku => {
+        const opt = document.createElement('option');
+        opt.value = sku;
+        dl.appendChild(opt);
+    });
 }
 
 async function seAddDisplay() {
