@@ -13404,20 +13404,34 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <option value="">-- 매장 선택 --</option>
                 </select>
             </div>
-            <div id="seStoreContent" style="display:none;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-                    <span style="font-size:0.78rem;color:var(--se-muted);white-space:nowrap;">이동 대상 매장</span>
-                    <select id="seCopyTarget" style="flex:1;min-width:160px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                        <option value="">매장 선택</option>
+            <!-- 이동 모달 -->
+            <div id="seMoveModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+                <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:340px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
+                    <div style="font-size:0.95rem;font-weight:700;color:var(--se-text);">📦 전시품 이동</div>
+                    <div id="seMoveItemCount" style="font-size:0.78rem;color:var(--se-muted);"></div>
+                    <select id="seMoveTargetStore" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        <option value="">대상 매장 선택</option>
                     </select>
-                    <input type="text" id="seMoverName" placeholder="이동자 이름" style="width:100px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                    <input type="text" id="seMoverReason" placeholder="이동 목적 (선택)" style="width:130px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                    <span id="seCopyFeedback" style="font-size:0.78rem;color:var(--se-muted);"></span>
+                    <input type="text" id="seMoveByName" placeholder="이동자 이름 *" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    <input type="text" id="seMoveReason" placeholder="이동 목적 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    <div id="seMoveModalMsg" style="font-size:0.78rem;min-height:18px;"></div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button onclick="seCloseMoveModal()" style="padding:8px 18px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.82rem;">취소</button>
+                        <button onclick="seConfirmMove()" style="padding:8px 18px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-size:0.82rem;">이동</button>
+                    </div>
+                </div>
+            </div>
+            <div id="seStoreContent" style="display:none;">
+                <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span id="seSelCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
+                    <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
+                    <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
                 <div class="se-table-wrap">
                     <table class="se-table">
                         <thead>
                             <tr>
+                                <th style="width:28px;"><input type="checkbox" id="seSelectAll" onchange="seToggleSelectAll(this.checked)" title="전체 선택"></th>
                                 <th>제품명</th><th>구분</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>위치</th><th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
@@ -13571,15 +13585,6 @@ function openSEPanel() {
             sel.appendChild(opt);
         });
     }
-    // 복사 대상 매장 드롭다운
-    const copySel = document.getElementById('seCopyTarget');
-    if (copySel.options.length <= 1) {
-        storeData.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.id; opt.textContent = `${s.name} (${s.region})`;
-            copySel.appendChild(opt);
-        });
-    }
     // 시리즈 드롭다운
     const pSel = document.getElementById('seAddSeries');
     if (pSel.options.length <= 1) {
@@ -13641,7 +13646,7 @@ let seDisplayData = [];
 let sePendingDeletes = [];
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="11" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
         const { data, error } = await _sb.from('store_displays').select('*')
             .eq('store_id', storeId).order('display_since', { ascending: false });
@@ -13650,13 +13655,13 @@ async function seRenderList(storeId) {
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="11" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
-        tbody.innerHTML = '<tr><td colspan="11" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
     const activeRows = seDisplayData.map((row, i) => {
@@ -13671,6 +13676,7 @@ function seRenderTable(storeId) {
             ? `<td><span class="se-tag" style="background:#475569;color:#fff;">창고보관</span></td>`
             : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
         return `<tr>
+            <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
             ${purposeCell}
             <td style="font-size:0.78rem;color:#475569;">${row.sku || '-'}</td>
@@ -13691,6 +13697,7 @@ function seRenderTable(storeId) {
     const deletedRows = sePendingDeletes.map((row, j) => {
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
+            <td></td>
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : row.purpose === '창고' ? '창고보관' : '전시'}</span></td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku || '-'}</td>
@@ -13748,34 +13755,97 @@ function sePopulateColorCodes(productCode) {
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
 
-async function seMoveRowToStore(idx) {
-    const targetId  = document.getElementById('seCopyTarget').value;
-    const moverName   = document.getElementById('seMoverName').value.trim();
-    const moverReason = document.getElementById('seMoverReason').value.trim();
-    const fb = document.getElementById('seCopyFeedback');
-    if (!targetId)   { fb.style.color='#f87171'; fb.textContent='이동 대상 매장을 선택하세요.'; return; }
-    if (!moverName)  { fb.style.color='#f87171'; fb.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoverName').focus(); return; }
-    if (targetId === seCurrentStore) { fb.style.color='#f87171'; fb.textContent='현재 매장과 동일합니다.'; return; }
+let seSelectedIds = new Set();
+let _sePendingMoveIds = [];
+
+function seUpdateSelection() {
+    const cbs = document.querySelectorAll('#seDisplayList input[type=checkbox][data-id]');
+    seSelectedIds = new Set([...cbs].filter(c => c.checked).map(c => c.dataset.id));
+    const bar = document.getElementById('seBatchBar');
+    const cnt = document.getElementById('seSelCount');
+    const all = document.getElementById('seSelectAll');
+    if (seSelectedIds.size > 0) {
+        bar.style.display = 'flex';
+        cnt.textContent = `${seSelectedIds.size}개 선택됨`;
+    } else {
+        bar.style.display = 'none';
+    }
+    if (all) all.checked = cbs.length > 0 && seSelectedIds.size === cbs.length;
+}
+function seToggleSelectAll(checked) {
+    document.querySelectorAll('#seDisplayList input[type=checkbox][data-id]').forEach(c => c.checked = checked);
+    seUpdateSelection();
+}
+function seClearSelection() {
+    document.querySelectorAll('#seDisplayList input[type=checkbox][data-id]').forEach(c => c.checked = false);
+    seSelectedIds.clear();
+    const bar = document.getElementById('seBatchBar');
+    if (bar) bar.style.display = 'none';
+    const all = document.getElementById('seSelectAll');
+    if (all) all.checked = false;
+}
+function seMoveRowToStore(idx) {
     const row = seDisplayData[idx];
     if (!row) return;
+    _sePendingMoveIds = [row.id];
+    seOpenMoveModal();
+}
+function seOpenMoveModal() {
+    if (_sePendingMoveIds.length === 0) {
+        _sePendingMoveIds = [...seSelectedIds];
+    }
+    if (!_sePendingMoveIds.length) return;
+    const modal = document.getElementById('seMoveModal');
+    const sel = document.getElementById('seMoveTargetStore');
+    sel.innerHTML = '<option value="">대상 매장 선택</option>';
+    storeData.forEach(s => {
+        if (s.id === seCurrentStore) return;
+        const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name} (${s.region})`; sel.appendChild(o);
+    });
+    document.getElementById('seMoveByName').value = '';
+    document.getElementById('seMoveReason').value = '';
+    document.getElementById('seMoveModalMsg').textContent = '';
+    document.getElementById('seMoveItemCount').textContent = `이동할 항목: ${_sePendingMoveIds.length}개`;
+    modal.style.display = 'flex';
+}
+function seCloseMoveModal() {
+    document.getElementById('seMoveModal').style.display = 'none';
+    _sePendingMoveIds = [];
+}
+async function seConfirmMove() {
+    const targetId  = document.getElementById('seMoveTargetStore').value;
+    const moverName = document.getElementById('seMoveByName').value.trim();
+    const reason    = document.getElementById('seMoveReason').value.trim();
+    const msg       = document.getElementById('seMoveModalMsg');
+    if (!targetId)   { msg.style.color='#f87171'; msg.textContent='대상 매장을 선택하세요.'; return; }
+    if (!moverName)  { msg.style.color='#f87171'; msg.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoveByName').focus(); return; }
+    msg.style.color='var(--se-muted)'; msg.textContent='이동 중...';
     const targetStore = storeData.find(s => s.id === targetId);
     const targetName = targetStore ? targetStore.name : targetId;
-    if (!confirm(`"${targetName}"으로 이동합니다.\n현재 매장에서 삭제됩니다. 계속하시겠습니까?`)) return;
-    fb.style.color='var(--se-muted)'; fb.textContent='이동 중...';
+    const ids = [..._sePendingMoveIds];
     try {
-        const { id, store_id, updated_at, ...rest } = row;
-        const movedMemo = moverReason ? `[이동: ${moverReason}]${rest.memo ? ' ' + rest.memo : ''}` : rest.memo;
-        const record = { ...rest, store_id: targetId, memo: movedMemo, updated_by: moverName, updated_at: new Date().toISOString() };
-        const { error: insErr } = await _sb.from('store_displays').insert(record);
-        if (insErr) throw insErr;
-        const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
-        if (delErr) throw delErr;
-        seDisplayData.splice(idx, 1);
+        for (const id of ids) {
+            const row = seDisplayData.find(r => r.id === id);
+            if (!row) continue;
+            const { id: rid, store_id, updated_at, ...rest } = row;
+            const movedMemo = reason ? `[이동: ${reason}]${rest.memo ? ' ' + rest.memo : ''}` : rest.memo;
+            const { error: insErr } = await _sb.from('store_displays').insert({ ...rest, store_id: targetId, memo: movedMemo, updated_by: moverName, updated_at: new Date().toISOString() });
+            if (insErr) throw insErr;
+            const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
+            if (delErr) throw delErr;
+        }
+        seDisplayData = seDisplayData.filter(r => !ids.includes(r.id));
+        seSelectedIds.clear();
+        seClearSelection();
+        seCloseMoveModal();
         seRenderTable(seCurrentStore);
-        fb.style.color='#4ade80'; fb.textContent=`✓ ${targetName}으로 이동 완료 (${moverName})`;
-        setTimeout(() => { fb.textContent=''; }, 3000);
+        const fb = document.createElement('div');
+        fb.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:8px;font-size:0.85rem;z-index:9999;';
+        fb.textContent = `✓ ${targetName}으로 ${ids.length}개 이동 완료 (${moverName})`;
+        document.body.appendChild(fb);
+        setTimeout(() => fb.remove(), 3000);
     } catch(e) {
-        fb.style.color='#f87171'; fb.textContent=`오류: ${e.message}`;
+        msg.style.color='#f87171'; msg.textContent=`오류: ${e.message}`;
     }
 }
 
