@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -13320,7 +13320,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-table">
                         <thead>
                             <tr>
-                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>메모</th><th>최종 수정</th><th></th>
+                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>위치</th><th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -13341,8 +13341,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <input type="text" id="seAddColor" list="seColorCodeList" placeholder="색상코드 (예: 5G1WW)" autocomplete="off">
                         <datalist id="seColorCodeList"></datalist>
                     </div>
-                    <div class="se-add-grid" style="grid-template-columns: 80px 1fr;">
+                    <div class="se-add-grid" style="grid-template-columns: 80px 1fr 1fr;">
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
+                        <input type="text" id="seAddLocation" placeholder="위치 (예: 1단, 창가 2단)">
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 1fr;">
@@ -13525,7 +13526,7 @@ let seDisplayData = [];
 let sePendingDeletes = [];
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="9" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
         const { data, error } = await _sb.from('store_displays').select('*')
             .eq('store_id', storeId).order('display_since', { ascending: false });
@@ -13534,13 +13535,13 @@ async function seRenderList(storeId) {
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="9" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
-        tbody.innerHTML = '<tr><td colspan="9" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
     const activeRows = seDisplayData.map((row, i) => {
@@ -13556,6 +13557,7 @@ function seRenderTable(storeId) {
             <td style="text-align:center;">${row.quantity ?? 1}</td>
             ${imgCell}
             <td>${row.display_since || '-'}</td>
+            <td style="font-size:0.78rem;color:#cbd5e1;">${row.location || '-'}</td>
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;">
@@ -13573,6 +13575,7 @@ function seRenderTable(storeId) {
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
             <td style="color:#94a3b8;">-</td>
             <td style="text-decoration:line-through;">${row.display_since || '-'}</td>
+            <td style="color:#94a3b8;text-decoration:line-through;">${row.location || '-'}</td>
             <td style="color:#94a3b8;text-decoration:line-through;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">삭제 대기</td>
             <td style="display:flex;gap:4px;align-items:center;">
@@ -13668,9 +13671,10 @@ async function seAddDisplay() {
             const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
             imageUrl = urlData.publicUrl;
         }
+        const location = document.getElementById('seAddLocation').value.trim();
         const record = { store_id: storeId, product_id: productId, display_since: date, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
-              sku, color_code: colorCode, quantity };
+              sku, color_code: colorCode, quantity, location: location || null };
         if (imageUrl) record.image_url = imageUrl;
         const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
         if (error) throw error;
@@ -13681,6 +13685,7 @@ async function seAddDisplay() {
         document.getElementById('seSkuList').innerHTML = '';
         document.getElementById('seColorCodeList').innerHTML = '';
         document.getElementById('seAddQty').value = '1';
+        document.getElementById('seAddLocation').value = '';
         document.getElementById('seAddMemo').value = '';
         document.getElementById('seAddPhoto').value = '';
         await seRenderList(storeId);
