@@ -14586,7 +14586,11 @@ function seLayoutDraw() {
         const color = zone ? zone.color : '#0D3BFF';
         const pName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'';
         const shortName = pName.length > 7 ? pName.slice(0,7)+'…' : pName;
-        const cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
+        let cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
+        if (zone) {
+            cx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, cx));
+            cy = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, cy));
+        }
         const sel = _lPlaceSelected && _lPlaceSelected.id === d.id;
 
         // 칩 배경
