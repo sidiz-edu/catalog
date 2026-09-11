@@ -13425,9 +13425,27 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <!-- 이동 모달 -->
             <div id="seEditModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
-                <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:380px;max-width:90vw;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:420px;max-width:92vw;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
                     <div style="font-size:0.95rem;font-weight:700;color:var(--se-text);">✏️ 전시품 수정</div>
                     <input type="hidden" id="seEditId">
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">시리즈</label>
+                        <select id="seEditSeries" onchange="seEditPopulateSkuList(this.value)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <option value="">시리즈 선택</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">단품코드</label>
+                            <input type="text" id="seEditSku" list="seEditSkuList" autocomplete="off" onchange="seEditPopulateColorCodes(this.value)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <datalist id="seEditSkuList"></datalist>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">색상코드</label>
+                            <input type="text" id="seEditColor" list="seEditColorList" autocomplete="off" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <datalist id="seEditColorList"></datalist>
+                        </div>
+                    </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">구분</label>
                         <select id="seEditPurpose" onchange="seEditToggleSaleFields()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
@@ -13447,12 +13465,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);">위치</label>
-                        <input type="text" id="seEditLocation" placeholder="위치 (예: 1단, 창가 2단)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">위치 (레이아웃 구역)</label>
+                        <select id="seEditZone" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <option value="">구역 미지정</option>
+                        </select>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
                         <input type="text" id="seEditMemo" placeholder="메모 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">📷 사진 변경 (선택)</label>
+                        <input type="file" id="seEditPhoto" accept="image/*" style="font-size:0.78rem;color:var(--se-muted);">
                     </div>
                     <div id="seEditSaleFields" style="display:none;flex-direction:column;gap:10px;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
@@ -13723,14 +13747,18 @@ async function seLoadStore() {
 
 let seDisplayData = [];
 let sePendingDeletes = [];
+let seStoreZones = [];
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="12" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const { data, error } = await _sb.from('store_displays').select('*')
-            .eq('store_id', storeId).order('display_since', { ascending: false });
-        if (error) throw error;
-        seDisplayData = data || [];
+        const [displaysRes, zonesRes] = await Promise.all([
+            _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
+            _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name')
+        ]);
+        if (displaysRes.error) throw displaysRes.error;
+        seDisplayData = displaysRes.data || [];
+        seStoreZones = zonesRes.data || [];
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
@@ -13763,7 +13791,7 @@ function seRenderTable(storeId) {
             <td style="text-align:center;">${row.quantity ?? 1}</td>
             ${imgCell}
             <td>${row.display_since || '-'}</td>
-            <td style="font-size:0.78rem;color:#cbd5e1;">${row.location || '-'}</td>
+            <td style="font-size:0.78rem;color:#cbd5e1;">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
@@ -13929,21 +13957,46 @@ async function seConfirmMove() {
     }
 }
 
-function seOpenEditModal(id) {
+async function seOpenEditModal(id) {
     const row = seDisplayData.find(r => r.id === id);
     if (!row) return;
     document.getElementById('seEditId').value = id;
+    document.getElementById('seEditMsg').textContent = '';
+    // 시리즈 드롭다운 채우기
+    const seriesSel = document.getElementById('seEditSeries');
+    if (seriesSel.options.length <= 1) {
+        Object.keys(displaySkuData).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            seriesSel.appendChild(opt);
+        });
+    }
+    seriesSel.value = row.product_id || '';
+    const skuCode = row.sku ? row.sku.split('-')[0] : '';
+    seEditPopulateSkuList(row.product_id || '');
+    document.getElementById('seEditSku').value = skuCode;
+    seEditPopulateColorCodes(skuCode);
+    document.getElementById('seEditColor').value = row.color_code || '';
     document.getElementById('seEditPurpose').value = row.purpose || '전시';
     document.getElementById('seEditQty').value = row.quantity ?? 1;
     document.getElementById('seEditDate').value = row.display_since || '';
-    document.getElementById('seEditLocation').value = row.location || '';
     document.getElementById('seEditMemo').value = row.memo || '';
+    document.getElementById('seEditPhoto').value = '';
     document.getElementById('seEditSold').checked = !!row.sold;
     document.getElementById('seEditGrade').value = row.grade || '';
     document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
     document.getElementById('seEditUpdater').value = '';
-    document.getElementById('seEditMsg').textContent = '';
     seEditToggleSaleFields();
+    // 구역 드롭다운 채우기
+    const zoneSel = document.getElementById('seEditZone');
+    zoneSel.innerHTML = '<option value="">구역 미지정</option>';
+    const { data: zones } = await _sb.from('store_zones').select('id,zone_name').eq('store_id', seCurrentStore).order('zone_name');
+    if (zones) zones.forEach(z => {
+        const opt = document.createElement('option');
+        opt.value = z.id; opt.textContent = z.zone_name;
+        zoneSel.appendChild(opt);
+    });
+    zoneSel.value = row.zone_id || '';
     document.getElementById('seEditModal').style.display = 'flex';
 }
 function seCloseEditModal() {
@@ -13953,17 +14006,37 @@ function seEditToggleSaleFields() {
     const isSale = document.getElementById('seEditPurpose').value === '판매';
     document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
 }
+function seEditPopulateSkuList(seriesName) {
+    const dl = document.getElementById('seEditSkuList');
+    dl.innerHTML = '';
+    document.getElementById('seEditSku').value = '';
+    if (!seriesName || !displaySkuData[seriesName]) return;
+    Object.keys(displaySkuData[seriesName]).forEach(sku => { const o = document.createElement('option'); o.value = sku; dl.appendChild(o); });
+}
+function seEditPopulateColorCodes(productCode) {
+    const cl = document.getElementById('seEditColorList');
+    cl.innerHTML = '';
+    const seriesName = document.getElementById('seEditSeries').value;
+    if (!productCode || !seriesName || !displaySkuData[seriesName]?.[productCode]) return;
+    displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
+}
 async function seSubmitEdit() {
     const id = document.getElementById('seEditId').value;
     const updater = document.getElementById('seEditUpdater').value.trim();
     const msg = document.getElementById('seEditMsg');
     if (!updater) { msg.textContent = '수정자 이름을 입력해주세요.'; return; }
+    const seriesName = document.getElementById('seEditSeries').value;
+    const productCode = document.getElementById('seEditSku').value.trim();
+    const colorCode = document.getElementById('seEditColor').value.trim();
     const purpose = document.getElementById('seEditPurpose').value;
     const updates = {
+        product_id: seriesName || null,
+        sku: productCode && colorCode ? `${productCode}-${colorCode}` : productCode || null,
+        color_code: colorCode || null,
         purpose,
         quantity: parseInt(document.getElementById('seEditQty').value) || 1,
         display_since: document.getElementById('seEditDate').value || null,
-        location: document.getElementById('seEditLocation').value.trim() || null,
+        zone_id: document.getElementById('seEditZone').value || null,
         memo: document.getElementById('seEditMemo').value.trim() || null,
         updated_by: updater,
         updated_at: new Date().toISOString(),
@@ -13973,12 +14046,18 @@ async function seSubmitEdit() {
         updates.grade = document.getElementById('seEditGrade').value || null;
         updates.consumer_price = parseInt(document.getElementById('seEditConsumerPrice').value) || null;
     } else {
-        updates.sold = false;
-        updates.grade = null;
-        updates.consumer_price = null;
-        updates.catalog_visible = false;
+        updates.sold = false; updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
     }
     msg.textContent = '저장 중...';
+    const photoFile = document.getElementById('seEditPhoto').files[0];
+    if (photoFile) {
+        const compressed = await seCompressImage(photoFile, 1200, 0.8);
+        const safeProdId = (seriesName || 'item').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const path = `${seCurrentStore}/${safeProdId}_${Date.now()}.jpg`;
+        const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+        if (upErr) { msg.textContent = '사진 오류: ' + upErr.message; return; }
+        updates.image_url = _sb.storage.from('display-photos').getPublicUrl(path).data.publicUrl;
+    }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
     const idx = seDisplayData.findIndex(r => r.id === id);
