@@ -13473,8 +13473,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);">위치 (레이아웃 구역)</label>
-                        <select id="seEditZone" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">위치</label>
+                        <input type="text" id="seEditLocation" placeholder="위치 선택 또는 입력" list="seEditLocationOptions" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        <datalist id="seEditLocationOptions">
+                            <option value="포커스존">
+                            <option value="체크인존">
+                            <option value="피팅존">
+                            <option value="시팅 파노라마">
+                            <option value="이지리페어존">
+                            <option value="다양한 앉음존">
+                            <option value="오픈커뮤니티룸">
+                        </datalist>
+                        <select id="seEditZone" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.82rem;color:var(--se-muted);">
                             <option value="">구역 미지정</option>
                         </select>
                     </div>
@@ -14029,6 +14039,7 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditDate').value = row.display_since || '';
     document.getElementById('seEditDate').disabled = _dateUnknown;
     document.getElementById('seEditDate').style.opacity = _dateUnknown ? '0.4' : '1';
+    document.getElementById('seEditLocation').value = row.location || '';
     document.getElementById('seEditMemo').value = row.memo || '';
     document.getElementById('seEditPhoto').value = '';
     document.getElementById('seEditSold').checked = !!row.sold;
@@ -14085,6 +14096,7 @@ async function seSubmitEdit() {
         purpose,
         quantity: parseInt(document.getElementById('seEditQty').value) || 1,
         display_since: document.getElementById('seEditDate').value || null,
+        location: document.getElementById('seEditLocation').value.trim() || null,
         zone_id: document.getElementById('seEditZone').value || null,
         memo: document.getElementById('seEditMemo').value.trim() || null,
         updated_by: updater,
