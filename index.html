@@ -13809,7 +13809,7 @@ function seRenderTable(storeId) {
             <td style="text-align:center;">${row.quantity ?? 1}</td>
             ${imgCell}
             <td>${row.display_since || '-'}</td>
-            <td style="font-size:0.78rem;color:#cbd5e1;">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
+            <td style="font-size:0.78rem;color:var(--se-text);">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
