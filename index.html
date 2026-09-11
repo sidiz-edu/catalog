@@ -6152,7 +6152,7 @@ async function applyStoredEdits() {
 
     // Supabase에서 먼저 로드
     try {
-        const { data, error } = await _sb.from('catalog_overrides').select('data').eq('id', 'main').single();
+        const { data, error } = await _sb.from('catalog_overrides').select('data').eq('id', 'main').maybeSingle();
         if (!error && data?.data) edits = data.data;
     } catch {}
 
