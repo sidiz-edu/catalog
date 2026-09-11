@@ -13312,8 +13312,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
                     <span style="font-size:0.78rem;color:var(--se-muted);white-space:nowrap;">이동 대상 매장</span>
                     <select id="seCopyTarget" style="flex:1;min-width:160px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                        <option value="">매장 선택 후 → 버튼</option>
+                        <option value="">매장 선택</option>
                     </select>
+                    <input type="text" id="seMoverName" placeholder="이동자 이름" style="width:110px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
                     <span id="seCopyFeedback" style="font-size:0.78rem;color:var(--se-muted);"></span>
                 </div>
                 <div class="se-table-wrap">
@@ -13644,9 +13645,11 @@ function sePopulateColorCodes(productCode) {
 }
 
 async function seMoveRowToStore(idx) {
-    const targetId = document.getElementById('seCopyTarget').value;
+    const targetId  = document.getElementById('seCopyTarget').value;
+    const moverName = document.getElementById('seMoverName').value.trim();
     const fb = document.getElementById('seCopyFeedback');
-    if (!targetId) { fb.style.color='#f87171'; fb.textContent='이동 대상 매장을 선택하세요.'; return; }
+    if (!targetId)   { fb.style.color='#f87171'; fb.textContent='이동 대상 매장을 선택하세요.'; return; }
+    if (!moverName)  { fb.style.color='#f87171'; fb.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoverName').focus(); return; }
     if (targetId === seCurrentStore) { fb.style.color='#f87171'; fb.textContent='현재 매장과 동일합니다.'; return; }
     const row = seDisplayData[idx];
     if (!row) return;
@@ -13656,13 +13659,14 @@ async function seMoveRowToStore(idx) {
     fb.style.color='var(--se-muted)'; fb.textContent='이동 중...';
     try {
         const { id, store_id, updated_at, ...rest } = row;
-        const { error: insErr } = await _sb.from('store_displays').insert({ ...rest, store_id: targetId });
+        const record = { ...rest, store_id: targetId, updated_by: moverName, updated_at: new Date().toISOString() };
+        const { error: insErr } = await _sb.from('store_displays').insert(record);
         if (insErr) throw insErr;
         const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
         if (delErr) throw delErr;
         seDisplayData.splice(idx, 1);
         seRenderTable(seCurrentStore);
-        fb.style.color='#4ade80'; fb.textContent=`✓ ${targetName}으로 이동 완료`;
+        fb.style.color='#4ade80'; fb.textContent=`✓ ${targetName}으로 이동 완료 (${moverName})`;
         setTimeout(() => { fb.textContent=''; }, 3000);
     } catch(e) {
         fb.style.color='#f87171'; fb.textContent=`오류: ${e.message}`;
