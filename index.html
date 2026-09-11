@@ -13560,7 +13560,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 80px 1fr 1fr;">
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
-                        <input type="text" id="seAddLocation" placeholder="위치 (예: 1단, 창가 2단)">
+                        <input type="text" id="seAddLocation" placeholder="위치 선택 또는 입력" list="seLocationOptions">
+                        <datalist id="seLocationOptions">
+                            <option value="포커스존">
+                            <option value="체크인존">
+                            <option value="피팅존">
+                            <option value="시팅 파노라마">
+                            <option value="이지리페어존">
+                            <option value="다양한 앉음존">
+                            <option value="오픈커뮤니티룸">
+                        </datalist>
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
                     </div>
                     <div id="seAddSoldRow" style="display:none;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap;">
