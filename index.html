@@ -13320,7 +13320,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-table">
                         <thead>
                             <tr>
-                                <th>제품명</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>위치</th><th>메모</th><th>최종 수정</th><th></th>
+                                <th>제품명</th><th>구분</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>위치</th><th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -13330,6 +13330,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <h4>+ 전시 제품 추가</h4>
                     <div class="se-add-grid">
                         <select id="seAddSeries" onchange="sePopulateSkuList(this.value)"><option value="">시리즈 선택</option></select>
+                        <select id="seAddPurpose" onchange="seToggleSoldField()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
+                            <option value="전시">전시</option>
+                            <option value="판매">판매</option>
+                        </select>
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
                             <span>전시 시작일</span>
                             <input type="date" id="seAddDate">
@@ -13345,6 +13349,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
                         <input type="text" id="seAddLocation" placeholder="위치 (예: 1단, 창가 2단)">
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
+                    </div>
+                    <div id="seAddSoldRow" style="display:none;align-items:center;gap:8px;padding:4px 0;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
+                            <input type="checkbox" id="seAddSold">
+                            판매 완료
+                        </label>
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 1fr;">
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
@@ -13526,7 +13536,7 @@ let seDisplayData = [];
 let sePendingDeletes = [];
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="10" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
         const { data, error } = await _sb.from('store_displays').select('*')
             .eq('store_id', storeId).order('display_since', { ascending: false });
@@ -13535,13 +13545,13 @@ async function seRenderList(storeId) {
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="10" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
-        tbody.innerHTML = '<tr><td colspan="10" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
     const activeRows = seDisplayData.map((row, i) => {
@@ -13550,8 +13560,12 @@ function seRenderTable(storeId) {
         const imgCell = row.image_url
             ? `<td><a href="${row.image_url}" target="_blank"><img src="${row.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;"></a></td>`
             : `<td style="color:#94a3b8;">-</td>`;
+        const purposeCell = row.purpose === '판매'
+            ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;cursor:pointer;user-select:none;" onclick="seToggleSold('${row.id}',${!row.sold})" title="클릭하여 토글">${row.sold ? '판매완료' : '판매중'}</span></td>`
+            : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
         return `<tr>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
+            ${purposeCell}
             <td style="font-size:0.78rem;color:#475569;">${row.sku || '-'}</td>
             <td style="font-size:0.78rem;">${row.color_code || '-'}</td>
             <td style="text-align:center;">${row.quantity ?? 1}</td>
@@ -13570,6 +13584,7 @@ function seRenderTable(storeId) {
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
+            <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : '전시'}</span></td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku || '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
@@ -13672,9 +13687,11 @@ async function seAddDisplay() {
             imageUrl = urlData.publicUrl;
         }
         const location = document.getElementById('seAddLocation').value.trim();
+        const purpose  = document.getElementById('seAddPurpose').value;
+        const sold     = document.getElementById('seAddSold').checked;
         const record = { store_id: storeId, product_id: productId, display_since: date, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
-              sku, color_code: colorCode, quantity, location: location || null };
+              sku, color_code: colorCode, quantity, location: location || null, purpose, sold };
         if (imageUrl) record.image_url = imageUrl;
         const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
         if (error) throw error;
@@ -13687,6 +13704,9 @@ async function seAddDisplay() {
         document.getElementById('seAddQty').value = '1';
         document.getElementById('seAddLocation').value = '';
         document.getElementById('seAddMemo').value = '';
+        document.getElementById('seAddPurpose').value = '전시';
+        document.getElementById('seAddSold').checked = false;
+        document.getElementById('seAddSoldRow').style.display = 'none';
         document.getElementById('seAddPhoto').value = '';
         await seRenderList(storeId);
         setTimeout(() => msg.textContent='', 3000);
@@ -13712,6 +13732,21 @@ async function seHardDelete(id, storeId, j) {
         sePendingDeletes.splice(j, 1);
         seRenderTable(storeId);
     } catch(e) { alert('삭제 오류: '+e.message); }
+}
+async function seToggleSold(id, newVal) {
+    const idx = seDisplayData.findIndex(r => r.id === id);
+    if (idx === -1) return;
+    try {
+        const { error } = await _sb.from('store_displays').update({ sold: newVal, updated_at: new Date().toISOString() }).eq('id', id);
+        if (error) throw error;
+        seDisplayData[idx].sold = newVal;
+        seRenderTable(seCurrentStore);
+    } catch(e) { alert('오류: '+e.message); }
+}
+function seToggleSoldField() {
+    const isPurchase = document.getElementById('seAddPurpose').value === '판매';
+    document.getElementById('seAddSoldRow').style.display = isPurchase ? 'flex' : 'none';
+    if (!isPurchase) document.getElementById('seAddSold').checked = false;
 }
 
 // ─── Layout Editor ───────────────────────────────────────────────
