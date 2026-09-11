@@ -13310,7 +13310,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div id="seStoreContent" style="display:none;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-                    <span style="font-size:0.78rem;color:var(--se-muted);white-space:nowrap;">복사 대상 매장</span>
+                    <span style="font-size:0.78rem;color:var(--se-muted);white-space:nowrap;">이동 대상 매장</span>
                     <select id="seCopyTarget" style="flex:1;min-width:160px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
                         <option value="">매장 선택 후 → 버튼</option>
                     </select>
@@ -13333,6 +13333,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <select id="seAddPurpose" onchange="seToggleSoldField()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
                             <option value="전시">전시</option>
                             <option value="판매">판매</option>
+                            <option value="창고">창고 보관</option>
                         </select>
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
                             <span>전시 시작일</span>
@@ -13562,6 +13563,8 @@ function seRenderTable(storeId) {
             : `<td style="color:#94a3b8;">-</td>`;
         const purposeCell = row.purpose === '판매'
             ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;cursor:pointer;user-select:none;" onclick="seToggleSold('${row.id}',${!row.sold})" title="클릭하여 토글">${row.sold ? '판매완료' : '판매중'}</span></td>`
+            : row.purpose === '창고'
+            ? `<td><span class="se-tag" style="background:#475569;color:#fff;">창고보관</span></td>`
             : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
         return `<tr>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
@@ -13576,7 +13579,7 @@ function seRenderTable(storeId) {
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;">
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
-                <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seCopyRowToStore(${i})" title="다른 매장으로 복사">→</button>
+                <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
             </td>
         </tr>`;
     }).join('');
@@ -13584,7 +13587,7 @@ function seRenderTable(storeId) {
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
-            <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : '전시'}</span></td>
+            <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : row.purpose === '창고' ? '창고보관' : '전시'}</span></td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku || '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
@@ -13640,21 +13643,26 @@ function sePopulateColorCodes(productCode) {
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
 
-async function seCopyRowToStore(idx) {
+async function seMoveRowToStore(idx) {
     const targetId = document.getElementById('seCopyTarget').value;
     const fb = document.getElementById('seCopyFeedback');
-    if (!targetId) { fb.style.color='#f87171'; fb.textContent='복사 대상 매장을 선택하세요.'; return; }
+    if (!targetId) { fb.style.color='#f87171'; fb.textContent='이동 대상 매장을 선택하세요.'; return; }
     if (targetId === seCurrentStore) { fb.style.color='#f87171'; fb.textContent='현재 매장과 동일합니다.'; return; }
     const row = seDisplayData[idx];
     if (!row) return;
-    fb.style.color='var(--se-muted)'; fb.textContent='복사 중...';
+    const targetStore = storeData.find(s => s.id === targetId);
+    const targetName = targetStore ? targetStore.name : targetId;
+    if (!confirm(`"${targetName}"으로 이동합니다.\n현재 매장에서 삭제됩니다. 계속하시겠습니까?`)) return;
+    fb.style.color='var(--se-muted)'; fb.textContent='이동 중...';
     try {
         const { id, store_id, updated_at, ...rest } = row;
-        const record = { ...rest, store_id: targetId };
-        const { error } = await _sb.from('store_displays').insert(record);
-        if (error) throw error;
-        const targetStore = storeData.find(s => s.id === targetId);
-        fb.style.color='#4ade80'; fb.textContent=`✓ ${targetStore ? targetStore.name : targetId}에 복사 완료`;
+        const { error: insErr } = await _sb.from('store_displays').insert({ ...rest, store_id: targetId });
+        if (insErr) throw insErr;
+        const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
+        if (delErr) throw delErr;
+        seDisplayData.splice(idx, 1);
+        seRenderTable(seCurrentStore);
+        fb.style.color='#4ade80'; fb.textContent=`✓ ${targetName}으로 이동 완료`;
         setTimeout(() => { fb.textContent=''; }, 3000);
     } catch(e) {
         fb.style.color='#f87171'; fb.textContent=`오류: ${e.message}`;
@@ -13748,6 +13756,7 @@ function seToggleSoldField() {
     document.getElementById('seAddSoldRow').style.display = isPurchase ? 'flex' : 'none';
     if (!isPurchase) document.getElementById('seAddSold').checked = false;
 }
+
 
 // ─── Layout Editor ───────────────────────────────────────────────
 const ZONE_TYPES = [
