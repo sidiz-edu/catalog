@@ -14458,11 +14458,11 @@ function seRenderPlaceList() {
                     border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};">
                 <span onclick="seSelectPlaceItem('${d.id}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
                 <span onclick="seSelectPlaceItem('${d.id}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${pName}</span>
-                ${hasPos ? `<span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
                     <button onclick="event.stopPropagation();seChipScale('${d.id}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
                     <span style="font-size:0.62rem;color:var(--se-muted);min-width:24px;text-align:center;">${scale}x</span>
                     <button onclick="event.stopPropagation();seChipScale('${d.id}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
-                </span>` : ''}
+                </span>
             </div>`;
         }).join('');
         return `<div style="padding:8px 16px 4px;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:${zColor};font-weight:700;">${zName}</div>${rows}`;
