@@ -13314,7 +13314,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <select id="seCopyTarget" style="flex:1;min-width:160px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
                         <option value="">매장 선택</option>
                     </select>
-                    <input type="text" id="seMoverName" placeholder="이동자 이름" style="width:110px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
+                    <input type="text" id="seMoverName" placeholder="이동자 이름" style="width:100px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
+                    <input type="text" id="seMoverReason" placeholder="이동 목적 (선택)" style="width:130px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
                     <span id="seCopyFeedback" style="font-size:0.78rem;color:var(--se-muted);"></span>
                 </div>
                 <div class="se-table-wrap">
@@ -13646,7 +13647,8 @@ function sePopulateColorCodes(productCode) {
 
 async function seMoveRowToStore(idx) {
     const targetId  = document.getElementById('seCopyTarget').value;
-    const moverName = document.getElementById('seMoverName').value.trim();
+    const moverName   = document.getElementById('seMoverName').value.trim();
+    const moverReason = document.getElementById('seMoverReason').value.trim();
     const fb = document.getElementById('seCopyFeedback');
     if (!targetId)   { fb.style.color='#f87171'; fb.textContent='이동 대상 매장을 선택하세요.'; return; }
     if (!moverName)  { fb.style.color='#f87171'; fb.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoverName').focus(); return; }
@@ -13659,7 +13661,8 @@ async function seMoveRowToStore(idx) {
     fb.style.color='var(--se-muted)'; fb.textContent='이동 중...';
     try {
         const { id, store_id, updated_at, ...rest } = row;
-        const record = { ...rest, store_id: targetId, updated_by: moverName, updated_at: new Date().toISOString() };
+        const movedMemo = moverReason ? `[이동: ${moverReason}]${rest.memo ? ' ' + rest.memo : ''}` : rest.memo;
+        const record = { ...rest, store_id: targetId, memo: movedMemo, updated_by: moverName, updated_at: new Date().toISOString() };
         const { error: insErr } = await _sb.from('store_displays').insert(record);
         if (insErr) throw insErr;
         const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
