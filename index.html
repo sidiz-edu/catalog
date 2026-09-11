@@ -14273,6 +14273,11 @@ function seLayoutInit() {
             sel.appendChild(o);
         });
     }
+    // 매장 전시품 탭에서 선택한 매장 자동 연동
+    if (seCurrentStore && sel.value !== seCurrentStore) {
+        sel.value = seCurrentStore;
+        seLayoutLoadStore();
+    }
     // palette
     seLayoutRefreshPalette();
     seLayoutSetupCanvas();
