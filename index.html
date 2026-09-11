@@ -7922,6 +7922,170 @@ const productSkus = {
     atti:   ['K30F1KG-A441P','K30F1KG-A443S','K30F1KG-A444D'],
 };
 
+// ── 전시 관리 시리즈별 단품코드/색상코드 (엑셀 전시품 현황 기반) ──
+const displaySkuData = {
+    'ACCESSORY': {
+        'T009UR': ['BK'],
+        'T00G1KG': ['BK'],
+        'T00U0KG': ['BK65'],
+        'T00U1KG': ['BK65'],
+        'T50 암패드': ['BK'],
+        'T509AL': ['BK'],
+        'T509AR': ['BK'],
+        'T509G': ['BK'],
+        'T80AP0KG': ['BK'],
+        'TNE509': ['451M'],
+        'TNE509H': ['BK'],
+    },
+    'ATTI (아띠)': {
+        'K30F1KG': ['A441P', 'A443S', 'A444D'],
+    },
+    'BUTTON (버튼)': {
+        'FHXZ240803': ['5T1'],
+        'M801E': ['831', 'WW'],
+        'M801EY': ['831', 'WW'],
+        'M803G': ['831', 'WW'],
+        'M803Y': ['831', 'WW'],
+        'MN801EY': ['452'],
+        'MN803G': ['371', 'BK'],
+        'MN803Y': ['371'],
+    },
+    'EGA (에가)': {
+        'TN601FE': ['451M', '452N', 'A490L'],
+        'TN603FG': ['451M', '452N'],
+        'TN603FY': ['451M', '452N', 'A490L'],
+    },
+    'FUNGUS (펑거스)': {
+        'M130': ['456', '458'],
+        'M130Y': ['456'],
+        'MN130': ['451L', '454B', '457L'],
+        'MN130Y': ['451L', '454B', '457L'],
+        'MN130YCC4': ['TOT', 'TOT01V', 'TOT07S'],
+    },
+    'GC PRO': {
+        'G10HDA1CC2': ['TOT7', 'TOT7A'],
+        'G10HDA1KK': ['A441QW'],
+        'G10HDA2CC2': ['TOT7', 'TOT7A'],
+        'G10HDAWJ1KK': ['A441QW', 'A446BK'],
+        'G10HDAWJ2KK': ['A441QW'],
+        'G10HDAWJ3KK': ['A441QW'],
+    },
+    'GX': {
+        'G20HDA0CC1': ['TOT07S'],
+        'G20HDA0KK': ['4C1BWW', '4C6BK', '4D6BK', 'CM9BK', 'CM9WW', 'CN9BK', 'CN9WW'],
+        'G20HDA1KK': ['4C1BWW', '4D1BWW', 'CM9BK'],
+        'G20HDA2KK': ['4D1BWW', 'CN9BK', 'CN9WW'],
+        'G20JD0KK': ['CM9WW'],
+    },
+    'IBLE (아이블)': {
+        'S60FEGU0KK': ['451MWW', '452NWW', '456BK'],
+        'S60SFU0KK': ['451MWW', '452NWW'],
+        'TNB501FE': ['451M', '452N'],
+    },
+    'LINIE (리니에)': {
+        'T250F': ['456'],
+        'T250NF': ['456'],
+        'TXNA250F': ['451M', '452N'],
+        'TXNA250FCF': ['451M'],
+        'TXNA250NF': ['451M', '452N', '457L', 'A444A'],
+    },
+    'MANE (마네)': {
+        'M021E': ['RPKWW'],
+        'MN021E': ['MGNWW', 'WWWWL'],
+    },
+    'MOLTI (몰티)': {
+        'K50HC0KG': ['A441P'],
+        'SK500NA': ['A441P'],
+        'SK501N': ['A441P', 'A443R'],
+    },
+    'MUUVE (뮤브)': {
+        'L10SG0KK': ['5F1ALG', '5F1G'],
+        'L10SU0KK': ['5F1ALG', '5FIG'],
+    },
+    'OLLY (올리)': {
+        'PACPCHACC5': ['TOT1', 'TOT2'],
+    },
+    'OUI (우이)': {
+        'M174E': ['452BW'],
+        'MN171EZ': ['452BW'],
+    },
+    'PILLO (필로)': {
+        'M090': ['831A', '832', 'A441A'],
+    },
+    'PLIT (플릿)': {
+        'N10E0KK': ['5F1WW', '5F2BG'],
+    },
+    'RINGO (링고)': {
+        'S51ACF0VG': ['A441BW', 'A442BW', 'A443BW', 'A447BW'],
+        'S51ACF1VG': ['A441BW'],
+        'S51AF1VG': ['A447A'],
+        'S51D0VG': ['A442B', 'A447B'],
+        'S51N0VG': ['A442BW', 'A447B'],
+        'S51ND1KGCC1': ['TOT07S'],
+        'VSNB509ACF': ['A441P'],
+    },
+    'SPOON (스푼)': {
+        'M081E': ['BWWW'],
+        'MN081E': ['A490LW'],
+    },
+    'STEPO (스텝오)': {
+        'SB01F': ['MM'],
+        'SB01F1': ['3D1', '3D2'],
+    },
+    'T20': {
+        'FHXZ2506004': ['TOT1'],
+        'T21AP0CC1': ['TOT07S', 'TOT3', 'TOT4'],
+        'T21HF0VG': ['5G1CWW', '5G1WW', '5G6AIG', 'A442BW'],
+        'T21HF2VG': ['5G1CWW', '5G1WW', '5G6AIG', 'TOT1'],
+    },
+    'T50': {
+        'T50HLDA0VK': ['451MBK', '451MWW', '452MWW', '456BK'],
+        'T51HLDA0KK': ['5F1WW', '5F6ABK', '5F6ABK(블랙)'],
+        'TNE500HLDA': ['456'],
+        'TNF500HLDA': ['452M'],
+        'TNF503F': ['452M'],
+        'VTNE500HDA': ['451M', '457B'],
+        'VTNE500HF': ['451M', '457B'],
+        'VTNE500HLDA': ['451M', '451MBK', '456', '456BK'],
+        'VTNF500HDA': ['458D'],
+        'VTNF500HLDA': ['451M', '452M'],
+    },
+    'T50 AIR': {
+        'T529D': ['451L'],
+        'T52HLDA0VK': ['2D1WW', '2D6BK'],
+        'T53HLDA0KK': ['5H1CG', '5H1WW', '5H1WW(화이트)', '5H6BBK'],
+        'TXA520HLA': ['2D1', '3D1'],
+        'TXA520HLDA': ['2D6'],
+        'TXB520HLDA': ['2D1'],
+        'VTXA520HLDA': ['2D6'],
+        'VTXB520HLDA': ['2D1', '2D4'],
+    },
+    'T60': {
+        'T61HLDAM0KK': ['5G1BWW', '5G1CSG'],
+        'T61X0KK': ['IG'],
+    },
+    'T60 AIR': {
+        'T61HLDAM0KK': ['5H1ASG', '5H1BIG'],
+    },
+    'T80': {
+        'T800HLDA': ['451A', '481'],
+        'T800HLDA1': ['L096CR'],
+        'T80HLDA1KK': ['451NWW', '456BK', 'L091CR', 'L096CR', 'L096XB', 'L841LC', 'L846BK', 'L846CR', 'L946BK', 'L946CR'],
+        'T80HLDAT1KK': ['451NWW'],
+        'TN800HLDAS': ['L091'],
+    },
+    'T90': {
+        'T900HLDA': ['4B1LMN'],
+        'T90HLDA0KK': ['3945AC', '4B1LMN', '4B6BK', 'L941AC', 'L945AC'],
+        'T90HLDA1KK': ['4B1LMN', '4B6BK', '4B6BKM', '9I2MNI', 'L735LC', 'L744AC', 'L941AC', 'L945AC'],
+        'T90HLDA2KK': ['4B1LMN', '4B6BKM', '917BKM', '9I2MNI', 'L734AC', 'L941AC'],
+    },
+    'TREVO (트레보)': {
+        'S40D0KK': ['5F1', '5F3', '5F7'],
+        'S40DNE0KK': ['DSG', 'DSP', 'WW'],
+    },
+};
+
 // ── T50/T60/GC PRO 스펙 그룹 데이터 ──
 const productSpecGroups = {
     molti: [
@@ -13158,7 +13322,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div class="se-add-box">
                     <h4>+ 전시 제품 추가</h4>
                     <div class="se-add-grid">
-                        <select id="seAddProduct" onchange="sePopulateSkuList(this.value)"><option value="">제품 선택</option></select>
+                        <select id="seAddSeries" onchange="sePopulateSkuList(this.value)"><option value="">시리즈 선택</option></select>
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
                             <span>전시 시작일</span>
                             <input type="date" id="seAddDate">
@@ -13284,12 +13448,12 @@ function openSEPanel() {
             sel.appendChild(opt);
         });
     }
-    // 제품 드롭다운
-    const pSel = document.getElementById('seAddProduct');
+    // 시리즈 드롭다운
+    const pSel = document.getElementById('seAddSeries');
     if (pSel.options.length <= 1) {
-        SE_PRODUCTS.forEach(p => {
+        Object.keys(displaySkuData).forEach(s => {
             const opt = document.createElement('option');
-            opt.value = p.id; opt.textContent = p.name;
+            opt.value = s; opt.textContent = s;
             pSel.appendChild(opt);
         });
     }
@@ -13395,31 +13559,27 @@ function seCompressImage(file, maxPx, quality) {
     });
 }
 
-function sePopulateSkuList(productId) {
+function sePopulateSkuList(seriesName) {
     const dl = document.getElementById('seSkuList');
     const cl = document.getElementById('seColorCodeList');
     dl.innerHTML = ''; cl.innerHTML = '';
     document.getElementById('seAddSku').value = '';
     document.getElementById('seAddColor').value = '';
-    if (!productId || !productSkus[productId]) return;
-    const codes = [...new Set(productSkus[productId].map(s => s.split('-')[0]))];
-    codes.forEach(code => { const o = document.createElement('option'); o.value = code; dl.appendChild(o); });
+    if (!seriesName || !displaySkuData[seriesName]) return;
+    Object.keys(displaySkuData[seriesName]).forEach(sku => { const o = document.createElement('option'); o.value = sku; dl.appendChild(o); });
 }
 function sePopulateColorCodes(productCode) {
     const cl = document.getElementById('seColorCodeList');
     cl.innerHTML = '';
     document.getElementById('seAddColor').value = '';
-    const productId = document.getElementById('seAddProduct').value;
-    if (!productCode || !productId || !productSkus[productId]) return;
-    productSkus[productId]
-        .filter(s => s.startsWith(productCode + '-'))
-        .map(s => s.slice(productCode.length + 1))
-        .forEach(code => { const o = document.createElement('option'); o.value = code; cl.appendChild(o); });
+    const seriesName = document.getElementById('seAddSeries').value;
+    if (!productCode || !seriesName || !displaySkuData[seriesName] || !displaySkuData[seriesName][productCode]) return;
+    displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
 
 async function seAddDisplay() {
     const storeId   = seCurrentStore;
-    const productId = document.getElementById('seAddProduct').value;
+    const productId = document.getElementById('seAddSeries').value;
     const date      = document.getElementById('seAddDate').value;
     const memo      = document.getElementById('seAddMemo').value.trim();
     const updater   = document.getElementById('seAddUpdater').value.trim();
@@ -13449,7 +13609,7 @@ async function seAddDisplay() {
         const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
         if (error) throw error;
         msg.className='se-msg ok'; msg.textContent='✓ 저장되었습니다.';
-        document.getElementById('seAddProduct').value = '';
+        document.getElementById('seAddSeries').value = '';
         document.getElementById('seAddSku').value = '';
         document.getElementById('seAddColor').value = '';
         document.getElementById('seSkuList').innerHTML = '';
