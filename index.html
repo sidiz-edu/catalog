@@ -14799,6 +14799,17 @@ async function seLayoutLoadStore() {
                 w: d.w * cW / 1000, h: d.h * cH / 1000 };
         });
     }
+    // location 텍스트와 zone_name이 일치하면 zone_id 자동 연결
+    const byBaseId = {};
+    _layoutDisplays.filter(d => !d.zone_id && d.location).forEach(d => { if (!byBaseId[d.id]) byBaseId[d.id] = d; });
+    Object.values(byBaseId).forEach(d => {
+        const z = _layoutZones.find(z => z.label.replace(/\s+/g,'').toLowerCase() === d.location.replace(/\s+/g,'').toLowerCase());
+        if (z) {
+            _layoutDisplays.filter(v => v.id === d.id).forEach(v => v.zone_id = z.id);
+            _sb.from('store_displays').update({ zone_id: z.id }).eq('id', d.id);
+        }
+    });
+
     seLayoutRefreshPalette();
     seLayoutDraw();
 }
