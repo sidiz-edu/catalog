@@ -13463,7 +13463,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <input type="number" id="seEditQty" min="1" value="1" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                         </div>
                         <div style="display:flex;flex-direction:column;gap:4px;">
-                            <label style="font-size:0.78rem;color:var(--se-muted);">전시 시작일</label>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label style="font-size:0.78rem;color:var(--se-muted);">전시 시작일</label>
+                                <label style="display:flex;align-items:center;gap:3px;font-size:0.72rem;color:var(--se-muted);cursor:pointer;">
+                                    <input type="checkbox" id="seEditDateUnknown" onchange="seToggleDateUnknown('edit')"> 모름
+                                </label>
+                            </div>
                             <input type="date" id="seEditDate" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                         </div>
                     </div>
@@ -13538,7 +13543,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <option value="창고">창고 보관</option>
                         </select>
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
-                            <span>전시 시작일</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span>전시 시작일</span>
+                                <label style="display:flex;align-items:center;gap:3px;font-size:0.72rem;cursor:pointer;">
+                                    <input type="checkbox" id="seAddDateUnknown" onchange="seToggleDateUnknown('add')"> 모름
+                                </label>
+                            </div>
                             <input type="date" id="seAddDate">
                         </label>
                     </div>
@@ -14003,7 +14013,11 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditColor').value = row.color_code || '';
     document.getElementById('seEditPurpose').value = row.purpose || '전시';
     document.getElementById('seEditQty').value = row.quantity ?? 1;
+    const _dateUnknown = !row.display_since;
+    document.getElementById('seEditDateUnknown').checked = _dateUnknown;
     document.getElementById('seEditDate').value = row.display_since || '';
+    document.getElementById('seEditDate').disabled = _dateUnknown;
+    document.getElementById('seEditDate').style.opacity = _dateUnknown ? '0.4' : '1';
     document.getElementById('seEditMemo').value = row.memo || '';
     document.getElementById('seEditPhoto').value = '';
     document.getElementById('seEditSold').checked = !!row.sold;
@@ -14121,7 +14135,7 @@ async function seAddDisplay() {
         const sold          = document.getElementById('seAddSold').checked;
         const grade         = document.getElementById('seAddGrade').value || null;
         const consumerPrice = parseInt(document.getElementById('seAddConsumerPrice').value) || null;
-        const record = { store_id: storeId, product_id: productId, display_since: date, memo,
+        const record = { store_id: storeId, product_id: productId, display_since: date || null, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
               sku, color_code: colorCode, quantity, location: location || null, purpose, sold,
               grade, consumer_price: consumerPrice };
@@ -14279,6 +14293,14 @@ function seToggleSnap() {
         btn.style.borderColor = _lSnapGrid ? 'var(--se-gold)' : 'var(--se-border)';
     }
     seLayoutDraw();
+}
+
+function seToggleDateUnknown(mode) {
+    const pfx = mode === 'edit' ? 'Edit' : 'Add';
+    const cb  = document.getElementById(`se${pfx}DateUnknown`);
+    const inp = document.getElementById(`se${pfx}Date`);
+    if (cb.checked) { inp.value = ''; inp.disabled = true; inp.style.opacity = '0.4'; }
+    else            { inp.disabled = false; inp.style.opacity = '1'; }
 }
 
 function seChipScale(displayId, delta) {
