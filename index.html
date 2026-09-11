@@ -13639,9 +13639,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                     <!-- 제품 배치 모드 패널 -->
                     <div id="seSidePanelPlace" style="display:none;flex-direction:column;height:100%;">
-                        <div style="padding:14px 16px;border-bottom:1px solid var(--se-border);flex-shrink:0;">
+                        <div style="padding:10px 16px;border-bottom:1px solid var(--se-border);flex-shrink:0;">
                             <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
-                            <div style="font-size:0.72rem;color:var(--se-muted);margin-top:4px;">클릭 후 캔버스에 배치</div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                                <span style="font-size:0.7rem;color:var(--se-muted);">스냅</span>
+                                <button id="seSnapBtn" onclick="seToggleSnap()"
+                                    style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-muted);">OFF</button>
+                            </div>
                         </div>
                         <div id="sePlaceList" style="flex:1;overflow-y:auto;padding:10px 0;"></div>
                     </div>
@@ -14241,6 +14245,29 @@ function seLayoutPos(e) {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 let _lPlaceDrag = null; // {display, ox, oy} 배치된 제품 드래그 이동
+let _lSnapGrid = 0; // 0=off, 20=20px 그리드 스냅
+
+function seSnapCoord(v, grid) { return grid ? Math.round(v / grid) * grid : v; }
+
+function seToggleSnap() {
+    _lSnapGrid = _lSnapGrid ? 0 : 20;
+    const btn = document.getElementById('seSnapBtn');
+    if (btn) {
+        btn.textContent = _lSnapGrid ? '20px' : 'OFF';
+        btn.style.background = _lSnapGrid ? 'var(--se-gold)' : 'var(--se-raised)';
+        btn.style.color = _lSnapGrid ? '#fff' : 'var(--se-muted)';
+        btn.style.borderColor = _lSnapGrid ? 'var(--se-gold)' : 'var(--se-border)';
+    }
+    seLayoutDraw();
+}
+
+function seChipScale(displayId, delta) {
+    const d = _layoutDisplays.find(x => x.id === displayId);
+    if (!d) return;
+    d.chip_scale = Math.round(Math.max(0.6, Math.min(3.0, (d.chip_scale || 1) + delta)) * 10) / 10;
+    _sb.from('store_displays').update({ chip_scale: d.chip_scale }).eq('id', d.id);
+    seLayoutDraw(); seRenderPlaceList();
+}
 
 function seLayoutMouseDown(e) {
     if (e.button !== 0) return;
@@ -14253,20 +14280,22 @@ function seLayoutMouseDown(e) {
         const hitD = [..._layoutDisplays].reverse().find(d => {
             if (d.pos_x == null) return false;
             const cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
-            return Math.abs(p.x - cx) < 36 && Math.abs(p.y - cy) < 14;
+            const sc = d.chip_scale || 1;
+            return Math.abs(p.x - cx) < 36 * sc && Math.abs(p.y - cy) < 14 * sc;
         });
         if (hitD) {
             _lPlaceSelected = hitD;
             _lPlaceDrag = { display: hitD, ox: p.x - hitD.pos_x/1000*cW, oy: p.y - hitD.pos_y/1000*cH };
             seRenderPlaceList(); return;
         }
-        // 빈 캔버스 클릭 → 선택된 전시품 배치 (구역 내로 제한)
+        // 빈 캔버스 클릭 → 선택된 전시품 배치 (구역 내로 제한 + 스냅)
         if (_lPlaceSelected) {
             const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
-            let cx = p.x, cy = p.y;
+            const sc = _lPlaceSelected.chip_scale || 1;
+            let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
             if (zone) {
-                cx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, p.x));
-                cy = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, p.y));
+                cx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, cx));
+                cy = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, cy));
             }
             _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
             _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
@@ -14303,14 +14332,15 @@ function seLayoutMouseDown(e) {
 function seLayoutMouseMove(e) {
     const p = seLayoutPos(e);
 
-    // 배치 모드 드래그 이동 (구역 내로 제한)
+    // 배치 모드 드래그 이동 (구역 내로 제한 + 스냅)
     if (_lPlaceDrag) {
         const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
         const zone = _layoutZones.find(z => z.id === _lPlaceDrag.display.zone_id);
-        let nx = p.x, ny = p.y;
+        const sc = _lPlaceDrag.display.chip_scale || 1;
+        let nx = seSnapCoord(p.x, _lSnapGrid), ny = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
-            nx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, p.x));
-            ny = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, p.y));
+            nx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, nx));
+            ny = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, ny));
         }
         _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
         _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
@@ -14422,15 +14452,17 @@ function seRenderPlaceList() {
             const pName = (SE_PRODUCTS.find(p => p.id === d.product_id)||{name:d.product_id}).name;
             const hasPos = d.pos_x != null && d.pos_y != null;
             const sel = _lPlaceSelected && _lPlaceSelected.id === d.id;
-            return `<div onclick="seSelectPlaceItem('${d.id}')"
-                style="display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;
+            const scale = Math.round((d.chip_scale || 1) * 10) / 10;
+            return `<div style="display:flex;align-items:center;gap:8px;padding:6px 16px;
                     background:${sel ? 'rgba(13,59,255,0.08)' : 'transparent'};
-                    border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};"
-                onmouseenter="this.style.background='rgba(13,59,255,0.04)'"
-                onmouseleave="this.style.background='${sel ? 'rgba(13,59,255,0.08)' : 'transparent'}'">
-                <span style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;"></span>
-                <span style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pName}</span>
-                ${hasPos ? `<span style="font-size:0.65rem;color:var(--se-muted);">배치됨</span>` : ''}
+                    border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};">
+                <span onclick="seSelectPlaceItem('${d.id}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
+                <span onclick="seSelectPlaceItem('${d.id}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${pName}</span>
+                ${hasPos ? `<span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                    <button onclick="event.stopPropagation();seChipScale('${d.id}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
+                    <span style="font-size:0.62rem;color:var(--se-muted);min-width:24px;text-align:center;">${scale}x</span>
+                    <button onclick="event.stopPropagation();seChipScale('${d.id}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
+                </span>` : ''}
             </div>`;
         }).join('');
         return `<div style="padding:8px 16px 4px;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:${zColor};font-weight:700;">${zName}</div>${rows}`;
@@ -14579,17 +14611,20 @@ function seLayoutDraw() {
     }
 
     // 제품 배치 칩 (배치 모드 + 구역 편집 모드 둘 다 표시)
-    const chipW = 70, chipH = 24, chipR = 4;
+    const chipR = 4;
     _layoutDisplays.forEach(d => {
         if (d.pos_x == null || d.pos_y == null) return;
         const zone = _layoutZones.find(z => z.id === d.zone_id);
         const color = zone ? zone.color : '#0D3BFF';
+        const sc = d.chip_scale || 1;
+        const chipW = Math.round(70 * sc), chipH = Math.round(24 * sc);
+        const maxChars = Math.max(4, Math.round(7 * sc));
         const pName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'';
-        const shortName = pName.length > 7 ? pName.slice(0,7)+'…' : pName;
+        const shortName = pName.length > maxChars ? pName.slice(0,maxChars)+'…' : pName;
         let cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
         if (zone) {
-            cx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, cx));
-            cy = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, cy));
+            cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
+            cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
         }
         const sel = _lPlaceSelected && _lPlaceSelected.id === d.id;
 
@@ -14617,7 +14652,7 @@ function seLayoutDraw() {
         // 텍스트
         _lCtx.globalAlpha = 1;
         _lCtx.fillStyle = '#fff';
-        _lCtx.font = `${sel ? 'bold ' : ''}10px sans-serif`;
+        _lCtx.font = `${sel ? 'bold ' : ''}${Math.round(10 * sc)}px sans-serif`;
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
         _lCtx.fillText(shortName, cx, cy);
     });
