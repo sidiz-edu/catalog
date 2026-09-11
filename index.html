@@ -14073,7 +14073,7 @@ function seLayoutMouseUp(e) {
     if (!_lDrag) return;
     const x = Math.min(_lDrag.sx, _lDrag.ex), y = Math.min(_lDrag.sy, _lDrag.ey);
     const w = Math.abs(_lDrag.ex - _lDrag.sx), h = Math.abs(_lDrag.ey - _lDrag.sy);
-    if (w > 20 && h > 20 && !_layoutZones.some(z => z.type === _lActiveType.type)) {
+    if (w > 20 && h > 20 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
         let label = _lActiveType.label;
         if (_lActiveType.type === 'custom') {
             const input = prompt('구역 이름을 입력하세요', '');
@@ -14153,7 +14153,7 @@ function seLayoutRefreshPalette() {
     if (!pal) return;
     pal.innerHTML = '';
     ZONE_TYPES.forEach(zt => {
-        const placed = _layoutZones.some(z => z.type === zt.type);
+        const placed = zt.type !== 'custom' && _layoutZones.some(z => z.type === zt.type);
         const active  = _lActiveType.type === zt.type && !placed;
         const b = document.createElement('button');
         b.textContent = placed ? '✓ ' + zt.label : zt.label;
