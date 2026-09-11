@@ -14260,13 +14260,18 @@ function seLayoutMouseDown(e) {
             _lPlaceDrag = { display: hitD, ox: p.x - hitD.pos_x/1000*cW, oy: p.y - hitD.pos_y/1000*cH };
             seRenderPlaceList(); return;
         }
-        // 빈 캔버스 클릭 → 선택된 전시품 배치
+        // 빈 캔버스 클릭 → 선택된 전시품 배치 (구역 내로 제한)
         if (_lPlaceSelected) {
-            _lPlaceSelected.pos_x = Math.round(p.x / cW * 1000);
-            _lPlaceSelected.pos_y = Math.round(p.y / cH * 1000);
+            const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
+            let cx = p.x, cy = p.y;
+            if (zone) {
+                cx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, p.x));
+                cy = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, p.y));
+            }
+            _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
+            _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
             seLayoutDraw();
             seRenderPlaceList();
-            // Supabase 즉시 저장
             _sb.from('store_displays').update({ pos_x: _lPlaceSelected.pos_x, pos_y: _lPlaceSelected.pos_y })
                .eq('id', _lPlaceSelected.id);
         }
@@ -14298,13 +14303,17 @@ function seLayoutMouseDown(e) {
 function seLayoutMouseMove(e) {
     const p = seLayoutPos(e);
 
-    // 배치 모드 드래그 이동
+    // 배치 모드 드래그 이동 (구역 내로 제한)
     if (_lPlaceDrag) {
         const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
-        _lPlaceDrag.display.pos_x = Math.round((p.x - _lPlaceDrag.ox + _lPlaceDrag.ox) / cW * 1000);
-        // 좀더 직관적으로: 현재 마우스 위치
-        _lPlaceDrag.display.pos_x = Math.round(p.x / cW * 1000);
-        _lPlaceDrag.display.pos_y = Math.round(p.y / cH * 1000);
+        const zone = _layoutZones.find(z => z.id === _lPlaceDrag.display.zone_id);
+        let nx = p.x, ny = p.y;
+        if (zone) {
+            nx = Math.max(zone.x + 36, Math.min(zone.x + zone.w - 36, p.x));
+            ny = Math.max(zone.y + 14, Math.min(zone.y + zone.h - 14, p.y));
+        }
+        _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
+        _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
         _lCanvas.style.cursor = 'grabbing';
         seLayoutDraw(); return;
     }
