@@ -3969,6 +3969,7 @@
         <a onclick="navigate('posture', this)">올바른 사용법</a>
         <a onclick="navigate('care', this)">관리법</a>
         <a class="faq-nav-link" onclick="openJaryo(this)">자료실</a>
+        <a onclick="navigate('displaySale', this)">🏷️ 전시품 판매</a>
         <div class="nav-deploy-trigger" id="deployTrigger"
             onmousedown="startDeployPress()" onmouseup="cancelDeployPress()" onmouseleave="cancelDeployPress()"
             ontouchstart="startDeployPress(event)" ontouchend="cancelDeployPress()"
@@ -5746,6 +5747,13 @@ OOO 고객님, [    ] 내로 시공 기사님이 방문 예정입니다.
             <a class="btn-secondary" href="https://kr.sidiz.com/" target="_blank">🌐 온라인 A/S 신청</a>
         </div>
     </div>
+</div>
+
+<div id="displaySale" class="section">
+    <div class="section-label">DISPLAY SALE</div>
+    <div class="section-title">🏷️ 전시품 판매</div>
+    <div class="section-desc">더 프로그레시브 매장의 전시품을 특가에 판매합니다. 각 제품 카드의 매장 전화번호로 문의 후 방문 수령하세요.</div>
+    <div id="displaySaleMain" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;margin-top:24px;"></div>
 </div>
 
 </div><!-- page-wrapper -->
@@ -9627,8 +9635,8 @@ function filterProducts(category) {
     document.querySelector(`.cat-filter-btn[data-cat="${category}"]`)?.classList.add('active');
 }
 
-async function loadDisplaySaleItems() {
-    const container = document.getElementById('displaySaleContainer');
+async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
+    const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '<div style="grid-column:1/-1;color:#9ca3af;padding:20px 0;">불러오는 중...</div>';
     try {
@@ -10036,6 +10044,8 @@ function navigate(sectionId, navEl) {
     if (navEl) navEl.classList.add('active');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (sectionId === 'displaySale') loadDisplaySaleItems('displaySaleMain');
 
     // Close mobile nav
     document.getElementById('headerNav').classList.remove('open');
