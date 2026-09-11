@@ -13835,6 +13835,7 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
+                ${(row.quantity ?? 1) > 1 ? `<button class="se-del-btn" style="background:#7c3aed;color:#fff;border:none;" onclick="seSplitDisplay('${row.id}')" title="${row.quantity}개를 개별 레코드로 분리">분리</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -14184,6 +14185,25 @@ async function seHardDelete(id, storeId, j) {
         seRenderTable(storeId);
     } catch(e) { alert('삭제 오류: '+e.message); }
 }
+async function seSplitDisplay(id) {
+    const row = seDisplayData.find(r => r.id === id);
+    if (!row || (row.quantity ?? 1) <= 1) return;
+    if (!confirm(`${row.quantity}개를 개별 레코드 ${row.quantity}개로 분리할까요?\n(각각 수량 1개, 배치 위치 초기화)`)) return;
+    const n = row.quantity;
+    const base = { store_id: row.store_id, product_id: row.product_id, sku: row.sku,
+        color_code: row.color_code, purpose: row.purpose, memo: row.memo,
+        zone_id: row.zone_id, location: row.location, display_since: row.display_since,
+        updated_by: row.updated_by, updated_at: new Date().toISOString(),
+        sold: row.sold, grade: row.grade, consumer_price: row.consumer_price,
+        catalog_visible: row.catalog_visible, image_url: row.image_url,
+        quantity: 1, pos_x: null, pos_y: null, chip_scale: 1 };
+    // 원본 레코드를 수량 1로 업데이트
+    await _sb.from('store_displays').update({ quantity: 1, pos_x: null, pos_y: null }).eq('id', id);
+    // 나머지 n-1개 새로 삽입
+    if (n > 1) await _sb.from('store_displays').insert(Array(n - 1).fill(base));
+    await seLoadStore(row.store_id);
+}
+
 async function seToggleSold(id, newVal) {
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx === -1) return;
