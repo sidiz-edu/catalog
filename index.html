@@ -9665,7 +9665,8 @@ async function loadDisplaySaleItems() {
                 : '';
             const gradeHtml = item.grade
                 ? `<div class="ds-grade ${item.grade}">${item.grade}등급</div>` : '';
-            const skuHtml = [item.sku, item.color_code].filter(Boolean).join(' / ');
+            const skuCode = item.sku ? item.sku.split('-')[0] : null;
+            const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
             return `<div class="product-card display-sale-card">
                 <div class="product-card-img" style="${imgStyle}">
                     <div class="badge" style="background:#d97706;color:#fff;">전시품</div>
@@ -13679,7 +13680,7 @@ function seRenderTable(storeId) {
             <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
             ${purposeCell}
-            <td style="font-size:0.78rem;color:#475569;">${row.sku || '-'}</td>
+            <td style="font-size:0.78rem;color:#475569;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;">${row.color_code || '-'}</td>
             <td style="text-align:center;">${row.quantity ?? 1}</td>
             ${imgCell}
@@ -13700,7 +13701,7 @@ function seRenderTable(storeId) {
             <td></td>
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : row.purpose === '창고' ? '창고보관' : '전시'}</span></td>
-            <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku || '-'}</td>
+            <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
             <td style="color:#94a3b8;">-</td>
