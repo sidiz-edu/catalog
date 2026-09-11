@@ -8072,7 +8072,6 @@ const displaySkuData = {
     },
     'T50': {
         'T50HLDA0VK': ['451MBK', '451MWW', '452MWW', '456BK'],
-        'T51HLDA0KK': ['5F1WW', '5F6ABK', '5F6ABK(블랙)'],
         'TNE500HLDA': ['456'],
         'TNF500HLDA': ['452M'],
         'TNF503F': ['452M'],
@@ -8082,15 +8081,20 @@ const displaySkuData = {
         'VTNF500HDA': ['458D'],
         'VTNF500HLDA': ['451M', '452M'],
     },
+    'T50 2세대': {
+        'T51HLDA0KK': ['5F1WW', '5F6ABK', '5F6ABK(블랙)'],
+    },
     'T50 AIR': {
         'T529D': ['451L'],
         'T52HLDA0VK': ['2D1WW', '2D6BK'],
-        'T53HLDA0KK': ['5H1CG', '5H1WW', '5H1WW(화이트)', '5H6BBK'],
         'TXA520HLA': ['2D1', '3D1'],
         'TXA520HLDA': ['2D6'],
         'TXB520HLDA': ['2D1'],
         'VTXA520HLDA': ['2D6'],
         'VTXB520HLDA': ['2D1', '2D4'],
+    },
+    'T50 AIR 2세대': {
+        'T53HLDA0KK': ['5H1CG', '5H1WW', '5H1WW(화이트)', '5H6BBK'],
     },
     'T60': {
         'T61HLDAM0KK': ['5G1BWW', '5G1CSG'],
@@ -13416,6 +13420,66 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </select>
             </div>
             <!-- 이동 모달 -->
+            <div id="seEditModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+                <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:380px;max-width:90vw;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                    <div style="font-size:0.95rem;font-weight:700;color:var(--se-text);">✏️ 전시품 수정</div>
+                    <input type="hidden" id="seEditId">
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">구분</label>
+                        <select id="seEditPurpose" onchange="seEditToggleSaleFields()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <option value="전시">전시</option>
+                            <option value="판매">판매</option>
+                            <option value="창고">창고 보관</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">개수</label>
+                            <input type="number" id="seEditQty" min="1" value="1" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">전시 시작일</label>
+                            <input type="date" id="seEditDate" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">위치</label>
+                        <input type="text" id="seEditLocation" placeholder="위치 (예: 1단, 창가 2단)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
+                        <input type="text" id="seEditMemo" placeholder="메모 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    </div>
+                    <div id="seEditSaleFields" style="display:none;flex-direction:column;gap:10px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
+                            <input type="checkbox" id="seEditSold"> 판매 완료
+                        </label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label style="font-size:0.78rem;color:var(--se-muted);">등급</label>
+                                <select id="seEditGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.82rem;">
+                                    <option value="">등급 선택</option>
+                                    <option value="A">A등급 (50% 할인)</option>
+                                    <option value="B">B등급 (60% 할인)</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label style="font-size:0.78rem;color:var(--se-muted);">소비자가 (원)</label>
+                                <input type="number" id="seEditConsumerPrice" placeholder="소비자가" min="0" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">수정자 이름 *</label>
+                        <input type="text" id="seEditUpdater" placeholder="수정자 이름" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                    </div>
+                    <div id="seEditMsg" style="font-size:0.78rem;min-height:18px;color:#ef4444;"></div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button onclick="seCloseEditModal()" style="padding:8px 18px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.82rem;">취소</button>
+                        <button onclick="seSubmitEdit()" style="padding:8px 18px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-size:0.82rem;">저장</button>
+                    </div>
+                </div>
+            </div>
             <div id="seMoveModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
                 <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:340px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
                     <div style="font-size:0.95rem;font-weight:700;color:var(--se-text);">📦 전시품 이동</div>
@@ -13700,6 +13764,7 @@ function seRenderTable(storeId) {
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#94a3b8'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '게시'}</button>` : ''}
+                <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
             </td>
@@ -13858,6 +13923,64 @@ async function seConfirmMove() {
     } catch(e) {
         msg.style.color='#f87171'; msg.textContent=`오류: ${e.message}`;
     }
+}
+
+function seOpenEditModal(id) {
+    const row = seDisplayData.find(r => r.id === id);
+    if (!row) return;
+    document.getElementById('seEditId').value = id;
+    document.getElementById('seEditPurpose').value = row.purpose || '전시';
+    document.getElementById('seEditQty').value = row.quantity ?? 1;
+    document.getElementById('seEditDate').value = row.display_since || '';
+    document.getElementById('seEditLocation').value = row.location || '';
+    document.getElementById('seEditMemo').value = row.memo || '';
+    document.getElementById('seEditSold').checked = !!row.sold;
+    document.getElementById('seEditGrade').value = row.grade || '';
+    document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
+    document.getElementById('seEditUpdater').value = '';
+    document.getElementById('seEditMsg').textContent = '';
+    seEditToggleSaleFields();
+    document.getElementById('seEditModal').style.display = 'flex';
+}
+function seCloseEditModal() {
+    document.getElementById('seEditModal').style.display = 'none';
+}
+function seEditToggleSaleFields() {
+    const isSale = document.getElementById('seEditPurpose').value === '판매';
+    document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
+}
+async function seSubmitEdit() {
+    const id = document.getElementById('seEditId').value;
+    const updater = document.getElementById('seEditUpdater').value.trim();
+    const msg = document.getElementById('seEditMsg');
+    if (!updater) { msg.textContent = '수정자 이름을 입력해주세요.'; return; }
+    const purpose = document.getElementById('seEditPurpose').value;
+    const updates = {
+        purpose,
+        quantity: parseInt(document.getElementById('seEditQty').value) || 1,
+        display_since: document.getElementById('seEditDate').value || null,
+        location: document.getElementById('seEditLocation').value.trim() || null,
+        memo: document.getElementById('seEditMemo').value.trim() || null,
+        updated_by: updater,
+        updated_at: new Date().toISOString(),
+    };
+    if (purpose === '판매') {
+        updates.sold = document.getElementById('seEditSold').checked;
+        updates.grade = document.getElementById('seEditGrade').value || null;
+        updates.consumer_price = parseInt(document.getElementById('seEditConsumerPrice').value) || null;
+    } else {
+        updates.sold = false;
+        updates.grade = null;
+        updates.consumer_price = null;
+        updates.catalog_visible = false;
+    }
+    msg.textContent = '저장 중...';
+    const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
+    if (error) { msg.textContent = '오류: ' + error.message; return; }
+    const idx = seDisplayData.findIndex(r => r.id === id);
+    if (idx !== -1) seDisplayData[idx] = { ...seDisplayData[idx], ...updates };
+    seCloseEditModal();
+    seRenderTable(seCurrentStore);
 }
 
 async function seAddDisplay() {
