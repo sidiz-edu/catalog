@@ -13319,6 +13319,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <tbody id="seDisplayList"></tbody>
                     </table>
                 </div>
+                <div class="se-add-box" style="margin-bottom:8px;">
+                    <h4>📋 다른 매장에서 구조 복사</h4>
+                    <div class="se-add-row" style="gap:8px;">
+                        <select id="seCopySource" style="flex:1;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:6px 8px;font-size:0.82rem;">
+                            <option value="">복사할 매장 선택</option>
+                        </select>
+                        <button class="se-save-btn" onclick="seCopyFromStore()">복사</button>
+                    </div>
+                    <div class="se-msg" id="seCopyMsg" style="margin-top:6px;"></div>
+                </div>
                 <div class="se-add-box">
                     <h4>+ 전시 제품 추가</h4>
                     <div class="se-add-grid">
@@ -13448,6 +13458,15 @@ function openSEPanel() {
             sel.appendChild(opt);
         });
     }
+    // 복사 소스 매장 드롭다운
+    const copySel = document.getElementById('seCopySource');
+    if (copySel.options.length <= 1) {
+        storeData.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id; opt.textContent = `${s.name} (${s.region})`;
+            copySel.appendChild(opt);
+        });
+    }
     // 시리즈 드롭다운
     const pSel = document.getElementById('seAddSeries');
     if (pSel.options.length <= 1) {
@@ -13575,6 +13594,29 @@ function sePopulateColorCodes(productCode) {
     const seriesName = document.getElementById('seAddSeries').value;
     if (!productCode || !seriesName || !displaySkuData[seriesName] || !displaySkuData[seriesName][productCode]) return;
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
+}
+
+async function seCopyFromStore() {
+    const sourceId = document.getElementById('seCopySource').value;
+    const msg = document.getElementById('seCopyMsg');
+    if (!sourceId || !seCurrentStore) { msg.className='se-msg err'; msg.textContent='매장을 선택하세요.'; return; }
+    if (sourceId === seCurrentStore) { msg.className='se-msg err'; msg.textContent='현재 매장과 동일합니다.'; return; }
+    msg.className='se-msg'; msg.textContent='복사 중...';
+    try {
+        const { data, error } = await _sb.from('store_displays').select('*').eq('store_id', sourceId);
+        if (error) throw error;
+        if (!data?.length) { msg.className='se-msg err'; msg.textContent='복사할 데이터가 없습니다.'; return; }
+        const records = data.map(({ id, store_id, updated_at, ...rest }) => ({
+            ...rest,
+            store_id: seCurrentStore,
+        }));
+        const { error: upsErr } = await _sb.from('store_displays').upsert(records, { onConflict: 'store_id,product_id' });
+        if (upsErr) throw upsErr;
+        msg.className='se-msg ok'; msg.textContent=`✓ ${records.length}개 항목 복사 완료`;
+        await seRenderList(seCurrentStore);
+    } catch(e) {
+        msg.className='se-msg err'; msg.textContent=`오류: ${e.message}`;
+    }
 }
 
 async function seAddDisplay() {
