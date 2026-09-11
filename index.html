@@ -8049,12 +8049,14 @@ const displaySkuData = {
     },
     'RINGO (링고)': {
         'S51ACF0VG': ['A441BW', 'A442BW', 'A443BW', 'A447BW'],
-        'S51ACF1VG': ['A441BW'],
         'S51AF1VG': ['A447A'],
         'S51D0VG': ['A442B', 'A447B'],
         'S51N0VG': ['A442BW', 'A447B'],
         'S51ND1KGCC1': ['TOT07S'],
         'VSNB509ACF': ['A441P'],
+    },
+    'RINGO 2세대 (링고)': {
+        'S51ACF1VG': ['A441BW'],
     },
     'SPOON (스푼)': {
         'M081E': ['BWWW'],
@@ -8066,6 +8068,8 @@ const displaySkuData = {
     },
     'T20': {
         'FHXZ2506004': ['TOT1'],
+    },
+    'T20 2세대': {
         'T21AP0CC1': ['TOT07S', 'TOT3', 'TOT4'],
         'T21HF0VG': ['5G1CWW', '5G1WW', '5G6AIG', 'A442BW'],
         'T21HF2VG': ['5G1CWW', '5G1WW', '5G6AIG', 'TOT1'],
@@ -14002,7 +14006,8 @@ async function seAddDisplay() {
         const photoFile = document.getElementById('seAddPhoto').files[0];
         if (photoFile) {
             const compressed = await seCompressImage(photoFile, 1200, 0.8);
-            const path = `${storeId}/${productId}_${Date.now()}.jpg`;
+            const safeProdId = productId.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const path = `${storeId}/${safeProdId}_${Date.now()}.jpg`;
             const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
             if (upErr) throw upErr;
             const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
@@ -14018,7 +14023,7 @@ async function seAddDisplay() {
               sku, color_code: colorCode, quantity, location: location || null, purpose, sold,
               grade, consumer_price: consumerPrice };
         if (imageUrl) record.image_url = imageUrl;
-        const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
+        const { error } = await _sb.from('store_displays').insert(record);
         if (error) throw error;
         msg.className='se-msg ok'; msg.textContent='✓ 저장되었습니다.';
         document.getElementById('seAddSeries').value = '';
