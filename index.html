@@ -13835,7 +13835,6 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
-                ${(row.quantity ?? 1) > 1 ? `<button class="se-del-btn" style="background:#7c3aed;color:#fff;border:none;" onclick="seSplitDisplay('${row.id}')" title="${row.quantity}개를 개별 레코드로 분리">분리</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -14185,24 +14184,6 @@ async function seHardDelete(id, storeId, j) {
         seRenderTable(storeId);
     } catch(e) { alert('삭제 오류: '+e.message); }
 }
-async function seSplitDisplay(id) {
-    const row = seDisplayData.find(r => r.id === id);
-    if (!row || (row.quantity ?? 1) <= 1) return;
-    if (!confirm(`${row.quantity}개를 개별 레코드 ${row.quantity}개로 분리할까요?\n(각각 수량 1개, 배치 위치 초기화)`)) return;
-    const n = row.quantity;
-    const base = { store_id: row.store_id, product_id: row.product_id, sku: row.sku,
-        color_code: row.color_code, purpose: row.purpose, memo: row.memo,
-        zone_id: row.zone_id, location: row.location, display_since: row.display_since,
-        updated_by: row.updated_by, updated_at: new Date().toISOString(),
-        sold: row.sold, grade: row.grade, consumer_price: row.consumer_price,
-        catalog_visible: row.catalog_visible, image_url: row.image_url,
-        quantity: 1, pos_x: null, pos_y: null, chip_scale: 1 };
-    // 원본 레코드를 수량 1로 업데이트
-    await _sb.from('store_displays').update({ quantity: 1, pos_x: null, pos_y: null }).eq('id', id);
-    // 나머지 n-1개 새로 삽입
-    if (n > 1) await _sb.from('store_displays').insert(Array(n - 1).fill(base));
-    await seLoadStore(row.store_id);
-}
 
 async function seToggleSold(id, newVal) {
     const idx = seDisplayData.findIndex(r => r.id === id);
@@ -14330,11 +14311,12 @@ function seToggleDateUnknown(mode) {
     else            { inp.disabled = false; inp.style.opacity = '1'; }
 }
 
-function seChipScale(displayId, delta) {
-    const d = _layoutDisplays.find(x => x.id === displayId);
+function seChipScale(vid, delta) {
+    const d = _layoutDisplays.find(x => x._vid === vid);
     if (!d) return;
-    d.chip_scale = Math.round(Math.max(0.6, Math.min(3.0, (d.chip_scale || 1) + delta)) * 10) / 10;
-    _sb.from('store_displays').update({ chip_scale: d.chip_scale }).eq('id', d.id);
+    const newScale = Math.round(Math.max(0.6, Math.min(3.0, (d.chip_scale || 1) + delta)) * 10) / 10;
+    _layoutDisplays.filter(x => x.id === d.id).forEach(x => x.chip_scale = newScale);
+    _sb.from('store_displays').update({ chip_scale: newScale }).eq('id', d.id);
     seLayoutDraw(); seRenderPlaceList();
 }
 
@@ -14370,8 +14352,7 @@ function seLayoutMouseDown(e) {
             _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
             seLayoutDraw();
             seRenderPlaceList();
-            _sb.from('store_displays').update({ pos_x: _lPlaceSelected.pos_x, pos_y: _lPlaceSelected.pos_y })
-               .eq('id', _lPlaceSelected.id);
+            seSaveVirtualItemPos(_lPlaceSelected);
         }
         return;
     }
@@ -14454,7 +14435,7 @@ function seLayoutMouseMove(e) {
 function seLayoutMouseUp(e) {
     if (_lPlaceDrag) {
         const d = _lPlaceDrag.display;
-        _sb.from('store_displays').update({ pos_x: d.pos_x, pos_y: d.pos_y }).eq('id', d.id);
+        seSaveVirtualItemPos(d);
         _lPlaceDrag = null;
         _lCanvas.style.cursor = 'crosshair';
         seLayoutDraw(); seRenderPlaceList(); return;
@@ -14519,18 +14500,20 @@ function seRenderPlaceList() {
         const zColor = zone ? zone.color : '#888';
         const rows = items.map(d => {
             const pName = (SE_PRODUCTS.find(p => p.id === d.product_id)||{name:d.product_id}).name;
+            const qty = d.quantity || 1;
+            const label = qty > 1 ? `${pName} (${d._idx + 1})` : pName;
             const hasPos = d.pos_x != null && d.pos_y != null;
-            const sel = _lPlaceSelected && _lPlaceSelected.id === d.id;
+            const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
             const scale = Math.round((d.chip_scale || 1) * 10) / 10;
             return `<div style="display:flex;align-items:center;gap:8px;padding:6px 16px;
                     background:${sel ? 'rgba(13,59,255,0.08)' : 'transparent'};
                     border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};">
-                <span onclick="seSelectPlaceItem('${d.id}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
-                <span onclick="seSelectPlaceItem('${d.id}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${pName}</span>
+                <span onclick="seSelectPlaceItem('${d._vid}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
+                <span onclick="seSelectPlaceItem('${d._vid}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${label}</span>
                 <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
-                    <button onclick="event.stopPropagation();seChipScale('${d.id}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
+                    <button onclick="event.stopPropagation();seChipScale('${d._vid}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
                     <span style="font-size:0.62rem;color:var(--se-muted);min-width:24px;text-align:center;">${scale}x</span>
-                    <button onclick="event.stopPropagation();seChipScale('${d.id}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
+                    <button onclick="event.stopPropagation();seChipScale('${d._vid}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
                 </span>
             </div>`;
         }).join('');
@@ -14559,7 +14542,7 @@ function seAutoPlaceZone(zoneId) {
         const cy = zone.y + pad + cellH * (row + 0.5);
         d.pos_x = Math.round(cx / cW * 1000);
         d.pos_y = Math.round(cy / cH * 1000);
-        _sb.from('store_displays').update({ pos_x: d.pos_x, pos_y: d.pos_y }).eq('id', d.id);
+        seSaveVirtualItemPos(d);
     });
     seLayoutDraw(); seRenderPlaceList();
 }
@@ -14569,8 +14552,22 @@ function seAutoPlaceAll() {
     zoneIds.forEach(zid => seAutoPlaceZone(zid));
 }
 
-function seSelectPlaceItem(displayId) {
-    _lPlaceSelected = _layoutDisplays.find(d => d.id === displayId) || null;
+function seSaveVirtualItemPos(vItem) {
+    const baseId = vItem.id;
+    const qty = vItem.quantity || 1;
+    if (qty <= 1) {
+        _sb.from('store_displays').update({ pos_x: vItem.pos_x, pos_y: vItem.pos_y }).eq('id', baseId);
+        return;
+    }
+    const siblings = _layoutDisplays.filter(d => d.id === baseId).sort((a, b) => a._idx - b._idx);
+    const positions = siblings.map(s => ({ x: s.pos_x ?? null, y: s.pos_y ?? null }));
+    const update = { positions_json: JSON.stringify(positions) };
+    if (vItem._idx === 0) { update.pos_x = vItem.pos_x; update.pos_y = vItem.pos_y; }
+    _sb.from('store_displays').update(update).eq('id', baseId);
+}
+
+function seSelectPlaceItem(vid) {
+    _lPlaceSelected = _layoutDisplays.find(d => d._vid === vid) || null;
     seRenderPlaceList();
     if (_lCanvas) _lCanvas.style.cursor = _lPlaceSelected ? 'crosshair' : 'default';
 }
@@ -14625,7 +14622,7 @@ function seLayoutRightClick(e) {
         });
         if (hit) {
             hit.pos_x = null; hit.pos_y = null;
-            _sb.from('store_displays').update({ pos_x: null, pos_y: null }).eq('id', hit.id);
+            seSaveVirtualItemPos(hit);
             seLayoutDraw(); seRenderPlaceList();
         }
         return;
@@ -14720,13 +14717,15 @@ function seLayoutDraw() {
         const chipW = Math.round(70 * sc), chipH = Math.round(24 * sc);
         const maxChars = Math.max(4, Math.round(7 * sc));
         const pName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'';
-        const shortName = pName.length > maxChars ? pName.slice(0,maxChars)+'…' : pName;
+        const chipQty = d.quantity || 1;
+        const chipLabel = chipQty > 1 ? `${pName}(${d._idx+1})` : pName;
+        const shortName = chipLabel.length > maxChars ? chipLabel.slice(0,maxChars)+'…' : chipLabel;
         let cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
         if (zone) {
             cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
             cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
         }
-        const sel = _lPlaceSelected && _lPlaceSelected.id === d.id;
+        const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
 
         // 칩 배경
         _lCtx.globalAlpha = sel ? 1 : 0.88;
@@ -14772,7 +14771,24 @@ async function seLayoutLoadStore() {
         _sb.from('store_zones').select('*').eq('store_id', storeId),
         _sb.from('store_displays').select('*').eq('store_id', storeId)
     ]);
-    if (displaysRes.data) _layoutDisplays = displaysRes.data;
+    if (displaysRes.data) {
+        _layoutDisplays = [];
+        displaysRes.data.forEach(d => {
+            const qty = d.quantity || 1;
+            if (qty <= 1) {
+                _layoutDisplays.push({...d, _vid: d.id, _idx: 0});
+            } else {
+                let positions = [];
+                try { positions = JSON.parse(d.positions_json || '[]'); } catch {}
+                for (let i = 0; i < qty; i++) {
+                    const pos = positions[i] || {};
+                    _layoutDisplays.push({...d, _vid: `${d.id}__${i}`, _idx: i,
+                        pos_x: i === 0 ? d.pos_x : (pos.x ?? null),
+                        pos_y: i === 0 ? d.pos_y : (pos.y ?? null)});
+                }
+            }
+        });
+    }
     if (zonesRes.data) {
         const cW = _lCanvas ? _lCanvas.width / _lDpr : 600;
         const cH = _lCanvas ? _lCanvas.height / _lDpr : 400;
