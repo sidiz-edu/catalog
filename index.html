@@ -441,6 +441,20 @@
         }
         .color-thumb-strip { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 
+        /* ── 전시품 판매 ── */
+        .sale-display-cat-btn { color: #b45309 !important; border-color: #fbbf24 !important; }
+        .sale-display-cat-btn.active { background: #d97706 !important; color: #fff !important; border-color: #d97706 !important; }
+        .display-sale-card { position:relative; cursor:default; }
+        .display-sale-card .ds-grade { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700; letter-spacing:.5px; margin-bottom:6px; }
+        .display-sale-card .ds-grade.A { background:#dbeafe; color:#1e40af; }
+        .display-sale-card .ds-grade.B { background:#fef9c3; color:#92400e; }
+        .display-sale-card .ds-price-row { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin:4px 0; }
+        .display-sale-card .ds-original { font-size:0.78rem; color:#9ca3af; text-decoration:line-through; }
+        .display-sale-card .ds-discount { font-size:0.78rem; color:#ef4444; font-weight:700; }
+        .display-sale-card .ds-sale-price { font-size:1.05rem; color:#1d4ed8; font-weight:800; }
+        .display-sale-card .ds-store { margin-top:8px; font-size:0.78rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .display-sale-card .ds-phone { display:inline-flex; align-items:center; gap:4px; background:var(--bg-secondary); border-radius:6px; padding:3px 8px; font-size:0.78rem; color:#1d4ed8; font-weight:600; text-decoration:none; }
+        .display-sale-card .ds-sku { font-size:0.72rem; color:#9ca3af; margin-top:2px; }
         /* ── 단종 제품 ── */
         .disc-cat-btn { color: #9ca3af !important; border-color: #d1d5db !important; }
         .disc-cat-btn.active { background: #6b7280 !important; color: #fff !important; border-color: #6b7280 !important; }
@@ -4094,6 +4108,7 @@
         <button class="cat-filter-btn"         data-cat="그로잉"   onclick="filterProducts('그로잉')">그로잉</button>
         <button class="cat-filter-btn"         data-cat="P굿즈"    onclick="filterProducts('P굿즈')">P굿즈</button>
         <button class="cat-filter-btn"         data-cat="이지리페어" onclick="filterProducts('이지리페어')">이지리페어</button>
+        <button class="cat-filter-btn sale-display-cat-btn" data-cat="전시품 판매" onclick="filterProducts('전시품 판매')">🏷️ 전시품 판매</button>
         <button class="cat-filter-btn disc-cat-btn" data-cat="단종 제품" onclick="filterProducts('단종 제품')">단종 제품</button>
     </div>
 
@@ -5135,6 +5150,15 @@
                 <div class="price">99,000원</div>
             </div>
         </div>
+
+        <!-- ════════════════════════════════════
+             전시품 판매
+        ════════════════════════════════════ -->
+        <div class="product-category-header" data-parent="전시품 판매" id="displaySaleHeader">
+            <h2>🏷️ 전시품 판매</h2>
+            <p class="category-desc">더 프로그레시브 매장의 전시품을 특가에 판매합니다. 각 제품 카드의 매장 전화번호로 문의 후 방문 수령하세요.</p>
+        </div>
+        <div id="displaySaleContainer" data-parent="전시품 판매" style="display:contents;"></div>
 
         <!-- ════════════════════════════════════
              단종 제품
@@ -9547,6 +9571,11 @@ function filterProducts(category) {
     if (category === '전체') {
         cards.forEach(c => c.style.display = '');
         headers.forEach(h => h.style.display = '');
+        // 전시품 섹션은 전체 보기 시 숨김
+        const dsHeader = document.getElementById('displaySaleHeader');
+        if (dsHeader) dsHeader.style.display = 'none';
+        const dsContainer = document.getElementById('displaySaleContainer');
+        if (dsContainer) dsContainer.innerHTML = '';
     } else if (category === '이지리페어') {
         const ids = categoryMap[category] || [];
         cards.forEach(c => {
@@ -9564,6 +9593,12 @@ function filterProducts(category) {
         const sf = document.getElementById('repairSubFilter');
         if (sf) sf.style.display = '';
         filterRepairCat('T20');
+    } else if (category === '전시품 판매') {
+        cards.forEach(c => c.style.display = 'none');
+        headers.forEach(h => h.style.display = 'none');
+        const dsHeader = document.getElementById('displaySaleHeader');
+        if (dsHeader) dsHeader.style.display = '';
+        loadDisplaySaleItems();
     } else if (category === '단종 제품') {
         const ids = categoryMap[category] || [];
         cards.forEach(c => {
@@ -9590,6 +9625,67 @@ function filterProducts(category) {
 
     document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.cat-filter-btn[data-cat="${category}"]`)?.classList.add('active');
+}
+
+async function loadDisplaySaleItems() {
+    const container = document.getElementById('displaySaleContainer');
+    if (!container) return;
+    container.innerHTML = '<div style="grid-column:1/-1;color:#9ca3af;padding:20px 0;">불러오는 중...</div>';
+    try {
+        const { data, error } = await _sb
+            .from('store_displays')
+            .select('*')
+            .eq('purpose', '판매')
+            .eq('sold', false)
+            .eq('catalog_visible', true)
+            .order('updated_at', { ascending: false });
+        if (error) throw error;
+        if (!data || !data.length) {
+            container.innerHTML = '<div style="grid-column:1/-1;color:#9ca3af;padding:20px 0;">현재 판매 중인 전시품이 없습니다.</div>';
+            return;
+        }
+        container.innerHTML = data.map(item => {
+            const store = storeData.find(s => s.id === item.store_id);
+            const storeName = store ? store.name : item.store_id;
+            const storePhone = store ? store.phone : '';
+            const discountRate = item.grade === 'B' ? 0.4 : 0.5;
+            const discountLabel = item.grade === 'B' ? '60% 할인' : '50% 할인';
+            const salePrice = item.consumer_price ? Math.round(item.consumer_price * (1 - discountRate)) : null;
+            const imgStyle = item.image_url
+                ? `background-image:url('${item.image_url}');background-size:cover;background-position:center;`
+                : 'background:#f1f5f9;';
+            const priceHtml = salePrice
+                ? `<div class="ds-price-row">
+                    <span class="ds-original">${item.consumer_price.toLocaleString()}원</span>
+                    <span class="ds-discount">${discountLabel}</span>
+                   </div>
+                   <div class="ds-sale-price">${salePrice.toLocaleString()}원</div>`
+                : item.grade
+                ? `<div style="font-size:0.8rem;color:#6b7280;">매장 문의</div>`
+                : '';
+            const gradeHtml = item.grade
+                ? `<div class="ds-grade ${item.grade}">${item.grade}등급</div>` : '';
+            const skuHtml = [item.sku, item.color_code].filter(Boolean).join(' / ');
+            return `<div class="product-card display-sale-card">
+                <div class="product-card-img" style="${imgStyle}">
+                    <div class="badge" style="background:#d97706;color:#fff;">전시품</div>
+                </div>
+                <div class="product-card-body">
+                    ${gradeHtml}
+                    <h3>${item.product_id}</h3>
+                    ${skuHtml ? `<div class="ds-sku">${skuHtml}</div>` : ''}
+                    ${item.location ? `<div class="ds-sku">📍 ${item.location}</div>` : ''}
+                    ${priceHtml}
+                    <div class="ds-store">
+                        <span>📍 ${storeName}</span>
+                        ${storePhone ? `<a class="ds-phone" href="tel:${storePhone}">📞 ${storePhone}</a>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        container.innerHTML = `<div style="grid-column:1/-1;color:#ef4444;">오류: ${e.message}</div>`;
+    }
 }
 
 function filterRepairCat(cat) {
@@ -13353,11 +13449,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <input type="text" id="seAddLocation" placeholder="위치 (예: 1단, 창가 2단)">
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
                     </div>
-                    <div id="seAddSoldRow" style="display:none;align-items:center;gap:8px;padding:4px 0;">
+                    <div id="seAddSoldRow" style="display:none;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
                             <input type="checkbox" id="seAddSold">
                             판매 완료
                         </label>
+                        <select id="seAddGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
+                            <option value="">등급 선택</option>
+                            <option value="A">A등급 (50% 할인)</option>
+                            <option value="B">B등급 (60% 할인)</option>
+                        </select>
+                        <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 1fr;">
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
@@ -13579,7 +13681,8 @@ function seRenderTable(storeId) {
             <td style="font-size:0.78rem;color:#cbd5e1;">${row.location || '-'}</td>
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
-            <td style="display:flex;gap:4px;align-items:center;">
+            <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#94a3b8'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '게시'}</button>` : ''}
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
             </td>
@@ -13702,11 +13805,14 @@ async function seAddDisplay() {
             imageUrl = urlData.publicUrl;
         }
         const location = document.getElementById('seAddLocation').value.trim();
-        const purpose  = document.getElementById('seAddPurpose').value;
-        const sold     = document.getElementById('seAddSold').checked;
+        const purpose       = document.getElementById('seAddPurpose').value;
+        const sold          = document.getElementById('seAddSold').checked;
+        const grade         = document.getElementById('seAddGrade').value || null;
+        const consumerPrice = parseInt(document.getElementById('seAddConsumerPrice').value) || null;
         const record = { store_id: storeId, product_id: productId, display_since: date, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
-              sku, color_code: colorCode, quantity, location: location || null, purpose, sold };
+              sku, color_code: colorCode, quantity, location: location || null, purpose, sold,
+              grade, consumer_price: consumerPrice };
         if (imageUrl) record.image_url = imageUrl;
         const { error } = await _sb.from('store_displays').upsert(record, { onConflict: 'store_id,product_id' });
         if (error) throw error;
@@ -13721,6 +13827,8 @@ async function seAddDisplay() {
         document.getElementById('seAddMemo').value = '';
         document.getElementById('seAddPurpose').value = '전시';
         document.getElementById('seAddSold').checked = false;
+        document.getElementById('seAddGrade').value = '';
+        document.getElementById('seAddConsumerPrice').value = '';
         document.getElementById('seAddSoldRow').style.display = 'none';
         document.getElementById('seAddPhoto').value = '';
         await seRenderList(storeId);
@@ -13755,6 +13863,16 @@ async function seToggleSold(id, newVal) {
         const { error } = await _sb.from('store_displays').update({ sold: newVal, updated_at: new Date().toISOString() }).eq('id', id);
         if (error) throw error;
         seDisplayData[idx].sold = newVal;
+        seRenderTable(seCurrentStore);
+    } catch(e) { alert('오류: '+e.message); }
+}
+async function seToggleCatalogVisible(id, newVal) {
+    const idx = seDisplayData.findIndex(r => r.id === id);
+    if (idx === -1) return;
+    try {
+        const { error } = await _sb.from('store_displays').update({ catalog_visible: newVal, updated_at: new Date().toISOString() }).eq('id', id);
+        if (error) throw error;
+        seDisplayData[idx].catalog_visible = newVal;
         seRenderTable(seCurrentStore);
     } catch(e) { alert('오류: '+e.message); }
 }
