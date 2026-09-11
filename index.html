@@ -13508,22 +13508,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                 </div>
             </div>
-            <div id="seMoveModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
-                <div style="background:var(--se-bg);border:1px solid var(--se-border);border-radius:12px;padding:28px 24px;width:340px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
-                    <div style="font-size:0.95rem;font-weight:700;color:var(--se-text);">📦 전시품 이동</div>
-                    <div id="seMoveItemCount" style="font-size:0.78rem;color:var(--se-muted);"></div>
-                    <select id="seMoveTargetStore" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                        <option value="">대상 매장 선택</option>
-                    </select>
-                    <input type="text" id="seMoveByName" placeholder="이동자 이름 *" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                    <input type="text" id="seMoveReason" placeholder="이동 목적 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                    <div id="seMoveModalMsg" style="font-size:0.78rem;min-height:18px;"></div>
-                    <div style="display:flex;gap:8px;justify-content:flex-end;">
-                        <button onclick="seCloseMoveModal()" style="padding:8px 18px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.82rem;">취소</button>
-                        <button onclick="seConfirmMove()" style="padding:8px 18px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-size:0.82rem;">이동</button>
-                    </div>
-                </div>
-            </div>
             <div id="seStoreContent" style="display:none;">
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
                     <span id="seSelCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
@@ -13658,6 +13642,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <button class="se-save-btn" onclick="seLoadOverview()">🔄 새로고침</button>
             </div>
             <div class="se-overview-grid" id="seOverviewGrid"></div>
+        </div>
+    </div>
+</div>
+<!-- 이동 모달 — seMgmtPanel 밖에 위치해야 position:fixed 정상 동작 -->
+<div id="seMoveModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px 24px;width:340px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:0.95rem;font-weight:700;color:#f1f5f9;">📦 전시품 이동</div>
+        <div id="seMoveItemCount" style="font-size:0.78rem;color:#94a3b8;"></div>
+        <select id="seMoveTargetStore" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+            <option value="">대상 매장 선택</option>
+        </select>
+        <input type="text" id="seMoveByName" placeholder="이동자 이름 *" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+        <input type="text" id="seMoveReason" placeholder="이동 목적 (선택)" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+        <div id="seMoveModalMsg" style="font-size:0.78rem;min-height:18px;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button onclick="seCloseMoveModal()" style="padding:8px 18px;border-radius:6px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.82rem;">취소</button>
+            <button onclick="seConfirmMove()" style="padding:8px 18px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-size:0.82rem;">이동</button>
         </div>
     </div>
 </div>
