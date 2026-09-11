@@ -13385,7 +13385,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-ov-card { background: var(--se-surface); border: 1px solid var(--se-border); border-radius: 6px; padding: 18px 20px; }
 .se-ov-card h4 { color: var(--se-text); font-size: 0.8rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
 .se-ov-chip { display: inline-block; padding: 3px 10px; margin: 3px 3px 3px 0; border-radius: 2px; background: rgba(184,155,106,0.12); color: var(--se-gold); font-size: 0.7rem; }
+.se-ov-chip.sold { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
 .se-ov-empty { color: var(--se-muted); font-size: 0.78rem; }
+.se-ov-filter { padding: 4px 12px; font-size: 0.72rem; border: 1px solid var(--se-border); border-radius: 3px; background: var(--se-raised); color: var(--se-muted); cursor: pointer; }
+.se-ov-filter.active { background: var(--se-gold); color: #fff; border-color: var(--se-gold); }
 </style>
 
 <button id="seMgmtBtn" onclick="openSELogin()">SE Management</button>
@@ -13642,7 +13645,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
         </div>
         <div id="seTabOverview" style="display:none;">
-            <div style="margin-bottom:16px; display:flex; justify-content:flex-end;">
+            <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="se-ov-filter active" data-filter="" onclick="seSetOverviewFilter('')">전체</button>
+                    <button class="se-ov-filter" data-filter="전시" onclick="seSetOverviewFilter('전시')">전시</button>
+                    <button class="se-ov-filter" data-filter="판매" onclick="seSetOverviewFilter('판매')">판매</button>
+                    <button class="se-ov-filter" data-filter="창고보관" onclick="seSetOverviewFilter('창고보관')">창고보관</button>
+                </div>
                 <button class="se-save-btn" onclick="seLoadOverview()">🔄 새로고침</button>
             </div>
             <div class="se-overview-grid" id="seOverviewGrid"></div>
@@ -14757,21 +14766,42 @@ function seLayoutClear() {
 }
 // ─────────────────────────────────────────────────────────────────
 
+let _ovData = [];
+let _ovFilter = '';
+
+function seSetOverviewFilter(f) {
+    _ovFilter = f;
+    document.querySelectorAll('.se-ov-filter').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+    seRenderOverview();
+}
+
+function seRenderOverview() {
+    const grid = document.getElementById('seOverviewGrid');
+    if (!grid) return;
+    const rows = _ovFilter ? _ovData.filter(r => r.purpose === _ovFilter) : _ovData;
+    const byStore = {};
+    rows.forEach(r => { if (!byStore[r.store_id]) byStore[r.store_id]=[]; byStore[r.store_id].push(r); });
+    grid.innerHTML = storeData.map(s => {
+        const storeRows = byStore[s.id] || [];
+        const chips = storeRows.length
+            ? storeRows.map(r => {
+                const p = SE_PRODUCTS.find(x => x.id === r.product_id);
+                const name = p ? p.name : r.product_id;
+                return `<span class="se-ov-chip${r.sold ? ' sold' : ''}">${name}${r.sold ? ' ✓' : ''}</span>`;
+              }).join('')
+            : '<span class="se-ov-empty">해당 없음</span>';
+        return `<div class="se-ov-card"><h4>${s.name} <span style="font-size:0.7rem;color:#475569;">${s.region}</span></h4><div>${chips}</div></div>`;
+    }).join('');
+}
+
 async function seLoadOverview() {
     const grid = document.getElementById('seOverviewGrid');
     grid.innerHTML = '<div style="color:#475569;">불러오는 중...</div>';
     try {
         const { data, error } = await _sb.from('store_displays').select('*');
         if (error) throw error;
-        const byStore = {};
-        (data||[]).forEach(r => { if (!byStore[r.store_id]) byStore[r.store_id]=[]; byStore[r.store_id].push(r); });
-        grid.innerHTML = storeData.map(s => {
-            const rows = byStore[s.id] || [];
-            const chips = rows.length
-                ? rows.map(r => { const p=SE_PRODUCTS.find(x=>x.id===r.product_id); return `<span class="se-ov-chip">${p?p.name:r.product_id}</span>`; }).join('')
-                : '<span class="se-ov-empty">전시 없음</span>';
-            return `<div class="se-ov-card"><h4>${s.name} <span style="font-size:0.7rem;color:#475569;">${s.region}</span></h4><div>${chips}</div></div>`;
-        }).join('');
+        _ovData = data || [];
+        seRenderOverview();
     } catch(e) { grid.innerHTML=`<div style="color:#f87171;">오류: ${e.message}</div>`; }
 }
 </script>
