@@ -14727,7 +14727,8 @@ function seLayoutDraw() {
         _lCtx.fillStyle = '#fff';
         _lCtx.font = 'bold 11px sans-serif';
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'top';
-        _lCtx.fillText(z.label, z.x + z.w/2, z.y + 8);
+        const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
+        _lCtx.fillText(`${z.label} (${zCount}개)`, z.x + z.w/2, z.y + 8);
         // 전시품 목록
         const zDisplays = seZoneDisplays(z.id);
         if (zDisplays.length > 0) {
