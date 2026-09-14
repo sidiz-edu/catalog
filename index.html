@@ -14406,17 +14406,17 @@ function seLayoutMouseDown(e) {
             seSaveVirtualItemPos(_lPlaceSelected);
             return;
         }
-        // 빈 캔버스 클릭 (선택 없음) → 구역 클릭 감지 후 하이라이트 + 목록 스크롤
+        // 빈 캔버스 클릭 (선택 없음) → 구역 클릭 감지 후 필터링
         const hitZone = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
         if (hitZone) {
             _lSelected = hitZone;
-            seLayoutDraw();
-            const g = document.getElementById('seZoneGroup_' + hitZone.id);
-            if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            _lZoneFilter = _lZoneFilter && _lZoneFilter.id === hitZone.id ? null : hitZone;
         } else {
             _lSelected = null;
-            seLayoutDraw();
+            _lZoneFilter = null;
         }
+        seLayoutDraw();
+        seRenderPlaceList();
         return;
     }
 
@@ -14530,10 +14530,11 @@ function seLayoutMouseUp(e) {
 // ─── 모드 관리 ───────────────────────────────────────
 let _lMode = 'zone'; // 'zone' | 'place'
 let _lPlaceSelected = null; // 배치할 제품 display 객체
+let _lZoneFilter = null; // 배치 모드에서 선택된 구역 (필터링용)
 
 function seLayoutSetMode(mode) {
     _lMode = mode;
-    _lSelected = null; _lPlaceSelected = null;
+    _lSelected = null; _lPlaceSelected = null; _lZoneFilter = null;
     const isZone = mode === 'zone';
     document.getElementById('seModeBtnZone').style.cssText  = `padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;letter-spacing:0.04em;background:${isZone  ? 'var(--se-gold)' : 'var(--se-surface)'};color:${isZone  ? '#fff' : 'var(--se-muted)'};`;
     document.getElementById('seModeBtnPlace').style.cssText = `padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;letter-spacing:0.04em;background:${!isZone ? 'var(--se-gold)' : 'var(--se-surface)'};color:${!isZone ? '#fff' : 'var(--se-muted)'};`;
@@ -14548,7 +14549,7 @@ function seRenderPlaceList() {
     const el = document.getElementById('sePlaceList');
     if (!el) return;
     if (!_layoutStore) { el.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">매장을 먼저 선택하세요.</div>'; return; }
-    const assigned = _layoutDisplays.filter(d => d.zone_id);
+    const assigned = _layoutDisplays.filter(d => d.zone_id && (!_lZoneFilter || d.zone_id === _lZoneFilter.id));
     if (!assigned.length) { el.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">구역에 할당된 전시품이 없습니다.<br>먼저 구역 편집에서 할당하세요.</div>'; return; }
 
     // 구역별 그룹
