@@ -14709,69 +14709,105 @@ function seLayoutRightClick(e) {
 function seLayoutDraw() {
     if (!_lCtx) return;
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
-    _lCtx.clearRect(0, 0, W, H);
-    // grid
-    _lCtx.strokeStyle = 'rgba(13,59,255,0.07)'; _lCtx.lineWidth = 0.5;
-    for (let x=0; x<W; x+=40) { _lCtx.beginPath(); _lCtx.moveTo(x,0); _lCtx.lineTo(x,H); _lCtx.stroke(); }
-    for (let y=0; y<H; y+=40) { _lCtx.beginPath(); _lCtx.moveTo(0,y); _lCtx.lineTo(W,y); _lCtx.stroke(); }
+    // background
+    _lCtx.fillStyle = '#f8f9fb';
+    _lCtx.fillRect(0, 0, W, H);
+    // dot grid
+    _lCtx.fillStyle = 'rgba(99,115,150,0.18)';
+    for (let x=20; x<W; x+=24) for (let y=20; y<H; y+=24) {
+        _lCtx.beginPath(); _lCtx.arc(x, y, 1, 0, Math.PI*2); _lCtx.fill();
+    }
+
     // zones
-    const rr = 8; // border radius
+    const rr = 12;
     _layoutZones.forEach(z => {
         _lCtx.save();
-        const headerH = 28;
+        const headerH = 32;
         const isSel = z === _lSelected;
+        const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
 
         // shadow
-        _lCtx.shadowColor = 'rgba(0,0,0,0.22)';
-        _lCtx.shadowBlur = 10; _lCtx.shadowOffsetY = 3;
+        _lCtx.shadowColor = isSel ? z.color + '55' : 'rgba(0,0,0,0.14)';
+        _lCtx.shadowBlur = isSel ? 18 : 12;
+        _lCtx.shadowOffsetY = isSel ? 0 : 4;
+        _lCtx.fillStyle = '#fff';
+        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
+        _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0; _lCtx.shadowOffsetY = 0;
 
-        // body fill (very light tint)
-        _lCtx.globalAlpha = 0.13;
+        // body subtle tint
+        _lCtx.globalAlpha = 0.06;
         _lCtx.fillStyle = z.color;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
-        _lCtx.globalAlpha = 1; _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0; _lCtx.shadowOffsetY = 0;
+        _lCtx.globalAlpha = 1;
 
-        // header bar
-        _lCtx.globalAlpha = isSel ? 1 : 0.88;
-        _lCtx.fillStyle = z.color;
+        // header gradient
+        const grad = _lCtx.createLinearGradient(z.x, z.y, z.x, z.y + headerH);
+        grad.addColorStop(0, z.color);
+        grad.addColorStop(1, z.color + 'cc');
+        _lCtx.fillStyle = grad;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, headerH, [rr, rr, 0, 0]); _lCtx.fill();
+
+        // header shimmer
+        _lCtx.globalAlpha = 0.12;
+        _lCtx.fillStyle = '#fff';
+        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, headerH/2, [rr, rr, 0, 0]); _lCtx.fill();
         _lCtx.globalAlpha = 1;
 
         // border
-        _lCtx.strokeStyle = isSel ? '#fff' : z.color;
-        _lCtx.lineWidth = isSel ? 2.5 : 1.5;
-        _lCtx.globalAlpha = isSel ? 1 : 0.7;
+        _lCtx.strokeStyle = isSel ? z.color : 'rgba(0,0,0,0.08)';
+        _lCtx.lineWidth = isSel ? 2.5 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
-        _lCtx.globalAlpha = 1;
 
-        // zone name
-        const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
+        // zone name (left-aligned)
         _lCtx.fillStyle = '#fff';
-        _lCtx.font = 'bold 12px sans-serif';
+        _lCtx.font = 'bold 12px system-ui, sans-serif';
+        _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
+        _lCtx.fillText(z.label, z.x + 12, z.y + headerH / 2);
+
+        // count badge (right side of header)
+        const badgeTxt = `${zCount}개`;
+        _lCtx.font = 'bold 9px system-ui, sans-serif';
+        const bw = _lCtx.measureText(badgeTxt).width + 10;
+        const bx = z.x + z.w - bw - 8, by = z.y + (headerH - 16) / 2;
+        _lCtx.fillStyle = 'rgba(255,255,255,0.25)';
+        _lCtx.beginPath(); _lCtx.roundRect(bx, by, bw, 16, 8); _lCtx.fill();
+        _lCtx.fillStyle = '#fff';
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(`${z.label} (${zCount}개)`, z.x + z.w/2, z.y + headerH/2);
+        _lCtx.fillText(badgeTxt, bx + bw / 2, by + 8);
 
         // product list
         const zDisplays = seZoneDisplays(z.id);
         if (zDisplays.length > 0) {
-            const lineH = 15, startY = z.y + headerH + 10;
-            const maxLines = Math.floor((z.h - headerH - 18) / lineH);
-            _lCtx.font = '10px sans-serif'; _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
+            const lineH = 18, pad = 12, startY = z.y + headerH + 8;
+            const maxLines = Math.floor((z.h - headerH - 16) / lineH);
+            _lCtx.font = '10.5px system-ui, sans-serif';
+            _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
             zDisplays.slice(0, maxLines).forEach((d, i) => {
-                const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, 16);
+                const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, 18);
                 const ty = startY + i * lineH;
-                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.9;
-                _lCtx.beginPath(); _lCtx.arc(z.x + 14, ty, 2.5, 0, Math.PI*2); _lCtx.fill();
+                // divider (except first)
+                if (i > 0) {
+                    _lCtx.strokeStyle = 'rgba(0,0,0,0.05)'; _lCtx.lineWidth = 0.5;
+                    _lCtx.beginPath(); _lCtx.moveTo(z.x + pad, ty - lineH/2); _lCtx.lineTo(z.x + z.w - pad, ty - lineH/2); _lCtx.stroke();
+                }
+                // dot
+                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.7;
+                _lCtx.beginPath(); _lCtx.arc(z.x + pad + 3, ty, 2.5, 0, Math.PI*2); _lCtx.fill();
                 _lCtx.globalAlpha = 1;
-                _lCtx.fillStyle = 'rgba(255,255,255,0.9)';
-                _lCtx.fillText(name, z.x + 22, ty);
+                // name
+                _lCtx.fillStyle = '#1f2937';
+                _lCtx.fillText(name, z.x + pad + 12, ty);
             });
             if (zDisplays.length > maxLines && maxLines > 0) {
-                _lCtx.fillStyle = 'rgba(255,255,255,0.45)'; _lCtx.textAlign = 'center';
+                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.6;
+                _lCtx.font = 'bold 9.5px system-ui, sans-serif';
+                _lCtx.textAlign = 'center';
                 _lCtx.fillText(`+${zDisplays.length - maxLines}개 더`, z.x + z.w/2, startY + maxLines * lineH);
+                _lCtx.globalAlpha = 1;
             }
         } else {
-            _lCtx.font = '10px sans-serif'; _lCtx.fillStyle = 'rgba(255,255,255,0.35)';
+            _lCtx.font = '10px system-ui, sans-serif';
+            _lCtx.fillStyle = 'rgba(0,0,0,0.25)';
             _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
             _lCtx.fillText('전시품 없음', z.x + z.w/2, z.y + z.h/2);
         }
