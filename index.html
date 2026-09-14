@@ -13484,9 +13484,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <option value="다양한 앉음존">
                             <option value="오픈커뮤니티룸">
                         </datalist>
-                        <select id="seEditZone" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.82rem;color:var(--se-muted);">
-                            <option value="">구역 미지정</option>
-                        </select>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
@@ -14047,16 +14044,6 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
     document.getElementById('seEditUpdater').value = '';
     seEditToggleSaleFields();
-    // 구역 드롭다운 채우기
-    const zoneSel = document.getElementById('seEditZone');
-    zoneSel.innerHTML = '<option value="">구역 미지정</option>';
-    const { data: zones } = await _sb.from('store_zones').select('id,zone_name').eq('store_id', seCurrentStore).order('zone_name');
-    if (zones) zones.forEach(z => {
-        const opt = document.createElement('option');
-        opt.value = z.id; opt.textContent = z.zone_name;
-        zoneSel.appendChild(opt);
-    });
-    zoneSel.value = row.zone_id || '';
     document.getElementById('seEditModal').style.display = 'flex';
 }
 function seCloseEditModal() {
@@ -14097,7 +14084,6 @@ async function seSubmitEdit() {
         quantity: parseInt(document.getElementById('seEditQty').value) || 1,
         display_since: document.getElementById('seEditDate').value || null,
         location: document.getElementById('seEditLocation').value.trim() || null,
-        zone_id: document.getElementById('seEditZone').value || null,
         memo: document.getElementById('seEditMemo').value.trim() || null,
         updated_by: updater,
         updated_at: new Date().toISOString(),
