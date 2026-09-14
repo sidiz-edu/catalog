@@ -14770,38 +14770,40 @@ function seLayoutDraw() {
         _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
         _lCtx.fillText(tagTxt, z.x + 20, tagY + tagH / 2);
 
-        // product list
-        const listStartY = tagY + tagH + 10;
-        const zDisplays = seZoneDisplays(z.id);
-        if (zDisplays.length > 0) {
-            const lineH = 18, pad = 14;
-            const maxLines = Math.floor((z.h - (listStartY - z.y) - 8) / lineH);
-            _lCtx.font = '10.5px system-ui, sans-serif';
-            _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
-            zDisplays.slice(0, maxLines).forEach((d, i) => {
-                const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, 18);
-                const ty = listStartY + i * lineH;
-                if (i > 0) {
-                    _lCtx.strokeStyle = 'rgba(0,0,0,0.05)'; _lCtx.lineWidth = 0.5;
-                    _lCtx.beginPath(); _lCtx.moveTo(z.x + pad, ty - lineH/2); _lCtx.lineTo(z.x + z.w - pad, ty - lineH/2); _lCtx.stroke();
+        // product list — zone mode only
+        if (_lMode === 'zone') {
+            const listStartY = tagY + tagH + 10;
+            const zDisplays = seZoneDisplays(z.id);
+            if (zDisplays.length > 0) {
+                const lineH = 18, pad = 14;
+                const maxLines = Math.floor((z.h - (listStartY - z.y) - 8) / lineH);
+                _lCtx.font = '10.5px system-ui, sans-serif';
+                _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
+                zDisplays.slice(0, maxLines).forEach((d, i) => {
+                    const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, 18);
+                    const ty = listStartY + i * lineH;
+                    if (i > 0) {
+                        _lCtx.strokeStyle = 'rgba(0,0,0,0.05)'; _lCtx.lineWidth = 0.5;
+                        _lCtx.beginPath(); _lCtx.moveTo(z.x + pad, ty - lineH/2); _lCtx.lineTo(z.x + z.w - pad, ty - lineH/2); _lCtx.stroke();
+                    }
+                    _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
+                    _lCtx.beginPath(); _lCtx.arc(z.x + pad + 3, ty, 2.5, 0, Math.PI*2); _lCtx.fill();
+                    _lCtx.globalAlpha = 1;
+                    _lCtx.fillStyle = '#374151';
+                    _lCtx.fillText(name, z.x + pad + 12, ty);
+                });
+                if (zDisplays.length > maxLines && maxLines > 0) {
+                    _lCtx.fillStyle = '#9ca3af';
+                    _lCtx.font = '9.5px system-ui, sans-serif';
+                    _lCtx.textAlign = 'center';
+                    _lCtx.fillText(`+${zDisplays.length - maxLines}개 더`, z.x + z.w/2, listStartY + maxLines * lineH);
                 }
-                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
-                _lCtx.beginPath(); _lCtx.arc(z.x + pad + 3, ty, 2.5, 0, Math.PI*2); _lCtx.fill();
-                _lCtx.globalAlpha = 1;
-                _lCtx.fillStyle = '#374151';
-                _lCtx.fillText(name, z.x + pad + 12, ty);
-            });
-            if (zDisplays.length > maxLines && maxLines > 0) {
-                _lCtx.fillStyle = '#9ca3af';
-                _lCtx.font = '9.5px system-ui, sans-serif';
-                _lCtx.textAlign = 'center';
-                _lCtx.fillText(`+${zDisplays.length - maxLines}개 더`, z.x + z.w/2, listStartY + maxLines * lineH);
+            } else {
+                _lCtx.font = '10px system-ui, sans-serif';
+                _lCtx.fillStyle = 'rgba(0,0,0,0.18)';
+                _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
+                _lCtx.fillText('전시품 없음', z.x + z.w/2, z.y + z.h/2);
             }
-        } else {
-            _lCtx.font = '10px system-ui, sans-serif';
-            _lCtx.fillStyle = 'rgba(0,0,0,0.18)';
-            _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
-            _lCtx.fillText('전시품 없음', z.x + z.w/2, z.y + z.h/2);
         }
         _lCtx.restore();
 
