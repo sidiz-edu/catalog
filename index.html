@@ -14551,7 +14551,27 @@ function seRenderPlaceList() {
     if (!el) return;
     if (!_layoutStore) { el.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">매장을 먼저 선택하세요.</div>'; return; }
     const assigned = _layoutDisplays.filter(d => d.zone_id && (!_lZoneFilter || d.zone_id === _lZoneFilter.id));
-    if (!assigned.length) { el.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">구역에 할당된 전시품이 없습니다.<br>먼저 공간 편집에서 할당하세요.</div>'; return; }
+    const unassigned = _lZoneFilter ? [] : _layoutDisplays.filter(d => !d.zone_id);
+
+    const makeRow = (d, zColor) => {
+        const pName = (SE_PRODUCTS.find(p => p.id === d.product_id)||{name:d.product_id}).name;
+        const qty = d.quantity || 1;
+        const label = qty > 1 ? `${pName} (${d._idx + 1})` : pName;
+        const hasPos = d.pos_x != null && d.pos_y != null;
+        const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
+        const scale = Math.round((d.chip_scale || 1) * 10) / 10;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 16px;
+                background:${sel ? 'rgba(13,59,255,0.08)' : 'transparent'};
+                border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};">
+            <span onclick="seSelectPlaceItem('${d._vid}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
+            <span onclick="seSelectPlaceItem('${d._vid}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${label}</span>
+            <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <button onclick="event.stopPropagation();seChipScale('${d._vid}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
+                <span style="font-size:0.62rem;color:var(--se-muted);min-width:24px;text-align:center;">${scale}x</span>
+                <button onclick="event.stopPropagation();seChipScale('${d._vid}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
+            </span>
+        </div>`;
+    };
 
     // 구역별 그룹
     const byZone = {};
@@ -14559,34 +14579,24 @@ function seRenderPlaceList() {
         if (!byZone[d.zone_id]) byZone[d.zone_id] = [];
         byZone[d.zone_id].push(d);
     });
-    el.innerHTML = Object.entries(byZone).map(([zid, items]) => {
+    const assignedHtml = Object.entries(byZone).map(([zid, items]) => {
         const zone = _layoutZones.find(z => z.id === zid);
-        const zName = zone ? zone.label : '알 수 없는 구역';
+        const zName = zone ? zone.label : '알 수 없는 공간';
         const zColor = zone ? zone.color : '#888';
-        const rows = items.map(d => {
-            const pName = (SE_PRODUCTS.find(p => p.id === d.product_id)||{name:d.product_id}).name;
-            const qty = d.quantity || 1;
-            const label = qty > 1 ? `${pName} (${d._idx + 1})` : pName;
-            const hasPos = d.pos_x != null && d.pos_y != null;
-            const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
-            const scale = Math.round((d.chip_scale || 1) * 10) / 10;
-            return `<div style="display:flex;align-items:center;gap:8px;padding:6px 16px;
-                    background:${sel ? 'rgba(13,59,255,0.08)' : 'transparent'};
-                    border-left:3px solid ${sel ? 'var(--se-gold)' : 'transparent'};">
-                <span onclick="seSelectPlaceItem('${d._vid}')" style="width:8px;height:8px;border-radius:50%;background:${hasPos ? zColor : '#d1d5db'};flex-shrink:0;cursor:pointer;"></span>
-                <span onclick="seSelectPlaceItem('${d._vid}')" style="font-size:0.78rem;color:var(--se-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">${label}</span>
-                <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
-                    <button onclick="event.stopPropagation();seChipScale('${d._vid}',-0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">−</button>
-                    <span style="font-size:0.62rem;color:var(--se-muted);min-width:24px;text-align:center;">${scale}x</span>
-                    <button onclick="event.stopPropagation();seChipScale('${d._vid}',0.2)" style="width:18px;height:18px;border:1px solid var(--se-border);background:var(--se-raised);color:var(--se-text);cursor:pointer;font-size:11px;border-radius:2px;padding:0;">+</button>
-                </span>
-            </div>`;
-        }).join('');
         return `<div id="seZoneGroup_${zid}" style="padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:${zColor};font-weight:700;">${zName}</span>
             <button onclick="event.stopPropagation();seAutoPlaceZone('${zid}')" style="padding:1px 6px;font-size:0.62rem;border:1px solid ${zColor};border-radius:2px;cursor:pointer;background:transparent;color:${zColor};">자동 배치</button>
-        </div>${rows}`;
+        </div>${items.map(d => makeRow(d, zColor)).join('')}`;
     }).join('');
+
+    const unassignedHtml = unassigned.length
+        ? `<div style="padding:8px 16px 4px;margin-top:4px;border-top:1px solid var(--se-border);">
+            <span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-muted);font-weight:700;">공간 미배정</span>
+           </div>${unassigned.map(d => makeRow(d, '#9ca3af')).join('')}`
+        : '';
+
+    el.innerHTML = assignedHtml + unassignedHtml ||
+        '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">등록된 전시품이 없습니다.</div>';
 }
 
 function seAutoPlaceZone(zoneId) {
