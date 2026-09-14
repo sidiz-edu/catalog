@@ -14802,6 +14802,12 @@ function seLayoutDraw() {
                 const colW = availW / cols;
                 const availRows = Math.floor((z.h - (listStartY - z.y) - pad) / lineH);
                 const maxItems = Math.min(zDisplays.length, Math.max(0, availRows * cols));
+                const hasOverflow = zDisplays.length > maxItems;
+                const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
+                const totalRows = itemRows + (hasOverflow ? 1 : 0);
+                const availH = z.h - (listStartY - z.y) - pad;
+                const contentH = totalRows * lineH;
+                const startY = listStartY + Math.max(0, Math.floor((availH - contentH) / 2));
                 _lCtx.font = `${listFontSz}px system-ui, sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const dotR = Math.max(1.5, 2.5 * zScale);
@@ -14809,7 +14815,7 @@ function seLayoutDraw() {
                 zDisplays.slice(0, maxItems).forEach((d, i) => {
                     const col = i % cols, row = Math.floor(i / cols);
                     const tx = z.x + pad + col * colW;
-                    const ty = listStartY + row * lineH;
+                    const ty = startY + row * lineH;
                     const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, nameLen);
                     _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
                     _lCtx.beginPath(); _lCtx.arc(tx + dotR, ty, dotR, 0, Math.PI*2); _lCtx.fill();
@@ -14817,12 +14823,11 @@ function seLayoutDraw() {
                     _lCtx.fillStyle = '#374151';
                     _lCtx.fillText(name, tx + dotR * 2 + 4, ty);
                 });
-                if (zDisplays.length > maxItems) {
-                    const overRow = Math.floor(maxItems / cols);
+                if (hasOverflow) {
                     _lCtx.fillStyle = '#9ca3af';
                     _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px system-ui, sans-serif`;
                     _lCtx.textAlign = 'center';
-                    _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, listStartY + overRow * lineH);
+                    _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * lineH);
                 }
             } else {
                 _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px system-ui, sans-serif`;
