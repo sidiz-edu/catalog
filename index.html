@@ -13474,16 +13474,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">위치</label>
-                        <input type="text" id="seEditLocation" placeholder="위치 선택 또는 입력" list="seEditLocationOptions" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                        <datalist id="seEditLocationOptions">
-                            <option value="포커스존">
-                            <option value="체크인존">
-                            <option value="피팅존">
-                            <option value="시팅 파노라마">
-                            <option value="이지리페어존">
-                            <option value="다양한 앉음존">
-                            <option value="오픈커뮤니티룸">
-                        </datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="seEditLocation" placeholder="위치 선택 또는 입력" autocomplete="off"
+                                style="width:100%;box-sizing:border-box;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;"
+                                onfocus="seShowLocList('seEditLocation')"
+                                oninput="seFilterLocList('seEditLocation')"
+                                onblur="setTimeout(()=>seHideLocList('seEditLocation'),150)">
+                            <div id="seEditLocationList" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:9999;background:var(--se-surface);border:1px solid var(--se-border);border-radius:6px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.18);"></div>
+                        </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
@@ -13567,16 +13565,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 80px 1fr 1fr;">
                         <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
-                        <input type="text" id="seAddLocation" placeholder="위치 선택 또는 입력" list="seLocationOptions">
-                        <datalist id="seLocationOptions">
-                            <option value="포커스존">
-                            <option value="체크인존">
-                            <option value="피팅존">
-                            <option value="시팅 파노라마">
-                            <option value="이지리페어존">
-                            <option value="다양한 앉음존">
-                            <option value="오픈커뮤니티룸">
-                        </datalist>
+                        <div style="position:relative;">
+                            <input type="text" id="seAddLocation" placeholder="위치 선택 또는 입력" autocomplete="off"
+                                style="width:100%;box-sizing:border-box;"
+                                onfocus="seShowLocList('seAddLocation')"
+                                oninput="seFilterLocList('seAddLocation')"
+                                onblur="setTimeout(()=>seHideLocList('seAddLocation'),150)">
+                            <div id="seAddLocationList" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:9999;background:var(--se-surface);border:1px solid var(--se-border);border-radius:6px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.18);"></div>
+                        </div>
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
                     </div>
                     <div id="seAddSoldRow" style="display:none;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap;">
@@ -14048,6 +14044,32 @@ async function seOpenEditModal(id) {
 }
 function seCloseEditModal() {
     document.getElementById('seEditModal').style.display = 'none';
+}
+const SE_LOC_PRESETS = ['포커스존','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸'];
+function seRenderLocList(inputId, filter) {
+    const list = document.getElementById(inputId + 'List');
+    if (!list) return;
+    const f = (filter || '').trim();
+    const items = f ? SE_LOC_PRESETS.filter(p => p.includes(f)) : SE_LOC_PRESETS;
+    list.innerHTML = items.length
+        ? items.map(p => `<div style="padding:9px 12px;cursor:pointer;font-size:0.85rem;" onmousedown="event.preventDefault()" onclick="sePickLoc('${inputId}','${p}')" onmouseover="this.style.background='var(--se-hover,#f0f0f0)'" onmouseout="this.style.background=''>${p}</div>`).join('')
+        : `<div style="padding:9px 12px;font-size:0.82rem;color:var(--se-muted);">일치하는 항목 없음</div>`;
+}
+function seShowLocList(inputId) {
+    seRenderLocList(inputId, document.getElementById(inputId).value);
+    document.getElementById(inputId + 'List').style.display = 'block';
+}
+function seFilterLocList(inputId) {
+    seRenderLocList(inputId, document.getElementById(inputId).value);
+    document.getElementById(inputId + 'List').style.display = 'block';
+}
+function sePickLoc(inputId, value) {
+    document.getElementById(inputId).value = value;
+    document.getElementById(inputId + 'List').style.display = 'none';
+}
+function seHideLocList(inputId) {
+    const el = document.getElementById(inputId + 'List');
+    if (el) el.style.display = 'none';
 }
 function seEditToggleSaleFields() {
     const isSale = document.getElementById('seEditPurpose').value === '판매';
