@@ -14404,6 +14404,18 @@ function seLayoutMouseDown(e) {
             seLayoutDraw();
             seRenderPlaceList();
             seSaveVirtualItemPos(_lPlaceSelected);
+            return;
+        }
+        // 빈 캔버스 클릭 (선택 없음) → 구역 클릭 감지 후 하이라이트 + 목록 스크롤
+        const hitZone = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
+        if (hitZone) {
+            _lSelected = hitZone;
+            seLayoutDraw();
+            const g = document.getElementById('seZoneGroup_' + hitZone.id);
+            if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            _lSelected = null;
+            seLayoutDraw();
         }
         return;
     }
@@ -14568,7 +14580,7 @@ function seRenderPlaceList() {
                 </span>
             </div>`;
         }).join('');
-        return `<div style="padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between;">
+        return `<div id="seZoneGroup_${zid}" style="padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:${zColor};font-weight:700;">${zName}</span>
             <button onclick="event.stopPropagation();seAutoPlaceZone('${zid}')" style="padding:1px 6px;font-size:0.62rem;border:1px solid ${zColor};border-radius:2px;cursor:pointer;background:transparent;color:${zColor};">자동 배치</button>
         </div>${rows}`;
