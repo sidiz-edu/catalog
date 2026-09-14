@@ -14805,29 +14805,35 @@ function seLayoutDraw() {
                 const hasOverflow = zDisplays.length > maxItems;
                 const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
                 const totalRows = itemRows + (hasOverflow ? 1 : 0);
-                const contentH = totalRows * lineH;
+                const availH = z.h - (listStartY - z.y) - pad;
+                // 1행만 있고 공간이 남을 때 글자·점을 키워서 채움 (최대 2×)
+                const dynScale = (totalRows === 1 && availH > lineH) ? Math.min(2.0, availH / lineH) : 1.0;
+                const dynLineH = Math.round(lineH * dynScale);
+                const dynFontSz = Math.round(listFontSz * dynScale);
+                const dotR = Math.max(1.5, 2.5 * zScale);
+                const dynDotR = dotR * dynScale;
+                const contentH = totalRows * dynLineH;
                 const startY = Math.max(listStartY,
                     Math.floor(Math.min(z.y + (z.h - contentH) / 2, z.y + z.h - pad - contentH)));
-                _lCtx.font = `${listFontSz}px system-ui, sans-serif`;
+                _lCtx.font = `${dynFontSz}px system-ui, sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
-                const dotR = Math.max(1.5, 2.5 * zScale);
-                const nameLen = Math.max(8, Math.round(14 * zScale));
+                const nameLen = Math.max(6, Math.round(14 * zScale / dynScale));
                 zDisplays.slice(0, maxItems).forEach((d, i) => {
                     const col = i % cols, row = Math.floor(i / cols);
                     const tx = z.x + pad + col * colW;
-                    const ty = startY + row * lineH;
+                    const ty = startY + row * dynLineH;
                     const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, nameLen);
                     _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
-                    _lCtx.beginPath(); _lCtx.arc(tx + dotR, ty, dotR, 0, Math.PI*2); _lCtx.fill();
+                    _lCtx.beginPath(); _lCtx.arc(tx + dynDotR, ty, dynDotR, 0, Math.PI*2); _lCtx.fill();
                     _lCtx.globalAlpha = 1;
                     _lCtx.fillStyle = '#374151';
-                    _lCtx.fillText(name, tx + dotR * 2 + 4, ty);
+                    _lCtx.fillText(name, tx + dynDotR * 2 + 4, ty);
                 });
                 if (hasOverflow) {
                     _lCtx.fillStyle = '#9ca3af';
                     _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px system-ui, sans-serif`;
                     _lCtx.textAlign = 'center';
-                    _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * lineH);
+                    _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * dynLineH);
                 }
             } else {
                 _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px system-ui, sans-serif`;
