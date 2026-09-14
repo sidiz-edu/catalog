@@ -14045,7 +14045,7 @@ async function seOpenEditModal(id) {
 function seCloseEditModal() {
     document.getElementById('seEditModal').style.display = 'none';
 }
-const SE_LOC_PRESETS = ['포커스존','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','창고'];
+const SE_LOC_PRESETS = ['포커스존','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','안내 데스크','창고'];
 var _seLocActiveInput = null;
 function seShowLocList(inputId) {
     _seLocActiveInput = inputId;
@@ -14271,6 +14271,7 @@ const ZONE_TYPES = [
     { type:'repair',   label:'이지리페어존',    color:'#9f1239', desc:'부품 교체로 의자를 오래 쓰는 지속 가능한 소비 철학을 보여주는 공간. 고객이 직접 교체 가능한 이지리페어 품목과 품질보증(5·15년) 정책 안내.' },
     { type:'sitting',  label:'다양한 앉음존',   color:'#0e7490', desc:'리빙·문화·아웃도어 등 다양한 상황의 앉음 솔루션을 한눈에 볼 수 있는 공간. 브랜드가 일상의 모든 앉음을 연구하고 있음을 전달.' },
     { type:'community',label:'오픈커뮤니티룸',  color:'#4d7c0f', desc:'커뮤니티 활동·장시간 체험을 지원하는 공간 대여 서비스(네이버 플레이스·방문 사전 예약). 유리 투명 설계로 외부 고객도 자연스럽게 인지 가능.' },
+    { type:'info',     label:'안내 데스크',      color:'#0891b2', desc:'고객 안내 및 상담을 위한 데스크 공간.' },
     { type:'storage',  label:'창고',            color:'#6b7280', desc:'재고·비전시 제품을 보관하는 창고 공간.' },
     { type:'custom',   label:'커스텀',          color:'#475569', desc:'위 유형에 해당하지 않는 자유 구역. 직접 용도를 정의해서 사용.' },
 ];
