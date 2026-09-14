@@ -14719,95 +14719,68 @@ function seLayoutDraw() {
     }
 
     // zones
-    const rr = 12;
+    const rr = 14;
     _layoutZones.forEach(z => {
         _lCtx.save();
-        const headerH = 32;
         const isSel = z === _lSelected;
         const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
 
-        // shadow
-        _lCtx.shadowColor = isSel ? z.color + '55' : 'rgba(0,0,0,0.14)';
-        _lCtx.shadowBlur = isSel ? 18 : 12;
-        _lCtx.shadowOffsetY = isSel ? 0 : 4;
+        // white card with soft shadow
+        _lCtx.shadowColor = isSel ? z.color + '50' : 'rgba(0,0,0,0.10)';
+        _lCtx.shadowBlur = isSel ? 22 : 18;
+        _lCtx.shadowOffsetX = 0;
+        _lCtx.shadowOffsetY = isSel ? 0 : 6;
         _lCtx.fillStyle = '#fff';
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
         _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0; _lCtx.shadowOffsetY = 0;
 
-        // body subtle tint
-        _lCtx.globalAlpha = 0.06;
-        _lCtx.fillStyle = z.color;
-        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
-        _lCtx.globalAlpha = 1;
-
-        // header gradient
-        const grad = _lCtx.createLinearGradient(z.x, z.y, z.x, z.y + headerH);
-        grad.addColorStop(0, z.color);
-        grad.addColorStop(1, z.color + 'cc');
-        _lCtx.fillStyle = grad;
-        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, headerH, [rr, rr, 0, 0]); _lCtx.fill();
-
-        // header shimmer
-        _lCtx.globalAlpha = 0.12;
-        _lCtx.fillStyle = '#fff';
-        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, headerH/2, [rr, rr, 0, 0]); _lCtx.fill();
-        _lCtx.globalAlpha = 1;
-
         // border
-        _lCtx.strokeStyle = isSel ? z.color : 'rgba(0,0,0,0.08)';
-        _lCtx.lineWidth = isSel ? 2.5 : 1;
+        _lCtx.strokeStyle = isSel ? z.color : 'rgba(0,0,0,0.07)';
+        _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
-        // zone name (left-aligned)
+        // tag badge (top-left, like product card label)
+        const tagY = z.y + 12;
+        const tagTxt = zCount > 0 ? `${z.label}  ${zCount}개` : z.label;
+        _lCtx.font = 'bold 10px system-ui, sans-serif';
+        const tagW = _lCtx.measureText(tagTxt).width + 16;
+        const tagH = 22;
+        _lCtx.fillStyle = z.color;
+        _lCtx.beginPath(); _lCtx.roundRect(z.x + 12, tagY, tagW, tagH, 6); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
-        _lCtx.font = 'bold 12px system-ui, sans-serif';
         _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(z.label, z.x + 12, z.y + headerH / 2);
-
-        // count badge (right side of header)
-        const badgeTxt = `${zCount}개`;
-        _lCtx.font = 'bold 9px system-ui, sans-serif';
-        const bw = _lCtx.measureText(badgeTxt).width + 10;
-        const bx = z.x + z.w - bw - 8, by = z.y + (headerH - 16) / 2;
-        _lCtx.fillStyle = 'rgba(255,255,255,0.25)';
-        _lCtx.beginPath(); _lCtx.roundRect(bx, by, bw, 16, 8); _lCtx.fill();
-        _lCtx.fillStyle = '#fff';
-        _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(badgeTxt, bx + bw / 2, by + 8);
+        _lCtx.fillText(tagTxt, z.x + 20, tagY + tagH / 2);
 
         // product list
+        const listStartY = tagY + tagH + 10;
         const zDisplays = seZoneDisplays(z.id);
         if (zDisplays.length > 0) {
-            const lineH = 18, pad = 12, startY = z.y + headerH + 8;
-            const maxLines = Math.floor((z.h - headerH - 16) / lineH);
+            const lineH = 18, pad = 14;
+            const maxLines = Math.floor((z.h - (listStartY - z.y) - 8) / lineH);
             _lCtx.font = '10.5px system-ui, sans-serif';
             _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
             zDisplays.slice(0, maxLines).forEach((d, i) => {
                 const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, 18);
-                const ty = startY + i * lineH;
-                // divider (except first)
+                const ty = listStartY + i * lineH;
                 if (i > 0) {
                     _lCtx.strokeStyle = 'rgba(0,0,0,0.05)'; _lCtx.lineWidth = 0.5;
                     _lCtx.beginPath(); _lCtx.moveTo(z.x + pad, ty - lineH/2); _lCtx.lineTo(z.x + z.w - pad, ty - lineH/2); _lCtx.stroke();
                 }
-                // dot
-                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.7;
+                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
                 _lCtx.beginPath(); _lCtx.arc(z.x + pad + 3, ty, 2.5, 0, Math.PI*2); _lCtx.fill();
                 _lCtx.globalAlpha = 1;
-                // name
-                _lCtx.fillStyle = '#1f2937';
+                _lCtx.fillStyle = '#374151';
                 _lCtx.fillText(name, z.x + pad + 12, ty);
             });
             if (zDisplays.length > maxLines && maxLines > 0) {
-                _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.6;
-                _lCtx.font = 'bold 9.5px system-ui, sans-serif';
+                _lCtx.fillStyle = '#9ca3af';
+                _lCtx.font = '9.5px system-ui, sans-serif';
                 _lCtx.textAlign = 'center';
-                _lCtx.fillText(`+${zDisplays.length - maxLines}개 더`, z.x + z.w/2, startY + maxLines * lineH);
-                _lCtx.globalAlpha = 1;
+                _lCtx.fillText(`+${zDisplays.length - maxLines}개 더`, z.x + z.w/2, listStartY + maxLines * lineH);
             }
         } else {
             _lCtx.font = '10px system-ui, sans-serif';
-            _lCtx.fillStyle = 'rgba(0,0,0,0.25)';
+            _lCtx.fillStyle = 'rgba(0,0,0,0.18)';
             _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
             _lCtx.fillText('전시품 없음', z.x + z.w/2, z.y + z.h/2);
         }
