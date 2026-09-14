@@ -14887,6 +14887,16 @@ function seRenderAssignPanel(zone) {
         return;
     }
     nameEl.textContent = zone.label;
+    if (zone.type === 'storage') {
+        const stored = _layoutDisplays.filter(d => d.purpose === '창고' || d.location === '창고');
+        listEl.innerHTML = stored.length
+            ? stored.map(d => {
+                const name = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name;
+                return `<div style="padding:9px 16px;border-bottom:1px solid var(--se-border);font-size:0.78rem;color:var(--se-text);">${name}</div>`;
+              }).join('')
+            : '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">창고 보관 제품이 없습니다.</div>';
+        return;
+    }
     if (_layoutDisplays.length === 0) {
         listEl.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">등록된 전시품이 없습니다.</div>';
         return;
