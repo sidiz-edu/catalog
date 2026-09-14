@@ -14910,22 +14910,15 @@ function seRenderAssignPanel(zone) {
             : '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">창고 보관 제품이 없습니다.</div>';
         return;
     }
-    if (_layoutDisplays.length === 0) {
-        listEl.innerHTML = '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">등록된 전시품이 없습니다.</div>';
-        return;
-    }
-    listEl.innerHTML = _layoutDisplays.map(d => {
-        const assigned = d.zone_id === zone.id;
-        return `<label style="display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;border-bottom:1px solid var(--se-border);transition:background 0.15s;"
-            onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background=''"
-            onclick="seToggleDisplayZone('${d.id}','${zone.id}')">
-            <span style="width:14px;height:14px;border-radius:2px;border:1.5px solid ${assigned ? 'var(--se-gold)' : 'var(--se-border)'};
-                background:${assigned ? 'var(--se-gold)' : 'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                ${assigned ? '<span style="color:#0e0e0e;font-size:10px;font-weight:800;">✓</span>' : ''}
-            </span>
-            <span style="font-size:0.78rem;color:${assigned ? 'var(--se-text)' : 'var(--se-muted)'};">${(SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name}</span>
-        </label>`;
-    }).join('');
+    const inZone = _layoutDisplays.filter(d => d.zone_id === zone.id);
+    listEl.innerHTML = inZone.length
+        ? inZone.map(d => {
+            const name = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name;
+            const qty = d.quantity || 1;
+            const label = qty > 1 ? `${name} (${d._idx+1})` : name;
+            return `<div style="padding:9px 16px;border-bottom:1px solid var(--se-border);font-size:0.78rem;color:var(--se-text);">${label}</div>`;
+          }).join('')
+        : '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">이 구역에 배정된 전시품이 없습니다.</div>';
 }
 
 async function seLayoutSave() {
