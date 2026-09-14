@@ -14801,7 +14801,7 @@ function seLayoutDraw() {
                 const cols = Math.max(1, Math.floor(availW / minColW));
                 const colW = availW / cols;
                 const availRows = Math.floor((z.h - (listStartY - z.y) - pad) / lineH);
-                const maxItems = Math.max(0, availRows * cols - (zDisplays.length > availRows * cols ? 1 : 0));
+                const maxItems = Math.min(zDisplays.length, Math.max(0, availRows * cols));
                 _lCtx.font = `${listFontSz}px system-ui, sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const dotR = Math.max(1.5, 2.5 * zScale);
