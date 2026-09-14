@@ -14737,7 +14737,7 @@ function seLayoutDraw() {
         _lCtx.beginPath(); _lCtx.arc(x, y, 1, 0, Math.PI*2); _lCtx.fill();
     }
 
-    // zones
+    // zones — pass 1: backgrounds + borders + badges
     const rr = 14;
     _layoutZones.forEach(z => {
         _lCtx.save();
@@ -14758,21 +14758,30 @@ function seLayoutDraw() {
         _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
-        // tag badge (top-left, like product card label)
-        const tagY = z.y + 12;
+        // tag badge
+        const tagY = z.y + 12, tagH = 22;
         const tagTxt = zCount > 0 ? `${z.label}  ${zCount}개` : z.label;
         _lCtx.font = 'bold 10px system-ui, sans-serif';
         const tagW = _lCtx.measureText(tagTxt).width + 16;
-        const tagH = 22;
         _lCtx.fillStyle = z.color;
         _lCtx.beginPath(); _lCtx.roundRect(z.x + 12, tagY, tagW, tagH, 6); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
         _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
         _lCtx.fillText(tagTxt, z.x + 20, tagY + tagH / 2);
+        _lCtx.restore();
+    });
 
-        // product list — zone mode only, responsive grid
+    // zones — pass 2: product content (always on top of all backgrounds)
+    _layoutZones.forEach(z => {
+        _lCtx.save();
+        // clip to zone bounds so content stays inside the card
+        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.clip();
+
+        const tagY = z.y + 12, tagH = 22;
+        const listStartY = tagY + tagH + 10;
+        const isSel = z === _lSelected;
+
         if (_lMode === 'zone') {
-            const listStartY = tagY + tagH + 10;
             const zDisplays = seZoneDisplays(z.id);
             if (zDisplays.length > 0) {
                 const pad = 14, lineH = 20;
@@ -14810,8 +14819,8 @@ function seLayoutDraw() {
         }
         _lCtx.restore();
 
-        // resize handles for selected zone
-        if (z === _lSelected) {
+        // resize handles (outside clip)
+        if (isSel) {
             const hpts = [
                 {x:z.x,       y:z.y      }, {x:z.x+z.w/2, y:z.y      }, {x:z.x+z.w,   y:z.y      },
                 {x:z.x+z.w,   y:z.y+z.h/2}, {x:z.x+z.w,   y:z.y+z.h  }, {x:z.x+z.w/2, y:z.y+z.h  },
