@@ -13480,8 +13480,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 onfocus="seShowLocList('seEditLocation')"
                                 onclick="seShowLocList('seEditLocation')"
                                 oninput="seFilterLocList('seEditLocation')"
-                                onblur="setTimeout(function(){seHideLocList('seEditLocation')},150)">
-                            <div id="seEditLocationList" style="display:none;z-index:10001;background:var(--se-surface);border:1px solid var(--se-border);border-radius:6px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.18);"></div>
+                                onblur="setTimeout(function(){seHideLocList()},150)">
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
@@ -13572,8 +13571,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 onfocus="seShowLocList('seAddLocation')"
                                 onclick="seShowLocList('seAddLocation')"
                                 oninput="seFilterLocList('seAddLocation')"
-                                onblur="setTimeout(function(){seHideLocList('seAddLocation')},150)">
-                            <div id="seAddLocationList" style="display:none;z-index:10001;background:var(--se-surface);border:1px solid var(--se-border);border-radius:6px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.18);"></div>
+                                onblur="setTimeout(function(){seHideLocList()},150)">
                         </div>
                         <input type="text" id="seAddMemo" placeholder="메모 (선택)">
                     </div>
@@ -14048,45 +14046,51 @@ function seCloseEditModal() {
     document.getElementById('seEditModal').style.display = 'none';
 }
 const SE_LOC_PRESETS = ['포커스존','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸'];
-function seRenderLocList(inputId, filter) {
-    const list = document.getElementById(inputId + 'List');
-    if (!list) return;
-    const f = (filter || '').trim();
-    const items = f ? SE_LOC_PRESETS.filter(p => p.includes(f)) : SE_LOC_PRESETS;
-    list.innerHTML = items.length
-        ? items.map(p => `<div style="padding:9px 12px;cursor:pointer;font-size:0.85rem;" onmousedown="event.preventDefault()" onclick="sePickLoc('${inputId}','${p}')" onmouseover="this.style.background='var(--se-hover,#f0f0f0)'" onmouseout="this.style.background=''>${p}</div>`).join('')
-        : `<div style="padding:9px 12px;font-size:0.82rem;color:var(--se-muted);">일치하는 항목 없음</div>`;
-}
-function sePositionLocList(inputId) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(inputId + 'List');
-    if (!input || !list) return;
-    const r = input.getBoundingClientRect();
-    list.style.position = 'fixed';
-    list.style.top = (r.bottom + 2) + 'px';
-    list.style.left = r.left + 'px';
-    list.style.width = r.width + 'px';
-}
+var _seLocActiveInput = null;
 function seShowLocList(inputId) {
-    try {
-        seRenderLocList(inputId, document.getElementById(inputId).value);
-        sePositionLocList(inputId);
-        var el = document.getElementById(inputId + 'List');
-        if (el) el.style.display = 'block';
-    } catch(e) { console.error('seShowLocList error', e); }
+    _seLocActiveInput = inputId;
+    var input = document.getElementById(inputId);
+    var dd = document.getElementById('seLocDropdown');
+    if (!dd || !input) return;
+    var r = input.getBoundingClientRect();
+    dd.style.top = (r.bottom + 2) + 'px';
+    dd.style.left = r.left + 'px';
+    dd.style.width = r.width + 'px';
+    seRenderLocDropdown(input.value);
+    dd.style.display = 'block';
 }
 function seFilterLocList(inputId) {
-    seRenderLocList(inputId, document.getElementById(inputId).value);
-    sePositionLocList(inputId);
-    document.getElementById(inputId + 'List').style.display = 'block';
+    _seLocActiveInput = inputId;
+    var input = document.getElementById(inputId);
+    var dd = document.getElementById('seLocDropdown');
+    if (!dd || !input) return;
+    var r = input.getBoundingClientRect();
+    dd.style.top = (r.bottom + 2) + 'px';
+    dd.style.left = r.left + 'px';
+    dd.style.width = r.width + 'px';
+    seRenderLocDropdown(input.value);
+    dd.style.display = 'block';
 }
-function sePickLoc(inputId, value) {
-    document.getElementById(inputId).value = value;
-    document.getElementById(inputId + 'List').style.display = 'none';
+function seRenderLocDropdown(filter) {
+    var dd = document.getElementById('seLocDropdown');
+    if (!dd) return;
+    var f = (filter || '').trim();
+    var items = f ? SE_LOC_PRESETS.filter(function(p){return p.indexOf(f)>=0;}) : SE_LOC_PRESETS;
+    dd.innerHTML = items.length
+        ? items.map(function(p){ return '<div style="padding:10px 14px;cursor:pointer;font-size:0.88rem;color:#111;" onmousedown="event.preventDefault()" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'\'" onclick="sePickLoc(\''+p+'\')">'+p+'</div>'; }).join('')
+        : '<div style="padding:10px 14px;font-size:0.82rem;color:#9ca3af;">일치하는 항목 없음</div>';
 }
-function seHideLocList(inputId) {
-    const el = document.getElementById(inputId + 'List');
-    if (el) el.style.display = 'none';
+function sePickLoc(value) {
+    if (_seLocActiveInput) {
+        var el = document.getElementById(_seLocActiveInput);
+        if (el) el.value = value;
+    }
+    seHideLocList();
+}
+function seHideLocList() {
+    var dd = document.getElementById('seLocDropdown');
+    if (dd) dd.style.display = 'none';
+    _seLocActiveInput = null;
 }
 function seEditToggleSaleFields() {
     const isSale = document.getElementById('seEditPurpose').value === '판매';
@@ -15020,6 +15024,8 @@ async function seLoadOverview() {
     } catch(e) { grid.innerHTML=`<div style="color:#f87171;">오류: ${e.message}</div>`; }
 }
 </script>
+
+<div id="seLocDropdown" style="display:none;position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:8px;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.2);"></div>
 
 </body>
 </html>
