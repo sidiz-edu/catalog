@@ -14805,9 +14805,9 @@ function seLayoutDraw() {
                 const hasOverflow = zDisplays.length > maxItems;
                 const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
                 const totalRows = itemRows + (hasOverflow ? 1 : 0);
-                const availH = z.h - (listStartY - z.y) - pad;
                 const contentH = totalRows * lineH;
-                const startY = listStartY + Math.max(0, Math.floor((availH - contentH) / 2));
+                const startY = Math.max(listStartY,
+                    Math.floor(Math.min(z.y + (z.h - contentH) / 2, z.y + z.h - pad - contentH)));
                 _lCtx.font = `${listFontSz}px system-ui, sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const dotR = Math.max(1.5, 2.5 * zScale);
