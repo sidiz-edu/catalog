@@ -13659,6 +13659,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div style="flex:1; position:relative; background:#f0f2ff; border:1px solid rgba(13,59,255,0.12); border-radius:4px; overflow:hidden;">
                     <canvas id="seLayoutCanvas" style="display:block; width:100%; height:100%;"></canvas>
                 </div>
+                <div id="seChipTooltip" style="display:none;position:fixed;background:#1e293b;color:#f1f5f9;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.35);pointer-events:none;z-index:9999;min-width:160px;max-width:220px;font-family:'Outfit',sans-serif;font-size:13px;line-height:1.4;"></div>
                 <!-- 사이드 패널 (모드별로 내용 전환) -->
                 <div id="seZoneAssignPanel" style="width:220px;flex-shrink:0;background:var(--se-surface);border:1px solid var(--se-border);border-radius:4px;display:flex;flex-direction:column;overflow:hidden;">
                     <!-- 구역 전시품 할당 패널 -->
@@ -13727,7 +13728,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 <script>
 const SE_PW = 'SDZ2026';
 let seCurrentStore = null;
-const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id }));
+const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
 
 function openSELogin() {
     document.getElementById('seLoginOverlay').classList.add('open');
@@ -14397,6 +14398,7 @@ function seLayoutSetupCanvas() {
     c.onmouseup   = seLayoutMouseUp;
     c.ondblclick  = seLayoutDblClick;
     c.oncontextmenu = e => { e.preventDefault(); seLayoutRightClick(e); };
+    c.onmouseleave = () => seUpdateChipTooltip(null, null);
 }
 
 function seLayoutPos(e) {
@@ -14521,6 +14523,7 @@ function seLayoutMouseMove(e) {
         _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
         _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
         _lCanvas.style.cursor = 'grabbing';
+        seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
     }
     if (_lResize) {
@@ -14534,24 +14537,36 @@ function seLayoutMouseMove(e) {
         if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(20, r.oh - dy); if(nh===20) ny=r.oy+r.oh-20; }
         z.x=nx; z.y=ny; z.w=nw; z.h=nh;
         _lCanvas.style.cursor = _lHandleCursor[h];
+        seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
     }
     if (_lMove) {
         _lMove.zone.x = p.x - _lMove.ox;
         _lMove.zone.y = p.y - _lMove.oy;
         _lCanvas.style.cursor = 'grabbing';
+        seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
     }
     if (_lDrag) {
         _lDrag.ex = p.x; _lDrag.ey = p.y;
+        seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
     }
+    // chip hover tooltip
+    const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
+    const hovChip = _layoutDisplays.find(d => {
+        if (d.pos_x == null) return false;
+        const cx = d.pos_x/1000*cW, cy = d.pos_y/1000*cH;
+        const sc = d.chip_scale || 1;
+        return Math.abs(p.x-cx)<38*sc && Math.abs(p.y-cy)<16*sc;
+    });
+    seUpdateChipTooltip(hovChip, e);
     if (_lSelected) {
         const h = _lGetHandle(p, _lSelected);
         if (h) { _lCanvas.style.cursor = _lHandleCursor[h.id]; return; }
     }
     const hover = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
-    _lCanvas.style.cursor = hover ? 'grab' : 'crosshair';
+    _lCanvas.style.cursor = hovChip ? 'default' : hover ? 'grab' : 'crosshair';
 }
 function seLayoutMouseUp(e) {
     if (_lPlaceDrag) {
@@ -14761,6 +14776,30 @@ function seLayoutRightClick(e) {
     // 구역 우클릭 → 구역 삭제
     const idx = _layoutZones.findIndex(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
     if (idx >= 0) { _layoutZones.splice(idx, 1); _lSelected = null; _layoutDirty = true; seLayoutDraw(); seLayoutRefreshPalette(); }
+}
+
+function seUpdateChipTooltip(chip, e) {
+    const tt = document.getElementById('seChipTooltip');
+    if (!tt) return;
+    if (!chip || !e) { tt.style.display = 'none'; return; }
+    const prod = SE_PRODUCTS.find(pr => pr.id === chip.product_id);
+    const name = prod?.name || chip.product_id;
+    const img = prod?.img;
+    const qty = chip.quantity || 1;
+    const label = qty > 1 ? `${name} (${chip._idx + 1})` : name;
+    const code = chip.product_id.toUpperCase();
+    tt.innerHTML = `${img ? `<img src="${img}" style="width:100%;height:80px;object-fit:contain;border-radius:4px;background:#f1f5f9;display:block;margin-bottom:8px;">` : ''}
+<div style="font-weight:700;font-size:13px;">${label}</div>
+<div style="color:#94a3b8;font-size:11px;margin-top:3px;letter-spacing:0.06em;">${code}</div>`;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let lx = e.clientX + 18, ty = e.clientY - 20;
+    tt.style.display = 'block';
+    const tw = tt.offsetWidth, th = tt.offsetHeight;
+    if (lx + tw > vw - 8) lx = e.clientX - tw - 18;
+    if (ty + th > vh - 8) ty = vh - th - 8;
+    if (ty < 8) ty = 8;
+    tt.style.left = lx + 'px';
+    tt.style.top = ty + 'px';
 }
 
 function seLayoutDraw() {
@@ -15037,6 +15076,7 @@ async function seLayoutSave() {
     await _sb.from('store_zones').delete().eq('store_id', _layoutStore);
     if (_layoutZones.length > 0) {
         const rows = _layoutZones.map(z => ({
+            id: z.id,
             store_id: _layoutStore, zone_type: z.type, zone_name: z.label, color: z.color,
             x: Math.round(z.x / cW * 1000), y: Math.round(z.y / cH * 1000),
             w: Math.round(z.w / cW * 1000), h: Math.round(z.h / cH * 1000),
@@ -15044,6 +15084,24 @@ async function seLayoutSave() {
         }));
         const { error } = await _sb.from('store_zones').insert(rows);
         if (error) { alert('저장 실패: ' + error.message); return; }
+    }
+    // 칩 위치 일괄 저장
+    const processed = new Set();
+    for (const d of _layoutDisplays) {
+        if (processed.has(d.id)) continue;
+        processed.add(d.id);
+        const qty = d.quantity || 1;
+        if (qty <= 1) {
+            await _sb.from('store_displays').update({ pos_x: d.pos_x ?? null, pos_y: d.pos_y ?? null }).eq('id', d.id);
+        } else {
+            const siblings = _layoutDisplays.filter(s => s.id === d.id).sort((a, b) => a._idx - b._idx);
+            const positions = siblings.map(s => ({ x: s.pos_x ?? null, y: s.pos_y ?? null }));
+            await _sb.from('store_displays').update({
+                pos_x: siblings[0]?.pos_x ?? null,
+                pos_y: siblings[0]?.pos_y ?? null,
+                positions_json: JSON.stringify(positions)
+            }).eq('id', d.id);
+        }
     }
     _layoutDirty = false;
     alert('저장 완료!');
