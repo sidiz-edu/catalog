@@ -9691,7 +9691,8 @@ function showDisplaySaleDetail(itemId) {
     const prodName = prod.name || item.product_id;
 
     // 사진 목록: 전시품 실사진 → 제품 공식 사진
-    const photos = [item.image_url, prod.img].filter(Boolean);
+    const itemPhotos = (item.image_urls && item.image_urls.length) ? item.image_urls : (item.image_url ? [item.image_url] : []);
+    const photos = [...new Set([...itemPhotos, prod.img].filter(Boolean))];
     if (!photos.length) photos.push('');
     _dsCurPhoto = 0;
 
@@ -9784,8 +9785,9 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
             const discountRate = item.grade === 'B' ? 0.4 : 0.5;
             const discountLabel = item.grade === 'B' ? '60% 할인' : '50% 할인';
             const salePrice = item.consumer_price ? Math.round(item.consumer_price * (1 - discountRate)) : null;
-            const imgStyle = item.image_url
-                ? `background-image:url('${item.image_url}');background-size:cover;background-position:center;`
+            const thumbUrl = (item.image_urls && item.image_urls[0]) || item.image_url;
+            const imgStyle = thumbUrl
+                ? `background-image:url('${thumbUrl}');background-size:cover;background-position:center;`
                 : 'background:#f1f5f9;';
             const priceHtml = salePrice
                 ? `<div class="ds-price-row">
@@ -13624,9 +13626,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
                         <input type="text" id="seEditMemo" placeholder="메모 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:4px;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);">📷 사진 변경 (선택)</label>
-                        <input type="file" id="seEditPhoto" accept="image/*" style="font-size:0.78rem;color:var(--se-muted);">
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">📷 사진 (최대 5장)</label>
+                        <div id="seEditPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+                        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px dashed var(--se-border);border-radius:8px;font-size:0.8rem;color:var(--se-muted);width:fit-content;">
+                            ＋ 사진 추가
+                            <input type="file" id="seEditPhoto" accept="image/*" multiple style="display:none;" onchange="seHandleEditPhotoAdd(this)">
+                        </label>
                     </div>
                     <div id="seEditSaleFields" style="display:none;flex-direction:column;gap:10px;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
@@ -13737,7 +13743,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <div class="se-add-grid" style="grid-template-columns: 1fr;">
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
                             <span>📷 사진 첨부</span>
-                            <input type="file" id="seAddPhoto" accept="image/*" style="font-size:0.75rem;">
+                            <div id="seAddPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
+                            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px dashed var(--se-border);border-radius:8px;font-size:0.78rem;color:var(--se-muted);width:fit-content;">
+                                ＋ 사진 추가
+                                <input type="file" id="seAddPhoto" accept="image/*" multiple style="display:none;" onchange="seHandleAddPhotoAdd(this)">
+                            </label>
                         </label>
                     </div>
                     <div class="se-add-row">
@@ -13949,6 +13959,9 @@ async function seLoadStore() {
 }
 
 let seDisplayData = [];
+let _seEditPhotos = []; // 수정 모달: 현재 사진 URL 목록
+let _seAddPhotos = [];  // 추가 모달: 업로드할 파일 목록 (File 객체)
+let _seAddPhotoBlobs = []; // 추가 모달: 미리보기 blob URL 목록
 let sePendingDeletes = [];
 let seStoreZones = [];
 let seSearchQuery = '', seSortCol = '', seSortDir = 'asc';
@@ -14027,10 +14040,9 @@ function seRenderTable(storeId) {
             : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
         const buyerInfo = row.sold && (row.buyer_name || row.buyer_phone)
             ? `<div style="font-size:0.72rem;color:#64748b;margin-top:3px;line-height:1.5;">
-                ${row.buyer_name ? `👤 ${row.buyer_name}` : ''}
-                ${row.buyer_phone ? `&nbsp;📞 ${row.buyer_phone}` : ''}
-                ${row.buyer_address ? `<br>📍 ${row.buyer_address}` : ''}
-                ${row.sold_at ? `<br>🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
+                ${row.buyer_name ? `👤 ${row.buyer_name}씨` : ''}
+                ${row.buyer_phone ? `&nbsp;📞 ****${row.buyer_phone}` : ''}
+                ${row.sold_at ? `&nbsp;🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
               </div>` : '';
         return `<tr>
             <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
@@ -14241,6 +14253,9 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditLocation').value = row.location || '';
     document.getElementById('seEditMemo').value = row.memo || '';
     document.getElementById('seEditPhoto').value = '';
+    _seEditPhotos = [...(row.image_urls || [])];
+    if (!_seEditPhotos.length && row.image_url) _seEditPhotos = [row.image_url];
+    seRenderEditPhotoGrid();
     document.getElementById('seEditSold').checked = !!row.sold;
     document.getElementById('seEditGrade').value = row.grade || '';
     document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
@@ -14345,14 +14360,23 @@ async function seSubmitEdit() {
         updates.sold = false; updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
     }
     msg.textContent = '저장 중...';
-    const photoFile = document.getElementById('seEditPhoto').files[0];
-    if (photoFile) {
-        const compressed = await seCompressImage(photoFile, 1200, 0.8);
-        const safeProdId = (seriesName || 'item').replace(/[^a-zA-Z0-9_-]/g, '_');
-        const path = `${seCurrentStore}/${safeProdId}_${Date.now()}.jpg`;
-        const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
-        if (upErr) { msg.textContent = '사진 오류: ' + upErr.message; return; }
-        updates.image_url = _sb.storage.from('display-photos').getPublicUrl(path).data.publicUrl;
+    // _seEditPhotos 중 File 객체인 것들 업로드
+    const finalUrls = [];
+    for (const entry of _seEditPhotos) {
+        if (entry && entry._file) {
+            const compressed = await seCompressImage(entry._file, 1200, 0.8);
+            const safeProdId = (seriesName || 'item').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const path = `${seCurrentStore}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
+            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+            if (upErr) { msg.textContent = '사진 오류: ' + upErr.message; return; }
+            finalUrls.push(_sb.storage.from('display-photos').getPublicUrl(path).data.publicUrl);
+        } else if (typeof entry === 'string') {
+            finalUrls.push(entry);
+        }
+    }
+    if (finalUrls.length || _seEditPhotos.length === 0) {
+        updates.image_urls = finalUrls;
+        updates.image_url = finalUrls[0] || null;
     }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
@@ -14377,16 +14401,15 @@ async function seAddDisplay() {
     if (!updater)   { msg.className='se-msg err'; msg.textContent='수정자 이름을 입력하세요.'; return; }
     msg.textContent='저장 중...'; msg.className='se-msg';
     try {
-        let imageUrl = null;
-        const photoFile = document.getElementById('seAddPhoto').files[0];
-        if (photoFile) {
-            const compressed = await seCompressImage(photoFile, 1200, 0.8);
+        const imageUrls = [];
+        for (const file of _seAddPhotos) {
+            const compressed = await seCompressImage(file, 1200, 0.8);
             const safeProdId = productId.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const path = `${storeId}/${safeProdId}_${Date.now()}.jpg`;
+            const path = `${storeId}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
             const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
             if (upErr) throw upErr;
             const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
-            imageUrl = urlData.publicUrl;
+            imageUrls.push(urlData.publicUrl);
         }
         const location = document.getElementById('seAddLocation').value.trim();
         const purpose       = document.getElementById('seAddPurpose').value;
@@ -14397,7 +14420,10 @@ async function seAddDisplay() {
               updated_by: updater, updated_at: new Date().toISOString(),
               sku, color_code: colorCode, quantity, location: location || null, purpose, sold,
               grade, consumer_price: consumerPrice };
-        if (imageUrl) record.image_url = imageUrl;
+        if (imageUrls.length) {
+            record.image_url = imageUrls[0];
+            record.image_urls = imageUrls;
+        }
         const { error } = await _sb.from('store_displays').insert(record);
         if (error) throw error;
         msg.className='se-msg ok'; msg.textContent='✓ 저장되었습니다.';
@@ -14415,6 +14441,8 @@ async function seAddDisplay() {
         document.getElementById('seAddConsumerPrice').value = '';
         document.getElementById('seAddSoldRow').style.display = 'none';
         document.getElementById('seAddPhoto').value = '';
+        _seAddPhotos = []; _seAddPhotoBlobs = [];
+        seRenderAddPhotoGrid();
         await seRenderList(storeId);
         setTimeout(() => msg.textContent='', 3000);
     } catch(e) { msg.className='se-msg err'; msg.textContent='오류: '+e.message; }
@@ -14454,18 +14482,16 @@ function seOpenSoldModal(id) {
       <div style="background:var(--se-surface,#fff);border-radius:12px;padding:28px;width:min(480px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
         <h3 style="margin:0 0 6px;font-size:1rem;">✅ 판매완료 처리</h3>
         <p style="margin:0 0 20px;color:#64748b;font-size:0.85rem;">${prod?.name || row.product_id} ${row.sku ? '· '+row.sku : ''} ${row.color_code ? '/ '+row.color_code : ''}</p>
+        <div style="font-size:0.75rem;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px 12px;margin-bottom:4px;">🔒 개인정보 최소 수집 — 성(姓)과 전화번호 뒷 4자리만 기록합니다.</div>
         <div style="display:grid;gap:12px;">
           <label style="font-size:0.8rem;color:var(--se-muted);">판매 완료 일시
             <input id="seSoldAt" type="datetime-local" value="${localDT}" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
           </label>
-          <label style="font-size:0.8rem;color:var(--se-muted);">구매자 성함
-            <input id="seBuyerName" type="text" placeholder="홍길동" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          <label style="font-size:0.8rem;color:var(--se-muted);">구매자 성 <span style="color:#94a3b8;">(예: 김)</span>
+            <input id="seBuyerName" type="text" placeholder="김" maxlength="5" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
           </label>
-          <label style="font-size:0.8rem;color:var(--se-muted);">연락처
-            <input id="seBuyerPhone" type="tel" placeholder="010-0000-0000" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
-          </label>
-          <label style="font-size:0.8rem;color:var(--se-muted);">배송 주소 <span style="color:#94a3b8;">(선택)</span>
-            <input id="seBuyerAddress" type="text" placeholder="서울시 강남구 ..." style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          <label style="font-size:0.8rem;color:var(--se-muted);">전화번호 뒷 4자리
+            <input id="seBuyerPhone" type="tel" placeholder="1234" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
           </label>
         </div>
         <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
@@ -14483,22 +14509,90 @@ async function seConfirmSold(id) {
     if (idx === -1) return;
     const soldAt = document.getElementById('seSoldAt').value;
     const buyerName = document.getElementById('seBuyerName').value.trim();
-    const buyerPhone = document.getElementById('seBuyerPhone').value.trim();
-    const buyerAddress = document.getElementById('seBuyerAddress').value.trim();
+    const buyerPhone = document.getElementById('seBuyerPhone').value.replace(/\D/g,'').slice(-4);
     try {
         const { error } = await _sb.from('store_displays').update({
             sold: true,
             sold_at: soldAt ? new Date(soldAt).toISOString() : new Date().toISOString(),
             buyer_name: buyerName || null,
             buyer_phone: buyerPhone || null,
-            buyer_address: buyerAddress || null,
             updated_at: new Date().toISOString()
         }).eq('id', id);
         if (error) throw error;
-        Object.assign(seDisplayData[idx], { sold: true, sold_at: soldAt, buyer_name: buyerName, buyer_phone: buyerPhone, buyer_address: buyerAddress });
+        Object.assign(seDisplayData[idx], { sold: true, sold_at: soldAt, buyer_name: buyerName, buyer_phone: buyerPhone });
         document.getElementById('seSoldModal')?.remove();
         seRenderTable(seCurrentStore);
     } catch(e) { alert('오류: '+e.message); }
+}
+
+function seRemoveEditPhoto(i) {
+    if (_seEditPhotos[i] && _seEditPhotos[i]._blob) URL.revokeObjectURL(_seEditPhotos[i]._blob);
+    _seEditPhotos.splice(i, 1);
+    seRenderEditPhotoGrid();
+}
+function seRemoveAddPhoto(i) {
+    URL.revokeObjectURL(_seAddPhotoBlobs[i]);
+    _seAddPhotos.splice(i, 1);
+    _seAddPhotoBlobs.splice(i, 1);
+    seRenderAddPhotoGrid();
+}
+function seSetEditThumb(i) {
+    if (i === 0) return;
+    const [item] = _seEditPhotos.splice(i, 1);
+    _seEditPhotos.unshift(item);
+    seRenderEditPhotoGrid();
+}
+function seRenderEditPhotoGrid() {
+    const grid = document.getElementById('seEditPhotoGrid');
+    if (!grid) return;
+    grid.innerHTML = _seEditPhotos.map((entry, i) => {
+        const src = typeof entry === 'string' ? entry : entry._blob;
+        const isThumb = i === 0;
+        return `<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:${isThumb?'default':'pointer'};outline:${isThumb?'2.5px solid #003EFF':'none'};outline-offset:-2px;" title="${isThumb?'대표 사진':'클릭하면 대표 사진으로 설정'}" onclick="seSetEditThumb(${i})">
+            <img src="${src}" style="width:100%;height:100%;object-fit:cover;">
+            ${isThumb ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,62,255,.7);color:#fff;font-size:9px;text-align:center;padding:2px;font-weight:700;">대표</div>` : ''}
+            <button onclick="event.stopPropagation();seRemoveEditPhoto(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+        </div>`;
+    }).join('');
+}
+async function seHandleEditPhotoAdd(input) {
+    const files = Array.from(input.files);
+    for (const file of files) {
+        if (_seEditPhotos.length >= 5) break;
+        const blob = URL.createObjectURL(file);
+        _seEditPhotos.push({ _file: file, _blob: blob });
+    }
+    input.value = '';
+    seRenderEditPhotoGrid();
+}
+function seSetAddThumb(i) {
+    if (i === 0) return;
+    const [f] = _seAddPhotos.splice(i, 1);
+    const [b] = _seAddPhotoBlobs.splice(i, 1);
+    _seAddPhotos.unshift(f); _seAddPhotoBlobs.unshift(b);
+    seRenderAddPhotoGrid();
+}
+function seRenderAddPhotoGrid() {
+    const grid = document.getElementById('seAddPhotoGrid');
+    if (!grid) return;
+    grid.innerHTML = _seAddPhotoBlobs.map((blob, i) => {
+        const isThumb = i === 0;
+        return `<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:${isThumb?'default':'pointer'};outline:${isThumb?'2.5px solid #003EFF':'none'};outline-offset:-2px;" title="${isThumb?'대표 사진':'클릭하면 대표 사진으로 설정'}" onclick="seSetAddThumb(${i})">
+            <img src="${blob}" style="width:100%;height:100%;object-fit:cover;">
+            ${isThumb ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,62,255,.7);color:#fff;font-size:9px;text-align:center;padding:2px;font-weight:700;">대표</div>` : ''}
+            <button onclick="event.stopPropagation();seRemoveAddPhoto(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+        </div>`;
+    }).join('');
+}
+async function seHandleAddPhotoAdd(input) {
+    const files = Array.from(input.files);
+    for (const file of files) {
+        if (_seAddPhotos.length >= 5) break;
+        _seAddPhotos.push(file);
+        _seAddPhotoBlobs.push(URL.createObjectURL(file));
+    }
+    input.value = '';
+    seRenderAddPhotoGrid();
 }
 
 async function seToggleSold(id, newVal) {
@@ -15080,7 +15174,7 @@ function seUpdateChipTooltip(chip, e) {
     if (!chip || !e) { tt.style.display = 'none'; return; }
     const prod = SE_PRODUCTS.find(pr => pr.id === chip.product_id);
     const name = prod?.name || chip.product_id;
-    const img = chip.image_url || prod?.img;
+    const img = (chip.image_urls && chip.image_urls[0]) || chip.image_url || prod?.img;
     const qty = chip.quantity || 1;
     const label = qty > 1 ? `${name} (${chip._idx + 1})` : name;
     const sku = chip.sku || '';
