@@ -14780,30 +14780,45 @@ function seLayoutDraw() {
         _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
-        // tag badge — 고정 크기 (구역 크기와 무관)
+        // tag badge — 작은 구역이면 카드 전체를 배지로 채움
         const tagFontSz = 11;
         const tagH = 24;
         const tagMargin = 10;
         const tagPadX = 10;
-        const tagY = z.y + tagMargin;
+        const isSmall = z.h < tagH + tagMargin * 2 + 10;
 
         const tagTxt = zCount > 0 ? `${z.label}  ${zCount}개` : z.label;
         _lCtx.font = `bold ${tagFontSz}px 'Outfit', sans-serif`;
-        const maxTagW = z.w - tagMargin * 2;
-        const maxTextW = maxTagW - tagPadX * 2;
+
+        let bX, bY, bW, bH, bR;
+        if (isSmall) {
+            // 배지가 카드 전체를 채움
+            bX = z.x + 2; bY = z.y + 2; bW = z.w - 4; bH = z.h - 4; bR = rr - 2;
+        } else {
+            const maxTagW = z.w - tagMargin * 2;
+            const maxTextW = maxTagW - tagPadX * 2;
+            let tagLabel2 = tagTxt;
+            if (_lCtx.measureText(tagLabel2).width > maxTextW) {
+                while (tagLabel2.length > 1 && _lCtx.measureText(tagLabel2 + '…').width > maxTextW)
+                    tagLabel2 = tagLabel2.slice(0, -1);
+                tagLabel2 += '…';
+            }
+            bW = Math.min(_lCtx.measureText(tagLabel2).width + tagPadX * 2, maxTagW);
+            bX = z.x + (z.w - bW) / 2; bY = z.y + tagMargin; bH = tagH; bR = 6;
+        }
+
         let tagLabel = tagTxt;
-        if (_lCtx.measureText(tagLabel).width > maxTextW) {
-            while (tagLabel.length > 1 && _lCtx.measureText(tagLabel + '…').width > maxTextW)
+        const maxTW = bW - tagPadX * 2;
+        if (_lCtx.measureText(tagLabel).width > maxTW) {
+            while (tagLabel.length > 1 && _lCtx.measureText(tagLabel + '…').width > maxTW)
                 tagLabel = tagLabel.slice(0, -1);
             tagLabel += '…';
         }
-        const tagW = Math.min(_lCtx.measureText(tagLabel).width + tagPadX * 2, maxTagW);
-        const tagX = z.x + (z.w - tagW) / 2;
         _lCtx.fillStyle = z.color;
-        _lCtx.beginPath(); _lCtx.roundRect(tagX, tagY, tagW, tagH, 6); _lCtx.fill();
+        _lCtx.beginPath(); _lCtx.roundRect(bX, bY, bW, bH, bR); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(tagLabel, tagX + tagW / 2, tagY + tagH / 2);
+        _lCtx.fillText(tagLabel, bX + bW / 2, bY + bH / 2);
         _lCtx.restore();
     });
 
