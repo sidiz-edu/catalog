@@ -14778,12 +14778,21 @@ function seLayoutDraw() {
         // tag badge
         const tagTxt = zCount > 0 ? `${z.label}  ${zCount}개` : z.label;
         _lCtx.font = `bold ${tagFontSz}px 'Outfit', sans-serif`;
-        const tagW = _lCtx.measureText(tagTxt).width + Math.round(16 * zScale);
+        const tagPadX = Math.round(8 * zScale);
+        const maxTagW = z.w - tagMargin * 2;
+        const maxTextW = maxTagW - tagPadX * 2;
+        let tagLabel = tagTxt;
+        if (_lCtx.measureText(tagLabel).width > maxTextW) {
+            while (tagLabel.length > 1 && _lCtx.measureText(tagLabel + '…').width > maxTextW)
+                tagLabel = tagLabel.slice(0, -1);
+            tagLabel += '…';
+        }
+        const tagW = Math.min(_lCtx.measureText(tagLabel).width + tagPadX * 2, maxTagW);
         _lCtx.fillStyle = z.color;
         _lCtx.beginPath(); _lCtx.roundRect(z.x + tagMargin, tagY, tagW, tagH, Math.round(6 * zScale)); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
         _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(tagTxt, z.x + tagMargin + Math.round(8 * zScale), tagY + tagH / 2);
+        _lCtx.fillText(tagLabel, z.x + tagMargin + tagPadX, tagY + tagH / 2);
         _lCtx.restore();
     });
 
