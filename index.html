@@ -15099,6 +15099,23 @@ async function seLayoutLoadStore() {
         }
     });
 
+    // 최소 사이즈(80x80) 미달 공간 자동 보정 후 DB 저장
+    const cW2 = _lCanvas ? _lCanvas.width / _lDpr : 600;
+    const cH2 = _lCanvas ? _lCanvas.height / _lDpr : 400;
+    const needFix = _layoutZones.filter(z => z.w < 80 || z.h < 80);
+    if (needFix.length > 0) {
+        needFix.forEach(z => { z.w = Math.max(80, z.w); z.h = Math.max(80, z.h); });
+        const fixRows = needFix.map(z => ({
+            id: z.id, store_id: _layoutStore, zone_type: z.type, zone_name: z.label, color: z.color,
+            x: Math.round(z.x / cW2 * 1000), y: Math.round(z.y / cH2 * 1000),
+            w: Math.round(z.w / cW2 * 1000), h: Math.round(z.h / cH2 * 1000),
+            updated_by: 'SE'
+        }));
+        for (const row of fixRows) {
+            await _sb.from('store_zones').update({ w: row.w, h: row.h }).eq('id', row.id);
+        }
+    }
+
     seLayoutRefreshPalette();
     seLayoutDraw();
 }
