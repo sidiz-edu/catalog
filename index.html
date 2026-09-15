@@ -14859,13 +14859,15 @@ function seLayoutDraw() {
 
         if (_lMode === 'zone') {
             const zDisplays = seZoneDisplays(z.id);
-            if (zDisplays.length > 0) {
+            // 수량 확장된 복사본 제거 — _idx===0인 원본만 사용
+            const zGroups = zDisplays.filter(d => d._idx === 0);
+            if (zGroups.length > 0) {
                 const availW = z.w - pad * 2;
                 const minColW = Math.round(100 * zScale);
                 let cols = Math.max(1, Math.floor(availW / minColW));
                 const availRows = Math.floor((z.h - (listStartY - z.y) - pad) / lineH);
-                const maxItems = Math.min(zDisplays.length, Math.max(0, availRows * cols));
-                const hasOverflow = zDisplays.length > maxItems;
+                const maxItems = Math.min(zGroups.length, Math.max(0, availRows * cols));
+                const hasOverflow = zGroups.length > maxItems;
                 const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
                 const totalRows = itemRows + (hasOverflow ? 1 : 0);
                 // 1행일 때 cols를 실제 아이템 수로 맞춰 가로 공간 활용
@@ -14878,18 +14880,20 @@ function seLayoutDraw() {
                 const dynFontSz = Math.round(listFontSz * dynScale);
                 const dotR = Math.max(1.5, 2.5 * zScale);
                 const dynDotR = dotR * dynScale;
-                const contentH = totalRows * dynLineH;
                 const visualH = (totalRows - 1) * dynLineH + dynFontSz;
                 const startY = Math.max(listStartY,
                     listStartY + Math.round(Math.max(0, availH - visualH) / 2) + Math.round(dynFontSz / 2));
                 _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
-                zDisplays.slice(0, maxItems).forEach((d, i) => {
+                zGroups.slice(0, maxItems).forEach((d, i) => {
                     const col = i % cols, row = Math.floor(i / cols);
                     const tx = z.x + pad + col * colW;
                     const ty = startY + row * dynLineH;
-                    const name = ((SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'').slice(0, nameLen);
+                    const baseName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name || '';
+                    const qty = d.quantity || 1;
+                    const label = qty > 1 ? `${baseName} X ${qty}` : baseName;
+                    const name = label.slice(0, nameLen);
                     _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
                     _lCtx.beginPath(); _lCtx.arc(tx + dynDotR, ty, dynDotR, 0, Math.PI*2); _lCtx.fill();
                     _lCtx.globalAlpha = 1;
@@ -14900,7 +14904,7 @@ function seLayoutDraw() {
                     _lCtx.fillStyle = '#9ca3af';
                     _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px 'Outfit', sans-serif`;
                     _lCtx.textAlign = 'center';
-                    _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * dynLineH);
+                    _lCtx.fillText(`+${zGroups.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * dynLineH);
                 }
             } else {
                 _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px 'Outfit', sans-serif`;
