@@ -14884,21 +14884,26 @@ function seLayoutDraw() {
                 const startY = Math.max(listStartY,
                     listStartY + Math.round(Math.max(0, availH - visualH) / 2) + Math.round(dynFontSz / 2));
                 _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
-                _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
+                _lCtx.textBaseline = 'middle';
                 const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
                 zGroups.slice(0, maxItems).forEach((d, i) => {
                     const col = i % cols, row = Math.floor(i / cols);
-                    const tx = z.x + pad + col * colW;
+                    const cx = z.x + pad + col * colW + colW / 2;
                     const ty = startY + row * dynLineH;
                     const baseName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name || '';
                     const qty = d.quantity || 1;
                     const label = qty > 1 ? `${baseName} X ${qty}` : baseName;
                     const name = label.slice(0, nameLen);
+                    const textW = _lCtx.measureText(name).width;
+                    const totalW = dynDotR * 2 + 4 + textW;
+                    const dotX = cx - totalW / 2 + dynDotR;
+                    const textX = cx - totalW / 2 + dynDotR * 2 + 4;
                     _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
-                    _lCtx.beginPath(); _lCtx.arc(tx + dynDotR, ty, dynDotR, 0, Math.PI*2); _lCtx.fill();
+                    _lCtx.beginPath(); _lCtx.arc(dotX, ty, dynDotR, 0, Math.PI*2); _lCtx.fill();
                     _lCtx.globalAlpha = 1;
                     _lCtx.fillStyle = '#374151';
-                    _lCtx.fillText(name, tx + dynDotR * 2 + 4, ty);
+                    _lCtx.textAlign = 'left';
+                    _lCtx.fillText(name, textX, ty);
                 });
                 if (hasOverflow) {
                     _lCtx.fillStyle = '#9ca3af';
