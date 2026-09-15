@@ -14826,7 +14826,7 @@ function seLayoutDraw() {
                 const dynDotR = dotR * dynScale;
                 const contentH = totalRows * dynLineH;
                 const startY = Math.max(listStartY,
-                    z.y + z.h - contentH - Math.round(4 * zScale));
+                    z.y + z.h - Math.round(4 * zScale) - (totalRows - 1) * dynLineH - Math.round(dynFontSz / 2));
                 _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
