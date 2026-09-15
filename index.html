@@ -14482,8 +14482,15 @@ function seLayoutMouseDown(e) {
         seRenderPlaceList(); return;
     }
 
-    // 2. 전시품 선택됨 → 클릭 위치에 배치
+    // 2. 전시품 선택됨 → 클릭 위치에 배치 (단, zone 클릭은 zone 선택 우선)
     if (_lPlaceSelected) {
+        const zoneHit = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
+        if (zoneHit && zoneHit.id !== _lPlaceSelected.zone_id) {
+            // 다른 zone 클릭 → zone 선택으로 전환
+            _lPlaceSelected = null; _lSelected = zoneHit;
+            _lMove = { zone: zoneHit, ox: p.x - zoneHit.x, oy: p.y - zoneHit.y };
+            seRenderAssignPanel(zoneHit); seLayoutDraw(); return;
+        }
         const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
         const sc = _lPlaceSelected.chip_scale || 1;
         let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
@@ -14493,9 +14500,11 @@ function seLayoutMouseDown(e) {
         }
         _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
         _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
+        const placed = _lPlaceSelected;
+        _lPlaceSelected = null; // 배치 후 즉시 해제 → zone 선택 가능
         seLayoutDraw();
         seRenderPlaceList();
-        seSaveVirtualItemPos(_lPlaceSelected);
+        seSaveVirtualItemPos(placed);
         return;
     }
 
@@ -14711,10 +14720,10 @@ function seRenderPlaceList() {
         '<div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">등록된 전시품이 없습니다.</div>';
 }
 
-function seAutoPlaceZone(zoneId) {
+function seAutoPlaceZone(zoneId, onlyUnplaced = false) {
     const zone = _layoutZones.find(z => z.id === zoneId);
     if (!zone) return;
-    const items = _layoutDisplays.filter(d => d.zone_id === zoneId);
+    const items = _layoutDisplays.filter(d => d.zone_id === zoneId && (!onlyUnplaced || d.pos_x == null));
     if (!items.length) return;
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
     const n = items.length;
@@ -14735,8 +14744,13 @@ function seAutoPlaceZone(zoneId) {
 }
 
 function seAutoPlaceAll() {
-    const zoneIds = [...new Set(_layoutDisplays.filter(d => d.zone_id).map(d => d.zone_id))];
-    zoneIds.forEach(zid => seAutoPlaceZone(zid));
+    // 아직 위치 없는 항목만 대상 (이미 배치된 건 건드리지 않음)
+    const unplaced = _layoutDisplays.filter(d => d.zone_id && d.pos_x == null);
+    if (!unplaced.length) { alert('배치할 항목이 없습니다. 이미 모두 배치되어 있습니다.'); return; }
+    const zoneIds = [...new Set(unplaced.map(d => d.zone_id))];
+    zoneIds.forEach(zid => seAutoPlaceZone(zid, true));
+    _lPlaceSelected = null;
+    seRenderPlaceList();
 }
 
 function seSaveVirtualItemPos(vItem) {
