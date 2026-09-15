@@ -14800,11 +14800,12 @@ function seLayoutDraw() {
             tagLabel += '…';
         }
         const tagW = Math.min(_lCtx.measureText(tagLabel).width + tagPadX * 2, maxTagW);
+        const tagX = z.x + (z.w - tagW) / 2;
         _lCtx.fillStyle = z.color;
-        _lCtx.beginPath(); _lCtx.roundRect(z.x + tagMargin, tagY, tagW, tagH, Math.round(6 * zScale)); _lCtx.fill();
+        _lCtx.beginPath(); _lCtx.roundRect(tagX, tagY, tagW, tagH, Math.round(6 * zScale)); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
-        _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(tagLabel, z.x + tagMargin + tagPadX, tagY + tagH / 2);
+        _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
+        _lCtx.fillText(tagLabel, tagX + tagW / 2, tagY + tagH / 2);
         _lCtx.restore();
     });
 
