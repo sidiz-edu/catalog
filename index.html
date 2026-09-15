@@ -14817,7 +14817,7 @@ function seLayoutDraw() {
                     Math.floor(Math.min(z.y + (z.h - contentH) / 2, z.y + z.h - pad - contentH)));
                 _lCtx.font = `${dynFontSz}px system-ui, sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
-                const nameLen = Math.max(6, Math.round(14 * zScale / dynScale));
+                const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
                 zDisplays.slice(0, maxItems).forEach((d, i) => {
                     const col = i % cols, row = Math.floor(i / cols);
                     const tx = z.x + pad + col * colW;
