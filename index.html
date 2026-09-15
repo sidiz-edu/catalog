@@ -6412,6 +6412,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initComparePicker();
     applyGuestParams();
     updateCartBadge();
+    // 새로고침 후 SE Management 자동 복귀
+    if (location.hash === '#se' && sessionStorage.getItem('seAuth') === '1') {
+        setTimeout(openSEPanel, 300);
+    }
 });
 
 // ══════════════════════════════════════════════
@@ -13739,12 +13743,14 @@ function openSELogin() {
 function closeSELogin() { document.getElementById('seLoginOverlay').classList.remove('open'); }
 function seConfirmLogin() {
     if (document.getElementById('sePasswordInput').value === SE_PW) {
+        sessionStorage.setItem('seAuth', '1');
         closeSELogin(); openSEPanel();
     } else {
         document.getElementById('seLoginError').textContent = '비밀번호가 올바르지 않습니다.';
     }
 }
 function openSEPanel() {
+    location.hash = 'se';
     document.getElementById('seMgmtPanel').classList.add('open');
     // 매장 드롭다운
     const sel = document.getElementById('seStoreSelect');
@@ -13766,7 +13772,11 @@ function openSEPanel() {
     }
     document.getElementById('seAddDate').value = new Date().toISOString().slice(0, 10);
 }
-function closeSEPanel() { document.getElementById('seMgmtPanel').classList.remove('open'); }
+function closeSEPanel() {
+    document.getElementById('seMgmtPanel').classList.remove('open');
+    sessionStorage.removeItem('seAuth');
+    history.replaceState(null, '', location.pathname + location.search);
+}
 
 function seSwitchTab(tab) {
     const tabs = ['store','layout','overview'];
