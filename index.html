@@ -14890,11 +14890,22 @@ function seLayoutDraw() {
 
         if (isSmall) {
             const bX=z.x+2, bY=z.y+2, bW=z.w-4, bH=z.h-4, bR=rr-2;
-            let lbl=z.label;
-            while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > bW-tagPadX*2) lbl=lbl.slice(0,-1);
-            if (lbl!==z.label) lbl+='…';
             _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,bH,bR); _lCtx.fill();
-            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2);
+            _lCtx.fillStyle='#fff';
+            if (z.h > z.w * 1.5) {
+                // 세로 좁은 zone: 글자 세로 배치
+                const chars = z.label.replace(/\s+/g, '\n').split('');
+                const lineH = tagFontSz + 3;
+                const totalH = chars.length * lineH;
+                let ty = bY + bH/2 - totalH/2 + lineH/2;
+                const tx = bX + bW/2;
+                chars.forEach(ch => { if(ch!=='\n') _lCtx.fillText(ch, tx, ty); ty += lineH; });
+            } else {
+                let lbl=z.label;
+                while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > bW-tagPadX*2) lbl=lbl.slice(0,-1);
+                if (lbl!==z.label) lbl+='…';
+                _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2);
+            }
         } else {
             const maxTagW=z.w-tagMargin*2;
             let lbl=z.label;
