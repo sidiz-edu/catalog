@@ -13907,10 +13907,17 @@ function seRenderTable(storeId) {
             ? `<td><a href="${row.image_url}" target="_blank"><img src="${row.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;"></a></td>`
             : `<td style="color:#94a3b8;">-</td>`;
         const purposeCell = row.purpose === '판매'
-            ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;cursor:pointer;user-select:none;" onclick="seToggleSold('${row.id}',${!row.sold})" title="클릭하여 토글">${row.sold ? '판매완료' : '판매중'}</span></td>`
+            ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;">${row.sold ? '✅ 판매완료' : '판매중'}</span></td>`
             : row.purpose === '창고'
             ? `<td><span class="se-tag" style="background:#475569;color:#fff;">창고보관</span></td>`
             : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
+        const buyerInfo = row.sold && (row.buyer_name || row.buyer_phone)
+            ? `<div style="font-size:0.72rem;color:#64748b;margin-top:3px;line-height:1.5;">
+                ${row.buyer_name ? `👤 ${row.buyer_name}` : ''}
+                ${row.buyer_phone ? `&nbsp;📞 ${row.buyer_phone}` : ''}
+                ${row.buyer_address ? `<br>📍 ${row.buyer_address}` : ''}
+                ${row.sold_at ? `<br>🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
+              </div>` : '';
         return `<tr>
             <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
@@ -13922,12 +13929,16 @@ function seRenderTable(storeId) {
             <td>${row.display_since || '-'}</td>
             <td style="font-size:0.78rem;color:var(--se-text);">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
-            <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
+            <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
-                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
+                ${row.purpose === '판매' && !row.sold ? `
+                  <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>
+                  <button class="se-del-btn" style="background:#16a34a;color:#fff;border:none;font-size:0.7rem;" onclick="seOpenSoldModal('${row.id}')">✅ 판매완료</button>
+                ` : ''}
+                ${row.purpose === '판매' && row.sold ? `<button class="se-del-btn" style="background:#94a3b8;color:#fff;border:none;font-size:0.7rem;" onclick="seToggleSold('${row.id}',false)">↩ 판매취소</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -14316,13 +14327,75 @@ async function seHardDelete(id, storeId, j) {
     } catch(e) { alert('삭제 오류: '+e.message); }
 }
 
+function seOpenSoldModal(id) {
+    const row = seDisplayData.find(r => r.id === id);
+    if (!row) return;
+    const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
+    const now = new Date();
+    const localDT = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    const modal = document.createElement('div');
+    modal.id = 'seSoldModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:var(--se-surface,#fff);border-radius:12px;padding:28px;width:min(480px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <h3 style="margin:0 0 6px;font-size:1rem;">✅ 판매완료 처리</h3>
+        <p style="margin:0 0 20px;color:#64748b;font-size:0.85rem;">${prod?.name || row.product_id} ${row.sku ? '· '+row.sku : ''} ${row.color_code ? '/ '+row.color_code : ''}</p>
+        <div style="display:grid;gap:12px;">
+          <label style="font-size:0.8rem;color:var(--se-muted);">판매 완료 일시
+            <input id="seSoldAt" type="datetime-local" value="${localDT}" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          </label>
+          <label style="font-size:0.8rem;color:var(--se-muted);">구매자 성함
+            <input id="seBuyerName" type="text" placeholder="홍길동" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          </label>
+          <label style="font-size:0.8rem;color:var(--se-muted);">연락처
+            <input id="seBuyerPhone" type="tel" placeholder="010-0000-0000" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          </label>
+          <label style="font-size:0.8rem;color:var(--se-muted);">배송 주소 <span style="color:#94a3b8;">(선택)</span>
+            <input id="seBuyerAddress" type="text" placeholder="서울시 강남구 ..." style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
+          <button onclick="document.getElementById('seSoldModal').remove()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--se-border,#e2e8f0);background:var(--se-surface);color:var(--se-text);cursor:pointer;font-size:0.85rem;">취소</button>
+          <button onclick="seConfirmSold('${id}')" style="padding:8px 18px;border-radius:6px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-size:0.85rem;font-weight:600;">판매완료 처리</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.getElementById('seBuyerName').focus();
+}
+
+async function seConfirmSold(id) {
+    const idx = seDisplayData.findIndex(r => r.id === id);
+    if (idx === -1) return;
+    const soldAt = document.getElementById('seSoldAt').value;
+    const buyerName = document.getElementById('seBuyerName').value.trim();
+    const buyerPhone = document.getElementById('seBuyerPhone').value.trim();
+    const buyerAddress = document.getElementById('seBuyerAddress').value.trim();
+    try {
+        const { error } = await _sb.from('store_displays').update({
+            sold: true,
+            sold_at: soldAt ? new Date(soldAt).toISOString() : new Date().toISOString(),
+            buyer_name: buyerName || null,
+            buyer_phone: buyerPhone || null,
+            buyer_address: buyerAddress || null,
+            updated_at: new Date().toISOString()
+        }).eq('id', id);
+        if (error) throw error;
+        Object.assign(seDisplayData[idx], { sold: true, sold_at: soldAt, buyer_name: buyerName, buyer_phone: buyerPhone, buyer_address: buyerAddress });
+        document.getElementById('seSoldModal')?.remove();
+        seRenderTable(seCurrentStore);
+    } catch(e) { alert('오류: '+e.message); }
+}
+
 async function seToggleSold(id, newVal) {
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx === -1) return;
     try {
-        const { error } = await _sb.from('store_displays').update({ sold: newVal, updated_at: new Date().toISOString() }).eq('id', id);
+        const updates = { sold: newVal, updated_at: new Date().toISOString() };
+        if (!newVal) Object.assign(updates, { sold_at: null, buyer_name: null, buyer_phone: null, buyer_address: null });
+        const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
         if (error) throw error;
-        seDisplayData[idx].sold = newVal;
+        Object.assign(seDisplayData[idx], updates);
         seRenderTable(seCurrentStore);
     } catch(e) { alert('오류: '+e.message); }
 }
