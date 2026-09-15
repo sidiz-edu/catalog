@@ -14808,85 +14808,9 @@ function seLayoutDraw() {
         _lCtx.restore();
     });
 
-    // zones — pass 2: product content (always on top of all backgrounds)
+    // zones — pass 2: resize handles
     _layoutZones.forEach(z => {
-        _lCtx.save();
-        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.clip();
-
-        const zScale = Math.max(0.7, Math.min(1.4, Math.sqrt(z.w * z.h) / 140));
-        const tagFontSz = Math.round(10 * zScale);
-        const tagH = Math.round(22 * zScale);
-        const tagMargin = Math.round(12 * zScale);
-        const tagY = z.y + tagMargin;
-        const listFontSz = Math.max(7, Math.round(10.5 * zScale));
-        const lineH = listFontSz + Math.round(8 * zScale);
-        const pad = Math.round(14 * zScale);
-        const listStartY = tagY + tagH + Math.round(12 * zScale);
         const isSel = z === _lSelected;
-
-        {
-            const zDisplays = seZoneDisplays(z.id);
-            const zGroups = zDisplays.filter(d => d._idx === 0);
-            if (zGroups.length > 0) {
-                const availW = z.w - pad * 2;
-                const minColW = Math.round(100 * zScale);
-                let cols = Math.max(1, Math.floor(availW / minColW));
-                const availRows = Math.floor((z.h - (listStartY - z.y) - pad) / lineH);
-                const maxItems = Math.min(zGroups.length, Math.max(0, availRows * cols));
-                const hasOverflow = zGroups.length > maxItems;
-                const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
-                const totalRows = itemRows + (hasOverflow ? 1 : 0);
-                // 1행일 때 cols를 실제 아이템 수로 맞춰 가로 공간 활용
-                if (totalRows === 1 && maxItems > 0) cols = maxItems;
-                const colW = availW / cols;
-                const availH = z.h - (listStartY - z.y) - pad;
-                // 1행만 있고 공간이 남을 때 글자·점을 키워서 채움 (최대 2×)
-                const dynScale = (totalRows === 1 && availH > lineH) ? Math.min(2.0, availH / lineH) : 1.0;
-                const dynLineH = Math.round(lineH * dynScale);
-                const dynFontSz = Math.round(listFontSz * dynScale);
-                const dotR = Math.max(1.5, 2.5 * zScale);
-                const dynDotR = dotR * dynScale;
-                const visualH = (totalRows - 1) * dynLineH + dynFontSz;
-                const startY = Math.max(listStartY,
-                    listStartY + Math.round(Math.max(0, availH - visualH) / 2) + Math.round(dynFontSz / 2));
-                _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
-                _lCtx.textBaseline = 'middle';
-                const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
-                zGroups.slice(0, maxItems).forEach((d, i) => {
-                    const col = i % cols, row = Math.floor(i / cols);
-                    const cx = z.x + pad + col * colW + colW / 2;
-                    const ty = startY + row * dynLineH;
-                    const baseName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name || '';
-                    const qty = d.quantity || 1;
-                    const label = qty > 1 ? `${baseName} X ${qty}` : baseName;
-                    const name = label.slice(0, nameLen);
-                    const textW = _lCtx.measureText(name).width;
-                    const totalW = dynDotR * 2 + 4 + textW;
-                    const dotX = cx - totalW / 2 + dynDotR;
-                    const textX = cx - totalW / 2 + dynDotR * 2 + 4;
-                    _lCtx.fillStyle = z.color; _lCtx.globalAlpha = 0.55;
-                    _lCtx.beginPath(); _lCtx.arc(dotX, ty, dynDotR, 0, Math.PI*2); _lCtx.fill();
-                    _lCtx.globalAlpha = 1;
-                    _lCtx.fillStyle = '#374151';
-                    _lCtx.textAlign = 'left';
-                    _lCtx.fillText(name, textX, ty);
-                });
-                if (hasOverflow) {
-                    _lCtx.fillStyle = '#9ca3af';
-                    _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px 'Outfit', sans-serif`;
-                    _lCtx.textAlign = 'center';
-                    _lCtx.fillText(`+${zGroups.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * dynLineH);
-                }
-            } else {
-                _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px 'Outfit', sans-serif`;
-                _lCtx.fillStyle = 'rgba(0,0,0,0.18)';
-                _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
-                _lCtx.fillText('전시품 없음', z.x + z.w / 2, z.y + z.h / 2);
-            }
-        }
-        _lCtx.restore();
-
-        // resize handles (outside clip)
         if (isSel) {
             const hpts = [
                 {x:z.x,       y:z.y      }, {x:z.x+z.w/2, y:z.y      }, {x:z.x+z.w,   y:z.y      },
