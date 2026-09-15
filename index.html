@@ -14477,15 +14477,23 @@ function seLayoutMouseDown(e) {
     const p = seLayoutPos(e);
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
 
-    // 0. resize handle 우선 (칩보다 먼저 — zone 크기 조절 시 칩 오선택 방지)
+    // 0. resize handle 우선 — 단, 칩이 같은 위치에 있으면 칩 우선
     if (_lSelected) {
         const h = _lGetHandle(p, _lSelected);
         if (h) {
-            sePushUndo();
-            _lResize = { zone: _lSelected, handle: h.id,
-                ox: _lSelected.x, oy: _lSelected.y, ow: _lSelected.w, oh: _lSelected.h,
-                px: p.x, py: p.y };
-            return;
+            const chipAtHandle = _layoutDisplays.find(d => {
+                if (d.pos_x == null) return false;
+                const cx2 = d.pos_x/1000*cW, cy2 = d.pos_y/1000*cH;
+                const sc2 = d.chip_scale || 1;
+                return Math.abs(p.x-cx2)<36*sc2 && Math.abs(p.y-cy2)<14*sc2;
+            });
+            if (!chipAtHandle) {
+                sePushUndo();
+                _lResize = { zone: _lSelected, handle: h.id,
+                    ox: _lSelected.x, oy: _lSelected.y, ow: _lSelected.w, oh: _lSelected.h,
+                    px: p.x, py: p.y };
+                return;
+            }
         }
     }
 
