@@ -14798,13 +14798,15 @@ function seLayoutDraw() {
             if (zDisplays.length > 0) {
                 const availW = z.w - pad * 2;
                 const minColW = Math.round(100 * zScale);
-                const cols = Math.max(1, Math.floor(availW / minColW));
-                const colW = availW / cols;
+                let cols = Math.max(1, Math.floor(availW / minColW));
                 const availRows = Math.floor((z.h - (listStartY - z.y) - pad) / lineH);
                 const maxItems = Math.min(zDisplays.length, Math.max(0, availRows * cols));
                 const hasOverflow = zDisplays.length > maxItems;
                 const itemRows = maxItems > 0 ? Math.ceil(maxItems / cols) : 0;
                 const totalRows = itemRows + (hasOverflow ? 1 : 0);
+                // 1행일 때 cols를 실제 아이템 수로 맞춰 가로 공간 활용
+                if (totalRows === 1 && maxItems > 0) cols = maxItems;
+                const colW = availW / cols;
                 const availH = z.h - (listStartY - z.y) - pad;
                 // 1행만 있고 공간이 남을 때 글자·점을 키워서 채움 (최대 2×)
                 const dynScale = (totalRows === 1 && availH > lineH) ? Math.min(2.0, availH / lineH) : 1.0;
