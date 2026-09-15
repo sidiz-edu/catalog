@@ -13920,7 +13920,7 @@ function seRenderTable(storeId) {
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
-                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#94a3b8'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '게시'}</button>` : ''}
+                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#94a3b8'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
