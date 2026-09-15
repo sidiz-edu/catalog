@@ -14826,7 +14826,6 @@ function seLayoutDraw() {
                 const dynDotR = dotR * dynScale;
                 const contentH = totalRows * dynLineH;
                 const visualH = (totalRows - 1) * dynLineH + dynFontSz;
-                const availH = z.h - (listStartY - z.y) - Math.round(6 * zScale);
                 const startY = Math.max(listStartY,
                     listStartY + Math.round(Math.max(0, availH - visualH) / 2) + Math.round(dynFontSz / 2));
                 _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
