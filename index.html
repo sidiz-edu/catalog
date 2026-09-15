@@ -14767,7 +14767,7 @@ function seLayoutDraw() {
 
         // tag badge
         const tagTxt = zCount > 0 ? `${z.label}  ${zCount}개` : z.label;
-        _lCtx.font = `bold ${tagFontSz}px system-ui, sans-serif`;
+        _lCtx.font = `bold ${tagFontSz}px 'Outfit', sans-serif`;
         const tagW = _lCtx.measureText(tagTxt).width + Math.round(16 * zScale);
         _lCtx.fillStyle = z.color;
         _lCtx.beginPath(); _lCtx.roundRect(z.x + tagMargin, tagY, tagW, tagH, Math.round(6 * zScale)); _lCtx.fill();
@@ -14815,7 +14815,7 @@ function seLayoutDraw() {
                 const contentH = totalRows * dynLineH;
                 const startY = Math.max(listStartY,
                     Math.floor(Math.min(z.y + (z.h - contentH) / 2, z.y + z.h - pad - contentH)));
-                _lCtx.font = `${dynFontSz}px system-ui, sans-serif`;
+                _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
                 zDisplays.slice(0, maxItems).forEach((d, i) => {
@@ -14831,12 +14831,12 @@ function seLayoutDraw() {
                 });
                 if (hasOverflow) {
                     _lCtx.fillStyle = '#9ca3af';
-                    _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px system-ui, sans-serif`;
+                    _lCtx.font = `${Math.max(6, Math.round(9 * zScale))}px 'Outfit', sans-serif`;
                     _lCtx.textAlign = 'center';
                     _lCtx.fillText(`+${zDisplays.length - maxItems}개 더`, z.x + z.w / 2, startY + itemRows * dynLineH);
                 }
             } else {
-                _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px system-ui, sans-serif`;
+                _lCtx.font = `${Math.max(7, Math.round(10 * zScale))}px 'Outfit', sans-serif`;
                 _lCtx.fillStyle = 'rgba(0,0,0,0.18)';
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'center';
                 _lCtx.fillText('전시품 없음', z.x + z.w / 2, z.y + z.h / 2);
