@@ -13638,17 +13638,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
         </div>
         <div id="seTabLayout" style="display:none; flex:1; display:none; flex-direction:column; gap:12px;">
-            <!-- 내부 모드 토글 -->
-            <div style="display:flex;gap:0;border:1px solid var(--se-border);border-radius:6px;overflow:hidden;flex-shrink:0;width:fit-content;">
-                <button id="seModeBtnZone" onclick="seLayoutSetMode('zone')"
-                    style="padding:5px 14px;font-size:0.75rem;border:none;cursor:pointer;background:#003EFF;color:#fff;font-family:'Outfit',sans-serif;letter-spacing:0.04em;">구역 편집</button>
-                <button id="seModeBtnPlace" onclick="seLayoutSetMode('place')"
-                    style="padding:5px 14px;font-size:0.75rem;border:none;cursor:pointer;background:var(--se-raised);color:var(--se-muted);font-family:'Outfit',sans-serif;letter-spacing:0.04em;">의자 배치</button>
-            </div>
-            <!-- 팔레트 + 저장/초기화 (구역 편집 모드에서만 표시) -->
+            <!-- 팔레트 + 저장/초기화 -->
             <div id="seZoneModeControls" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;" id="seZonePalette"></div>
+                    <span style="font-size:0.7rem;color:var(--se-muted);">간격</span>
+                    <button id="seSnapBtn" onclick="seToggleSnap()"
+                        style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-muted);">OFF</button>
+                    <button onclick="seAutoPlaceAll()"
+                        style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-gold);border-radius:3px;cursor:pointer;background:var(--se-gold);color:#fff;">자동배치</button>
                     <button class="se-save-btn" onclick="seLayoutSave()">저장</button>
                     <button class="se-save-btn" onclick="seLayoutClear()" style="background:transparent;color:var(--se-danger);border:1px solid rgba(220,38,38,0.3);">초기화</button>
                 </div>
@@ -13661,9 +13659,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
                 <!-- 사이드 패널 (모드별로 내용 전환) -->
                 <div id="seZoneAssignPanel" style="width:220px;flex-shrink:0;background:var(--se-surface);border:1px solid var(--se-border);border-radius:4px;display:flex;flex-direction:column;overflow:hidden;">
-                    <!-- 구역 편집 모드 패널 -->
-                    <div id="seSidePanelZone" style="display:flex;flex-direction:column;height:100%;">
-                        <div style="padding:14px 16px;border-bottom:1px solid var(--se-border);flex-shrink:0;">
+                    <!-- 구역 전시품 할당 패널 -->
+                    <div id="seSidePanelZone" style="display:flex;flex-direction:column;flex:0 0 auto;max-height:45%;border-bottom:1px solid var(--se-border);">
+                        <div style="padding:10px 16px;border-bottom:1px solid var(--se-border);flex-shrink:0;">
                             <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--se-muted);font-family:'Outfit',sans-serif;">구역 전시품 할당</div>
                             <div id="seAssignZoneName" style="font-size:0.82rem;color:var(--se-text);margin-top:4px;font-family:'Outfit',sans-serif;font-weight:600;">구역을 선택하세요</div>
                         </div>
@@ -13671,31 +13669,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <div style="padding:12px 16px;color:var(--se-muted);font-size:0.75rem;">구역을 클릭하면<br>전시품을 할당할 수 있습니다.</div>
                         </div>
                     </div>
-                    <!-- 제품 배치 모드 패널 -->
-                    <div id="seSidePanelPlace" style="display:none;flex-direction:column;height:100%;">
+                    <!-- 전시품 배치 목록 패널 -->
+                    <div id="seSidePanelPlace" style="display:flex;flex-direction:column;flex:1;min-height:0;">
                         <div style="padding:10px 16px;border-bottom:1px solid var(--se-border);flex-shrink:0;">
-                            <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
-                            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;">
-                                <span style="font-size:0.7rem;color:var(--se-muted);">간격 조절</span>
-                                <button id="seSnapBtn" onclick="seToggleSnap()"
-                                    style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-muted);">OFF</button>
-                                <button onclick="seAutoPlaceAll()"
-                                    style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-gold);border-radius:3px;cursor:pointer;background:var(--se-gold);color:#fff;margin-left:auto;">전체 자동 배치</button>
-                            </div>
+                            <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--se-muted);">전시품 배치 위치</div>
                         </div>
                         <div id="sePlaceList" style="flex:1;overflow-y:auto;padding:10px 0;"></div>
                     </div>
                 </div>
             </div>
-            <!-- 의자 배치도 모드 저장/초기화 -->
-            <div id="sePlaceModeControls" style="display:none;gap:8px;justify-content:flex-end;flex-shrink:0;">
-                <button class="se-save-btn" onclick="seLayoutSave()">저장</button>
-                <button class="se-save-btn" onclick="seLayoutClear()" style="background:transparent;color:var(--se-danger);border:1px solid rgba(220,38,38,0.3);">초기화</button>
-            </div>
             <div style="font-size:11px;color:var(--se-muted);flex-shrink:0;letter-spacing:0.04em;">
-                [공간 편집] 드래그: 생성 · 드래그(공간 위): 이동 · 핸들: 크기조절 · 더블클릭: 이름변경 · 우클릭: 삭제
+                드래그(빈 공간): 구역 생성 · 드래그(구역): 이동 · 핸들: 크기조절 · 더블클릭: 이름변경 · 우클릭: 삭제
                 &nbsp;|&nbsp;
-                [제품 배치] 목록 클릭 후 캔버스 클릭: 배치 · 드래그: 이동 · 우클릭: 위치 제거 · 간격 조절 ON: 20px 격자에 자동 정렬
+                목록 클릭 후 캔버스 클릭: 의자 배치 · 의자 드래그: 이동 · 의자 우클릭: 위치 제거
             </div>
         </div>
         <div id="seTabOverview" style="display:none;">
@@ -14451,53 +14437,39 @@ function seChipScale(vid, delta) {
 function seLayoutMouseDown(e) {
     if (e.button !== 0) return;
     const p = seLayoutPos(e);
+    const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
 
-    // ── 제품 배치 모드 ──────────────────────────────
-    if (_lMode === 'place') {
-        const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
-        // 이미 배치된 제품 칩 클릭 → 드래그 이동 시작
-        const hitD = [..._layoutDisplays].reverse().find(d => {
-            if (d.pos_x == null) return false;
-            const cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
-            const sc = d.chip_scale || 1;
-            return Math.abs(p.x - cx) < 36 * sc && Math.abs(p.y - cy) < 14 * sc;
-        });
-        if (hitD) {
-            _lPlaceSelected = hitD;
-            _lPlaceDrag = { display: hitD, ox: p.x - hitD.pos_x/1000*cW, oy: p.y - hitD.pos_y/1000*cH };
-            seRenderPlaceList(); return;
+    // 1. 이미 배치된 제품 칩 클릭 → 드래그 이동
+    const hitD = [..._layoutDisplays].reverse().find(d => {
+        if (d.pos_x == null) return false;
+        const cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
+        const sc = d.chip_scale || 1;
+        return Math.abs(p.x - cx) < 36 * sc && Math.abs(p.y - cy) < 14 * sc;
+    });
+    if (hitD) {
+        _lPlaceSelected = hitD;
+        _lPlaceDrag = { display: hitD, ox: p.x - hitD.pos_x/1000*cW, oy: p.y - hitD.pos_y/1000*cH };
+        seRenderPlaceList(); return;
+    }
+
+    // 2. 전시품 선택됨 → 클릭 위치에 배치
+    if (_lPlaceSelected) {
+        const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
+        const sc = _lPlaceSelected.chip_scale || 1;
+        let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
+        if (zone) {
+            cx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, cx));
+            cy = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, cy));
         }
-        // 빈 캔버스 클릭 → 선택된 전시품 배치 (구역 내로 제한 + 스냅)
-        if (_lPlaceSelected) {
-            const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
-            const sc = _lPlaceSelected.chip_scale || 1;
-            let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
-            if (zone) {
-                cx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, cx));
-                cy = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, cy));
-            }
-            _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
-            _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
-            seLayoutDraw();
-            seRenderPlaceList();
-            seSaveVirtualItemPos(_lPlaceSelected);
-            return;
-        }
-        // 빈 캔버스 클릭 (선택 없음) → 구역 클릭 감지 후 필터링
-        const hitZone = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
-        if (hitZone) {
-            _lSelected = hitZone;
-            _lZoneFilter = _lZoneFilter && _lZoneFilter.id === hitZone.id ? null : hitZone;
-        } else {
-            _lSelected = null;
-            _lZoneFilter = null;
-        }
+        _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
+        _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
         seLayoutDraw();
         seRenderPlaceList();
+        seSaveVirtualItemPos(_lPlaceSelected);
         return;
     }
 
-    // ── 구역 편집 모드 ──────────────────────────────
+    // 3. 구역 편집
     if (_lSelected) {
         const h = _lGetHandle(p, _lSelected);
         if (h) {
@@ -14537,11 +14509,6 @@ function seLayoutMouseMove(e) {
         _lCanvas.style.cursor = 'grabbing';
         seLayoutDraw(); return;
     }
-    if (_lMode === 'place') {
-        _lCanvas.style.cursor = _lPlaceSelected ? 'crosshair' : 'default';
-        return;
-    }
-
     if (_lResize) {
         const r = _lResize, dx = p.x - r.px, dy = p.y - r.py;
         const z = r.zone;
@@ -14610,18 +14577,9 @@ let _lPlaceSelected = null; // 배치할 제품 display 객체
 let _lZoneFilter = null; // 배치 모드에서 선택된 구역 (필터링용)
 
 function seLayoutSetMode(mode) {
-    _lMode = mode;
+    _lMode = 'zone';
     _lSelected = null; _lPlaceSelected = null; _lZoneFilter = null;
-    const isZone = mode === 'zone';
-    const btnZ = document.getElementById('seModeBtnZone');
-    const btnP = document.getElementById('seModeBtnPlace');
-    if (btnZ) { btnZ.style.background = isZone ? '#003EFF' : 'var(--se-raised)'; btnZ.style.color = isZone ? '#fff' : 'var(--se-muted)'; }
-    if (btnP) { btnP.style.background = isZone ? 'var(--se-raised)' : '#003EFF'; btnP.style.color = isZone ? 'var(--se-muted)' : '#fff'; }
-    document.getElementById('seZoneModeControls').style.display = isZone ? '' : 'none';
-    document.getElementById('sePlaceModeControls').style.display = isZone ? 'none' : 'flex';
-    document.getElementById('seSidePanelZone').style.display  = isZone ? 'flex' : 'none';
-    document.getElementById('seSidePanelPlace').style.display = isZone ? 'none' : 'flex';
-    if (!isZone) seRenderPlaceList();
+    seRenderPlaceList();
     seLayoutDraw();
 }
 
@@ -14766,21 +14724,21 @@ function seLayoutDblClick(e) {
 }
 function seLayoutRightClick(e) {
     const p = seLayoutPos(e);
-    if (_lMode === 'place') {
-        // 배치 모드: 우클릭으로 제품 위치 제거
-        const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
-        const hit = _layoutDisplays.find(d => {
-            if (d.pos_x == null) return false;
-            const cx = d.pos_x/1000*cW, cy = d.pos_y/1000*cH;
-            return Math.abs(p.x-cx)<36 && Math.abs(p.y-cy)<14;
-        });
-        if (hit) {
-            hit.pos_x = null; hit.pos_y = null;
-            seSaveVirtualItemPos(hit);
-            seLayoutDraw(); seRenderPlaceList();
-        }
+    const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
+    // 배치된 칩 우클릭 → 위치 제거
+    const hitChip = _layoutDisplays.find(d => {
+        if (d.pos_x == null) return false;
+        const cx = d.pos_x/1000*cW, cy = d.pos_y/1000*cH;
+        const sc = d.chip_scale || 1;
+        return Math.abs(p.x-cx)<36*sc && Math.abs(p.y-cy)<14*sc;
+    });
+    if (hitChip) {
+        hitChip.pos_x = null; hitChip.pos_y = null;
+        seSaveVirtualItemPos(hitChip);
+        seLayoutDraw(); seRenderPlaceList();
         return;
     }
+    // 구역 우클릭 → 구역 삭제
     const idx = _layoutZones.findIndex(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
     if (idx >= 0) { _layoutZones.splice(idx, 1); _lSelected = null; _layoutDirty = true; seLayoutDraw(); seLayoutRefreshPalette(); }
 }
@@ -14866,9 +14824,8 @@ function seLayoutDraw() {
         const listStartY = tagY + tagH + Math.round(12 * zScale);
         const isSel = z === _lSelected;
 
-        if (_lMode === 'zone') {
+        {
             const zDisplays = seZoneDisplays(z.id);
-            // 수량 확장된 복사본 제거 — _idx===0인 원본만 사용
             const zGroups = zDisplays.filter(d => d._idx === 0);
             if (zGroups.length > 0) {
                 const availW = z.w - pad * 2;
