@@ -14563,10 +14563,10 @@ function seLayoutMouseMove(e) {
         const z = r.zone;
         const h = r.handle;
         let nx = r.ox, ny = r.oy, nw = r.ow, nh = r.oh;
-        if (h.includes('e')) nw = Math.max(20, r.ow + dx);
-        if (h.includes('s')) nh = Math.max(20, r.oh + dy);
-        if (h.includes('w')) { nx = r.ox + dx; nw = Math.max(20, r.ow - dx); if(nw===20) nx=r.ox+r.ow-20; }
-        if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(20, r.oh - dy); if(nh===20) ny=r.oy+r.oh-20; }
+        if (h.includes('e')) nw = Math.max(80, r.ow + dx);
+        if (h.includes('s')) nh = Math.max(44, r.oh + dy);
+        if (h.includes('w')) { nx = r.ox + dx; nw = Math.max(80, r.ow - dx); if(nw===80) nx=r.ox+r.ow-80; }
+        if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(44, r.oh - dy); if(nh===44) ny=r.oy+r.oh-44; }
         z.x=nx; z.y=ny; z.w=nw; z.h=nh;
         _lCanvas.style.cursor = _lHandleCursor[h];
         seUpdateChipTooltip(null, null);
@@ -14623,7 +14623,7 @@ function seLayoutMouseUp(e) {
     if (!_lDrag) return;
     const x = Math.min(_lDrag.sx, _lDrag.ex), y = Math.min(_lDrag.sy, _lDrag.ey);
     const w = Math.abs(_lDrag.ex - _lDrag.sx), h = Math.abs(_lDrag.ey - _lDrag.sy);
-    if (w > 20 && h > 20 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
+    if (w > 80 && h > 44 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
         let label = _lActiveType.label;
         if (_lActiveType.type === 'custom') {
             const input = prompt('구역 이름을 입력하세요', '');
@@ -15063,7 +15063,8 @@ async function seLayoutLoadStore() {
         const cH = _lCanvas ? _lCanvas.height / _lDpr : 400;
         _layoutZones = zonesRes.data.map(d => {
             const zt = ZONE_TYPES.find(t => t.type === d.zone_type) || ZONE_TYPES[7];
-            return { id: d.id, type: d.zone_type, label: d.zone_name, color: zt.color,
+            const rawLabel = d.zone_name === '포커스존' ? '포커스존 (VP 존)' : d.zone_name;
+            return { id: d.id, type: d.zone_type, label: rawLabel, color: zt.color,
                 x: d.x * cW / 1000, y: d.y * cH / 1000,
                 w: d.w * cW / 1000, h: d.h * cH / 1000 };
         });
@@ -15072,7 +15073,8 @@ async function seLayoutLoadStore() {
     const byBaseId = {};
     _layoutDisplays.filter(d => !d.zone_id && d.location).forEach(d => { if (!byBaseId[d.id]) byBaseId[d.id] = d; });
     Object.values(byBaseId).forEach(d => {
-        const z = _layoutZones.find(z => z.label.replace(/\s+/g,'').toLowerCase() === d.location.replace(/\s+/g,'').toLowerCase());
+        const normLoc = (d.location === '포커스존' ? '포커스존 (VP 존)' : d.location).replace(/\s+/g,'').toLowerCase();
+        const z = _layoutZones.find(z => z.label.replace(/\s+/g,'').toLowerCase() === normLoc);
         if (z) {
             _layoutDisplays.filter(v => v.id === d.id).forEach(v => v.zone_id = z.id);
             _sb.from('store_displays').update({ zone_id: z.id }).eq('id', d.id);
