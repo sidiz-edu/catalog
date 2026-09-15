@@ -14574,9 +14574,9 @@ function seLayoutMouseMove(e) {
         const h = r.handle;
         let nx = r.ox, ny = r.oy, nw = r.ow, nh = r.oh;
         if (h.includes('e')) nw = Math.max(80, r.ow + dx);
-        if (h.includes('s')) nh = Math.max(44, r.oh + dy);
+        if (h.includes('s')) nh = Math.max(80, r.oh + dy);
         if (h.includes('w')) { nx = r.ox + dx; nw = Math.max(80, r.ow - dx); if(nw===80) nx=r.ox+r.ow-80; }
-        if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(44, r.oh - dy); if(nh===44) ny=r.oy+r.oh-44; }
+        if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(80, r.oh - dy); if(nh===80) ny=r.oy+r.oh-80; }
         z.x=nx; z.y=ny; z.w=nw; z.h=nh;
         _lCanvas.style.cursor = _lHandleCursor[h];
         seUpdateChipTooltip(null, null);
@@ -14633,7 +14633,7 @@ function seLayoutMouseUp(e) {
     if (!_lDrag) return;
     const x = Math.min(_lDrag.sx, _lDrag.ex), y = Math.min(_lDrag.sy, _lDrag.ey);
     const w = Math.abs(_lDrag.ex - _lDrag.sx), h = Math.abs(_lDrag.ey - _lDrag.sy);
-    if (w > 80 && h > 44 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
+    if (w > 80 && h > 80 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
         sePushUndo();
         let label = _lActiveType.label;
         if (_lActiveType.type === 'custom') {
