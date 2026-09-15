@@ -13647,6 +13647,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-muted);">OFF</button>
                     <button onclick="seAutoPlaceAll()"
                         style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-gold);border-radius:3px;cursor:pointer;background:var(--se-gold);color:#fff;">자동배치</button>
+                    <button onclick="seUndo()" title="되돌리기 (Ctrl+Z)"
+                        style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">↩ 되돌리기</button>
                     <button onclick="seCleanupDuplicates()"
                         style="padding:2px 8px;font-size:0.68rem;border:1px solid rgba(220,38,38,0.4);border-radius:3px;cursor:pointer;background:transparent;color:var(--se-danger);">중복제거</button>
                     <button id="sePanBtn" onclick="seTogglePan()" title="지도 이동 모드 (중간 마우스로도 이동 가능)"
@@ -13922,10 +13924,10 @@ function seRenderTable(storeId) {
             <td style="color:#94a3b8;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
-                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#94a3b8'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
+                ${row.purpose === '판매' && !row.sold ? `<button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -14403,6 +14405,10 @@ function seLayoutSetupCanvas() {
     c.ondblclick  = seLayoutDblClick;
     c.oncontextmenu = e => { e.preventDefault(); seLayoutRightClick(e); };
     c.onmouseleave = () => seUpdateChipTooltip(null, null);
+    if (!window._seUndoKeyBound) {
+        window._seUndoKeyBound = true;
+        document.addEventListener('keydown', e => { if ((e.ctrlKey||e.metaKey) && e.key==='z' && _lCanvas) { e.preventDefault(); seUndo(); } });
+    }
 }
 
 function seLayoutPos(e) {
@@ -14471,6 +14477,18 @@ function seLayoutMouseDown(e) {
     const p = seLayoutPos(e);
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
 
+    // 0. resize handle 우선 (칩보다 먼저 — zone 크기 조절 시 칩 오선택 방지)
+    if (_lSelected) {
+        const h = _lGetHandle(p, _lSelected);
+        if (h) {
+            sePushUndo();
+            _lResize = { zone: _lSelected, handle: h.id,
+                ox: _lSelected.x, oy: _lSelected.y, ow: _lSelected.w, oh: _lSelected.h,
+                px: p.x, py: p.y };
+            return;
+        }
+    }
+
     // 1. 이미 배치된 제품 칩 클릭 → 드래그 이동
     const hitD = [..._layoutDisplays].reverse().find(d => {
         if (d.pos_x == null) return false;
@@ -14510,18 +14528,10 @@ function seLayoutMouseDown(e) {
         return;
     }
 
-    // 3. 구역 편집
-    if (_lSelected) {
-        const h = _lGetHandle(p, _lSelected);
-        if (h) {
-            _lResize = { zone: _lSelected, handle: h.id,
-                ox: _lSelected.x, oy: _lSelected.y, ow: _lSelected.w, oh: _lSelected.h,
-                px: p.x, py: p.y };
-            return;
-        }
-    }
+    // 3. 구역 선택/이동
     const hit = [..._layoutZones].reverse().find(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
     if (hit) {
+        sePushUndo();
         _lSelected = hit;
         _lMove = { zone: hit, ox: p.x - hit.x, oy: p.y - hit.y };
         seRenderAssignPanel(hit);
@@ -14624,6 +14634,7 @@ function seLayoutMouseUp(e) {
     const x = Math.min(_lDrag.sx, _lDrag.ex), y = Math.min(_lDrag.sy, _lDrag.ey);
     const w = Math.abs(_lDrag.ex - _lDrag.sx), h = Math.abs(_lDrag.ey - _lDrag.sy);
     if (w > 80 && h > 44 && (_lActiveType.type === 'custom' || !_layoutZones.some(z => z.type === _lActiveType.type))) {
+        sePushUndo();
         let label = _lActiveType.label;
         if (_lActiveType.type === 'custom') {
             const input = prompt('구역 이름을 입력하세요', '');
@@ -14641,6 +14652,25 @@ function seLayoutMouseUp(e) {
 let _lMode = 'zone'; // 'zone' | 'place'
 let _lRotation = 0; // 0 | 90 | 180 | 270
 let _lPlaceSelected = null; // 배치할 제품 display 객체
+const _undoStack = [];
+function sePushUndo() {
+    _undoStack.push({
+        zones: JSON.parse(JSON.stringify(_layoutZones)),
+        chips: _layoutDisplays.map(d => ({ _vid: d._vid, pos_x: d.pos_x, pos_y: d.pos_y }))
+    });
+    if (_undoStack.length > 30) _undoStack.shift();
+}
+function seUndo() {
+    if (!_undoStack.length) return;
+    const snap = _undoStack.pop();
+    _layoutZones = snap.zones;
+    snap.chips.forEach(c => {
+        const d = _layoutDisplays.find(x => x._vid === c._vid);
+        if (d) { d.pos_x = c.pos_x; d.pos_y = c.pos_y; }
+    });
+    _lSelected = null; _layoutDirty = true;
+    seLayoutDraw(); seLayoutRefreshPalette(); seRenderPlaceList();
+}
 let _lZoneFilter = null; // 배치 모드에서 선택된 구역 (필터링용)
 
 function seLayoutSetMode(mode) {
@@ -14746,9 +14776,9 @@ function seAutoPlaceZone(zoneId, onlyUnplaced = false) {
 }
 
 function seAutoPlaceAll() {
-    // 아직 위치 없는 항목만 대상 (이미 배치된 건 건드리지 않음)
     const unplaced = _layoutDisplays.filter(d => d.zone_id && d.pos_x == null);
     if (!unplaced.length) { alert('배치할 항목이 없습니다. 이미 모두 배치되어 있습니다.'); return; }
+    sePushUndo();
     const zoneIds = [...new Set(unplaced.map(d => d.zone_id))];
     zoneIds.forEach(zid => seAutoPlaceZone(zid, true));
     _lPlaceSelected = null;
@@ -14810,6 +14840,7 @@ function seLayoutDblClick(e) {
     if (!hit) return;
     const input = prompt('구역 이름 변경', hit.label);
     if (input === null) return;
+    sePushUndo();
     hit.label = input.trim() || hit.label;
     _layoutDirty = true; seLayoutDraw();
 }
@@ -14824,6 +14855,7 @@ function seLayoutRightClick(e) {
         return Math.abs(p.x-cx)<36*sc && Math.abs(p.y-cy)<14*sc;
     });
     if (hitChip) {
+        sePushUndo();
         hitChip.pos_x = null; hitChip.pos_y = null;
         seSaveVirtualItemPos(hitChip);
         seLayoutDraw(); seRenderPlaceList();
@@ -14831,7 +14863,7 @@ function seLayoutRightClick(e) {
     }
     // 구역 우클릭 → 구역 삭제
     const idx = _layoutZones.findIndex(z => p.x>=z.x&&p.x<=z.x+z.w&&p.y>=z.y&&p.y<=z.y+z.h);
-    if (idx >= 0) { _layoutZones.splice(idx, 1); _lSelected = null; _layoutDirty = true; seLayoutDraw(); seLayoutRefreshPalette(); }
+    if (idx >= 0) { sePushUndo(); _layoutZones.splice(idx, 1); _lSelected = null; _layoutDirty = true; seLayoutDraw(); seLayoutRefreshPalette(); }
 }
 
 function seUpdateChipTooltip(chip, e) {
