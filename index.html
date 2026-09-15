@@ -14406,8 +14406,8 @@ function seLayoutPos(e) {
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
     const cx = W / 2, cy = H / 2;
     const rad = -_lRotation * Math.PI / 180;
-    const needsScale = _lRotation === 90 || _lRotation === 270;
-    const scale = needsScale ? Math.min(W, H) / Math.max(W, H) : 1;
+    const needScale = _lRotation === 90 || _lRotation === 270;
+    const scale = needScale ? Math.min(W, H) / Math.max(W, H) : 1;
     const dx = (px - cx) / scale, dy = (py - cy) / scale;
     return {
         x: dx * Math.cos(rad) - dy * Math.sin(rad) + cx,
@@ -14766,17 +14766,15 @@ function seLayoutRightClick(e) {
 function seLayoutDraw() {
     if (!_lCtx) return;
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
-    // background (전체, 회전 전)
     _lCtx.fillStyle = '#f8f9fb';
     _lCtx.fillRect(0, 0, W, H);
-    // 회전 변환 적용 (90°/270°는 잘림 방지를 위해 축소 스케일 추가)
     if (_lRotation) {
         _lCtx.save();
         _lCtx.translate(W / 2, H / 2);
         _lCtx.rotate(_lRotation * Math.PI / 180);
         if (_lRotation === 90 || _lRotation === 270) {
-            const scale = Math.min(W, H) / Math.max(W, H);
-            _lCtx.scale(scale, scale);
+            const s = Math.min(W, H) / Math.max(W, H);
+            _lCtx.scale(s, s);
         }
         _lCtx.translate(-W / 2, -H / 2);
     }
@@ -14851,17 +14849,11 @@ function seLayoutDraw() {
             truncLabel += '…';
         }
         const tagLabel = truncLabel + suffix;
-        // 배지는 항상 읽기 좋게 카운터-회전
-        const badgeCX = bX + bW / 2, badgeCY = bY + bH / 2;
-        _lCtx.save();
-        _lCtx.translate(badgeCX, badgeCY);
-        _lCtx.rotate(-_lRotation * Math.PI / 180);
         _lCtx.fillStyle = z.color;
-        _lCtx.beginPath(); _lCtx.roundRect(-bW/2, -bH/2, bW, bH, bR); _lCtx.fill();
+        _lCtx.beginPath(); _lCtx.roundRect(bX, bY, bW, bH, bR); _lCtx.fill();
         _lCtx.fillStyle = '#fff';
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(tagLabel, 0, 0);
-        _lCtx.restore();
+        _lCtx.fillText(tagLabel, bX + bW / 2, bY + bH / 2);
         _lCtx.restore();
     });
 
@@ -14919,27 +14911,21 @@ function seLayoutDraw() {
         }
         const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
 
-        // 칩은 항상 읽기 좋게 카운터-회전
-        _lCtx.save();
-        _lCtx.translate(cx, cy);
-        _lCtx.rotate(-_lRotation * Math.PI / 180);
         _lCtx.globalAlpha = sel ? 1 : 0.88;
         _lCtx.fillStyle = color;
-        _lCtx.beginPath();
-        _lCtx.roundRect(-chipW/2, -chipH/2, chipW, chipH, chipR);
+        const drawRR = (x,y,w,h,r) => { _lCtx.beginPath(); _lCtx.roundRect(x,y,w,h,r); };
+        drawRR(cx-chipW/2, cy-chipH/2, chipW, chipH, chipR);
         _lCtx.fill();
         if (sel) {
             _lCtx.strokeStyle = '#fff'; _lCtx.lineWidth = 2;
-            _lCtx.beginPath();
-            _lCtx.roundRect(-chipW/2-1, -chipH/2-1, chipW+2, chipH+2, chipR+1);
+            drawRR(cx-chipW/2-1, cy-chipH/2-1, chipW+2, chipH+2, chipR+1);
             _lCtx.stroke();
         }
         _lCtx.globalAlpha = 1;
         _lCtx.fillStyle = '#fff';
         _lCtx.font = `${sel ? 'bold ' : ''}${Math.round(10 * sc)}px sans-serif`;
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        _lCtx.fillText(shortName, 0, 0);
-        _lCtx.restore();
+        _lCtx.fillText(shortName, cx, cy);
     });
     if (_lRotation) _lCtx.restore();
 }
