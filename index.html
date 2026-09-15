@@ -14406,7 +14406,9 @@ function seLayoutPos(e) {
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
     const cx = W / 2, cy = H / 2;
     const rad = -_lRotation * Math.PI / 180;
-    const dx = px - cx, dy = py - cy;
+    const needsScale = _lRotation === 90 || _lRotation === 270;
+    const scale = needsScale ? Math.min(W, H) / Math.max(W, H) : 1;
+    const dx = (px - cx) / scale, dy = (py - cy) / scale;
     return {
         x: dx * Math.cos(rad) - dy * Math.sin(rad) + cx,
         y: dx * Math.sin(rad) + dy * Math.cos(rad) + cy
@@ -14767,11 +14769,15 @@ function seLayoutDraw() {
     // background (전체, 회전 전)
     _lCtx.fillStyle = '#f8f9fb';
     _lCtx.fillRect(0, 0, W, H);
-    // 회전 변환 적용
+    // 회전 변환 적용 (90°/270°는 잘림 방지를 위해 축소 스케일 추가)
     if (_lRotation) {
         _lCtx.save();
         _lCtx.translate(W / 2, H / 2);
         _lCtx.rotate(_lRotation * Math.PI / 180);
+        if (_lRotation === 90 || _lRotation === 270) {
+            const scale = Math.min(W, H) / Math.max(W, H);
+            _lCtx.scale(scale, scale);
+        }
         _lCtx.translate(-W / 2, -H / 2);
     }
     // dot grid
