@@ -13647,6 +13647,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-muted);">OFF</button>
                     <button onclick="seAutoPlaceAll()"
                         style="padding:2px 8px;font-size:0.68rem;border:1px solid var(--se-gold);border-radius:3px;cursor:pointer;background:var(--se-gold);color:#fff;">자동배치</button>
+                    <button onclick="seRotateLayout()" title="90° 회전"
+                        style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">↻ 회전</button>
                     <button class="se-save-btn" onclick="seLayoutSave()">저장</button>
                     <button class="se-save-btn" onclick="seLayoutClear()" style="background:transparent;color:var(--se-danger);border:1px solid rgba(220,38,38,0.3);">초기화</button>
                 </div>
@@ -14399,7 +14401,16 @@ function seLayoutSetupCanvas() {
 
 function seLayoutPos(e) {
     const r = _lCanvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    if (!_lRotation) return { x: px, y: py };
+    const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
+    const cx = W / 2, cy = H / 2;
+    const rad = -_lRotation * Math.PI / 180;
+    const dx = px - cx, dy = py - cy;
+    return {
+        x: dx * Math.cos(rad) - dy * Math.sin(rad) + cx,
+        y: dx * Math.sin(rad) + dy * Math.cos(rad) + cy
+    };
 }
 let _lPlaceDrag = null; // {display, ox, oy} 배치된 제품 드래그 이동
 let _lSnapGrid = 0; // 0=off, 20=20px 그리드 스냅
@@ -14574,6 +14585,7 @@ function seLayoutMouseUp(e) {
 }
 // ─── 모드 관리 ───────────────────────────────────────
 let _lMode = 'zone'; // 'zone' | 'place'
+let _lRotation = 0; // 0 | 90 | 180 | 270
 let _lPlaceSelected = null; // 배치할 제품 display 객체
 let _lZoneFilter = null; // 배치 모드에서 선택된 구역 (필터링용)
 
@@ -14581,6 +14593,11 @@ function seLayoutSetMode(mode) {
     _lMode = 'zone';
     _lSelected = null; _lPlaceSelected = null; _lZoneFilter = null;
     seRenderPlaceList();
+    seLayoutDraw();
+}
+
+function seRotateLayout() {
+    _lRotation = (_lRotation + 90) % 360;
     seLayoutDraw();
 }
 
@@ -14747,9 +14764,16 @@ function seLayoutRightClick(e) {
 function seLayoutDraw() {
     if (!_lCtx) return;
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
-    // background
+    // background (전체, 회전 전)
     _lCtx.fillStyle = '#f8f9fb';
     _lCtx.fillRect(0, 0, W, H);
+    // 회전 변환 적용
+    if (_lRotation) {
+        _lCtx.save();
+        _lCtx.translate(W / 2, H / 2);
+        _lCtx.rotate(_lRotation * Math.PI / 180);
+        _lCtx.translate(-W / 2, -H / 2);
+    }
     // dot grid
     _lCtx.fillStyle = 'rgba(99,115,150,0.18)';
     for (let x=20; x<W; x+=24) for (let y=20; y<H; y+=24) {
@@ -14911,6 +14935,7 @@ function seLayoutDraw() {
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
         _lCtx.fillText(shortName, cx, cy);
     });
+    if (_lRotation) _lCtx.restore();
 }
 
 let _layoutDisplays = []; // 해당 매장의 전시품 목록
