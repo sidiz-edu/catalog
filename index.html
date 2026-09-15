@@ -14848,59 +14848,58 @@ function seLayoutDraw() {
         _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
-        // tag badge — 작은 구역이면 카드 전체를 배지로 채움
-        const tagFontSz = 11;
-        const tagH = 24;
-        const tagMargin = 10;
-        const tagPadX = 10;
-        const isSmall = z.h < tagH + tagMargin * 2 + 10;
-
-        const tagTxt = zCount > 0 ? `${z.label} (${zCount}EA)` : z.label;
+        // tag badge
+        const tagFontSz = 11, tagH = 24, tagMargin = 10, tagPadX = 10;
         _lCtx.font = `bold ${tagFontSz}px 'Outfit', sans-serif`;
-
-        let bX, bY, bW, bH, bR;
-        if (isSmall) {
-            // 배지가 카드 전체를 채움
-            bX = z.x + 2; bY = z.y + 2; bW = z.w - 4; bH = z.h - 4; bR = rr - 2;
-        } else {
-            const maxTagW = z.w - tagMargin * 2;
-            const sfx = zCount > 0 ? ` (${zCount}EA)` : '';
-            const sfxW = _lCtx.measureText(sfx).width;
-            const maxTextW = maxTagW - tagPadX * 2;
-            let lbl2 = z.label;
-            if (_lCtx.measureText(lbl2).width + sfxW > maxTextW) {
-                while (lbl2.length > 1 && _lCtx.measureText(lbl2 + '…').width + sfxW > maxTextW)
-                    lbl2 = lbl2.slice(0, -1);
-                lbl2 += '…';
-            }
-            bW = Math.min(_lCtx.measureText(lbl2 + sfx).width + tagPadX * 2, maxTagW);
-            bX = z.x + (z.w - bW) / 2; bY = z.y + tagMargin; bH = tagH; bR = 6;
-        }
-
-        // 라벨만 줄이고 (NEA) 수량은 항상 표시
+        const isSmall = Math.min(z.w, z.h) < tagH + tagMargin * 2 + 10;
         const suffix = zCount > 0 ? ` (${zCount}EA)` : '';
-        const suffixW = _lCtx.measureText(suffix).width;
-        const maxTW = bW - tagPadX * 2;
-        let truncLabel = z.label;
-        if (_lCtx.measureText(truncLabel).width + suffixW > maxTW) {
-            while (truncLabel.length > 1 && _lCtx.measureText(truncLabel + '…').width + suffixW > maxTW)
-                truncLabel = truncLabel.slice(0, -1);
-            truncLabel += '…';
-        }
-        const tagLabel = truncLabel + suffix;
-        _lCtx.fillStyle = z.color;
-        _lCtx.beginPath(); _lCtx.roundRect(bX, bY, bW, bH, bR); _lCtx.fill();
-        _lCtx.fillStyle = '#fff';
+        const sfxW = _lCtx.measureText(suffix).width;
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        if (_lRotation) {
-            _lCtx.save();
-            _lCtx.translate(bX + bW/2, bY + bH/2);
-            _lCtx.rotate(-_lRotation * Math.PI / 180);
-            if (_lRotation === 90 || _lRotation === 270) { _lCtx.scale(Math.max(W,H)/Math.min(W,H), Math.max(W,H)/Math.min(W,H)); }
-            _lCtx.fillText(tagLabel, 0, 0);
-            _lCtx.restore();
+
+        if (isSmall) {
+            // 카드 전체를 배지로 채움 (회전 무관)
+            const bX=z.x+2, bY=z.y+2, bW=z.w-4, bH=z.h-4, bR=rr-2;
+            let lbl=z.label;
+            while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > bW-tagPadX*2) lbl=lbl.slice(0,-1);
+            if (lbl!==z.label) lbl+='…';
+            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,bH,bR); _lCtx.fill();
+            _lCtx.fillStyle='#fff';
+            if (_lRotation) {
+                _lCtx.save(); _lCtx.translate(bX+bW/2,bY+bH/2); _lCtx.rotate(-_lRotation*Math.PI/180);
+                if (_lRotation===90||_lRotation===270) _lCtx.scale(Math.max(W,H)/Math.min(W,H),Math.max(W,H)/Math.min(W,H));
+                _lCtx.fillText(lbl+suffix,0,0); _lCtx.restore();
+            } else { _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2); }
+        } else if (!_lRotation) {
+            // 회전 없음: 상단 중앙 배지
+            const maxTagW=z.w-tagMargin*2;
+            let lbl=z.label;
+            if (_lCtx.measureText(lbl).width+sfxW > maxTagW-tagPadX*2) {
+                while(lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > maxTagW-tagPadX*2) lbl=lbl.slice(0,-1);
+                lbl+='…';
+            }
+            const bW=Math.min(_lCtx.measureText(lbl+suffix).width+tagPadX*2, maxTagW);
+            const bX=z.x+(z.w-bW)/2, bY=z.y+tagMargin;
+            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,tagH,6); _lCtx.fill();
+            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+tagH/2);
         } else {
-            _lCtx.fillText(tagLabel, bX + bW/2, bY + bH/2);
+            // 회전 시: 시각적 상단에 배지 배치 (90°→canvas left, 270°→right, 180°→bottom)
+            let badgeCx, badgeCy, maxTagW;
+            if (_lRotation===90)       { badgeCx=z.x+tagMargin; badgeCy=z.y+z.h/2; maxTagW=z.h-tagMargin*2; }
+            else if (_lRotation===270)  { badgeCx=z.x+z.w-tagMargin; badgeCy=z.y+z.h/2; maxTagW=z.h-tagMargin*2; }
+            else                       { badgeCx=z.x+z.w/2; badgeCy=z.y+z.h-tagMargin; maxTagW=z.w-tagMargin*2; }
+            let lbl=z.label;
+            if (_lCtx.measureText(lbl).width+sfxW > maxTagW-tagPadX*2) {
+                while(lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > maxTagW-tagPadX*2) lbl=lbl.slice(0,-1);
+                lbl+='…';
+            }
+            const bW=Math.min(_lCtx.measureText(lbl+suffix).width+tagPadX*2, maxTagW);
+            _lCtx.save();
+            _lCtx.translate(badgeCx, badgeCy);
+            _lCtx.rotate(-_lRotation*Math.PI/180);
+            if (_lRotation===90||_lRotation===270) _lCtx.scale(Math.max(W,H)/Math.min(W,H), Math.max(W,H)/Math.min(W,H));
+            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(-bW/2,-tagH/2,bW,tagH,6); _lCtx.fill();
+            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, 0, 0);
+            _lCtx.restore();
         }
         _lCtx.restore();
     });
