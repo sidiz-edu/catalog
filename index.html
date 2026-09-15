@@ -14120,7 +14120,7 @@ async function seOpenEditModal(id) {
 function seCloseEditModal() {
     document.getElementById('seEditModal').style.display = 'none';
 }
-const SE_LOC_PRESETS = ['포커스존','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','안내 데스크','창고'];
+const SE_LOC_PRESETS = ['포커스존 (VP 존)','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','안내 데스크','창고'];
 var _seLocActiveInput = null;
 function seShowLocList(inputId) {
     _seLocActiveInput = inputId;
@@ -14339,7 +14339,7 @@ function seToggleSoldField() {
 
 // ─── Layout Editor ───────────────────────────────────────────────
 const ZONE_TYPES = [
-    { type:'focus',    label:'포커스존',        color:'#6B8BF6', desc:'신제품·핵심 제품을 강조하는 VP존. 매장 밖에서 가장 먼저 눈에 띄어 고객의 관심을 끌고 브랜드 이미지를 각인시키는 공간.' },
+    { type:'focus',    label:'포커스존 (VP 존)', color:'#6B8BF6', desc:'신제품·핵심 제품을 강조하는 VP존. 매장 밖에서 가장 먼저 눈에 띄어 고객의 관심을 끌고 브랜드 이미지를 각인시키는 공간.' },
     { type:'checkin',  label:'체크인존',        color:'#0099CC', desc:'의자 체험 전 외투·가방 등 소지품을 보관하는 캐비닛 공간. 겨울 두꺼운 외투 착용 시 착석감을 제대로 느끼기 어렵기 때문에 반드시 안내 필요.' },
     { type:'fitting',  label:'피팅존',          color:'#003EFF', desc:'더 프로그레시브의 핵심 공간. 15개 내외 제품을 피팅 가이드·모션 데스크·컬러칩과 함께 몰입 체험하고 자리에서 바로 결제까지 가능.' },
     { type:'panorama', label:'시팅 파노라마',   color:'#1A1A1A', desc:'입장 시 정면 벽면의 대형 스크린. \'Progressive Sitting Experience\' 브랜드 철학 영상을 재생하며 캠페인·신제품에 따라 콘텐츠 업데이트.' },
