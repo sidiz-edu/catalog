@@ -14800,7 +14800,7 @@ function seLayoutDraw() {
         const listFontSz = Math.max(7, Math.round(10.5 * zScale));
         const lineH = listFontSz + Math.round(8 * zScale);
         const pad = Math.round(14 * zScale);
-        const listStartY = tagY + tagH + Math.round(18 * zScale);
+        const listStartY = tagY + tagH + Math.round(12 * zScale);
         const isSel = z === _lSelected;
 
         if (_lMode === 'zone') {
@@ -14825,8 +14825,10 @@ function seLayoutDraw() {
                 const dotR = Math.max(1.5, 2.5 * zScale);
                 const dynDotR = dotR * dynScale;
                 const contentH = totalRows * dynLineH;
+                const visualH = (totalRows - 1) * dynLineH + dynFontSz;
+                const availH = z.h - (listStartY - z.y) - Math.round(6 * zScale);
                 const startY = Math.max(listStartY,
-                    z.y + z.h - Math.round(4 * zScale) - (totalRows - 1) * dynLineH - Math.round(dynFontSz / 2));
+                    listStartY + Math.round(Math.max(0, availH - visualH) / 2) + Math.round(dynFontSz / 2));
                 _lCtx.font = `${dynFontSz}px 'Outfit', sans-serif`;
                 _lCtx.textBaseline = 'middle'; _lCtx.textAlign = 'left';
                 const nameLen = Math.max(4, Math.floor((colW - dynDotR * 2 - 4) / (dynFontSz * 0.65)));
