@@ -14880,7 +14880,7 @@ function seUpdateChipTooltip(chip, e) {
     if (!chip || !e) { tt.style.display = 'none'; return; }
     const prod = SE_PRODUCTS.find(pr => pr.id === chip.product_id);
     const name = prod?.name || chip.product_id;
-    const img = prod?.img;
+    const img = chip.image_url || prod?.img;
     const qty = chip.quantity || 1;
     const label = qty > 1 ? `${name} (${chip._idx + 1})` : name;
     const sku = chip.sku || '';
