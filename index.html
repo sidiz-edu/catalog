@@ -14794,7 +14794,7 @@ function seLayoutDraw() {
         const isSel = z === _lSelected;
         const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
 
-        // white card with soft shadow
+        // card background: white base + subtle zone color tint (Expression Color 400-series feel)
         _lCtx.shadowColor = isSel ? z.color + '50' : 'rgba(0,0,0,0.10)';
         _lCtx.shadowBlur = isSel ? 22 : 18;
         _lCtx.shadowOffsetX = 0;
@@ -14802,9 +14802,13 @@ function seLayoutDraw() {
         _lCtx.fillStyle = '#fff';
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
         _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0; _lCtx.shadowOffsetY = 0;
+        _lCtx.globalAlpha = isSel ? 0.12 : 0.07;
+        _lCtx.fillStyle = z.color;
+        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
+        _lCtx.globalAlpha = 1;
 
         // border
-        _lCtx.strokeStyle = isSel ? z.color : 'rgba(0,0,0,0.07)';
+        _lCtx.strokeStyle = isSel ? z.color : z.color + '30';
         _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
