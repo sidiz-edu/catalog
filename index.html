@@ -444,7 +444,8 @@
         /* ── 전시품 판매 ── */
         .sale-display-cat-btn { color: #b45309 !important; border-color: #fbbf24 !important; }
         .sale-display-cat-btn.active { background: #d97706 !important; color: #fff !important; border-color: #d97706 !important; }
-        .display-sale-card { position:relative; cursor:default; }
+        .display-sale-card { position:relative; cursor:pointer; transition:transform .15s,box-shadow .15s; }
+        .display-sale-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.13); }
         .display-sale-card .ds-grade { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700; letter-spacing:.5px; margin-bottom:6px; }
         .display-sale-card .ds-grade.A { background:#dbeafe; color:#1e40af; }
         .display-sale-card .ds-grade.B { background:#fef9c3; color:#92400e; }
@@ -455,6 +456,22 @@
         .display-sale-card .ds-store { margin-top:8px; font-size:0.78rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
         .display-sale-card .ds-phone { display:inline-flex; align-items:center; gap:4px; background:var(--bg-secondary); border-radius:6px; padding:3px 8px; font-size:0.78rem; color:#1d4ed8; font-weight:600; text-decoration:none; }
         .display-sale-card .ds-sku { font-size:0.72rem; color:#9ca3af; margin-top:2px; }
+        /* ── 전시품 상세 모달 ── */
+        .ds-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:9990; display:flex; align-items:center; justify-content:center; padding:16px; animation:dsIn .18s ease; }
+        @keyframes dsIn { from{opacity:0} to{opacity:1} }
+        .ds-modal { background:var(--bg,#fff); border-radius:18px; width:min(620px,96vw); max-height:92vh; overflow-y:auto; position:relative; box-shadow:0 16px 48px rgba(0,0,0,.25); }
+        .ds-gallery { position:relative; background:#f1f5f9; border-radius:18px 18px 0 0; overflow:hidden; aspect-ratio:4/3; }
+        .ds-gallery img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; transition:opacity .25s; }
+        .ds-gallery img.hidden { opacity:0; pointer-events:none; }
+        .ds-nav { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.85); border:none; border-radius:50%; width:36px; height:36px; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.15); z-index:2; }
+        .ds-nav.prev { left:10px; } .ds-nav.next { right:10px; }
+        .ds-dots { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:6px; }
+        .ds-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.5); cursor:pointer; border:1.5px solid rgba(255,255,255,.8); transition:background .15s; }
+        .ds-dot.active { background:#fff; }
+        .ds-modal-body { padding:22px 24px 28px; }
+        .ds-modal-close { position:absolute; top:12px; right:14px; background:rgba(0,0,0,.35); color:#fff; border:none; border-radius:50%; width:30px; height:30px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:3; }
+        .ds-spec-link { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; background:#1d4ed8; color:#fff; font-size:0.85rem; font-weight:600; text-decoration:none; margin-top:14px; }
+        .ds-spec-link:hover { background:#1e40af; }
         /* ── 단종 제품 ── */
         .disc-cat-btn { color: #9ca3af !important; border-color: #d1d5db !important; }
         .disc-cat-btn.active { background: #6b7280 !important; color: #fff !important; border-color: #6b7280 !important; }
@@ -9647,6 +9664,102 @@ function filterProducts(category) {
     document.querySelector(`.cat-filter-btn[data-cat="${category}"]`)?.classList.add('active');
 }
 
+const _dsItemMap = {};
+let _dsCurPhoto = 0;
+
+const SIDIZ_URLS = {
+    t50:'https://kr.sidiz.com/products/t50', t50gen2:'https://kr.sidiz.com/products/t50-2',
+    t60:'https://kr.sidiz.com/products/t60', t80:'https://kr.sidiz.com/products/t80',
+    t90:'https://kr.sidiz.com/products/t90', t20:'https://kr.sidiz.com/products/t20',
+    t40:'https://kr.sidiz.com/products/t40', gx:'https://kr.sidiz.com/products/gx',
+    gcpro:'https://kr.sidiz.com/products/gc-pro', ible:'https://kr.sidiz.com/products/ible',
+    ringo2:'https://kr.sidiz.com/products/ringo2', trevo:'https://kr.sidiz.com/products/trevo',
+    linie:'https://kr.sidiz.com/products/linie', button:'https://kr.sidiz.com/products/button',
+    muuve:'https://kr.sidiz.com/products/muuve', ega:'https://kr.sidiz.com/products/ega',
+    mane:'https://kr.sidiz.com/products/mane', plit:'https://kr.sidiz.com/products/plit',
+    oui:'https://kr.sidiz.com/products/oui', fungus:'https://kr.sidiz.com/products/fungus',
+    stepo:'https://kr.sidiz.com/products/stepo', pillo:'https://kr.sidiz.com/products/pillo',
+    olly:'https://kr.sidiz.com/products/olly', molti:'https://kr.sidiz.com/products/molti',
+    atti:'https://kr.sidiz.com/products/atti',
+};
+
+function showDisplaySaleDetail(itemId) {
+    const entry = _dsItemMap[itemId];
+    if (!entry) return;
+    const { item, storeName, storePhone, salePrice, discountLabel } = entry;
+    const prod = products[item.product_id] || {};
+    const prodName = prod.name || item.product_id;
+
+    // 사진 목록: 전시품 실사진 → 제품 공식 사진
+    const photos = [item.image_url, prod.img].filter(Boolean);
+    if (!photos.length) photos.push('');
+    _dsCurPhoto = 0;
+
+    const sidizUrl = SIDIZ_URLS[item.product_id] ||
+        `https://kr.sidiz.com/search?type=product&q=${encodeURIComponent(prodName)}`;
+
+    const skuCode = item.sku ? item.sku.split('-')[0] : null;
+    const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
+    const gradeLabel = item.grade === 'A' ? 'A등급 — 미세한 사용감, 기능 완벽' : item.grade === 'B' ? 'B등급 — 약간의 사용감 있음' : '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ds-overlay';
+    overlay.id = 'dsOverlay';
+    overlay.innerHTML = `
+      <div class="ds-modal">
+        <button class="ds-modal-close" onclick="document.getElementById('dsOverlay').remove()">✕</button>
+        <div class="ds-gallery" id="dsGallery">
+          ${photos.map((src,i) => `<img src="${src||''}" class="${i?'hidden':''}" id="dsPhoto${i}" alt="사진 ${i+1}" onerror="this.style.display='none'">`).join('')}
+          ${photos.length > 1 ? `
+            <button class="ds-nav prev" onclick="dsSwitchPhoto(-1)">‹</button>
+            <button class="ds-nav next" onclick="dsSwitchPhoto(1)">›</button>
+            <div class="ds-dots">${photos.map((_,i)=>`<div class="ds-dot${i?'':' active'}" id="dsDot${i}" onclick="dsSwitchPhoto(${i},true)"></div>`).join('')}</div>
+          ` : ''}
+        </div>
+        <div class="ds-modal-body">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            ${item.grade ? `<span class="ds-grade ${item.grade}" style="margin:0;">${item.grade}등급</span>` : ''}
+            <span style="font-size:0.75rem;color:#94a3b8;">${gradeLabel}</span>
+          </div>
+          <h2 style="margin:0 0 4px;font-size:1.15rem;">${prodName}</h2>
+          ${skuHtml ? `<div style="font-size:0.8rem;color:#64748b;margin-bottom:10px;">단품코드 ${skuHtml}</div>` : ''}
+          ${prod.desc ? `<p style="font-size:0.85rem;color:#64748b;line-height:1.6;margin:0 0 14px;">${prod.desc}</p>` : ''}
+          ${salePrice ? `
+            <div style="background:#eff6ff;border-radius:10px;padding:12px 16px;margin-bottom:14px;">
+              <div style="font-size:0.78rem;color:#9ca3af;text-decoration:line-through;">${(item.consumer_price||0).toLocaleString()}원</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;">
+                <span style="font-size:1.3rem;font-weight:800;color:#1d4ed8;">${salePrice.toLocaleString()}원</span>
+                <span style="font-size:0.85rem;color:#ef4444;font-weight:700;">${discountLabel}</span>
+              </div>
+            </div>
+          ` : ''}
+          ${item.memo ? `<div style="font-size:0.83rem;color:#475569;background:#f8fafc;border-radius:8px;padding:10px 14px;margin-bottom:14px;">💬 ${item.memo}</div>` : ''}
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:6px;">📍 ${storeName}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+            ${storePhone ? `<a class="ds-phone" href="tel:${storePhone}" style="padding:10px 18px;font-size:0.9rem;border-radius:8px;">📞 ${storePhone}</a>` : ''}
+            <a class="ds-spec-link" href="${sidizUrl}" target="_blank" rel="noopener">🔗 시디즈 닷컴 스펙 보기</a>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function dsSwitchPhoto(dir, absolute = false) {
+    const photos = document.querySelectorAll('#dsGallery img');
+    const dots = document.querySelectorAll('#dsGallery .ds-dot');
+    if (!photos.length) return;
+    photos[_dsCurPhoto].classList.add('hidden');
+    if (dots[_dsCurPhoto]) dots[_dsCurPhoto].classList.remove('active');
+    if (absolute) {
+        _dsCurPhoto = dir;
+    } else {
+        _dsCurPhoto = (_dsCurPhoto + dir + photos.length) % photos.length;
+    }
+    photos[_dsCurPhoto].classList.remove('hidden');
+    if (dots[_dsCurPhoto]) dots[_dsCurPhoto].classList.add('active');
+}
+
 async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -9687,7 +9800,8 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
                 ? `<div class="ds-grade ${item.grade}">${item.grade}등급</div>` : '';
             const skuCode = item.sku ? item.sku.split('-')[0] : null;
             const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
-            return `<div class="product-card display-sale-card">
+            _dsItemMap[item.id] = { item, store, storeName, storePhone, salePrice, discountLabel, discountRate };
+            return `<div class="product-card display-sale-card" onclick="showDisplaySaleDetail('${item.id}')">
                 <div class="product-card-img" style="${imgStyle}">
                     <div class="badge" style="background:#d97706;color:#fff;">전시품</div>
                 </div>
@@ -9699,7 +9813,7 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
                     ${priceHtml}
                     <div class="ds-store">
                         <span>📍 ${storeName}</span>
-                        ${storePhone ? `<a class="ds-phone" href="tel:${storePhone}">📞 ${storePhone}</a>` : ''}
+                        ${storePhone ? `<a class="ds-phone" href="tel:${storePhone}" onclick="event.stopPropagation()">📞 ${storePhone}</a>` : ''}
                     </div>
                 </div>
             </div>`;
