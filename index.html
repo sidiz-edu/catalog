@@ -13433,20 +13433,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <h2>SE Management</h2>
         <button class="se-close" onclick="closeSEPanel()">닫기</button>
     </div>
+    <div style="padding:10px 32px;border-bottom:1px solid var(--se-border);background:var(--se-surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--se-muted);letter-spacing:0.08em;font-family:'Outfit',sans-serif;">매장</span>
+        <select id="seStoreSelect" onchange="seOnStoreChange()" style="background:var(--se-raised);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:6px 10px;font-size:0.85rem;min-width:160px;">
+            <option value="">-- 매장 선택 --</option>
+        </select>
+    </div>
     <div class="se-tabs-bar">
         <div class="se-tabs">
-            <button class="se-tab active" onclick="seSwitchTab('store')">매장 전시품</button>
-            <button class="se-tab" onclick="seSwitchTab('layout')">공간, 의자 배치도</button>
-            <button class="se-tab" onclick="seSwitchTab('overview')">전체 현황</button>
+            <button class="se-tab active" data-tab="store" onclick="seSwitchTab('store')">전시품</button>
+            <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">공간</button>
+            <button class="se-tab" data-tab="place" onclick="seSwitchTab('place')">의자 배치도</button>
+            <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
         </div>
     </div>
     <div class="se-panel-body">
         <div id="seTabStore">
-            <div class="se-store-row">
-                <select id="seStoreSelect" onchange="seLoadStore()">
-                    <option value="">-- 매장 선택 --</option>
-                </select>
-            </div>
             <!-- 이동 모달 -->
             <div id="seEditModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
                 <div style="background:#fff;border:none;border-radius:16px;padding:0;width:420px;max-width:92vw;display:flex;flex-direction:column;gap:0;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.18);">
@@ -13630,20 +13632,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <div id="seTabLayout" style="display:none; flex:1; display:none; flex-direction:column; gap:12px;">
             <!-- 상단 컨트롤 -->
             <div style="display:flex; gap:10px; align-items:center; flex-shrink:0;">
-                <select id="seLayoutStoreSelect" onchange="seLayoutLoadStore()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:6px 10px;font-size:13px;">
-                    <option value="">-- 매장 선택 --</option>
-                </select>
-                <!-- 모드 토글 -->
-                <div style="display:flex;border:1px solid var(--se-border);border-radius:6px;overflow:hidden;margin-left:8px;">
-                    <button id="seModeBtnZone" onclick="seLayoutSetMode('zone')"
-                        style="padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;background:var(--se-gold);color:#fff;letter-spacing:0.04em;">
-                        공간 편집
-                    </button>
-                    <button id="seModeBtnPlace" onclick="seLayoutSetMode('place')"
-                        style="padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;background:var(--se-surface);color:var(--se-muted);letter-spacing:0.04em;">
-                        제품 배치
-                    </button>
-                </div>
                 <button class="se-save-btn" onclick="seLayoutSave()" style="margin-left:auto;">저장</button>
                 <button class="se-save-btn" onclick="seLayoutClear()" style="background:transparent;color:var(--se-danger);border:1px solid rgba(220,38,38,0.3);">초기화</button>
             </div>
@@ -13778,15 +13766,25 @@ function closeSEPanel() {
     history.replaceState(null, '', location.pathname + location.search);
 }
 
+function seOnStoreChange() {
+    const tab = document.querySelector('.se-tab.active')?.dataset.tab;
+    if (tab === 'zone' || tab === 'place') {
+        seLayoutLoadStore();
+    } else {
+        seLoadStore();
+    }
+}
+
 function seSwitchTab(tab) {
-    const tabs = ['store','layout','overview'];
-    document.querySelectorAll('.se-tab').forEach((t, i) =>
-        t.classList.toggle('active', tabs[i] === tab));
-    document.getElementById('seTabStore').style.display      = tab==='store'     ? '' : 'none';
-    document.getElementById('seTabLayout').style.display     = tab==='layout'    ? 'flex' : 'none';
-    document.getElementById('seTabOverview').style.display   = tab==='overview'  ? '' : 'none';
-    if (tab === 'overview')  seLoadOverview();
-    if (tab === 'layout')    seLayoutInit();
+    document.querySelectorAll('.se-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === tab));
+    const isLayout = tab === 'zone' || tab === 'place';
+    document.getElementById('seTabStore').style.display    = tab === 'store'    ? '' : 'none';
+    document.getElementById('seTabLayout').style.display   = isLayout           ? 'flex' : 'none';
+    document.getElementById('seTabOverview').style.display = tab === 'overview' ? '' : 'none';
+    if (tab === 'overview') seLoadOverview();
+    if (isLayout) { seLayoutInit(); seLayoutSetMode(tab === 'zone' ? 'zone' : 'place'); }
+    if (tab === 'store') seLoadStore();
 }
 
 async function seLoadQuestions() {
@@ -14327,19 +14325,8 @@ const _lHandleCursor = { nw:'nw-resize', n:'n-resize', ne:'ne-resize', e:'e-resi
                           se:'se-resize', s:'s-resize', sw:'sw-resize', w:'w-resize' };
 
 function seLayoutInit() {
-    const sel = document.getElementById('seLayoutStoreSelect');
-    if (sel.options.length <= 1) {
-        storeData.forEach(s => {
-            const o = document.createElement('option');
-            o.value = s.id; o.textContent = s.name;
-            sel.appendChild(o);
-        });
-    }
-    // 매장 전시품 탭에서 선택한 매장 자동 연동
-    if (seCurrentStore && sel.value !== seCurrentStore) {
-        sel.value = seCurrentStore;
-        seLayoutLoadStore();
-    }
+    const storeId = document.getElementById('seStoreSelect').value;
+    if (storeId && storeId !== _layoutStore) seLayoutLoadStore();
     // palette
     seLayoutRefreshPalette();
     seLayoutSetupCanvas();
@@ -14566,8 +14553,7 @@ function seLayoutSetMode(mode) {
     _lMode = mode;
     _lSelected = null; _lPlaceSelected = null; _lZoneFilter = null;
     const isZone = mode === 'zone';
-    document.getElementById('seModeBtnZone').style.cssText  = `padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;letter-spacing:0.04em;background:${isZone  ? 'var(--se-gold)' : 'var(--se-surface)'};color:${isZone  ? '#fff' : 'var(--se-muted)'};`;
-    document.getElementById('seModeBtnPlace').style.cssText = `padding:6px 14px;font-size:0.72rem;font-weight:600;border:none;cursor:pointer;letter-spacing:0.04em;background:${!isZone ? 'var(--se-gold)' : 'var(--se-surface)'};color:${!isZone ? '#fff' : 'var(--se-muted)'};`;
+    // 탭으로 모드를 구분하므로 버튼 업데이트는 skip
     document.getElementById('seZoneModeControls').style.display = isZone ? '' : 'none';
     document.getElementById('seSidePanelZone').style.display  = isZone ? 'flex' : 'none';
     document.getElementById('seSidePanelPlace').style.display = isZone ? 'none' : 'flex';
@@ -14951,7 +14937,7 @@ function seLayoutDraw() {
 let _layoutDisplays = []; // 해당 매장의 전시품 목록
 
 async function seLayoutLoadStore() {
-    const storeId = document.getElementById('seLayoutStoreSelect').value;
+    const storeId = document.getElementById('seStoreSelect').value;
     if (!storeId) return;
     _layoutStore = storeId; _layoutZones = []; _lSelected = null; _layoutDirty = false;
     _layoutDisplays = [];
