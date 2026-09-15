@@ -14875,10 +14875,12 @@ function seUpdateChipTooltip(chip, e) {
     const img = prod?.img;
     const qty = chip.quantity || 1;
     const label = qty > 1 ? `${name} (${chip._idx + 1})` : name;
-    const code = chip.product_id.toUpperCase();
-    tt.innerHTML = `${img ? `<img src="${img}" style="width:100%;height:80px;object-fit:contain;border-radius:4px;background:#f1f5f9;display:block;margin-bottom:8px;">` : ''}
-<div style="font-weight:700;font-size:13px;">${label}</div>
-<div style="color:#94a3b8;font-size:11px;margin-top:3px;letter-spacing:0.06em;">${code}</div>`;
+    const sku = chip.sku || '';
+    const colorCode = chip.color_code || '';
+    tt.innerHTML = `${img ? `<img src="${img}" style="width:100%;height:90px;object-fit:contain;border-radius:4px;background:#f1f5f9;display:block;margin-bottom:8px;">` : ''}
+<div style="font-weight:700;font-size:13px;margin-bottom:5px;">${label}</div>
+${sku ? `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;"><span style="font-size:10px;color:#64748b;background:#f1f5f9;padding:1px 5px;border-radius:3px;">단품코드</span><span style="font-size:12px;font-weight:600;letter-spacing:0.05em;">${sku}</span></div>` : ''}
+${colorCode ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3px;"><span style="font-size:10px;color:#64748b;background:#f1f5f9;padding:1px 5px;border-radius:3px;">색상코드</span><span style="font-size:12px;font-weight:600;letter-spacing:0.05em;">${colorCode}</span></div>` : ''}`;
     const vw = window.innerWidth, vh = window.innerHeight;
     let lx = e.clientX + 18, ty = e.clientY - 20;
     tt.style.display = 'block';
