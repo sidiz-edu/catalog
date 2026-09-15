@@ -14405,18 +14405,7 @@ function seLayoutSetupCanvas() {
 
 function seLayoutPos(e) {
     const r = _lCanvas.getBoundingClientRect();
-    const px = e.clientX - r.left - _lPanX, py = e.clientY - r.top - _lPanY;
-    if (!_lRotation) return { x: px, y: py };
-    const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
-    const cx = W / 2, cy = H / 2;
-    const rad = -_lRotation * Math.PI / 180;
-    const needScale = _lRotation === 90 || _lRotation === 270;
-    const scale = needScale ? Math.min(W, H) / Math.max(W, H) : 1;
-    const dx = (px - cx) / scale, dy = (py - cy) / scale;
-    return {
-        x: dx * Math.cos(rad) - dy * Math.sin(rad) + cx,
-        y: dx * Math.sin(rad) + dy * Math.cos(rad) + cy
-    };
+    return { x: e.clientX - r.left - _lPanX, y: e.clientY - r.top - _lPanY };
 }
 let _lPlaceDrag = null; // {display, ox, oy} 배치된 제품 드래그 이동
 let _lSnapGrid = 0; // 0=off, 20=20px 그리드 스냅
@@ -14651,7 +14640,21 @@ function seLayoutSetMode(mode) {
 }
 
 function seRotateLayout() {
+    const cW = _lCanvas ? _lCanvas.width / _lDpr : 600;
+    const cH = _lCanvas ? _lCanvas.height / _lDpr : 400;
+    // 90° CW: normalize → rotate → denormalize
+    _layoutZones = _layoutZones.map(z => {
+        const nx = z.x/cW, ny = z.y/cH, nw = z.w/cW, nh = z.h/cH;
+        return { ...z, x: (1-ny-nh)*cW, y: nx*cH, w: nh*cW, h: nw*cH };
+    });
+    _layoutDisplays.forEach(d => {
+        if (d.pos_x == null || d.pos_y == null) return;
+        const px = d.pos_x/1000, py = d.pos_y/1000;
+        d.pos_x = Math.round((1-py)*1000);
+        d.pos_y = Math.round(px*1000);
+    });
     _lRotation = (_lRotation + 90) % 360;
+    _layoutDirty = true;
     seLayoutDraw();
 }
 
@@ -14846,16 +14849,6 @@ function seLayoutDraw() {
     _lCtx.fillRect(0, 0, W, H);
     _lCtx.save(); // pan
     _lCtx.translate(_lPanX, _lPanY);
-    if (_lRotation) {
-        _lCtx.save();
-        _lCtx.translate(W / 2, H / 2);
-        _lCtx.rotate(_lRotation * Math.PI / 180);
-        if (_lRotation === 90 || _lRotation === 270) {
-            const s = Math.min(W, H) / Math.max(W, H);
-            _lCtx.scale(s, s);
-        }
-        _lCtx.translate(-W / 2, -H / 2);
-    }
     // dot grid
     _lCtx.fillStyle = 'rgba(99,115,150,0.18)';
     for (let x=20; x<W; x+=24) for (let y=20; y<H; y+=24) {
@@ -14896,20 +14889,13 @@ function seLayoutDraw() {
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
 
         if (isSmall) {
-            // 카드 전체를 배지로 채움 (회전 무관)
             const bX=z.x+2, bY=z.y+2, bW=z.w-4, bH=z.h-4, bR=rr-2;
             let lbl=z.label;
             while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > bW-tagPadX*2) lbl=lbl.slice(0,-1);
             if (lbl!==z.label) lbl+='…';
             _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,bH,bR); _lCtx.fill();
-            _lCtx.fillStyle='#fff';
-            if (_lRotation) {
-                _lCtx.save(); _lCtx.translate(bX+bW/2,bY+bH/2); _lCtx.rotate(-_lRotation*Math.PI/180);
-                if (_lRotation===90||_lRotation===270) _lCtx.scale(Math.max(W,H)/Math.min(W,H),Math.max(W,H)/Math.min(W,H));
-                _lCtx.fillText(lbl+suffix,0,0); _lCtx.restore();
-            } else { _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2); }
-        } else if (!_lRotation) {
-            // 회전 없음: 상단 중앙 배지
+            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2);
+        } else {
             const maxTagW=z.w-tagMargin*2;
             let lbl=z.label;
             if (_lCtx.measureText(lbl).width+sfxW > maxTagW-tagPadX*2) {
@@ -14920,25 +14906,6 @@ function seLayoutDraw() {
             const bX=z.x+(z.w-bW)/2, bY=z.y+tagMargin;
             _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,tagH,6); _lCtx.fill();
             _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+tagH/2);
-        } else {
-            // 회전 시: 시각적 상단에 배지 배치 (90°→canvas left, 270°→right, 180°→bottom)
-            let badgeCx, badgeCy, maxTagW;
-            if (_lRotation===90)       { badgeCx=z.x+tagMargin; badgeCy=z.y+z.h/2; maxTagW=z.h-tagMargin*2; }
-            else if (_lRotation===270)  { badgeCx=z.x+z.w-tagMargin; badgeCy=z.y+z.h/2; maxTagW=z.h-tagMargin*2; }
-            else                       { badgeCx=z.x+z.w/2; badgeCy=z.y+z.h-tagMargin; maxTagW=z.w-tagMargin*2; }
-            let lbl=z.label;
-            if (_lCtx.measureText(lbl).width+sfxW > maxTagW-tagPadX*2) {
-                while(lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > maxTagW-tagPadX*2) lbl=lbl.slice(0,-1);
-                lbl+='…';
-            }
-            const bW=Math.min(_lCtx.measureText(lbl+suffix).width+tagPadX*2, maxTagW);
-            _lCtx.save();
-            _lCtx.translate(badgeCx, badgeCy);
-            _lCtx.rotate(-_lRotation*Math.PI/180);
-            if (_lRotation===90||_lRotation===270) _lCtx.scale(Math.max(W,H)/Math.min(W,H), Math.max(W,H)/Math.min(W,H));
-            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(-bW/2,-tagH/2,bW,tagH,6); _lCtx.fill();
-            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, 0, 0);
-            _lCtx.restore();
         }
         _lCtx.restore();
     });
@@ -15011,18 +14978,8 @@ function seLayoutDraw() {
         _lCtx.fillStyle = '#fff';
         _lCtx.font = `${sel ? 'bold ' : ''}${Math.round(10 * sc)}px sans-serif`;
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-        if (_lRotation) {
-            _lCtx.save();
-            _lCtx.translate(cx, cy);
-            _lCtx.rotate(-_lRotation * Math.PI / 180);
-            if (_lRotation === 90 || _lRotation === 270) { _lCtx.scale(Math.max(W,H)/Math.min(W,H), Math.max(W,H)/Math.min(W,H)); }
-            _lCtx.fillText(shortName, 0, 0);
-            _lCtx.restore();
-        } else {
-            _lCtx.fillText(shortName, cx, cy);
-        }
+        _lCtx.fillText(shortName, cx, cy);
     });
-    if (_lRotation) _lCtx.restore();
     _lCtx.restore(); // pan
 }
 
