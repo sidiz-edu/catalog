@@ -14363,6 +14363,19 @@ let _lDrag = null, _lMove = null, _lResize = null, _lSelected = null, _lActiveTy
 let _lCanvas = null, _lCtx = null, _lDpr = 1;
 const _lHR = 8; // handle radius
 
+// 렌더링과 동일한 clamp를 적용한 칩의 실제 시각적 위치 반환
+function seChipVisualPos(d, cW, cH) {
+    const sc = d.chip_scale || 1;
+    const chipW = Math.round(70 * sc), chipH = Math.round(24 * sc);
+    let cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
+    const zone = _layoutZones.find(z => z.id === d.zone_id);
+    if (zone) {
+        cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
+        cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
+    }
+    return { cx, cy, chipW, chipH };
+}
+
 function _lGetHandle(p, z) {
     // returns handle id: 'nw','n','ne','e','se','s','sw','w' or null
     const handles = [
@@ -14483,9 +14496,8 @@ function seLayoutMouseDown(e) {
         if (h) {
             const chipAtHandle = _layoutDisplays.find(d => {
                 if (d.pos_x == null) return false;
-                const cx2 = d.pos_x/1000*cW, cy2 = d.pos_y/1000*cH;
-                const sc2 = d.chip_scale || 1;
-                return Math.abs(p.x-cx2)<36*sc2 && Math.abs(p.y-cy2)<14*sc2;
+                const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+                return Math.abs(p.x-cx) < chipW/2+2 && Math.abs(p.y-cy) < chipH/2+2;
             });
             if (!chipAtHandle) {
                 sePushUndo();
@@ -14500,13 +14512,13 @@ function seLayoutMouseDown(e) {
     // 1. 이미 배치된 제품 칩 클릭 → 드래그 이동
     const hitD = [..._layoutDisplays].reverse().find(d => {
         if (d.pos_x == null) return false;
-        const cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
-        const sc = d.chip_scale || 1;
-        return Math.abs(p.x - cx) < 36 * sc && Math.abs(p.y - cy) < 14 * sc;
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+        return Math.abs(p.x - cx) < chipW/2+2 && Math.abs(p.y - cy) < chipH/2+2;
     });
     if (hitD) {
         _lPlaceSelected = hitD;
-        _lPlaceDrag = { display: hitD, ox: p.x - hitD.pos_x/1000*cW, oy: p.y - hitD.pos_y/1000*cH };
+        const { cx: hcx, cy: hcy } = seChipVisualPos(hitD, cW, cH);
+        _lPlaceDrag = { display: hitD, ox: p.x - hcx, oy: p.y - hcy };
         seRenderPlaceList(); return;
     }
 
@@ -14521,10 +14533,11 @@ function seLayoutMouseDown(e) {
         }
         const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
         const sc = _lPlaceSelected.chip_scale || 1;
+        const chipW2 = Math.round(70*sc), chipH2 = Math.round(24*sc);
         let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
-            cx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, cx));
-            cy = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, cy));
+            cx = Math.max(zone.x + chipW2/2+1, Math.min(zone.x + zone.w - chipW2/2-1, cx));
+            cy = Math.max(zone.y + chipH2/2+1, Math.min(zone.y + zone.h - chipH2/2-1, cy));
         }
         _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
         _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
@@ -14565,10 +14578,11 @@ function seLayoutMouseMove(e) {
         const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
         const zone = _layoutZones.find(z => z.id === _lPlaceDrag.display.zone_id);
         const sc = _lPlaceDrag.display.chip_scale || 1;
+        const chipW = Math.round(70*sc), chipH = Math.round(24*sc);
         let nx = seSnapCoord(p.x, _lSnapGrid), ny = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
-            nx = Math.max(zone.x + 36*sc, Math.min(zone.x + zone.w - 36*sc, nx));
-            ny = Math.max(zone.y + 14*sc, Math.min(zone.y + zone.h - 14*sc, ny));
+            nx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, nx));
+            ny = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, ny));
         }
         _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
         _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
@@ -14606,9 +14620,8 @@ function seLayoutMouseMove(e) {
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
     const hovChip = _layoutDisplays.find(d => {
         if (d.pos_x == null) return false;
-        const cx = d.pos_x/1000*cW, cy = d.pos_y/1000*cH;
-        const sc = d.chip_scale || 1;
-        return Math.abs(p.x-cx)<38*sc && Math.abs(p.y-cy)<16*sc;
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+        return Math.abs(p.x-cx) < chipW/2+2 && Math.abs(p.y-cy) < chipH/2+2;
     });
     seUpdateChipTooltip(hovChip, e);
     if (_lSelected) {
