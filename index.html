@@ -13552,12 +13552,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
                     <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
+                <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
+                    oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
+                    style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.85rem;background:var(--se-raised);color:var(--se-text);margin-bottom:10px;font-family:'Outfit',sans-serif;">
                 <div class="se-table-wrap">
                     <table class="se-table">
                         <thead>
                             <tr>
                                 <th style="width:28px;"><input type="checkbox" id="seSelectAll" onchange="seToggleSelectAll(this.checked)" title="전체 선택"></th>
-                                <th>제품명</th><th>구분</th><th>단품코드</th><th>색상</th><th>개수</th><th>사진</th><th>전시 시작일</th><th>위치</th><th>메모</th><th>최종 수정</th><th></th>
+                                <th onclick="seToggleSort('name')" style="cursor:pointer;user-select:none;white-space:nowrap;">제품명<span id="seSortIcon_name" style="color:#94a3b8;"> ↕</span></th>
+                                <th onclick="seToggleSort('purpose')" style="cursor:pointer;user-select:none;white-space:nowrap;">구분<span id="seSortIcon_purpose" style="color:#94a3b8;"> ↕</span></th>
+                                <th onclick="seToggleSort('sku')" style="cursor:pointer;user-select:none;white-space:nowrap;">단품코드<span id="seSortIcon_sku" style="color:#94a3b8;"> ↕</span></th>
+                                <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
+                                <th>개수</th><th>사진</th><th>전시 시작일</th>
+                                <th onclick="seToggleSort('location')" style="cursor:pointer;user-select:none;white-space:nowrap;">위치<span id="seSortIcon_location" style="color:#94a3b8;"> ↕</span></th>
+                                <th>메모</th><th>최종 수정</th><th></th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -13823,6 +13832,7 @@ async function seLoadStore() {
 let seDisplayData = [];
 let sePendingDeletes = [];
 let seStoreZones = [];
+let seSearchQuery = '', seSortCol = '', seSortDir = 'asc';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="12" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
@@ -13840,13 +13850,52 @@ async function seRenderList(storeId) {
         tbody.innerHTML = `<tr><td colspan="12" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
+function seToggleSort(col) {
+    if (seSortCol === col) seSortDir = seSortDir === 'asc' ? 'desc' : 'asc';
+    else { seSortCol = col; seSortDir = 'asc'; }
+    seRenderTable(seCurrentStore);
+}
+
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
         tbody.innerHTML = '<tr><td colspan="12" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
-    const activeRows = seDisplayData.map((row, i) => {
+    // 검색 필터
+    const q = seSearchQuery.trim().toLowerCase();
+    let rows = seDisplayData.filter(row => {
+        if (!q) return true;
+        const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
+        const name = (prod ? prod.name : row.product_id).toLowerCase();
+        const purpose = (row.purpose || '').toLowerCase();
+        const sku = (row.sku || '').toLowerCase();
+        const color = (row.color_code || '').toLowerCase();
+        const loc = (row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'')).toLowerCase();
+        return name.includes(q) || purpose.includes(q) || sku.includes(q) || color.includes(q) || loc.includes(q);
+    });
+    // 정렬
+    if (seSortCol) {
+        const getVal = (row, col) => {
+            if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
+            if (col === 'purpose') return row.purpose || '';
+            if (col === 'sku') return row.sku || '';
+            if (col === 'color') return row.color_code || '';
+            if (col === 'location') return row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'');
+            return '';
+        };
+        rows = [...rows].sort((a, b) => {
+            const va = getVal(a, seSortCol), vb = getVal(b, seSortCol);
+            return seSortDir === 'asc' ? va.localeCompare(vb, 'ko') : vb.localeCompare(va, 'ko');
+        });
+    }
+    // 정렬 아이콘 업데이트
+    ['name','purpose','sku','color','location'].forEach(col => {
+        const el = document.getElementById(`seSortIcon_${col}`);
+        if (el) el.textContent = seSortCol === col ? (seSortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+    });
+    const activeRows = rows.map((row) => {
+        const i = seDisplayData.indexOf(row);
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         const dt = new Date(row.updated_at).toLocaleString('ko-KR', { year:'2-digit', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
         const imgCell = row.image_url
