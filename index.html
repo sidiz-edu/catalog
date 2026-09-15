@@ -14345,15 +14345,15 @@ function seToggleSoldField() {
 // ─── Layout Editor ───────────────────────────────────────────────
 const ZONE_TYPES = [
     { type:'focus',    label:'포커스존',        color:'#003EFF', desc:'신제품·핵심 제품을 강조하는 VP존. 매장 밖에서 가장 먼저 눈에 띄어 고객의 관심을 끌고 브랜드 이미지를 각인시키는 공간.' },
-    { type:'checkin',  label:'체크인존',        color:'#0891B2', desc:'의자 체험 전 외투·가방 등 소지품을 보관하는 캐비닛 공간. 겨울 두꺼운 외투 착용 시 착석감을 제대로 느끼기 어렵기 때문에 반드시 안내 필요.' },
-    { type:'fitting',  label:'피팅존',          color:'#6D28D9', desc:'더 프로그레시브의 핵심 공간. 15개 내외 제품을 피팅 가이드·모션 데스크·컬러칩과 함께 몰입 체험하고 자리에서 바로 결제까지 가능.' },
-    { type:'panorama', label:'시팅 파노라마',   color:'#4338CA', desc:'입장 시 정면 벽면의 대형 스크린. \'Progressive Sitting Experience\' 브랜드 철학 영상을 재생하며 캠페인·신제품에 따라 콘텐츠 업데이트.' },
-    { type:'repair',   label:'이지리페어존',    color:'#BE123C', desc:'부품 교체로 의자를 오래 쓰는 지속 가능한 소비 철학을 보여주는 공간. 고객이 직접 교체 가능한 이지리페어 품목과 품질보증(5·15년) 정책 안내.' },
-    { type:'sitting',  label:'다양한 앉음존',   color:'#0369A1', desc:'리빙·문화·아웃도어 등 다양한 상황의 앉음 솔루션을 한눈에 볼 수 있는 공간. 브랜드가 일상의 모든 앉음을 연구하고 있음을 전달.' },
-    { type:'community',label:'오픈커뮤니티룸',  color:'#15803D', desc:'커뮤니티 활동·장시간 체험을 지원하는 공간 대여 서비스(네이버 플레이스·방문 사전 예약). 유리 투명 설계로 외부 고객도 자연스럽게 인지 가능.' },
-    { type:'info',     label:'안내 데스크',      color:'#B45309', desc:'고객 안내 및 상담을 위한 데스크 공간.' },
-    { type:'storage',  label:'창고',            color:'#475569', desc:'재고·비전시 제품을 보관하는 창고 공간.' },
-    { type:'custom',   label:'커스텀',          color:'#9333EA', desc:'위 유형에 해당하지 않는 자유 구역. 직접 용도를 정의해서 사용.' },
+    { type:'checkin',  label:'체크인존',        color:'#0099CC', desc:'의자 체험 전 외투·가방 등 소지품을 보관하는 캐비닛 공간. 겨울 두꺼운 외투 착용 시 착석감을 제대로 느끼기 어렵기 때문에 반드시 안내 필요.' },
+    { type:'fitting',  label:'피팅존',          color:'#7700CC', desc:'더 프로그레시브의 핵심 공간. 15개 내외 제품을 피팅 가이드·모션 데스크·컬러칩과 함께 몰입 체험하고 자리에서 바로 결제까지 가능.' },
+    { type:'panorama', label:'시팅 파노라마',   color:'#00AA55', desc:'입장 시 정면 벽면의 대형 스크린. \'Progressive Sitting Experience\' 브랜드 철학 영상을 재생하며 캠페인·신제품에 따라 콘텐츠 업데이트.' },
+    { type:'repair',   label:'이지리페어존',    color:'#DD2222', desc:'부품 교체로 의자를 오래 쓰는 지속 가능한 소비 철학을 보여주는 공간. 고객이 직접 교체 가능한 이지리페어 품목과 품질보증(5·15년) 정책 안내.' },
+    { type:'sitting',  label:'다양한 앉음존',   color:'#EE7700', desc:'리빙·문화·아웃도어 등 다양한 상황의 앉음 솔루션을 한눈에 볼 수 있는 공간. 브랜드가 일상의 모든 앉음을 연구하고 있음을 전달.' },
+    { type:'community',label:'오픈커뮤니티룸',  color:'#669900', desc:'커뮤니티 활동·장시간 체험을 지원하는 공간 대여 서비스(네이버 플레이스·방문 사전 예약). 유리 투명 설계로 외부 고객도 자연스럽게 인지 가능.' },
+    { type:'info',     label:'안내 데스크',      color:'#AA7700', desc:'고객 안내 및 상담을 위한 데스크 공간.' },
+    { type:'storage',  label:'창고',            color:'#7D8083', desc:'재고·비전시 제품을 보관하는 창고 공간.' },
+    { type:'custom',   label:'커스텀',          color:'#CC1177', desc:'위 유형에 해당하지 않는 자유 구역. 직접 용도를 정의해서 사용.' },
 ];
 let _layoutStore = null, _layoutZones = [], _layoutDirty = false;
 let _lDrag = null, _lMove = null, _lResize = null, _lSelected = null, _lActiveType = ZONE_TYPES[0];
