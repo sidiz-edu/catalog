@@ -15114,6 +15114,7 @@ function seSaveVirtualItemPos(vItem) {
 function seSelectPlaceItem(vid) {
     _lPlaceSelected = _layoutDisplays.find(d => d._vid === vid) || null;
     seRenderPlaceList();
+    seLayoutDraw();
     if (_lCanvas) _lCanvas.style.cursor = _lPlaceSelected ? 'crosshair' : 'default';
 }
 // ─────────────────────────────────────────────────────
