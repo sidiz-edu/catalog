@@ -14819,7 +14819,7 @@ function seLayoutMouseDown(e) {
         if (zoneHit && zoneHit.id !== _lPlaceSelected.zone_id) {
             // 다른 zone 클릭 → zone 선택으로 전환
             _lPlaceSelected = null; _lSelected = zoneHit;
-            _lMove = { zone: zoneHit, ox: p.x - zoneHit.x, oy: p.y - zoneHit.y };
+            _lMove = { zone: zoneHit, ox: p.x - zoneHit.x, oy: p.y - zoneHit.y, origX: zoneHit.x, origY: zoneHit.y };
             seRenderAssignPanel(zoneHit); seLayoutDraw(); return;
         }
         const zone = _layoutZones.find(z => z.id === _lPlaceSelected.zone_id);
@@ -14845,7 +14845,7 @@ function seLayoutMouseDown(e) {
     if (hit) {
         sePushUndo();
         _lSelected = hit;
-        _lMove = { zone: hit, ox: p.x - hit.x, oy: p.y - hit.y };
+        _lMove = { zone: hit, ox: p.x - hit.x, oy: p.y - hit.y, origX: hit.x, origY: hit.y };
         seRenderAssignPanel(hit);
         seLayoutDraw(); return;
     }
@@ -14935,9 +14935,22 @@ function seLayoutMouseUp(e) {
         _lCanvas.style.cursor = 'crosshair';
         seLayoutDraw(); seRenderPlaceList(); return;
     }
-    if (_lResize) { _layoutDirty = true; _lResize = null; seLayoutDraw(); return; }
+    if (_lResize) {
+        const r = _lResize;
+        if (seZoneCollidesOthers(r.zone)) {
+            r.zone.x = r.ox; r.zone.y = r.oy; r.zone.w = r.ow; r.zone.h = r.oh;
+        } else {
+            _layoutDirty = true;
+        }
+        _lResize = null; seLayoutDraw(); return;
+    }
     if (_lMove) {
-        _layoutDirty = true;
+        const m = _lMove;
+        if (seZoneCollidesOthers(m.zone)) {
+            m.zone.x = m.origX; m.zone.y = m.origY;
+        } else {
+            _layoutDirty = true;
+        }
         _lMove = null;
         _lCanvas.style.cursor = 'grab';
         seLayoutDraw(); return;
@@ -14955,6 +14968,9 @@ function seLayoutMouseUp(e) {
         }
         const z = { id: crypto.randomUUID(), type: _lActiveType.type,
             label, color: _lActiveType.color, x, y, w, h, grid_cols: 3, grid_floors: 1, grid_type: 'grid' };
+        if (_layoutZones.some(other => seZonesOverlap(z, other))) {
+            _lDrag = null; seLayoutDraw(); return;
+        }
         _layoutZones.push(z); _lSelected = z; _layoutDirty = true;
         seLayoutRefreshPalette();
     }
@@ -15226,6 +15242,15 @@ ${colorCode ? `<div style="display:flex;align-items:center;gap:6px;margin-top:3p
     if (ty < 8) ty = 8;
     tt.style.left = lx + 'px';
     tt.style.top = ty + 'px';
+}
+
+function seZonesOverlap(a, b) {
+    const gap = 2;
+    return !(b.x >= a.x + a.w - gap || b.x + b.w <= a.x + gap ||
+             b.y >= a.y + a.h - gap || b.y + b.h <= a.y + gap);
+}
+function seZoneCollidesOthers(zone) {
+    return _layoutZones.some(z => z !== zone && seZonesOverlap(zone, z));
 }
 
 function seLayoutDraw() {
@@ -15529,9 +15554,9 @@ function seRenderAssignPanel(zone) {
         if (zone) {
             const cols = zone.grid_cols || 3, floors = zone.grid_floors || 1, gt = zone.grid_type || 'grid';
             const btn = `background:var(--se-raised);border:1px solid var(--se-border);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;color:var(--se-text);`;
-            const typeBtn = (type, label) => {
+            const typeBtn = (type, label, hint) => {
                 const active = gt === type;
-                return `<button onclick="seSetGridType('${zone.id}','${type}')" style="padding:2px 8px;font-size:0.72rem;border-radius:3px;cursor:pointer;border:1px solid var(--se-border);${active ? 'background:var(--se-accent);color:#fff;font-weight:700;' : 'background:var(--se-raised);color:var(--se-muted);'}">${label}</button>`;
+                return `<button onclick="seSetGridType('${zone.id}','${type}')" title="${hint}" style="padding:2px 9px;font-size:0.72rem;border-radius:3px;cursor:pointer;border:1px solid var(--se-border);${active ? 'background:var(--se-accent);color:#fff;font-weight:700;' : 'background:var(--se-raised);color:var(--se-muted);'}">${label}</button>`;
             };
             const dim1Label = gt === 'tier' ? '열' : '행';
             const dim2Label = gt === 'tier' ? '단' : '열';
@@ -15539,7 +15564,7 @@ function seRenderAssignPanel(zone) {
             gc.innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
                     <span style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-muted);">그리드</span>
-                    <div style="display:flex;gap:4px;">${typeBtn('grid','행열')}${typeBtn('tier','열단')}</div>
+                    <div style="display:flex;gap:4px;">${typeBtn('grid','⊞ 격자형','행×열 평면 배치 (바닥에 나란히)')}${typeBtn('tier','☰ 선반형','열×단 입체 배치 (선반/진열대)')}</div>
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;">
                     <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;">${dim1Label}</span>
