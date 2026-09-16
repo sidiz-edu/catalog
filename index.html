@@ -15362,15 +15362,15 @@ function seLayoutDraw() {
                 _lCtx.setLineDash([]);
                 _lCtx.font = `bold 8px 'Outfit', sans-serif`;
                 _lCtx.fillStyle = z.color + 'cc';
-                // 열 번호: 배지 영역(GH) 하단 — 칩이 들어올 수 없는 곳
+                // 열 번호: 구역 위쪽 바깥
                 if (gc > 1) {
                     _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'bottom';
                     for (let c = 0; c < gc; c++) {
                         const cx = z.x + (c + 0.5) * cellW;
-                        _lCtx.fillText(`열${c + 1}`, cx, z.y + GH - 3);
+                        _lCtx.fillText(`열${c + 1}`, cx, z.y - 3);
                     }
                 }
-                // 행/단 번호: 구역 왼쪽 바깥 — 칩과 겹칠 일 없음
+                // 행/단 번호: 구역 왼쪽 바깥
                 if (gf > 1) {
                     _lCtx.textAlign = 'right'; _lCtx.textBaseline = 'middle';
                     const rowLabel = gt === 'tier' ? '단' : '행';
@@ -15380,6 +15380,17 @@ function seLayoutDraw() {
                         _lCtx.fillText(`${rowLabel}${num}`, z.x - 4, midY);
                     }
                 }
+                // N×M 워터마크: 구역 중앙에 흐릿하게
+                const gridCenterX = z.x + z.w / 2;
+                const gridCenterY = z.y + GH + (z.h - GH) / 2;
+                const wmSize = Math.min(z.w, z.h - GH) * 0.28;
+                _lCtx.save();
+                _lCtx.globalAlpha = 0.07;
+                _lCtx.font = `900 ${Math.max(14, wmSize)}px 'Outfit', sans-serif`;
+                _lCtx.fillStyle = z.color;
+                _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
+                _lCtx.fillText(`${gc}×${gf}`, gridCenterX, gridCenterY);
+                _lCtx.restore();
                 _lCtx.restore();
             }
         }
