@@ -15362,17 +15362,32 @@ function seLayoutDraw() {
                 _lCtx.setLineDash(gt === 'tier' ? [] : [3, 3]);
                 _lCtx.strokeStyle = gt === 'tier' ? z.color + '88' : z.color + '55';
                 _lCtx.lineWidth = gt === 'tier' ? 1.2 : 0.8;
-                _lCtx.font = `bold 9px 'Outfit', sans-serif`;
-                _lCtx.fillStyle = z.color + 'cc';
-                _lCtx.textBaseline = 'top';
                 for (let f = 0; f < gf; f++) {
                     const topY = z.y + GH + f * cellH;
                     if (f > 0) {
                         _lCtx.beginPath(); _lCtx.moveTo(z.x + 1, topY); _lCtx.lineTo(z.x + z.w - 1, topY); _lCtx.stroke();
                     }
-                    if (gf > 1 && gt === 'tier') {
-                        _lCtx.textAlign = 'left';
-                        _lCtx.fillText(`${gf - f}단`, z.x + 3, topY + 2);
+                }
+                _lCtx.setLineDash([]);
+                _lCtx.font = `bold 8px 'Outfit', sans-serif`;
+                _lCtx.fillStyle = z.color + 'bb';
+                // 열 번호 (상단, 각 열 중앙)
+                if (gc > 1) {
+                    _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'top';
+                    const colLabel = gt === 'tier' ? '열' : '열';
+                    for (let c = 0; c < gc; c++) {
+                        const cx = z.x + (c + 0.5) * cellW;
+                        _lCtx.fillText(`${colLabel}${c + 1}`, cx, z.y + GH + 3);
+                    }
+                }
+                // 행/단 번호 (각 셀 좌측)
+                if (gf > 1) {
+                    _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'top';
+                    const rowLabel = gt === 'tier' ? '단' : '행';
+                    for (let f = 0; f < gf; f++) {
+                        const topY = z.y + GH + f * cellH;
+                        const num = gt === 'tier' ? (gf - f) : (f + 1);
+                        _lCtx.fillText(`${rowLabel}${num}`, z.x + 3, topY + 3);
                     }
                 }
                 _lCtx.restore();
