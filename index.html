@@ -15389,7 +15389,7 @@ function seLayoutDraw() {
                 _lCtx.font = `900 ${Math.max(14, wmSize)}px 'Outfit', sans-serif`;
                 _lCtx.fillStyle = z.color;
                 _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
-                _lCtx.fillText(`${gc}×${gf}`, gridCenterX, gridCenterY);
+                _lCtx.fillText(gt === 'tier' ? `${gc}×${gf}` : `${gf}×${gc}`, gridCenterX, gridCenterY);
                 _lCtx.restore();
                 _lCtx.restore();
             }
