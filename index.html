@@ -13772,6 +13772,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">🖐 이동</button>
                     <button onclick="seRotateLayout()" title="90° 회전"
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">↻ 회전</button>
+                    <button onclick="seZoomToFit()" title="전체 구역이 캔버스에 맞게 줌"
+                        style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">⊡ 전체보기</button>
                     <button onclick="seShowSpaceOverview()" title="공간 한 눈에 보기"
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">🗺 한눈에</button>
                     <button class="se-save-btn" onclick="seLayoutSave()">저장</button>
@@ -14741,11 +14743,11 @@ function seLayoutSetupCanvas() {
 
 function seLayoutPos(e) {
     const r = _lCanvas.getBoundingClientRect();
-    return { x: e.clientX - r.left - _lPanX, y: e.clientY - r.top - _lPanY };
+    return { x: (e.clientX - r.left - _lPanX) / _lScale, y: (e.clientY - r.top - _lPanY) / _lScale };
 }
 let _lPlaceDrag = null; // {display, ox, oy} 배치된 제품 드래그 이동
 let _lSnapGrid = 0; // 0=off, 20=20px 그리드 스냅
-let _lPanX = 0, _lPanY = 0; // 캔버스 패닝 오프셋 (screen px)
+let _lPanX = 0, _lPanY = 0, _lScale = 1; // 캔버스 패닝 오프셋 + 줌
 let _lPanDrag = null; // {sx, sy, ox, oy}
 let _lPanMode = false;
 
@@ -15273,8 +15275,9 @@ function seLayoutDraw() {
     const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
     _lCtx.fillStyle = '#f8f9fb';
     _lCtx.fillRect(0, 0, W, H);
-    _lCtx.save(); // pan
+    _lCtx.save(); // pan + zoom
     _lCtx.translate(_lPanX, _lPanY);
+    _lCtx.scale(_lScale, _lScale);
     // dot grid
     _lCtx.fillStyle = 'rgba(99,115,150,0.18)';
     for (let x=20; x<W; x+=24) for (let y=20; y<H; y+=24) {
@@ -15509,7 +15512,7 @@ async function seLayoutLoadStore() {
     const storeId = document.getElementById('seStoreSelect').value;
     if (!storeId) return;
     _layoutStore = storeId; _layoutZones = []; _lSelected = null; _layoutDirty = false;
-    _layoutDisplays = []; _lPanX = 0; _lPanY = 0;
+    _layoutDisplays = []; _lPanX = 0; _lPanY = 0; _lScale = 1;
     seRenderAssignPanel(null);
 
     // 구역 + 전시품 동시 로드
@@ -15669,6 +15672,22 @@ async function seLayoutSave() {
     }
     _layoutDirty = false;
     alert('저장 완료!');
+}
+
+function seZoomToFit() {
+    if (!_layoutZones.length || !_lCanvas) return;
+    const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
+    const pad = 50;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    _layoutZones.forEach(z => {
+        minX = Math.min(minX, z.x); minY = Math.min(minY, z.y);
+        maxX = Math.max(maxX, z.x + z.w); maxY = Math.max(maxY, z.y + z.h);
+    });
+    const bW = maxX - minX, bH = maxY - minY;
+    _lScale = Math.max(0.1, Math.min(4, Math.min((W - pad*2) / bW, (H - pad*2) / bH)));
+    _lPanX = (W - bW * _lScale) / 2 - minX * _lScale;
+    _lPanY = (H - bH * _lScale) / 2 - minY * _lScale;
+    seLayoutDraw();
 }
 
 function seLayoutClear() {
