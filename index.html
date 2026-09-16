@@ -15370,24 +15370,23 @@ function seLayoutDraw() {
                 }
                 _lCtx.setLineDash([]);
                 _lCtx.font = `bold 8px 'Outfit', sans-serif`;
-                _lCtx.fillStyle = z.color + 'bb';
-                // 열 번호 (상단, 각 열 중앙)
+                _lCtx.fillStyle = z.color + 'cc';
+                // 열 번호: 배지 영역(GH) 하단 — 칩이 들어올 수 없는 곳
                 if (gc > 1) {
-                    _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'top';
-                    const colLabel = gt === 'tier' ? '열' : '열';
+                    _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'bottom';
                     for (let c = 0; c < gc; c++) {
                         const cx = z.x + (c + 0.5) * cellW;
-                        _lCtx.fillText(`${colLabel}${c + 1}`, cx, z.y + GH + 3);
+                        _lCtx.fillText(`열${c + 1}`, cx, z.y + GH - 3);
                     }
                 }
-                // 행/단 번호 (각 셀 좌측)
+                // 행/단 번호: 구역 왼쪽 바깥 — 칩과 겹칠 일 없음
                 if (gf > 1) {
-                    _lCtx.textAlign = 'left'; _lCtx.textBaseline = 'top';
+                    _lCtx.textAlign = 'right'; _lCtx.textBaseline = 'middle';
                     const rowLabel = gt === 'tier' ? '단' : '행';
                     for (let f = 0; f < gf; f++) {
-                        const topY = z.y + GH + f * cellH;
+                        const midY = z.y + GH + f * cellH + cellH / 2;
                         const num = gt === 'tier' ? (gf - f) : (f + 1);
-                        _lCtx.fillText(`${rowLabel}${num}`, z.x + 3, topY + 3);
+                        _lCtx.fillText(`${rowLabel}${num}`, z.x - 4, midY);
                     }
                 }
                 _lCtx.restore();
