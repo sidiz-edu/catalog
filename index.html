@@ -14680,10 +14680,10 @@ let _lCanvas = null, _lCtx = null, _lDpr = 1;
 const _lHR = 8; // handle radius
 
 // 렌더링과 동일한 clamp를 적용한 칩의 실제 시각적 위치 반환
-function seChipVisualPos(d, cW, cH) {
+function seChipVisualPos(d) {
     const sc = d.chip_scale || 1;
     const chipW = Math.round(70 * sc), chipH = Math.round(24 * sc);
-    let cx = d.pos_x / 1000 * cW, cy = d.pos_y / 1000 * cH;
+    let cx = d.pos_x, cy = d.pos_y;
     const zone = _layoutZones.find(z => z.id === d.zone_id);
     if (zone) {
         cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
@@ -14692,12 +14692,12 @@ function seChipVisualPos(d, cW, cH) {
         // 같은 셀에 여러 칩이 있을 때 위아래로 쌓기
         const gc = zone.grid_cols || 3, gf = zone.grid_floors || 1;
         const GH = 40, cellW = zone.w / gc, cellH = (zone.h - GH) / gf;
-        const col = Math.max(0, Math.min(gc-1, Math.floor((d.pos_x/1000*cW - zone.x) / cellW)));
-        const row = Math.max(0, Math.min(gf-1, Math.floor((d.pos_y/1000*cH - zone.y - GH) / cellH)));
+        const col = Math.max(0, Math.min(gc-1, Math.floor((d.pos_x - zone.x) / cellW)));
+        const row = Math.max(0, Math.min(gf-1, Math.floor((d.pos_y - zone.y - GH) / cellH)));
         const siblings = _layoutDisplays.filter(s => {
             if (s.pos_x == null || s.zone_id !== zone.id) return false;
-            const sCol = Math.max(0, Math.min(gc-1, Math.floor((s.pos_x/1000*cW - zone.x) / cellW)));
-            const sRow = Math.max(0, Math.min(gf-1, Math.floor((s.pos_y/1000*cH - zone.y - GH) / cellH)));
+            const sCol = Math.max(0, Math.min(gc-1, Math.floor((s.pos_x - zone.x) / cellW)));
+            const sRow = Math.max(0, Math.min(gf-1, Math.floor((s.pos_y - zone.y - GH) / cellH)));
             return sCol === col && sRow === row;
         });
         const sibIdx = siblings.findIndex(s => s._vid === d._vid);
@@ -14833,7 +14833,7 @@ function seLayoutMouseDown(e) {
         if (h) {
             const chipAtHandle = _layoutDisplays.find(d => {
                 if (d.pos_x == null) return false;
-                const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+                const { cx, cy, chipW, chipH } = seChipVisualPos(d);
                 return Math.abs(p.x-cx) < chipW/2+2 && Math.abs(p.y-cy) < chipH/2+2;
             });
             if (!chipAtHandle) {
@@ -14849,12 +14849,12 @@ function seLayoutMouseDown(e) {
     // 1. 이미 배치된 제품 칩 클릭 → 드래그 이동
     const hitD = [..._layoutDisplays].reverse().find(d => {
         if (d.pos_x == null) return false;
-        const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d);
         return Math.abs(p.x - cx) < chipW/2+2 && Math.abs(p.y - cy) < chipH/2+2;
     });
     if (hitD) {
         _lPlaceSelected = hitD;
-        const { cx: hcx, cy: hcy } = seChipVisualPos(hitD, cW, cH);
+        const { cx: hcx, cy: hcy } = seChipVisualPos(hitD);
         _lPlaceDrag = { display: hitD, ox: p.x - hcx, oy: p.y - hcy };
         seRenderPlaceList(); return;
     }
@@ -14876,8 +14876,8 @@ function seLayoutMouseDown(e) {
             const _s2 = seSnapToCell(cx, cy, zone);
             cx = _s2.cx; cy = _s2.cy;
         }
-        _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
-        _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
+        _lPlaceSelected.pos_x = Math.round(cx);
+        _lPlaceSelected.pos_y = Math.round(cy);
         const placed = _lPlaceSelected;
         _lPlaceSelected = null; // 배치 후 즉시 해제 → zone 선택 가능
         seLayoutDraw();
@@ -14921,8 +14921,8 @@ function seLayoutMouseMove(e) {
             const _s3 = seSnapToCell(nx, ny, zone);
             nx = _s3.cx; ny = _s3.cy;
         }
-        _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
-        _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
+        _lPlaceDrag.display.pos_x = Math.round(nx);
+        _lPlaceDrag.display.pos_y = Math.round(ny);
         _lCanvas.style.cursor = 'grabbing';
         seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
@@ -14962,7 +14962,7 @@ function seLayoutMouseMove(e) {
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
     const hovChip = _layoutDisplays.find(d => {
         if (d.pos_x == null) return false;
-        const { cx, cy, chipW, chipH } = seChipVisualPos(d, cW, cH);
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d);
         return Math.abs(p.x-cx) < chipW/2+2 && Math.abs(p.y-cy) < chipH/2+2;
     });
     seUpdateChipTooltip(hovChip, e);
@@ -15124,13 +15124,12 @@ function seAutoPlaceZone(zoneId, onlyUnplaced = false) {
     if (!zone) return;
     const items = _layoutDisplays.filter(d => d.zone_id === zoneId && (!onlyUnplaced || d.pos_x == null));
     if (!items.length) return;
-    const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
     const gc = zone.grid_cols || 3, gf = zone.grid_floors || 1;
     items.forEach((d, i) => {
         const col = i % gc, fl = Math.floor(i / gc) % gf;
         const { cx, cy } = seSnapToCell(zone.x + (col + 0.5) * (zone.w / gc), zone.y + 40 + (fl + 0.5) * ((zone.h - 40) / gf), zone);
-        d.pos_x = Math.round(cx / cW * 1000);
-        d.pos_y = Math.round(cy / cH * 1000);
+        d.pos_x = Math.round(cx);
+        d.pos_y = Math.round(cy);
         seSaveVirtualItemPos(d);
     });
     seLayoutDraw(); seRenderPlaceList();
@@ -15239,9 +15238,8 @@ function seLayoutRightClick(e) {
     // 배치된 칩 우클릭 → 위치 제거
     const hitChip = _layoutDisplays.find(d => {
         if (d.pos_x == null) return false;
-        const cx = d.pos_x/1000*cW, cy = d.pos_y/1000*cH;
         const sc = d.chip_scale || 1;
-        return Math.abs(p.x-cx)<36*sc && Math.abs(p.y-cy)<14*sc;
+        return Math.abs(p.x-d.pos_x)<36*sc && Math.abs(p.y-d.pos_y)<14*sc;
     });
     if (hitChip) {
         sePushUndo();
@@ -15483,7 +15481,7 @@ function seLayoutDraw() {
         const chipQty = d.quantity || 1;
         const chipLabel = chipQty > 1 ? `${pName}(${d._idx+1})` : pName;
         const shortName = chipLabel.length > maxChars ? chipLabel.slice(0,maxChars)+'…' : chipLabel;
-        const { cx, cy, chipW, chipH } = seChipVisualPos(d, W, H);
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d);
         const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
         const hasSel = !!_lPlaceSelected;
 
@@ -15553,14 +15551,11 @@ async function seLayoutLoadStore() {
         });
     }
     if (zonesRes.data) {
-        const cW = _lCanvas ? _lCanvas.width / _lDpr : 600;
-        const cH = _lCanvas ? _lCanvas.height / _lDpr : 400;
         _layoutZones = zonesRes.data.map(d => {
             const zt = ZONE_TYPES.find(t => t.type === d.zone_type) || ZONE_TYPES[7];
             const rawLabel = d.zone_name === '포커스존' ? '포커스존 (VP 존)' : d.zone_name;
             return { id: d.id, type: d.zone_type, label: rawLabel, color: zt.color,
-                x: d.x * cW / 1000, y: d.y * cH / 1000,
-                w: d.w * cW / 1000, h: d.h * cH / 1000,
+                x: d.x, y: d.y, w: d.w, h: d.h,
                 grid_cols: d.grid_cols || 3, grid_floors: d.grid_floors || 1,
                 grid_type: d.grid_type || 'grid' };
         });
@@ -15577,16 +15572,13 @@ async function seLayoutLoadStore() {
         }
     });
 
-    // 최소 사이즈(80x80) 미달 공간 자동 보정 후 DB 저장
-    const cW2 = _lCanvas ? _lCanvas.width / _lDpr : 600;
-    const cH2 = _lCanvas ? _lCanvas.height / _lDpr : 400;
-    const needFix = _layoutZones.filter(z => z.w < 80 || z.h < 80);
+    // 최소 사이즈(30x30) 미달 공간 자동 보정 후 DB 저장 (world coord 기준)
+    const needFix = _layoutZones.filter(z => z.w < 30 || z.h < 30);
     if (needFix.length > 0) {
-        needFix.forEach(z => { z.w = Math.max(80, z.w); z.h = Math.max(80, z.h); });
+        needFix.forEach(z => { z.w = Math.max(30, z.w); z.h = Math.max(30, z.h); });
         const fixRows = needFix.map(z => ({
             id: z.id, store_id: _layoutStore, zone_type: z.type, zone_name: z.label, color: z.color,
-            x: Math.round(z.x / cW2 * 1000), y: Math.round(z.y / cH2 * 1000),
-            w: Math.round(z.w / cW2 * 1000), h: Math.round(z.h / cH2 * 1000),
+            x: Math.round(z.x), y: Math.round(z.y), w: Math.round(z.w), h: Math.round(z.h),
             updated_by: 'SE'
         }));
         for (const row of fixRows) {
@@ -15596,6 +15588,7 @@ async function seLayoutLoadStore() {
 
     seLayoutRefreshPalette();
     seLayoutDraw();
+    if (_layoutZones.length) setTimeout(() => seZoomToFit(), 50);
 }
 
 function seZoneDisplays(zoneId) {
@@ -15650,15 +15643,13 @@ function seRenderAssignPanel(zone) {
 
 async function seLayoutSave() {
     if (!_layoutStore) return alert('매장을 먼저 선택하세요.');
-    const cW = _lCanvas ? _lCanvas.width / _lDpr : 600;
-    const cH = _lCanvas ? _lCanvas.height / _lDpr : 400;
     await _sb.from('store_zones').delete().eq('store_id', _layoutStore);
     if (_layoutZones.length > 0) {
         const rows = _layoutZones.map(z => ({
             id: z.id,
             store_id: _layoutStore, zone_type: z.type, zone_name: z.label, color: z.color,
-            x: Math.round(z.x / cW * 1000), y: Math.round(z.y / cH * 1000),
-            w: Math.round(z.w / cW * 1000), h: Math.round(z.h / cH * 1000),
+            x: Math.round(z.x), y: Math.round(z.y),
+            w: Math.round(z.w), h: Math.round(z.h),
             grid_cols: z.grid_cols || 3, grid_floors: z.grid_floors || 1,
             grid_type: z.grid_type || 'grid',
             updated_by: 'SE'
