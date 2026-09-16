@@ -15556,7 +15556,7 @@ function seRenderAssignPanel(zone) {
             const btn = `background:var(--se-raised);border:1px solid var(--se-border);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;color:var(--se-text);`;
             const typeBtn = (type, label, hint) => {
                 const active = gt === type;
-                return `<button onclick="seSetGridType('${zone.id}','${type}')" title="${hint}" style="padding:2px 9px;font-size:0.72rem;border-radius:3px;cursor:pointer;${active ? 'background:transparent;color:var(--se-accent);border:1.5px solid var(--se-accent);font-weight:700;' : 'background:var(--se-raised);color:#111;border:1px solid var(--se-border);'}">${label}</button>`;
+                return `<button onclick="seSetGridType('${zone.id}','${type}')" title="${hint}" style="padding:3px 10px;font-size:0.72rem;border-radius:4px;cursor:pointer;transition:all 0.15s;${active ? 'background:var(--se-accent);color:#fff;font-weight:800;border:1.5px solid var(--se-accent);box-shadow:0 2px 6px var(--se-accent)55;letter-spacing:0.02em;' : 'background:var(--se-raised);color:#999;border:1px solid var(--se-border);font-weight:400;'}">${label}</button>`;
             };
             const dim1Label = gt === 'tier' ? '열' : '행';
             const dim2Label = gt === 'tier' ? '단' : '열';
