@@ -15336,22 +15336,37 @@ function seLayoutDraw() {
             cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
         }
         const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
+        const hasSel = !!_lPlaceSelected;
 
-        _lCtx.globalAlpha = sel ? 1 : 0.88;
-        _lCtx.fillStyle = color;
         const drawRR = (x,y,w,h,r) => { _lCtx.beginPath(); _lCtx.roundRect(x,y,w,h,r); };
-        drawRR(cx-chipW/2, cy-chipH/2, chipW, chipH, chipR);
-        _lCtx.fill();
+
         if (sel) {
+            // 형광 글로우
+            _lCtx.save();
+            _lCtx.shadowColor = '#AAFF00';
+            _lCtx.shadowBlur = 18;
+            _lCtx.globalAlpha = 1;
+            _lCtx.fillStyle = '#AAFF00';
+            drawRR(cx-chipW/2, cy-chipH/2, chipW, chipH, chipR);
+            _lCtx.fill();
+            _lCtx.restore();
+            // 테두리
             _lCtx.strokeStyle = '#fff'; _lCtx.lineWidth = 2;
             drawRR(cx-chipW/2-1, cy-chipH/2-1, chipW+2, chipH+2, chipR+1);
             _lCtx.stroke();
+            _lCtx.fillStyle = '#000';
+        } else {
+            _lCtx.globalAlpha = hasSel ? 0.22 : 0.88;
+            _lCtx.fillStyle = color;
+            drawRR(cx-chipW/2, cy-chipH/2, chipW, chipH, chipR);
+            _lCtx.fill();
+            _lCtx.globalAlpha = 1;
+            _lCtx.fillStyle = '#fff';
         }
-        _lCtx.globalAlpha = 1;
-        _lCtx.fillStyle = '#fff';
         _lCtx.font = `${sel ? 'bold ' : ''}${Math.round(10 * sc)}px sans-serif`;
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
         _lCtx.fillText(shortName, cx, cy);
+        _lCtx.globalAlpha = 1;
     });
     _lCtx.restore(); // pan
 }
