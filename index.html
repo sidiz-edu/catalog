@@ -15264,23 +15264,19 @@ function seLayoutDraw() {
         const isSel = z === _lSelected;
         const zCount = _layoutDisplays.filter(d => d.zone_id === z.id && d._idx === 0).reduce((s,d) => s + (d.quantity||1), 0);
 
-        // card background: white base + subtle zone color tint (Expression Color 400-series feel)
-        _lCtx.shadowColor = isSel ? z.color + '50' : 'rgba(0,0,0,0.10)';
-        _lCtx.shadowBlur = isSel ? 22 : 18;
-        _lCtx.shadowOffsetX = 0;
-        _lCtx.shadowOffsetY = isSel ? 0 : 6;
-        _lCtx.fillStyle = '#fff';
-        _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
-        _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0; _lCtx.shadowOffsetY = 0;
-        _lCtx.globalAlpha = isSel ? 0.12 : 0.07;
+        // 배경: 투명 + 해당 구역 색 연하게
+        _lCtx.globalAlpha = isSel ? 0.13 : 0.07;
         _lCtx.fillStyle = z.color;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
         _lCtx.globalAlpha = 1;
 
-        // border
-        _lCtx.strokeStyle = isSel ? z.color : z.color + '30';
-        _lCtx.lineWidth = isSel ? 2 : 1;
+        // 테두리: 구역 색으로
+        _lCtx.shadowColor = isSel ? z.color + '66' : 'transparent';
+        _lCtx.shadowBlur = isSel ? 14 : 0;
+        _lCtx.strokeStyle = isSel ? z.color : z.color + 'aa';
+        _lCtx.lineWidth = isSel ? 2.5 : 1.5;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
+        _lCtx.shadowColor = 'transparent'; _lCtx.shadowBlur = 0;
 
         // 겹침 경고 오버레이 (이동/리사이즈 중 다른 구역과 겹칠 때)
         const _isMoving = _lMove && _lMove.zone === z;
@@ -15306,34 +15302,31 @@ function seLayoutDraw() {
         _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
 
         if (isSmall) {
-            const bX=z.x+2, bY=z.y+2, bW=z.w-4, bH=z.h-4, bR=rr-2;
-            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,bH,bR); _lCtx.fill();
-            _lCtx.fillStyle='#fff';
+            // 작은 구역: 컬러 테두리 안에 컬러 텍스트
+            _lCtx.fillStyle = z.color;
             if (z.h > z.w * 1.5) {
-                // 세로 좁은 zone: 글자 세로 배치
-                const chars = z.label.replace(/\s+/g, '\n').split('');
+                const chars = z.label.split('');
                 const lineH = tagFontSz + 3;
                 const totalH = chars.length * lineH;
-                let ty = bY + bH/2 - totalH/2 + lineH/2;
-                const tx = bX + bW/2;
-                chars.forEach(ch => { if(ch!=='\n') _lCtx.fillText(ch, tx, ty); ty += lineH; });
+                let ty = z.y + z.h/2 - totalH/2 + lineH/2;
+                chars.forEach(ch => { _lCtx.fillText(ch, z.x + z.w/2, ty); ty += lineH; });
             } else {
                 let lbl=z.label;
-                while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > bW-tagPadX*2) lbl=lbl.slice(0,-1);
+                while (lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > z.w-tagPadX*2) lbl=lbl.slice(0,-1);
                 if (lbl!==z.label) lbl+='…';
-                _lCtx.fillText(lbl+suffix, bX+bW/2, bY+bH/2);
+                _lCtx.fillText(lbl+suffix, z.x+z.w/2, z.y+z.h/2);
             }
         } else {
-            const maxTagW=z.w-tagMargin*2;
-            let lbl=z.label;
-            if (_lCtx.measureText(lbl).width+sfxW > maxTagW-tagPadX*2) {
-                while(lbl.length>1 && _lCtx.measureText(lbl+'…').width+sfxW > maxTagW-tagPadX*2) lbl=lbl.slice(0,-1);
-                lbl+='…';
-            }
-            const bW=Math.min(_lCtx.measureText(lbl+suffix).width+tagPadX*2, maxTagW);
-            const bX=z.x+(z.w-bW)/2, bY=z.y+tagMargin;
-            _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,tagH,6); _lCtx.fill();
-            _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+tagH/2);
+            // 큰 구역: 배지 배경 없이 컬러 텍스트 크게
+            const lblFontSz = Math.max(12, Math.min(16, z.w / 9));
+            _lCtx.font = `900 ${lblFontSz}px 'Outfit', sans-serif`;
+            const maxLblW = z.w - tagMargin * 2;
+            let lbl = z.label;
+            while (lbl.length > 1 && _lCtx.measureText(lbl + '…').width + sfxW > maxLblW) lbl = lbl.slice(0, -1);
+            if (lbl !== z.label) lbl += '…';
+            _lCtx.fillStyle = z.color;
+            _lCtx.textAlign = 'center'; _lCtx.textBaseline = 'middle';
+            _lCtx.fillText(lbl + suffix, z.x + z.w / 2, z.y + 20);
         }
         // 그리드 오버레이
         if (!isSmall) {
