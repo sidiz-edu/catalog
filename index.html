@@ -15571,7 +15571,7 @@ function seRenderAssignPanel(zone) {
             const btn = `background:var(--se-raised);border:1px solid var(--se-border);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;color:var(--se-text);`;
             const typeBtn = (type, label, hint) => {
                 const active = gt === type;
-                return `<button onclick="seSetGridType('${zone.id}','${type}')" title="${hint}" style="padding:3px 10px;font-size:0.72rem;border-radius:4px;cursor:pointer;transition:all 0.15s;${active ? 'background:var(--se-accent);color:#fff;font-weight:800;border:1.5px solid var(--se-accent);box-shadow:0 2px 6px var(--se-accent)55;letter-spacing:0.02em;' : 'background:var(--se-raised);color:#999;border:1px solid var(--se-border);font-weight:400;'}">${label}</button>`;
+                return `<button onclick="seSetGridType('${zone.id}','${type}')" title="${hint}" style="cursor:pointer;border:none;background:transparent;padding:2px 8px;${active ? 'color:#111;font-weight:900;font-size:0.88rem;' : 'color:#555;font-weight:400;font-size:0.75rem;'}">${label}</button>`;
             };
             const dim1Label = gt === 'tier' ? '열' : '행';
             const dim2Label = gt === 'tier' ? '단' : '열';
