@@ -13789,6 +13789,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--se-muted);">전시품 배치</div>
                         <div id="seAssignZoneName" style="font-size:0.78rem;color:var(--se-muted);margin-top:3px;font-family:'Outfit',sans-serif;">구역을 클릭하면 이동합니다</div>
                     </div>
+                    <div id="seGridControls" style="display:none;padding:8px 16px;border-bottom:1px solid var(--se-border);background:var(--se-raised);flex-shrink:0;"></div>
                     <div id="sePlaceList" style="flex:1;overflow-y:auto;padding:10px 0;"></div>
                 </div>
             </div>
@@ -14826,9 +14827,8 @@ function seLayoutMouseDown(e) {
         const chipW2 = Math.round(70*sc), chipH2 = Math.round(24*sc);
         let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
-            const _tp2 = Math.min(zone.w, zone.h) < 54 ? chipH2/2+1 : 40 + chipH2/2;
-            cx = Math.max(zone.x + chipW2/2+1, Math.min(zone.x + zone.w - chipW2/2-1, cx));
-            cy = Math.max(zone.y + _tp2, Math.min(zone.y + zone.h - chipH2/2-1, cy));
+            const _s2 = seSnapToCell(cx, cy, zone);
+            cx = _s2.cx; cy = _s2.cy;
         }
         _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
         _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
@@ -14872,9 +14872,8 @@ function seLayoutMouseMove(e) {
         const chipW = Math.round(70*sc), chipH = Math.round(24*sc);
         let nx = seSnapCoord(p.x, _lSnapGrid), ny = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
-            const _tp3 = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
-            nx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, nx));
-            ny = Math.max(zone.y + _tp3, Math.min(zone.y + zone.h - chipH/2-1, ny));
+            const _s3 = seSnapToCell(nx, ny, zone);
+            nx = _s3.cx; ny = _s3.cy;
         }
         _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
         _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
@@ -14955,7 +14954,7 @@ function seLayoutMouseUp(e) {
             label = input.trim() || '커스텀';
         }
         const z = { id: crypto.randomUUID(), type: _lActiveType.type,
-            label, color: _lActiveType.color, x, y, w, h };
+            label, color: _lActiveType.color, x, y, w, h, grid_cols: 3, grid_floors: 1 };
         _layoutZones.push(z); _lSelected = z; _layoutDirty = true;
         seLayoutRefreshPalette();
     }
@@ -15073,16 +15072,10 @@ function seAutoPlaceZone(zoneId, onlyUnplaced = false) {
     const items = _layoutDisplays.filter(d => d.zone_id === zoneId && (!onlyUnplaced || d.pos_x == null));
     if (!items.length) return;
     const cW = _lCanvas.width / _lDpr, cH = _lCanvas.height / _lDpr;
-    const n = items.length;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
-    const pad = 16;
-    const cellW = (zone.w - pad * 2) / cols;
-    const cellH = (zone.h - pad * 2) / rows;
+    const gc = zone.grid_cols || 3, gf = zone.grid_floors || 1;
     items.forEach((d, i) => {
-        const col = i % cols, row = Math.floor(i / cols);
-        const cx = zone.x + pad + cellW * (col + 0.5);
-        const cy = zone.y + pad + cellH * (row + 0.5);
+        const col = i % gc, fl = Math.floor(i / gc) % gf;
+        const { cx, cy } = seSnapToCell(zone.x + (col + 0.5) * (zone.w / gc), zone.y + 40 + (fl + 0.5) * ((zone.h - 40) / gf), zone);
         d.pos_x = Math.round(cx / cW * 1000);
         d.pos_y = Math.round(cy / cH * 1000);
         seSaveVirtualItemPos(d);
@@ -15112,6 +15105,24 @@ function seSaveVirtualItemPos(vItem) {
     const update = { positions_json: JSON.stringify(positions) };
     if (vItem._idx === 0) { update.pos_x = vItem.pos_x; update.pos_y = vItem.pos_y; }
     _sb.from('store_displays').update(update).eq('id', baseId);
+}
+
+function seSnapToCell(px, py, zone) {
+    const gc = zone.grid_cols || 3, gf = zone.grid_floors || 1;
+    const GH = 40, cellW = zone.w / gc, cellH = (zone.h - GH) / gf;
+    const col = Math.max(0, Math.min(gc - 1, Math.floor((px - zone.x) / cellW)));
+    const fl  = Math.max(0, Math.min(gf - 1, Math.floor((py - zone.y - GH) / cellH)));
+    return { cx: zone.x + (col + 0.5) * cellW, cy: zone.y + GH + (fl + 0.5) * cellH };
+}
+
+async function seAdjustGrid(zoneId, dim, delta) {
+    const zone = _layoutZones.find(z => z.id === zoneId);
+    if (!zone) return;
+    if (dim === 'cols')   zone.grid_cols   = Math.max(1, Math.min(6, (zone.grid_cols   || 3) + delta));
+    if (dim === 'floors') zone.grid_floors = Math.max(1, Math.min(4, (zone.grid_floors || 1) + delta));
+    seLayoutDraw();
+    seRenderAssignPanel(zone);
+    await _sb.from('store_zones').update({ grid_cols: zone.grid_cols, grid_floors: zone.grid_floors }).eq('id', zoneId);
 }
 
 function seSelectPlaceItem(vid) {
@@ -15284,6 +15295,40 @@ function seLayoutDraw() {
             _lCtx.fillStyle=z.color; _lCtx.beginPath(); _lCtx.roundRect(bX,bY,bW,tagH,6); _lCtx.fill();
             _lCtx.fillStyle='#fff'; _lCtx.fillText(lbl+suffix, bX+bW/2, bY+tagH/2);
         }
+        // 그리드 오버레이
+        if (!isSmall) {
+            const gc = z.grid_cols || 3, gf = z.grid_floors || 1;
+            if (gc > 1 || gf > 1) {
+                const GH = 40, cellW = z.w / gc, cellH = (z.h - GH) / gf;
+                _lCtx.save();
+                // 열 구분선 (점선)
+                _lCtx.setLineDash([3, 3]);
+                _lCtx.strokeStyle = z.color + '55';
+                _lCtx.lineWidth = 0.8;
+                for (let c = 1; c < gc; c++) {
+                    const lx = z.x + c * cellW;
+                    _lCtx.beginPath(); _lCtx.moveTo(lx, z.y + GH); _lCtx.lineTo(lx, z.y + z.h); _lCtx.stroke();
+                }
+                // 단 구분선 (실선) + 단 라벨
+                _lCtx.setLineDash([]);
+                _lCtx.strokeStyle = z.color + '88';
+                _lCtx.lineWidth = 1.2;
+                _lCtx.font = `bold 9px 'Outfit', sans-serif`;
+                _lCtx.fillStyle = z.color + 'cc';
+                _lCtx.textBaseline = 'top';
+                for (let f = 0; f < gf; f++) {
+                    const topY = z.y + GH + f * cellH;
+                    if (f > 0) {
+                        _lCtx.beginPath(); _lCtx.moveTo(z.x + 1, topY); _lCtx.lineTo(z.x + z.w - 1, topY); _lCtx.stroke();
+                    }
+                    if (gf > 1) {
+                        _lCtx.textAlign = 'left';
+                        _lCtx.fillText(`${gf - f}단`, z.x + 3, topY + 2);
+                    }
+                }
+                _lCtx.restore();
+            }
+        }
         _lCtx.restore();
     });
 
@@ -15416,7 +15461,8 @@ async function seLayoutLoadStore() {
             const rawLabel = d.zone_name === '포커스존' ? '포커스존 (VP 존)' : d.zone_name;
             return { id: d.id, type: d.zone_type, label: rawLabel, color: zt.color,
                 x: d.x * cW / 1000, y: d.y * cH / 1000,
-                w: d.w * cW / 1000, h: d.h * cH / 1000 };
+                w: d.w * cW / 1000, h: d.h * cH / 1000,
+                grid_cols: d.grid_cols || 3, grid_floors: d.grid_floors || 1 };
         });
     }
     // location 텍스트와 zone_name이 일치하면 zone_id 자동 연결
@@ -15468,6 +15514,28 @@ function seRenderAssignPanel(zone) {
     _lZoneFilter = zone || null;
     const nameEl = document.getElementById('seAssignZoneName');
     if (nameEl) nameEl.textContent = zone ? `📍 ${zone.label}` : '구역을 클릭하면 해당 전시품만 표시됩니다';
+    const gc = document.getElementById('seGridControls');
+    if (gc) {
+        if (zone) {
+            const cols = zone.grid_cols || 3, floors = zone.grid_floors || 1;
+            const btn = `background:var(--se-raised);border:1px solid var(--se-border);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;color:var(--se-text);`;
+            gc.style.display = '';
+            gc.innerHTML = `
+                <div style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-muted);margin-bottom:6px;">그리드</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;">열</span>
+                    <button style="${btn}" onclick="seAdjustGrid('${zone.id}','cols',-1)">−</button>
+                    <span style="font-size:0.85rem;font-weight:700;color:var(--se-text);min-width:18px;text-align:center;">${cols}</span>
+                    <button style="${btn}" onclick="seAdjustGrid('${zone.id}','cols',1)">+</button>
+                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;margin-left:8px;">단</span>
+                    <button style="${btn}" onclick="seAdjustGrid('${zone.id}','floors',-1)">−</button>
+                    <span style="font-size:0.85rem;font-weight:700;color:var(--se-text);min-width:18px;text-align:center;">${floors}</span>
+                    <button style="${btn}" onclick="seAdjustGrid('${zone.id}','floors',1)">+</button>
+                </div>`;
+        } else {
+            gc.style.display = 'none';
+        }
+    }
     seRenderPlaceList();
 }
 
@@ -15482,6 +15550,7 @@ async function seLayoutSave() {
             store_id: _layoutStore, zone_type: z.type, zone_name: z.label, color: z.color,
             x: Math.round(z.x / cW * 1000), y: Math.round(z.y / cH * 1000),
             w: Math.round(z.w / cW * 1000), h: Math.round(z.h / cH * 1000),
+            grid_cols: z.grid_cols || 3, grid_floors: z.grid_floors || 1,
             updated_by: 'SE'
         }));
         const { error } = await _sb.from('store_zones').insert(rows);
