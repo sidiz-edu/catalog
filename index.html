@@ -13774,6 +13774,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">↻ 회전</button>
                     <button onclick="seZoomToFit()" title="전체 구역이 캔버스에 맞게 줌"
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">⊡ 전체보기</button>
+                    <div style="display:flex;align-items:center;border:1px solid var(--se-border);border-radius:3px;overflow:hidden;background:var(--se-raised);">
+                        <button onclick="seZoomStep(1/1.25)" title="축소 (스크롤 다운)" style="padding:2px 7px;font-size:1rem;border:none;background:transparent;cursor:pointer;color:var(--se-text);line-height:1;">－</button>
+                        <span id="seZoomLabel" style="min-width:38px;text-align:center;font-size:0.72rem;color:var(--se-muted);pointer-events:none;">100%</span>
+                        <button onclick="seZoomStep(1.25)" title="확대 (스크롤 업)" style="padding:2px 7px;font-size:1rem;border:none;background:transparent;cursor:pointer;color:var(--se-text);line-height:1;">＋</button>
+                    </div>
                     <button onclick="seShowSpaceOverview()" title="공간 한 눈에 보기"
                         style="padding:2px 10px;font-size:0.78rem;border:1px solid var(--se-border);border-radius:3px;cursor:pointer;background:var(--se-raised);color:var(--se-text);">🗺 한눈에</button>
                     <button class="se-save-btn" onclick="seLayoutSave()">저장</button>
@@ -14755,6 +14760,40 @@ function seLayoutSetupCanvas() {
     c.ondblclick  = seLayoutDblClick;
     c.oncontextmenu = e => { e.preventDefault(); seLayoutRightClick(e); };
     c.onmouseleave = () => seUpdateChipTooltip(null, null);
+    // 마우스 휠 줌 (커서 위치 중심)
+    c.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rect = c.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+        const ns = Math.max(0.08, Math.min(10, _lScale * factor));
+        _lPanX = mx - (mx - _lPanX) * (ns / _lScale);
+        _lPanY = my - (my - _lPanY) * (ns / _lScale);
+        _lScale = ns;
+        seLayoutDraw(); seUpdateZoomLabel();
+    }, { passive: false });
+    // 핀치 투 줌 (터치)
+    c.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) { e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            _lTouchDist = Math.hypot(dx, dy); }
+    }, { passive: false });
+    c.addEventListener('touchmove', e => {
+        if (e.touches.length === 2 && _lTouchDist) { e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.hypot(dx, dy);
+            const rect = c.getBoundingClientRect();
+            const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            const my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+            const ns = Math.max(0.08, Math.min(10, _lScale * dist / _lTouchDist));
+            _lPanX = mx - (mx - _lPanX) * (ns / _lScale);
+            _lPanY = my - (my - _lPanY) * (ns / _lScale);
+            _lScale = ns; _lTouchDist = dist;
+            seLayoutDraw(); seUpdateZoomLabel(); }
+    }, { passive: false });
+    c.addEventListener('touchend', () => { _lTouchDist = null; });
     if (!window._seUndoKeyBound) {
         window._seUndoKeyBound = true;
         document.addEventListener('keydown', e => { if ((e.ctrlKey||e.metaKey) && e.key==='z' && _lCanvas) { e.preventDefault(); seUndo(); } });
@@ -14770,6 +14809,7 @@ let _lSnapGrid = 0; // 0=off, 20=20px 그리드 스냅
 let _lPanX = 0, _lPanY = 0, _lScale = 1; // 캔버스 패닝 오프셋 + 줌
 let _lPanDrag = null; // {sx, sy, ox, oy}
 let _lPanMode = false;
+let _lTouchDist = null; // 핀치 줌용
 
 function seSnapCoord(v, grid) { return grid ? Math.round(v / grid) * grid : v; }
 
@@ -15692,7 +15732,21 @@ function seZoomToFit() {
     _lScale = Math.max(0.1, Math.min(4, Math.min((W - pad*2) / bW, (H - pad*2) / bH)));
     _lPanX = (W - bW * _lScale) / 2 - minX * _lScale;
     _lPanY = (H - bH * _lScale) / 2 - minY * _lScale;
-    seLayoutDraw();
+    seLayoutDraw(); seUpdateZoomLabel();
+}
+function seZoomStep(factor) {
+    if (!_lCanvas) return;
+    const W = _lCanvas.width / _lDpr, H = _lCanvas.height / _lDpr;
+    const cx = W / 2, cy = H / 2;
+    const ns = Math.max(0.08, Math.min(10, _lScale * factor));
+    _lPanX = cx - (cx - _lPanX) * (ns / _lScale);
+    _lPanY = cy - (cy - _lPanY) * (ns / _lScale);
+    _lScale = ns;
+    seLayoutDraw(); seUpdateZoomLabel();
+}
+function seUpdateZoomLabel() {
+    const el = document.getElementById('seZoomLabel');
+    if (el) el.textContent = Math.round(_lScale * 100) + '%';
 }
 
 function seLayoutClear() {
