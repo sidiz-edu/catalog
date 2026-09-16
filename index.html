@@ -14689,6 +14689,26 @@ function seChipVisualPos(d, cW, cH) {
         cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
         const _topPad = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
         cy = Math.max(zone.y + _topPad, Math.min(zone.y + zone.h - chipH/2-1, cy));
+        // 같은 셀에 여러 칩이 있을 때 위아래로 쌓기
+        const gc = zone.grid_cols || 3, gf = zone.grid_floors || 1;
+        const GH = 40, cellW = zone.w / gc, cellH = (zone.h - GH) / gf;
+        const col = Math.max(0, Math.min(gc-1, Math.floor((d.pos_x/1000*cW - zone.x) / cellW)));
+        const row = Math.max(0, Math.min(gf-1, Math.floor((d.pos_y/1000*cH - zone.y - GH) / cellH)));
+        const siblings = _layoutDisplays.filter(s => {
+            if (s.pos_x == null || s.zone_id !== zone.id) return false;
+            const sCol = Math.max(0, Math.min(gc-1, Math.floor((s.pos_x/1000*cW - zone.x) / cellW)));
+            const sRow = Math.max(0, Math.min(gf-1, Math.floor((s.pos_y/1000*cH - zone.y - GH) / cellH)));
+            return sCol === col && sRow === row;
+        });
+        const sibIdx = siblings.findIndex(s => s._vid === d._vid);
+        const sibCount = siblings.length;
+        if (sibCount > 1 && sibIdx >= 0) {
+            const gap = 3;
+            const totalH = sibCount * chipH + (sibCount-1) * gap;
+            const cellCenterY = zone.y + GH + (row + 0.5) * cellH;
+            cy = Math.max(zone.y + GH + chipH/2, Math.min(zone.y + zone.h - chipH/2-1,
+                 cellCenterY - totalH/2 + chipH/2 + sibIdx * (chipH + gap)));
+        }
     }
     return { cx, cy, chipW, chipH };
 }
@@ -15458,18 +15478,12 @@ function seLayoutDraw() {
         const zone = _layoutZones.find(z => z.id === d.zone_id);
         const color = zone ? zone.color : '#0D3BFF';
         const sc = d.chip_scale || 1;
-        const chipW = Math.round(70 * sc), chipH = Math.round(24 * sc);
         const maxChars = Math.max(4, Math.round(7 * sc));
         const pName = (SE_PRODUCTS.find(p=>p.id===d.product_id)||{name:d.product_id}).name||'';
         const chipQty = d.quantity || 1;
         const chipLabel = chipQty > 1 ? `${pName}(${d._idx+1})` : pName;
         const shortName = chipLabel.length > maxChars ? chipLabel.slice(0,maxChars)+'…' : chipLabel;
-        let cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
-        if (zone) {
-            const _tp4 = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
-            cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
-            cy = Math.max(zone.y + _tp4, Math.min(zone.y + zone.h - chipH/2-1, cy));
-        }
+        const { cx, cy, chipW, chipH } = seChipVisualPos(d, W, H);
         const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
         const hasSel = !!_lPlaceSelected;
 
