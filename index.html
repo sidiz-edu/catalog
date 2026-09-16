@@ -14954,7 +14954,7 @@ function seLayoutMouseUp(e) {
             label = input.trim() || '커스텀';
         }
         const z = { id: crypto.randomUUID(), type: _lActiveType.type,
-            label, color: _lActiveType.color, x, y, w, h, grid_cols: 3, grid_floors: 1 };
+            label, color: _lActiveType.color, x, y, w, h, grid_cols: 3, grid_floors: 1, grid_type: 'grid' };
         _layoutZones.push(z); _lSelected = z; _layoutDirty = true;
         seLayoutRefreshPalette();
     }
@@ -15123,6 +15123,15 @@ async function seAdjustGrid(zoneId, dim, delta) {
     seLayoutDraw();
     seRenderAssignPanel(zone);
     await _sb.from('store_zones').update({ grid_cols: zone.grid_cols, grid_floors: zone.grid_floors }).eq('id', zoneId);
+}
+
+async function seSetGridType(zoneId, type) {
+    const zone = _layoutZones.find(z => z.id === zoneId);
+    if (!zone) return;
+    zone.grid_type = type;
+    seLayoutDraw();
+    seRenderAssignPanel(zone);
+    await _sb.from('store_zones').update({ grid_type: type }).eq('id', zoneId);
 }
 
 function seSelectPlaceItem(vid) {
@@ -15297,7 +15306,7 @@ function seLayoutDraw() {
         }
         // 그리드 오버레이
         if (!isSmall) {
-            const gc = z.grid_cols || 3, gf = z.grid_floors || 1;
+            const gc = z.grid_cols || 3, gf = z.grid_floors || 1, gt = z.grid_type || 'grid';
             if (gc > 1 || gf > 1) {
                 const GH = 40, cellW = z.w / gc, cellH = (z.h - GH) / gf;
                 _lCtx.save();
@@ -15309,10 +15318,10 @@ function seLayoutDraw() {
                     const lx = z.x + c * cellW;
                     _lCtx.beginPath(); _lCtx.moveTo(lx, z.y + GH); _lCtx.lineTo(lx, z.y + z.h); _lCtx.stroke();
                 }
-                // 단 구분선 (실선) + 단 라벨
-                _lCtx.setLineDash([]);
-                _lCtx.strokeStyle = z.color + '88';
-                _lCtx.lineWidth = 1.2;
+                // 행/단 구분선
+                _lCtx.setLineDash(gt === 'tier' ? [] : [3, 3]);
+                _lCtx.strokeStyle = gt === 'tier' ? z.color + '88' : z.color + '55';
+                _lCtx.lineWidth = gt === 'tier' ? 1.2 : 0.8;
                 _lCtx.font = `bold 9px 'Outfit', sans-serif`;
                 _lCtx.fillStyle = z.color + 'cc';
                 _lCtx.textBaseline = 'top';
@@ -15321,7 +15330,7 @@ function seLayoutDraw() {
                     if (f > 0) {
                         _lCtx.beginPath(); _lCtx.moveTo(z.x + 1, topY); _lCtx.lineTo(z.x + z.w - 1, topY); _lCtx.stroke();
                     }
-                    if (gf > 1) {
+                    if (gf > 1 && gt === 'tier') {
                         _lCtx.textAlign = 'left';
                         _lCtx.fillText(`${gf - f}단`, z.x + 3, topY + 2);
                     }
@@ -15462,7 +15471,8 @@ async function seLayoutLoadStore() {
             return { id: d.id, type: d.zone_type, label: rawLabel, color: zt.color,
                 x: d.x * cW / 1000, y: d.y * cH / 1000,
                 w: d.w * cW / 1000, h: d.h * cH / 1000,
-                grid_cols: d.grid_cols || 3, grid_floors: d.grid_floors || 1 };
+                grid_cols: d.grid_cols || 3, grid_floors: d.grid_floors || 1,
+                grid_type: d.grid_type || 'grid' };
         });
     }
     // location 텍스트와 zone_name이 일치하면 zone_id 자동 연결
@@ -15517,17 +15527,26 @@ function seRenderAssignPanel(zone) {
     const gc = document.getElementById('seGridControls');
     if (gc) {
         if (zone) {
-            const cols = zone.grid_cols || 3, floors = zone.grid_floors || 1;
+            const cols = zone.grid_cols || 3, floors = zone.grid_floors || 1, gt = zone.grid_type || 'grid';
             const btn = `background:var(--se-raised);border:1px solid var(--se-border);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;color:var(--se-text);`;
+            const typeBtn = (type, label) => {
+                const active = gt === type;
+                return `<button onclick="seSetGridType('${zone.id}','${type}')" style="padding:2px 8px;font-size:0.72rem;border-radius:3px;cursor:pointer;border:1px solid var(--se-border);${active ? 'background:var(--se-accent);color:#fff;font-weight:700;' : 'background:var(--se-raised);color:var(--se-muted);'}">${label}</button>`;
+            };
+            const dim1Label = gt === 'tier' ? '열' : '행';
+            const dim2Label = gt === 'tier' ? '단' : '열';
             gc.style.display = '';
             gc.innerHTML = `
-                <div style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-muted);margin-bottom:6px;">그리드</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                    <span style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-muted);">그리드</span>
+                    <div style="display:flex;gap:4px;">${typeBtn('grid','행열')}${typeBtn('tier','열단')}</div>
+                </div>
                 <div style="display:flex;gap:6px;align-items:center;">
-                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;">열</span>
+                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;">${dim1Label}</span>
                     <button style="${btn}" onclick="seAdjustGrid('${zone.id}','cols',-1)">−</button>
                     <span style="font-size:0.85rem;font-weight:700;color:var(--se-text);min-width:18px;text-align:center;">${cols}</span>
                     <button style="${btn}" onclick="seAdjustGrid('${zone.id}','cols',1)">+</button>
-                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;margin-left:8px;">단</span>
+                    <span style="font-size:0.72rem;color:var(--se-muted);min-width:16px;margin-left:8px;">${dim2Label}</span>
                     <button style="${btn}" onclick="seAdjustGrid('${zone.id}','floors',-1)">−</button>
                     <span style="font-size:0.85rem;font-weight:700;color:var(--se-text);min-width:18px;text-align:center;">${floors}</span>
                     <button style="${btn}" onclick="seAdjustGrid('${zone.id}','floors',1)">+</button>
@@ -15551,6 +15570,7 @@ async function seLayoutSave() {
             x: Math.round(z.x / cW * 1000), y: Math.round(z.y / cH * 1000),
             w: Math.round(z.w / cW * 1000), h: Math.round(z.h / cH * 1000),
             grid_cols: z.grid_cols || 3, grid_floors: z.grid_floors || 1,
+            grid_type: z.grid_type || 'grid',
             updated_by: 'SE'
         }));
         const { error } = await _sb.from('store_zones').insert(rows);
