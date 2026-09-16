@@ -14275,7 +14275,17 @@ async function seOpenEditModal(id) {
 function seCloseEditModal() {
     document.getElementById('seEditModal').style.display = 'none';
 }
-const SE_LOC_PRESETS = ['포커스존 (VP 존)','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','안내 데스크','창고'];
+const SE_LOC_PRESETS = ['포커스존 (VP 존)','체크인존','피팅존','시팅 파노라마','이지리페어존','다양한 앉음존','오픈커뮤니티룸','컨설팅룸','안내 데스크','창고','출입문','커스텀'];
+function seGetLocOptions() {
+    const base = [...SE_LOC_PRESETS];
+    // 현재 매장의 커스텀 구역 이름도 포함
+    if (Array.isArray(_layoutZones)) {
+        _layoutZones.forEach(z => {
+            if (z.label && !base.includes(z.label)) base.push(z.label);
+        });
+    }
+    return base;
+}
 var _seLocActiveInput = null;
 function seShowLocList(inputId) {
     _seLocActiveInput = inputId;
@@ -14305,7 +14315,8 @@ function seRenderLocDropdown(filter) {
     var dd = document.getElementById('seLocDropdown');
     if (!dd) return;
     var f = (filter || '').trim();
-    var items = f ? SE_LOC_PRESETS.filter(function(p){return p.indexOf(f)>=0;}) : SE_LOC_PRESETS;
+    var all = seGetLocOptions();
+    var items = f ? all.filter(function(p){return p.indexOf(f)>=0;}) : all;
     dd.innerHTML = items.length
         ? items.map(function(p){ return '<div style="padding:10px 14px;cursor:pointer;font-size:0.88rem;color:#111;" onmousedown="event.preventDefault()" onmouseenter="this.style.background=\'#f3f4f6\'" onmouseleave="this.style.background=\'\'" onclick="sePickLoc(\''+p+'\')">'+p+'</div>'; }).join('')
         : '<div style="padding:10px 14px;font-size:0.82rem;color:#9ca3af;">일치하는 항목 없음</div>';
