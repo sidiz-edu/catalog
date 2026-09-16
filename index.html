@@ -14890,14 +14890,19 @@ function seLayoutMouseMove(e) {
         if (h.includes('s')) nh = Math.max(80, r.oh + dy);
         if (h.includes('w')) { nx = r.ox + dx; nw = Math.max(80, r.ow - dx); if(nw===80) nx=r.ox+r.ow-80; }
         if (h.includes('n')) { ny = r.oy + dy; nh = Math.max(80, r.oh - dy); if(nh===80) ny=r.oy+r.oh-80; }
+        const px2 = z.x, py2 = z.y, pw = z.w, ph = z.h;
         z.x=nx; z.y=ny; z.w=nw; z.h=nh;
+        if (seZoneCollidesOthers(z)) { z.x=px2; z.y=py2; z.w=pw; z.h=ph; }
         _lCanvas.style.cursor = _lHandleCursor[h];
         seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
     }
     if (_lMove) {
-        _lMove.zone.x = p.x - _lMove.ox;
-        _lMove.zone.y = p.y - _lMove.oy;
+        const z = _lMove.zone;
+        const oldX = z.x, oldY = z.y;
+        z.x = p.x - _lMove.ox;
+        z.y = p.y - _lMove.oy;
+        if (seZoneCollidesOthers(z)) { z.x = oldX; z.y = oldY; }
         _lCanvas.style.cursor = 'grabbing';
         seUpdateChipTooltip(null, null);
         seLayoutDraw(); return;
@@ -14935,23 +14940,9 @@ function seLayoutMouseUp(e) {
         _lCanvas.style.cursor = 'crosshair';
         seLayoutDraw(); seRenderPlaceList(); return;
     }
-    if (_lResize) {
-        const r = _lResize;
-        if (seZoneCollidesOthers(r.zone)) {
-            r.zone.x = r.ox; r.zone.y = r.oy; r.zone.w = r.ow; r.zone.h = r.oh;
-        } else {
-            _layoutDirty = true;
-        }
-        _lResize = null; seLayoutDraw(); return;
-    }
+    if (_lResize) { _layoutDirty = true; _lResize = null; seLayoutDraw(); return; }
     if (_lMove) {
-        const m = _lMove;
-        if (seZoneCollidesOthers(m.zone)) {
-            m.zone.x = m.origX; m.zone.y = m.origY;
-        } else {
-            _layoutDirty = true;
-        }
-        _lMove = null;
+        _layoutDirty = true; _lMove = null;
         _lCanvas.style.cursor = 'grab';
         seLayoutDraw(); return;
     }
