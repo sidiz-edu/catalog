@@ -15291,6 +15291,21 @@ function seLayoutDraw() {
         _lCtx.lineWidth = isSel ? 2 : 1;
         _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
 
+        // 겹침 경고 오버레이 (이동/리사이즈 중 다른 구역과 겹칠 때)
+        const _isMoving = _lMove && _lMove.zone === z;
+        const _isResizing = _lResize && _lResize.zone === z;
+        if ((_isMoving || _isResizing) && seZoneCollidesOthers(z)) {
+            _lCtx.globalAlpha = 0.28;
+            _lCtx.fillStyle = '#FF2222';
+            _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.fill();
+            _lCtx.globalAlpha = 1;
+            _lCtx.strokeStyle = '#FF2222';
+            _lCtx.lineWidth = 2.5;
+            _lCtx.setLineDash([5, 3]);
+            _lCtx.beginPath(); _lCtx.roundRect(z.x, z.y, z.w, z.h, rr); _lCtx.stroke();
+            _lCtx.setLineDash([]);
+        }
+
         // tag badge
         const tagFontSz = 11, tagH = 24, tagMargin = 10, tagPadX = 10;
         _lCtx.font = `bold ${tagFontSz}px 'Outfit', sans-serif`;
