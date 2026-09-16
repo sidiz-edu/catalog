@@ -14660,7 +14660,8 @@ function seChipVisualPos(d, cW, cH) {
     const zone = _layoutZones.find(z => z.id === d.zone_id);
     if (zone) {
         cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
-        cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
+        const _topPad = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
+        cy = Math.max(zone.y + _topPad, Math.min(zone.y + zone.h - chipH/2-1, cy));
     }
     return { cx, cy, chipW, chipH };
 }
@@ -14825,8 +14826,9 @@ function seLayoutMouseDown(e) {
         const chipW2 = Math.round(70*sc), chipH2 = Math.round(24*sc);
         let cx = seSnapCoord(p.x, _lSnapGrid), cy = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
+            const _tp2 = Math.min(zone.w, zone.h) < 54 ? chipH2/2+1 : 40 + chipH2/2;
             cx = Math.max(zone.x + chipW2/2+1, Math.min(zone.x + zone.w - chipW2/2-1, cx));
-            cy = Math.max(zone.y + chipH2/2+1, Math.min(zone.y + zone.h - chipH2/2-1, cy));
+            cy = Math.max(zone.y + _tp2, Math.min(zone.y + zone.h - chipH2/2-1, cy));
         }
         _lPlaceSelected.pos_x = Math.round(cx / cW * 1000);
         _lPlaceSelected.pos_y = Math.round(cy / cH * 1000);
@@ -14870,8 +14872,9 @@ function seLayoutMouseMove(e) {
         const chipW = Math.round(70*sc), chipH = Math.round(24*sc);
         let nx = seSnapCoord(p.x, _lSnapGrid), ny = seSnapCoord(p.y, _lSnapGrid);
         if (zone) {
+            const _tp3 = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
             nx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, nx));
-            ny = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, ny));
+            ny = Math.max(zone.y + _tp3, Math.min(zone.y + zone.h - chipH/2-1, ny));
         }
         _lPlaceDrag.display.pos_x = Math.round(nx / cW * 1000);
         _lPlaceDrag.display.pos_y = Math.round(ny / cH * 1000);
@@ -15333,8 +15336,9 @@ function seLayoutDraw() {
         const shortName = chipLabel.length > maxChars ? chipLabel.slice(0,maxChars)+'…' : chipLabel;
         let cx = d.pos_x / 1000 * W, cy = d.pos_y / 1000 * H;
         if (zone) {
+            const _tp4 = Math.min(zone.w, zone.h) < 54 ? chipH/2+1 : 40 + chipH/2;
             cx = Math.max(zone.x + chipW/2+1, Math.min(zone.x + zone.w - chipW/2-1, cx));
-            cy = Math.max(zone.y + chipH/2+1, Math.min(zone.y + zone.h - chipH/2-1, cy));
+            cy = Math.max(zone.y + _tp4, Math.min(zone.y + zone.h - chipH/2-1, cy));
         }
         const sel = _lPlaceSelected && _lPlaceSelected._vid === d._vid;
         const hasSel = !!_lPlaceSelected;
