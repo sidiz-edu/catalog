@@ -6513,6 +6513,15 @@ function applyGuestParams() {
             );
             if (navLink) navLink.classList.add('active');
         }
+
+        // displaySale 단독 허용 시: 데이터 로드 + 섹션 활성화
+        if (allowedSections.includes('displaySale') && allowedSections.length === 1) {
+            document.getElementById('heroSection').style.display = 'none';
+            const ds = document.getElementById('displaySale');
+            if (ds) ds.classList.add('active');
+            // Supabase 초기화 후 데이터 로드 (약간 지연)
+            setTimeout(() => loadDisplaySaleItems('displaySaleMain'), 300);
+        }
     }
 
     // ── 제품 카드 필터링 ──
