@@ -4063,6 +4063,21 @@
                 </div>
                 <div class="promo-card-footer">📅 9/4(금) ~ 10/7(수) · 포스팅 ~10/11(일)</div>
             </div>
+            <!-- 추석 프로모션 -->
+            <div class="promo-card" style="--pc-accent:#ea580c;">
+                <span class="promo-card-icon">🎑</span>
+                <div class="promo-card-series">추석 한정 · 오프라인 전용</div>
+                <div class="promo-card-name">추석 프로모션</div>
+                <div class="promo-card-desc">
+                    <div class="promo-rate-row"><span class="rate-label">T80 · T90 · GC PRO</span><span class="rate-val" style="background:#ea580c;">추가 9%</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">그 외 제품</span><span class="rate-val" style="background:#ea580c;">5%</span></div>
+                    <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;">
+                        GC PRO 퀘스트 <b>중복 적용 가능</b><br>
+                        <span style="color:#ea580c;font-weight:700;">올리 2,900원 구매권 증정</span> (1구매당 1개, QR 코드 제공)
+                    </span>
+                </div>
+                <div class="promo-card-footer">📅 9/18(금) ~ 9/27(일) · 오프라인 전용</div>
+            </div>
             <!-- 신규가입 -->
             <div class="promo-card" style="--pc-accent:#10b981;">
                 <span class="promo-card-icon">🎁</span>
@@ -7640,6 +7655,11 @@ const _huhakgiActive = (() => {
     const today = new Date().toISOString().slice(0, 10);
     return today >= '2026-08-10' && today <= '2026-08-31';
 })();
+const _chuseokActive = (() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return today >= '2026-09-18' && today <= '2026-09-27';
+})();
+const CHUSEOK_PREMIUM_IDS = new Set(['t80', 't90', 'gcpro']);
 const HUHAKGI_SETS = [
     { main: 'ringo2', pair: 'coverRingo2' },
     { main: 'ible',   pair: 'stepo' },
@@ -10786,6 +10806,17 @@ function getBestDiscount(cart) {
         if (gcproAmt > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt, type: 'gcpro_coupon' });
     }
 
+    // 6) 추석 프로모션: T80/T90/GC PRO 9%, 그 외 5% (2026-09-18 ~ 2026-09-27, 오프라인 전용)
+    if (_chuseokActive) {
+        let chuseokAmt = 0;
+        for (const i of cart) {
+            if (COUPON_NEVER.has(i.productId)) continue;
+            const rate = CHUSEOK_PREMIUM_IDS.has(i.productId) ? 0.09 : 0.05;
+            chuseokAmt += Math.round(i.price * i.qty * rate);
+        }
+        if (chuseokAmt > 0) candidates.push({ label: '추석 프로모션', amt: chuseokAmt, type: 'chuseok' });
+    }
+
     if (candidates.length === 0) return null;
     // 가장 할인 금액이 큰 것 선택
     return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
@@ -10844,6 +10875,17 @@ function getAllDiscountCandidates(cart) {
     if (gcproEligible2.length > 0) {
         const gcproAmt2 = gcproEligible2.reduce((s, i) => s + 111000 * i.qty, 0);
         if (gcproAmt2 > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt2, type: 'gcpro_coupon' });
+    }
+
+    // 6) 추석 프로모션: T80/T90/GC PRO 9%, 그 외 5% (2026-09-18 ~ 2026-09-27, 오프라인 전용)
+    if (_chuseokActive) {
+        let chuseokAmt2 = 0;
+        for (const i of cart) {
+            if (COUPON_NEVER.has(i.productId)) continue;
+            const rate = CHUSEOK_PREMIUM_IDS.has(i.productId) ? 0.09 : 0.05;
+            chuseokAmt2 += Math.round(i.price * i.qty * rate);
+        }
+        if (chuseokAmt2 > 0) candidates.push({ label: '추석 프로모션', amt: chuseokAmt2, type: 'chuseok' });
     }
 
     if (candidates.length === 0) return { best: null, candidates: [] };
