@@ -13804,7 +13804,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
                                 <th>개수</th><th>사진</th><th>전시 시작일</th>
                                 <th onclick="seToggleSort('location')" style="cursor:pointer;user-select:none;white-space:nowrap;">위치<span id="seSortIcon_location" style="color:#94a3b8;"> ↕</span></th>
-                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외출고 링크</th>
+                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고 링크</th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -14201,6 +14201,12 @@ function seRenderTable(storeId) {
                 ` : ''}
                 ${row.purpose === '판매' && row.sold ? `<button class="se-del-btn" style="background:#94a3b8;color:#fff;border:none;font-size:0.7rem;" onclick="seToggleSold('${row.id}',false)">↩ 판매취소</button>` : ''}
             </td>
+            <td style="text-align:center;min-width:110px;vertical-align:middle;">
+                ${row.sales_order_no
+                    ? `<div style="font-size:0.75rem;color:#1e40af;font-weight:600;margin-bottom:3px;">${row.sales_order_no}</div><button class="se-del-btn" style="background:#64748b;color:#fff;border:none;font-size:0.7rem;padding:2px 6px;" onclick="seSetSalesOrderNo('${row.id}')">수정</button>`
+                    : `<button class="se-del-btn" style="background:#e2e8f0;color:#64748b;border:none;" onclick="seSetSalesOrderNo('${row.id}')">+ 수주번호</button>`
+                }
+            </td>
             <td style="text-align:center;min-width:80px;vertical-align:middle;">
                 ${row.sales_link
                     ? `<a href="${row.sales_link}" target="_blank" style="font-size:0.78rem;color:#3b82f6;text-decoration:none;display:block;margin-bottom:3px;">🔗 링크</a><button class="se-del-btn" style="background:#64748b;color:#fff;border:none;font-size:0.7rem;padding:2px 6px;" onclick="seSetSalesLink('${row.id}')">수정</button>`
@@ -14228,9 +14234,22 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" style="background:#ef4444;" onclick="seHardDelete('${row.id}','${storeId}',${j})">완전삭제</button>
             </td>
             <td>-</td>
+            <td>-</td>
         </tr>`;
     }).join('');
     tbody.innerHTML = activeRows + deletedRows;
+}
+
+async function seSetSalesOrderNo(id) {
+    const row = seDisplayData.find(r => r.id === id);
+    const current = row?.sales_order_no || '';
+    const val = prompt('매출외수주번호를 입력하세요\n(삭제하려면 비워두세요)', current);
+    if (val === null) return;
+    const no = val.trim();
+    const { error } = await _sb.from('store_displays').update({ sales_order_no: no || null }).eq('id', id);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    if (row) row.sales_order_no = no || null;
+    seRenderTable(seCurrentStore);
 }
 
 async function seSetSalesLink(id) {
