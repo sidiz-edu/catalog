@@ -510,8 +510,8 @@
         .ds-dot.active { background:#fff; }
         .ds-modal-body { padding:22px 24px 28px; }
         .ds-modal-close { position:absolute; top:12px; right:14px; background:rgba(0,0,0,.35); color:#fff; border:none; border-radius:50%; width:30px; height:30px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:3; }
-        .ds-spec-link { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; background:#1d4ed8; color:#fff; font-size:0.85rem; font-weight:600; text-decoration:none; margin-top:14px; }
-        .ds-spec-link:hover { background:#1e40af; }
+        .ds-spec-link { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:10px; background:#003EFF; color:#fff; font-family:'Outfit',sans-serif; font-size:0.83rem; font-weight:500; letter-spacing:.02em; text-decoration:none; margin-top:14px; transition:background .15s; }
+        .ds-spec-link:hover { background:#0030cc; }
         /* ── 단종 제품 ── */
         .disc-cat-btn { color: #9ca3af !important; border-color: #d1d5db !important; }
         .disc-cat-btn.active { background: #6b7280 !important; color: #fff !important; border-color: #6b7280 !important; }
@@ -9818,8 +9818,9 @@ function showDisplaySaleDetail(itemId) {
     if (!photos.length) photos.push('');
     _dsCurPhoto = 0;
 
-    const sidizUrl = SIDIZ_URLS[item.product_id] ||
-        `https://kr.sidiz.com/search?type=product&q=${encodeURIComponent(prodName)}`;
+    const _pid = (item.product_id || '').toLowerCase().replace(/\s+/g, '');
+    const sidizUrl = SIDIZ_URLS[item.product_id] || SIDIZ_URLS[_pid] ||
+        `https://kr.sidiz.com/search?type=product&q=${encodeURIComponent(item.product_id || prodName)}`;
 
     const skuCode = item.sku ? item.sku.split('-')[0] : null;
     const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
@@ -9860,7 +9861,7 @@ function showDisplaySaleDetail(itemId) {
           <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:6px;">📍 ${storeName}</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
             ${storePhone ? `<a class="ds-phone" href="tel:${storePhone}" style="padding:10px 18px;font-size:0.9rem;border-radius:8px;">📞 ${storePhone}</a>` : ''}
-            <a class="ds-spec-link" href="${sidizUrl}" target="_blank" rel="noopener">🔗 시디즈 닷컴 스펙 보기</a>
+            <a class="ds-spec-link" href="${sidizUrl}" target="_blank" rel="noopener">시디즈 닷컴에서 스펙 보기 ↗</a>
           </div>
         </div>
       </div>`;
