@@ -6223,7 +6223,6 @@ function enterAdminMode() {
     document.body.classList.add('admin-mode');
     document.getElementById('adminBar').classList.add('open');
     document.querySelectorAll('[data-editable]').forEach(el => { el.contentEditable = 'true'; });
-    document.querySelectorAll('.se-tab[data-tab="request"]').forEach(el => el.style.display = '');
     showToast('✅ 관리자 모드 진입');
 }
 function exitAdminMode() {
@@ -6231,7 +6230,6 @@ function exitAdminMode() {
     document.body.classList.remove('admin-mode');
     document.getElementById('adminBar').classList.remove('open');
     document.querySelectorAll('[data-editable]').forEach(el => { el.contentEditable = 'false'; });
-    document.querySelectorAll('.se-tab[data-tab="request"]').forEach(el => el.style.display = 'none');
     showToast('👋 관리자 모드 종료');
 }
 
@@ -14002,46 +14000,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div id="seOverviewGrid"></div>
         </div>
 
-        <!-- ── 매출외 요청서 탭 ── -->
-        <div id="seTabRequest" style="display:none;">
-            <div style="margin-bottom:20px;">
-                <p style="font-family:'Outfit',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#003EFF;margin:0 0 6px;">Outgoing Requests</p>
-                <h3 style="font-family:'Outfit',sans-serif;font-weight:300;font-size:1.4rem;color:var(--se-text);margin:0 0 4px;">매출외출고 요청서</h3>
-                <p style="font-size:0.83rem;color:var(--se-muted);margin:0;">Google Sheets에서 요청서 전체를 복사 → 여기에 붙여넣기</p>
-            </div>
-            <textarea id="seReqPasteArea" rows="8" placeholder="Google Sheets에서 매출외출고 요청서 내용을 전체 복사해서 여기에 붙여넣으세요."
-                style="width:100%;box-sizing:border-box;padding:12px;border:1.5px dashed var(--se-border);border-radius:10px;font-size:0.82rem;background:var(--se-surface);color:var(--se-text);resize:vertical;font-family:'Outfit',sans-serif;margin-bottom:8px;"></textarea>
-            <button onclick="seParseRequest()" style="padding:8px 20px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer;font-family:'Outfit',sans-serif;">파싱하기</button>
-            <span id="seReqParseMsg" style="margin-left:10px;font-size:0.82rem;color:#ef4444;"></span>
-
-            <div id="seReqPreview" style="display:none;margin-top:20px;">
-                <div id="seReqMeta" style="background:var(--se-surface);border-radius:10px;padding:14px 18px;margin-bottom:12px;border:1px solid var(--se-border);font-size:0.83rem;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;"></div>
-                <div id="seReqSummary" style="margin-bottom:10px;font-size:0.83rem;color:var(--se-muted);"></div>
-                <div class="se-table-wrap" style="margin-bottom:16px;">
-                    <table class="se-table">
-                        <thead><tr>
-                            <th>제품명</th><th>품목코드</th><th>색상</th><th>수량</th><th>단가</th>
-                            <th>비고(매장명)</th><th>매칭 매장</th><th>주소</th><th>담당자</th>
-                        </tr></thead>
-                        <tbody id="seReqPreviewBody"></tbody>
-                    </table>
-                </div>
-                <button onclick="seSubmitRequest()" style="padding:10px 28px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:'Outfit',sans-serif;">Supabase에 저장</button>
-                <span id="seReqSaveMsg" style="margin-left:12px;font-size:0.82rem;color:var(--se-muted);"></span>
-            </div>
-
-            <div style="margin-top:36px;">
-                <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);margin-bottom:12px;font-family:'Outfit',sans-serif;">저장된 요청서</div>
-                <div id="seReqListBody"><p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p></div>
-            </div>
-        </div>
     </div>
     <div class="se-tabs-bar">
         <div class="se-tabs">
             <button class="se-tab active" data-tab="store" onclick="seSwitchTab('store')">전시품</button>
             <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">공간</button>
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
-            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외 요청서</button>
         </div>
     </div>
 </div>
@@ -14053,6 +14017,52 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button onclick="seHideSpaceOverview()" style="background:transparent;border:none;font-size:1.2rem;cursor:pointer;color:var(--se-muted);padding:0 4px;">✕</button>
         </div>
         <div id="seSpaceOverviewBody" style="flex:1;overflow-y:auto;padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;"></div>
+    </div>
+</div>
+
+<!-- 매출외 요청서 독립 패널 -->
+<div id="reqPanel" style="display:none;position:fixed;inset:0;z-index:2500;background:var(--se-bg,#f8fafc);flex-direction:column;font-family:'Outfit',sans-serif;">
+    <div style="background:#003EFF;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Admin</div>
+            <div style="font-size:1.1rem;font-weight:600;color:#fff;">매출외출고 요청서</div>
+        </div>
+        <button onclick="closeReqPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">닫기</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:28px 32px;">
+        <p style="font-size:0.83rem;color:#64748b;margin:0 0 14px;">Google Sheets에서 요청서 전체를 복사 → 아래에 붙여넣기</p>
+        <textarea id="seReqPasteArea" rows="8" placeholder="Google Sheets에서 매출외출고 요청서 내용을 전체 복사해서 여기에 붙여넣으세요."
+            style="width:100%;box-sizing:border-box;padding:12px;border:1.5px dashed #cbd5e1;border-radius:10px;font-size:0.82rem;background:#fff;color:#0f172a;resize:vertical;font-family:'Outfit',sans-serif;margin-bottom:8px;"></textarea>
+        <button onclick="seParseRequest()" style="padding:8px 20px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer;">파싱하기</button>
+        <span id="seReqParseMsg" style="margin-left:10px;font-size:0.82rem;color:#ef4444;"></span>
+
+        <div id="seReqPreview" style="display:none;margin-top:20px;">
+            <div id="seReqMeta" style="background:#fff;border-radius:10px;padding:14px 18px;margin-bottom:12px;border:1px solid #e2e8f0;font-size:0.83rem;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;"></div>
+            <div id="seReqSummary" style="margin-bottom:10px;font-size:0.83rem;color:#64748b;"></div>
+            <div style="overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:16px;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.83rem;color:#0f172a;">
+                    <thead><tr style="background:#f1f5f9;">
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">제품명</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">품목코드</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">색상</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">수량</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">단가</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">매장명</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">매칭 매장</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">주소</th>
+                        <th style="padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;">담당자</th>
+                    </tr></thead>
+                    <tbody id="seReqPreviewBody"></tbody>
+                </table>
+            </div>
+            <button onclick="seSubmitRequest()" style="padding:10px 28px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">Supabase에 저장</button>
+            <span id="seReqSaveMsg" style="margin-left:12px;font-size:0.82rem;color:#64748b;"></span>
+        </div>
+
+        <div style="margin-top:36px;">
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;">저장된 요청서</div>
+            <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
+        </div>
     </div>
 </div>
 
@@ -14116,8 +14126,7 @@ function openSEPanel() {
         });
     }
     document.getElementById('seAddDate').value = new Date().toISOString().slice(0, 10);
-    const after = sessionStorage.getItem('seAfterLogin');
-    if (after) { sessionStorage.removeItem('seAfterLogin'); setTimeout(() => seSwitchTab(after), 150); }
+
 }
 function closeSEPanel() {
     document.getElementById('seMgmtPanel').classList.remove('open');
@@ -14141,22 +14150,18 @@ function seSwitchTab(tab) {
     document.getElementById('seTabStore').style.display    = tab === 'store'    ? '' : 'none';
     document.getElementById('seTabLayout').style.display   = isLayout           ? 'flex' : 'none';
     document.getElementById('seTabOverview').style.display = tab === 'overview' ? '' : 'none';
-    document.getElementById('seTabRequest').style.display  = tab === 'request'  ? '' : 'none';
-    document.getElementById('seStoreBar').style.display    = tab === 'request'  ? 'none' : '';
+
     if (tab === 'overview') seLoadOverview();
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
     if (tab === 'store') seLoadStore();
-    if (tab === 'request') seLoadRequestList();
 }
 
 function seSwitchToRequest() {
-    if (!sessionStorage.getItem('seAuth')) {
-        openSELogin();
-        sessionStorage.setItem('seAfterLogin', 'request');
-    } else {
-        openSEPanel();
-        setTimeout(() => seSwitchTab('request'), 100);
-    }
+    document.getElementById('reqPanel').style.display = 'flex';
+    seLoadRequestList();
+}
+function closeReqPanel() {
+    document.getElementById('reqPanel').style.display = 'none';
 }
 
 // ── 매출외 요청서 ──
