@@ -246,6 +246,8 @@
             margin-bottom: 8px;
             letter-spacing: -0.5px;
         }
+        .display-sale-desc { white-space: nowrap; max-width: none !important; }
+        @media (max-width: 700px) { .display-sale-desc { white-space: normal; } }
         .section-desc {
             color: var(--text-secondary);
             font-size: 0.95rem;
@@ -5798,7 +5800,7 @@ OOO 고객님, [    ] 내로 시공 기사님이 방문 예정입니다.
 <div id="displaySale" class="section">
     <div class="section-label">DISPLAY SALE</div>
     <div class="section-title">🏷️ 전시품 판매</div>
-    <div class="section-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">더 프로그레시브 매장의 전시품을 특가에 판매합니다. 각 제품 카드의 매장 전화번호로 문의 후 방문 수령하세요.</div>
+    <div class="section-desc display-sale-desc">더 프로그레시브 매장의 전시품을 특가에 판매합니다. 각 제품 카드의 매장 전화번호로 문의 후 방문 수령하세요.</div>
 
     <!-- 전시품 구매 주의사항 -->
     <div style="margin-top:20px;padding:18px 20px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;font-size:0.82rem;color:#1c1917;line-height:1.7;">
