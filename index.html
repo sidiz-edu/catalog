@@ -13724,7 +13724,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <h2>SE Management</h2>
         <button class="se-close" onclick="closeSEPanel()">닫기</button>
     </div>
-    <div style="padding:10px 32px;border-bottom:1px solid var(--se-border);background:var(--se-surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <div id="seStoreBar" style="padding:10px 32px;border-bottom:1px solid var(--se-border);background:var(--se-surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <span style="font-size:0.75rem;font-weight:700;color:var(--se-muted);letter-spacing:0.08em;font-family:'Outfit',sans-serif;">매장</span>
         <select id="seStoreSelect" onchange="seOnStoreChange()" style="background:var(--se-raised);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:6px 10px;font-size:0.85rem;min-width:160px;">
             <option value="">-- 매장 선택 --</option>
@@ -14001,12 +14001,47 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div id="seOverviewGrid"></div>
         </div>
+
+        <!-- ── 매출외 요청서 탭 ── -->
+        <div id="seTabRequest" style="display:none;">
+            <div style="margin-bottom:20px;">
+                <p style="font-family:'Outfit',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#003EFF;margin:0 0 6px;">Outgoing Requests</p>
+                <h3 style="font-family:'Outfit',sans-serif;font-weight:300;font-size:1.4rem;color:var(--se-text);margin:0 0 4px;">매출외출고 요청서</h3>
+                <p style="font-size:0.83rem;color:var(--se-muted);margin:0;">Google Sheets에서 요청서 전체를 복사 → 여기에 붙여넣기</p>
+            </div>
+            <textarea id="seReqPasteArea" rows="8" placeholder="Google Sheets에서 매출외출고 요청서 내용을 전체 복사해서 여기에 붙여넣으세요."
+                style="width:100%;box-sizing:border-box;padding:12px;border:1.5px dashed var(--se-border);border-radius:10px;font-size:0.82rem;background:var(--se-surface);color:var(--se-text);resize:vertical;font-family:'Outfit',sans-serif;margin-bottom:8px;"></textarea>
+            <button onclick="seParseRequest()" style="padding:8px 20px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer;font-family:'Outfit',sans-serif;">파싱하기</button>
+            <span id="seReqParseMsg" style="margin-left:10px;font-size:0.82rem;color:#ef4444;"></span>
+
+            <div id="seReqPreview" style="display:none;margin-top:20px;">
+                <div id="seReqMeta" style="background:var(--se-surface);border-radius:10px;padding:14px 18px;margin-bottom:12px;border:1px solid var(--se-border);font-size:0.83rem;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;"></div>
+                <div id="seReqSummary" style="margin-bottom:10px;font-size:0.83rem;color:var(--se-muted);"></div>
+                <div class="se-table-wrap" style="margin-bottom:16px;">
+                    <table class="se-table">
+                        <thead><tr>
+                            <th>제품명</th><th>품목코드</th><th>색상</th><th>수량</th><th>단가</th>
+                            <th>비고(매장명)</th><th>매칭 매장</th><th>주소</th><th>담당자</th>
+                        </tr></thead>
+                        <tbody id="seReqPreviewBody"></tbody>
+                    </table>
+                </div>
+                <button onclick="seSubmitRequest()" style="padding:10px 28px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:'Outfit',sans-serif;">Supabase에 저장</button>
+                <span id="seReqSaveMsg" style="margin-left:12px;font-size:0.82rem;color:var(--se-muted);"></span>
+            </div>
+
+            <div style="margin-top:36px;">
+                <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);margin-bottom:12px;font-family:'Outfit',sans-serif;">저장된 요청서</div>
+                <div id="seReqListBody"><p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p></div>
+            </div>
+        </div>
     </div>
     <div class="se-tabs-bar">
         <div class="se-tabs">
             <button class="se-tab active" data-tab="store" onclick="seSwitchTab('store')">전시품</button>
             <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">공간</button>
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
+            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외 요청서</button>
         </div>
     </div>
 </div>
@@ -14104,9 +14139,151 @@ function seSwitchTab(tab) {
     document.getElementById('seTabStore').style.display    = tab === 'store'    ? '' : 'none';
     document.getElementById('seTabLayout').style.display   = isLayout           ? 'flex' : 'none';
     document.getElementById('seTabOverview').style.display = tab === 'overview' ? '' : 'none';
+    document.getElementById('seTabRequest').style.display  = tab === 'request'  ? '' : 'none';
+    document.getElementById('seStoreBar').style.display    = tab === 'request'  ? 'none' : '';
     if (tab === 'overview') seLoadOverview();
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
     if (tab === 'store') seLoadStore();
+    if (tab === 'request') seLoadRequestList();
+}
+
+// ── 매출외 요청서 ──
+const SE_STORE_MAP = {
+    '논현점':'nonhyeon', '합정점':'hapjeong', '대전점':'daejeon',
+    '평택점':'pyeongtaek', '대구점':'daegu', '송파점':'songpa',
+    '센텀점':'centum', '성수점':'seongsu', '마곡점':'magok',
+    '스타필드수원(시)':'suwon', '스타필드수원':'suwon',
+    '스타필드고양(시)':'goyang', '스타필드고양':'goyang',
+    '커넥트현대청주':'cheongju', '현대김포점':'kimpo',
+    '대구컬렉티브':'daegu_collective',
+};
+
+let _seReqParsed = null;
+
+function seParseRequest() {
+    const raw = document.getElementById('seReqPasteArea').value.trim();
+    const msgEl = document.getElementById('seReqParseMsg');
+    if (!raw) { msgEl.textContent = '내용을 붙여넣어 주세요.'; return; }
+    msgEl.textContent = '';
+
+    const lines = raw.split('\n').map(l => l.split('\t').map(c => c.trim()));
+    let title = '', department = '', requester = '', deliveryDate = '', orderNo = '';
+    let headerRowIdx = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+        const r = lines[i], c0 = r[0] || '';
+        if (!title && (c0.includes('※') || (c0.includes('매출외') && c0.length > 4))) title = c0;
+        if (c0.replace(/\s/g,'').includes('신청부서')) department = r[1] || r[3] || '';
+        if (c0.replace(/\s/g,'') === '담당') requester = r[1] || '';
+        if (c0.replace(/\s/g,'').includes('요청납기')) deliveryDate = r[1] || '';
+        if (c0.replace(/\s/g,'').includes('수주번호')) orderNo = r[1] || '';
+        if (c0.replace(/\s/g,'').includes('제품명') || c0.replace(/\s/g,'').includes('제 품 명')) {
+            headerRowIdx = i; break;
+        }
+    }
+
+    if (headerRowIdx < 0) { msgEl.textContent = '제품 표를 찾지 못했습니다. 열 머리글(제품명, 품목코드...)이 포함되어 있는지 확인해주세요.'; return; }
+
+    const items = [];
+    for (let i = headerRowIdx + 1; i < lines.length; i++) {
+        const r = lines[i];
+        if (!r[0] || r[0].includes('합계') || r[0].includes('총계')) break;
+        if (r.length < 8 || !r[1]) continue;
+        const storeNameRaw = r[7] || '';
+        items.push({
+            productName: r[0], itemCode: r[1], colorCode: r[2],
+            qty: parseInt(r[3]) || 1,
+            unitPrice: parseInt((r[4] || '').replace(/[^0-9]/g, '')) || 0,
+            storeNameRaw,
+            storeId: SE_STORE_MAP[storeNameRaw] || null,
+            address: r[8] || '', postalCode: r[9] || '',
+            contactName: r[10] || '', contactPhone: r[11] || '',
+        });
+    }
+
+    if (!items.length) { msgEl.textContent = '항목을 찾지 못했습니다.'; return; }
+
+    _seReqParsed = { title: title || '(제목 없음)', department, requester, deliveryDate, orderNo, items };
+
+    // 메타 표시
+    document.getElementById('seReqMeta').innerHTML = [
+        ['제목', _seReqParsed.title], ['부서', department], ['담당', requester],
+        ['납기', deliveryDate], ['수주번호', orderNo || '(미입력)'],
+    ].map(([k,v]) => `<div><span style="color:var(--se-muted);font-size:0.75rem;">${k}</span><div style="font-weight:600;">${v || '-'}</div></div>`).join('');
+
+    const matched = items.filter(i => i.storeId).length;
+    document.getElementById('seReqSummary').innerHTML =
+        `총 <b>${items.length}개</b> 항목 &nbsp;·&nbsp; 매장 매칭 <b style="color:#22c55e;">${matched}개</b> &nbsp;·&nbsp; 미매칭 <b style="color:#ef4444;">${items.length - matched}개</b>`;
+
+    document.getElementById('seReqPreviewBody').innerHTML = items.map(it => `
+        <tr style="${it.storeId ? '' : 'background:rgba(239,68,68,0.06);'}">
+            <td>${it.productName}</td><td style="font-size:0.78rem;">${it.itemCode}</td>
+            <td style="font-size:0.78rem;">${it.colorCode}</td><td>${it.qty}</td>
+            <td style="font-size:0.78rem;">${it.unitPrice ? it.unitPrice.toLocaleString()+'원' : '-'}</td>
+            <td><b>${it.storeNameRaw}</b></td>
+            <td>${it.storeId ? `<span style="color:#22c55e;font-weight:700;">${it.storeId}</span>` : '<span style="color:#ef4444;">매칭 안됨</span>'}</td>
+            <td style="font-size:0.75rem;color:var(--se-muted);">${it.address}</td>
+            <td style="font-size:0.75rem;">${it.contactName} ${it.contactPhone}</td>
+        </tr>`).join('');
+
+    document.getElementById('seReqPreview').style.display = '';
+    document.getElementById('seReqSaveMsg').textContent = '';
+}
+
+async function seSubmitRequest() {
+    if (!_seReqParsed) return;
+    const msgEl = document.getElementById('seReqSaveMsg');
+    msgEl.textContent = '저장 중...';
+    const { data: req, error: e1 } = await _sb.from('outgoing_requests').insert({
+        title: _seReqParsed.title, department: _seReqParsed.department,
+        requester: _seReqParsed.requester, delivery_date: _seReqParsed.deliveryDate || null,
+        order_no: _seReqParsed.orderNo || null,
+    }).select().single();
+    if (e1) { msgEl.style.color='#ef4444'; msgEl.textContent='저장 실패: '+e1.message; return; }
+
+    const rows = _seReqParsed.items.map(i => ({
+        request_id: req.id, product_name: i.productName, item_code: i.itemCode,
+        color_code: i.colorCode, qty: i.qty, unit_price: i.unitPrice || null,
+        store_name_raw: i.storeNameRaw, store_id: i.storeId || null,
+        address: i.address, postal_code: i.postalCode,
+        contact_name: i.contactName, contact_phone: i.contactPhone,
+    }));
+    const { error: e2 } = await _sb.from('outgoing_request_items').insert(rows);
+    if (e2) { msgEl.style.color='#ef4444'; msgEl.textContent='항목 저장 실패: '+e2.message; return; }
+
+    msgEl.style.color='#22c55e';
+    msgEl.textContent = `저장 완료! (${rows.length}개 항목)`;
+    _seReqParsed = null;
+    document.getElementById('seReqPreview').style.display = 'none';
+    document.getElementById('seReqPasteArea').value = '';
+    seLoadRequestList();
+}
+
+async function seLoadRequestList() {
+    const el = document.getElementById('seReqListBody');
+    if (!el) return;
+    el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
+    const { data, error } = await _sb.from('outgoing_requests')
+        .select('id,title,department,requester,delivery_date,order_no,created_at')
+        .order('created_at', { ascending: false }).limit(30);
+    if (error || !data || !data.length) {
+        el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
+    }
+    el.innerHTML = data.map(r => `
+        <div style="border:1px solid var(--se-border);border-radius:10px;padding:14px 16px;margin-bottom:8px;background:var(--se-surface);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+                <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title}</div>
+                <div style="font-size:0.75rem;color:var(--se-muted);">${r.department || ''} · ${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
+                <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}</div>
+            </div>
+            <button onclick="seDeleteRequest('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:#ef4444;font-size:0.75rem;cursor:pointer;flex-shrink:0;">삭제</button>
+        </div>`).join('');
+}
+
+async function seDeleteRequest(id) {
+    if (!confirm('이 요청서를 삭제할까요? (항목도 함께 삭제됩니다)')) return;
+    await _sb.from('outgoing_requests').delete().eq('id', id);
+    seLoadRequestList();
 }
 
 async function seLoadQuestions() {
