@@ -3799,6 +3799,7 @@
         <button class="admin-bar-btn" onclick="openQuotePanel()">📋 견적 이력</button>
         <button class="admin-bar-btn" onclick="openAdminQuestions()">💬 질문함</button>
         <button class="admin-bar-btn" onclick="openSELogs()">📊 SE 학습 기록</button>
+        <button class="admin-bar-btn" onclick="seSwitchToRequest()">📄 매출외 요청서</button>
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
         <button class="admin-bar-btn danger" onclick="openResetModal()">↺ 초기화</button>
         <button class="admin-bar-btn" onclick="exitAdminMode()">✕ 나가기</button>
@@ -14115,6 +14116,8 @@ function openSEPanel() {
         });
     }
     document.getElementById('seAddDate').value = new Date().toISOString().slice(0, 10);
+    const after = sessionStorage.getItem('seAfterLogin');
+    if (after) { sessionStorage.removeItem('seAfterLogin'); setTimeout(() => seSwitchTab(after), 150); }
 }
 function closeSEPanel() {
     document.getElementById('seMgmtPanel').classList.remove('open');
@@ -14144,6 +14147,16 @@ function seSwitchTab(tab) {
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
     if (tab === 'store') seLoadStore();
     if (tab === 'request') seLoadRequestList();
+}
+
+function seSwitchToRequest() {
+    if (!sessionStorage.getItem('seAuth')) {
+        openSELogin();
+        sessionStorage.setItem('seAfterLogin', 'request');
+    } else {
+        openSEPanel();
+        setTimeout(() => seSwitchTab('request'), 100);
+    }
 }
 
 // ── 매출외 요청서 ──
