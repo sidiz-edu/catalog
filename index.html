@@ -6518,10 +6518,10 @@ function applyGuestParams() {
         if (allowedSections.includes('displaySale') && allowedSections.length === 1) {
             document.getElementById('heroSection').style.display = 'none';
             document.getElementById('guestBanner').style.display = 'none';
-            ['fabSEGuide','fabPromo','fabLineup','reportFab'].forEach(id => {
+            ['fabSEGuide','fabPromo','fabLineup','reportFab','seMgmtBtn'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.style.display = 'none';
             });
-            document.querySelectorAll('.qbox-fab').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.qbox-fab,.cart-trigger').forEach(el => el.style.display = 'none');
             const ds = document.getElementById('displaySale');
             if (ds) ds.classList.add('active');
             // Supabase 초기화 후 데이터 로드 (약간 지연)
