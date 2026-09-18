@@ -6517,6 +6517,7 @@ function applyGuestParams() {
         // displaySale 단독 허용 시: 데이터 로드 + 섹션 활성화
         if (allowedSections.includes('displaySale') && allowedSections.length === 1) {
             document.getElementById('heroSection').style.display = 'none';
+            document.getElementById('guestBanner').style.display = 'none';
             const ds = document.getElementById('displaySale');
             if (ds) ds.classList.add('active');
             // Supabase 초기화 후 데이터 로드 (약간 지연)
