@@ -9818,11 +9818,8 @@ function showDisplaySaleDetail(itemId) {
     if (!photos.length) photos.push('');
     _dsCurPhoto = 0;
 
-    const _pid = (item.product_id || '').toLowerCase().replace(/\s+/g, '');
-    const _pidClean = (item.product_id || '').replace(/\s*\([^)]*\)/g, '').trim().toLowerCase().replace(/\s+/g, '');
     const _searchQ = (item.product_id || '').replace(/\s*\([^)]*\)/g, '').trim().split(/\s+/)[0] || item.product_id;
-    const sidizUrl = SIDIZ_URLS[item.product_id] || SIDIZ_URLS[_pid] || SIDIZ_URLS[_pidClean] ||
-        `https://kr.sidiz.com/search?type=product&q=${encodeURIComponent(_searchQ)}`;
+    const sidizUrl = `https://kr.sidiz.com/search?type=product&q=${encodeURIComponent(_searchQ)}`;
 
     const skuCode = item.sku ? item.sku.split('-')[0] : null;
     const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
