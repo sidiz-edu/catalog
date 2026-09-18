@@ -10760,6 +10760,9 @@ let cartIdCounter = 0;
 function fmt(n) { return n.toLocaleString('ko-KR') + '원'; }
 
 let couponApplied = false;
+let gcproQuestLevel = 0; // 0=미선택, 1=1개, 2=2개, 3=3개
+
+const GCPRO_QUEST_PAYBACK = [0, 10000, 40000, 70000];
 
 // 모든 프로모션 중 가장 유리한 할인 반환
 function getBestDiscount(cart) {
@@ -10967,6 +10970,11 @@ function toggleCoupon() {
     renderCartItems();
 }
 
+function setGcproQuest(level) {
+    gcproQuestLevel = level;
+    renderCartItems();
+}
+
 
 
 
@@ -11025,6 +11033,10 @@ function renderCartItems() {
     if (couponBeaten && couponApplied) couponApplied = false;
     const couponDisabled = !hasNonPromo || couponBeaten;
 
+    // GC PRO 퀘스트 페이백 계산
+    const gcproQty = cart.filter(i => i.productId === 'gcpro' && !i.variantName?.includes('토트넘')).reduce((s, i) => s + i.qty, 0);
+    const questPayback = gcproQty > 0 ? GCPRO_QUEST_PAYBACK[gcproQuestLevel] * gcproQty : 0;
+
     summaryEl.innerHTML = `
         ${hasNonPromo ? (() => {
             if (couponBeaten) {
@@ -11049,6 +11061,22 @@ function renderCartItems() {
         <div class="cart-summary-row total">
             <span>최종 금액</span><span>${fmt(final)}</span>
         </div>
+        ${gcproQty > 0 ? `
+        <div style="margin-top:10px;padding:10px 12px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd;">
+            <div style="font-size:0.78rem;font-weight:700;color:#0369a1;margin-bottom:7px;">🏆 GC PRO 퀘스트 페이백 적용</div>
+            <div style="display:flex;gap:5px;margin-bottom:8px;">
+                ${[0,1,2,3].map(lv => `<button onclick="setGcproQuest(${lv})" style="flex:1;padding:5px 2px;border-radius:7px;border:1.5px solid ${gcproQuestLevel===lv?'#0ea5e9':'#cbd5e1'};background:${gcproQuestLevel===lv?'#0ea5e9':'#fff'};color:${gcproQuestLevel===lv?'#fff':'#64748b'};font-size:0.72rem;font-weight:600;cursor:pointer;">${lv===0?'선택 안함':lv+'개<br>−'+['','1만','4만','7만'][lv]}</button>`).join('')}
+            </div>
+            ${gcproQuestLevel > 0 ? `
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#0369a1;margin-bottom:3px;">
+                <span>퀘스트 페이백 예정${gcproQty>1?` (${gcproQty}대)`:''}  <span style="font-size:0.7rem;color:#6b7280;">(구매 후 네이버페이)</span></span>
+                <span style="font-weight:700;">−${fmt(questPayback)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.88rem;font-weight:700;color:#0c4a6e;border-top:1px solid #bae6fd;padding-top:6px;margin-top:4px;">
+                <span>실질 예상금액</span>
+                <span>${fmt(final - questPayback)}</span>
+            </div>` : `<div style="font-size:0.74rem;color:#64748b;text-align:center;">퀘스트 완료 개수를 선택하면 실질 가격을 확인할 수 있습니다</div>`}
+        </div>` : ''}
         ${next && next.need > 0 ? `<div class="cart-next-tier">
             💡 <b>${fmt(next.need)}</b> 더 담으면 <b>${(next.rate * 100).toFixed(0)}%</b> 추가 할인!
         </div>` : ''}
