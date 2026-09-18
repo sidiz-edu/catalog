@@ -10013,15 +10013,21 @@ const SEARCH_ALIASES = {
 };
 
 function heroSearch(query) {
-    const q = query.trim().toLowerCase().replace(/\s+/g,'');
+    const rawQ = query.trim().toLowerCase();
     const clearBtn = document.getElementById('heroSearchClear');
-    if (clearBtn) clearBtn.classList.toggle('visible', q.length > 0);
-    if (!q) { heroClear(false); return; }
+    if (clearBtn) clearBtn.classList.toggle('visible', rawQ.length > 0);
+    if (!rawQ) { heroClear(false); return; }
+
+    // 괄호 제거 후 토큰 분리 → "ATTI (아띠)" → ['atti', '아띠'] 각각 검색
+    const tokens = rawQ.replace(/[()[\]]/g, ' ').split(/\s+/).filter(t => t.length > 0);
 
     // 매칭 제품 ID 찾기
     const matched = new Set();
     for (const [id, aliases] of Object.entries(SEARCH_ALIASES)) {
-        if (aliases.some(a => a.replace(/\s+/g,'').includes(q) || q.includes(a.replace(/\s+/g,'')))) {
+        if (tokens.some(t => aliases.some(a => {
+            const an = a.replace(/\s+/g, '').toLowerCase();
+            return an.includes(t) || t.includes(an);
+        }))) {
             matched.add(id);
         }
     }
