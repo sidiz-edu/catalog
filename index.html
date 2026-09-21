@@ -14046,13 +14046,25 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
     <div style="flex:1;overflow-y:auto;padding:28px 32px;">
         <p style="font-size:0.83rem;color:#64748b;margin:0 0 10px;">Google Sheets에서 요청서 전체를 복사 → 아래에 붙여넣기</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr 160px;gap:8px;margin-bottom:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
             <input id="seReqEpUrl" type="url" placeholder="사내 출고요청서 링크 (ep.fursys.com/...)"
                 style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
             <input id="seReqSheetUrl" type="url" placeholder="Google Sheets 링크"
                 style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
-            <input id="seReqDate" type="date"
-                style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:0.72rem;color:#64748b;font-weight:600;">작성일자
+                <input id="seReqDate" type="date"
+                    style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;font-weight:400;">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:0.72rem;color:#64748b;font-weight:600;">납기일자
+                <input id="seReqDelivery" type="date"
+                    style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;font-weight:400;">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:0.72rem;color:#64748b;font-weight:600;">수주번호
+                <input id="seReqOrderNo" type="text" placeholder="P20260821-0319-00"
+                    style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;font-weight:400;">
+            </label>
         </div>
         <textarea id="seReqPasteArea" rows="8" placeholder="Google Sheets에서 매출외출고 요청서 내용을 전체 복사해서 여기에 붙여넣으세요."
             style="width:100%;box-sizing:border-box;padding:12px;border:1.5px dashed #cbd5e1;border-radius:10px;font-size:0.82rem;background:#fff;color:#0f172a;resize:vertical;font-family:'Outfit',sans-serif;margin-bottom:8px;"></textarea>
@@ -14247,6 +14259,12 @@ function seParseRequest() {
 
     _seReqParsed = { title: title || '(제목 없음)', requester, deliveryDate, orderNo, items };
 
+    // 파싱된 납기일자·수주번호를 폼에 자동 입력
+    const delivEl = document.getElementById('seReqDelivery');
+    const ordEl   = document.getElementById('seReqOrderNo');
+    if (delivEl && deliveryDate && !delivEl.value) delivEl.value = deliveryDate;
+    if (ordEl   && orderNo     && !ordEl.value)   ordEl.value   = orderNo;
+
     // 메타 표시
     document.getElementById('seReqMeta').innerHTML = [
         ['제목', _seReqParsed.title], ['담당', requester],
@@ -14275,10 +14293,11 @@ async function seSubmitRequest() {
     const msgEl = document.getElementById('seReqSaveMsg');
     msgEl.textContent = '중복 확인 중...';
     msgEl.style.color = '#64748b';
-    const epUrl      = (document.getElementById('seReqEpUrl')?.value    || '').trim() || null;
-    const sheetUrl   = (document.getElementById('seReqSheetUrl')?.value || '').trim() || null;
-    const reqDate    = (document.getElementById('seReqDate')?.value     || '').trim() || null;
-    const orderNo    = _seReqParsed.orderNo || null;
+    const epUrl      = (document.getElementById('seReqEpUrl')?.value      || '').trim() || null;
+    const sheetUrl   = (document.getElementById('seReqSheetUrl')?.value  || '').trim() || null;
+    const reqDate    = (document.getElementById('seReqDate')?.value      || '').trim() || null;
+    const delivDate  = (document.getElementById('seReqDelivery')?.value  || '').trim() || _seReqParsed.deliveryDate || null;
+    const orderNo    = (document.getElementById('seReqOrderNo')?.value   || '').trim() || _seReqParsed.orderNo || null;
 
     // 중복 체크
     const dupChecks = [];
@@ -14299,8 +14318,8 @@ async function seSubmitRequest() {
     msgEl.textContent = '저장 중...';
     const { data: req, error: e1 } = await _sb.from('outgoing_requests').insert({
         title: _seReqParsed.title,
-        requester: _seReqParsed.requester, delivery_date: _seReqParsed.deliveryDate || null,
-        order_no: _seReqParsed.orderNo || null, ep_url: epUrl, sheet_url: sheetUrl,
+        requester: _seReqParsed.requester, delivery_date: delivDate,
+        order_no: orderNo, ep_url: epUrl, sheet_url: sheetUrl,
         request_date: reqDate,
     }).select().single();
     if (e1) { msgEl.style.color='#ef4444'; msgEl.textContent='저장 실패: '+e1.message; return; }
@@ -14318,12 +14337,9 @@ async function seSubmitRequest() {
     _seReqParsed = null;
     document.getElementById('seReqPreview').style.display = 'none';
     document.getElementById('seReqPasteArea').value = '';
-    const epEl = document.getElementById('seReqEpUrl');
-    if (epEl) epEl.value = '';
-    const urlEl = document.getElementById('seReqSheetUrl');
-    if (urlEl) urlEl.value = '';
-    const dateEl = document.getElementById('seReqDate');
-    if (dateEl) dateEl.value = '';
+    ['seReqEpUrl','seReqSheetUrl','seReqDate','seReqDelivery','seReqOrderNo'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
     seLoadRequestList();
     if (seCurrentStore) seRenderList(seCurrentStore);
 }
