@@ -14334,7 +14334,7 @@ async function seLoadRequestList() {
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await _sb.from('outgoing_requests')
         .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
-        .order('request_date', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(30);
+        .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(30);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
