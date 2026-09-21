@@ -14529,6 +14529,7 @@ async function seLoadStore() {
 }
 
 let seDisplayData = [];
+let seReqSkuSet = new Set(); // 해당 매장의 요청서에서 들어온 SKU 셋
 let _seEditPhotos = []; // 수정 모달: 현재 사진 URL 목록
 let _seAddPhotos = [];  // 추가 모달: 업로드할 파일 목록 (File 객체)
 let _seAddPhotoBlobs = []; // 추가 모달: 미리보기 blob URL 목록
@@ -14539,13 +14540,17 @@ async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const [displaysRes, zonesRes] = await Promise.all([
+        const [displaysRes, zonesRes, reqItemsRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
-            _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name')
+            _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
+            _sb.from('outgoing_request_items').select('item_code,color_code').eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
         seStoreZones = zonesRes.data || [];
+        seReqSkuSet = new Set((reqItemsRes.data || [])
+            .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
+            .filter(Boolean));
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
@@ -14630,7 +14635,10 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
-                ${row.sku ? `<button class="se-del-btn" style="background:#7c3aed;color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="이 전시품과 연결된 매출외 요청서">📄</button>` : ''}
+                ${row.sku ? (() => {
+                    const linked = seReqSkuSet.has(row.sku.toUpperCase());
+                    return `<button class="se-del-btn" style="background:${linked ? '#16a34a' : '#94a3b8'};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="${linked ? '요청서 연결됨 — 클릭해서 보기' : '연결된 요청서 없음'}">📄</button>`;
+                })() : ''}
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>
                   <button class="se-del-btn" style="background:#16a34a;color:#fff;border:none;font-size:0.7rem;" onclick="seOpenSoldModal('${row.id}')">✅ 판매완료</button>
