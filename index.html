@@ -14204,6 +14204,15 @@ function closeReqPanel() {
 }
 
 // ── 매출외 요청서 ──
+function seResolveStoreId(raw) {
+    if (!raw) return null;
+    const r = raw.replace(/\s/g, '');
+    return SE_STORE_MAP[raw]
+        || SE_STORE_MAP[r]
+        || SE_STORE_MAP[raw + '점']
+        || SE_STORE_MAP[r + '점']
+        || null;
+}
 const SE_STORE_MAP = {
     '논현점':'nonhyeon', '합정점':'hapjeong', '대전점':'daejeon',
     '평택점':'pyeongtaek', '대구점':'daegu', '송파점':'songpa',
@@ -14257,7 +14266,7 @@ function seParseRequest() {
             qty: parseInt(r[3]) || 1,
             unitPrice: parseInt((r[4] || '').replace(/[^0-9]/g, '')) || 0,
             storeNameRaw,
-            storeId: SE_STORE_MAP[storeNameRaw] || null,
+            storeId: seResolveStoreId(storeNameRaw),
             address: r[8] || '', postalCode: r[9] || '',
             contactName: r[10] || '', contactPhone: r[11] || '',
         });
