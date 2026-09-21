@@ -14325,6 +14325,17 @@ async function seLoadRequestList() {
     }).join('');
 }
 
+// SKU 매칭: 앞부분(기종코드-색상코드) 비교로 유연하게 처리
+function _skuMatch(itemCode, sku) {
+    if (!itemCode || !sku) return false;
+    const norm = s => s.replace(/\s/g,'').toUpperCase();
+    const a = norm(itemCode), b = norm(sku);
+    if (a === b) return true;
+    // 앞 2개 세그먼트(기종-색상)만 비교
+    const seg = s => s.split('-').slice(0,2).join('-');
+    return seg(a) === seg(b);
+}
+
 async function seToggleReqItems(id) {
     const area = document.getElementById(`req-items-${id}`);
     const arrow = document.getElementById(`req-arrow-${id}`);
@@ -14334,11 +14345,42 @@ async function seToggleReqItems(id) {
     if (!open) {
         const body = document.getElementById(`req-items-body-${id}`);
         body.textContent = '불러오는 중...';
-        const { data, error } = await _sb.from('outgoing_request_items')
-            .select('*').eq('request_id', id).order('created_at');
-        if (error || !data || !data.length) {
+
+        // 요청서 항목 + 관련 매장 전시품 동시 로드
+        const [itemsRes] = await Promise.all([
+            _sb.from('outgoing_request_items').select('*').eq('request_id', id).order('created_at')
+        ]);
+        if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
             body.innerHTML = '<span style="color:#94a3b8;">항목이 없습니다.</span>'; return;
         }
+        const items = itemsRes.data;
+
+        // 매장 ID 목록 추출 → 해당 매장 전시품 일괄 로드
+        const storeIds = [...new Set(items.map(it => it.store_id).filter(Boolean))];
+        let displays = [];
+        if (storeIds.length) {
+            const { data: dData } = await _sb.from('store_displays')
+                .select('id,store_id,product_id,sku,color_code,purpose,sold,quantity,zone_id,location,memo')
+                .in('store_id', storeIds);
+            displays = dData || [];
+        }
+
+        // 각 항목에 대해 매칭 전시품 찾기
+        const matchItem = it => {
+            if (!it.store_id || !it.item_code) return null;
+            return displays.filter(d => d.store_id === it.store_id && _skuMatch(it.item_code, d.sku));
+        };
+
+        const matchBadge = matches => {
+            if (!matches) return `<span style="color:#94a3b8;font-size:0.72rem;">⚪ 매장 미매칭</span>`;
+            if (!matches.length) return `<span style="color:#ef4444;font-size:0.72rem;">❌ 전시 없음</span>`;
+            return matches.map(d => {
+                const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
+                const prod = SE_PRODUCTS.find(p => p.id === d.product_id);
+                return `<span style="font-size:0.72rem;display:block;line-height:1.6;">${status} <span style="color:#64748b;">${d.sku||''} ${d.color_code||''}</span></span>`;
+            }).join('');
+        };
+
         body.innerHTML = `<div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
                 <thead><tr style="background:#e2e8f0;color:#475569;">
@@ -14348,20 +14390,23 @@ async function seToggleReqItems(id) {
                     <th style="padding:6px 10px;text-align:center;white-space:nowrap;">수량</th>
                     <th style="padding:6px 10px;text-align:right;white-space:nowrap;">단가</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">매장</th>
-                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">주소</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">전시 현황</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">담당자</th>
                 </tr></thead>
                 <tbody>
-                    ${data.map((it, i) => `<tr style="background:${i%2?'#f8fafc':'#fff'};">
-                        <td style="padding:6px 10px;">${it.product_name||'-'}</td>
-                        <td style="padding:6px 10px;">${it.item_code||'-'}</td>
-                        <td style="padding:6px 10px;">${it.color_code||'-'}</td>
-                        <td style="padding:6px 10px;text-align:center;">${it.qty??'-'}</td>
-                        <td style="padding:6px 10px;text-align:right;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</td>
-                        <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
-                        <td style="padding:6px 10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.address||'-'}</td>
-                        <td style="padding:6px 10px;">${it.contact_name||''}${it.contact_phone?` ${it.contact_phone}`:''}</td>
-                    </tr>`).join('')}
+                    ${items.map((it, i) => {
+                        const matches = it.store_id ? matchItem(it) : null;
+                        return `<tr style="background:${i%2?'#f8fafc':'#fff'};">
+                            <td style="padding:6px 10px;">${it.product_name||'-'}</td>
+                            <td style="padding:6px 10px;font-family:monospace;">${it.item_code||'-'}</td>
+                            <td style="padding:6px 10px;">${it.color_code||'-'}</td>
+                            <td style="padding:6px 10px;text-align:center;">${it.qty??'-'}</td>
+                            <td style="padding:6px 10px;text-align:right;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</td>
+                            <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
+                            <td style="padding:6px 10px;">${matchBadge(matches)}</td>
+                            <td style="padding:6px 10px;">${it.contact_name||''}${it.contact_phone?` ${it.contact_phone}`:''}</td>
+                        </tr>`;
+                    }).join('')}
                 </tbody>
             </table>
         </div>`;
