@@ -14301,6 +14301,7 @@ async function seSubmitRequest() {
     const dateEl = document.getElementById('seReqDate');
     if (dateEl) dateEl.value = '';
     seLoadRequestList();
+    if (seCurrentStore) seRenderList(seCurrentStore);
 }
 
 async function seLoadRequestList() {
