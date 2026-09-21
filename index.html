@@ -14046,8 +14046,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
     <div style="flex:1;overflow-y:auto;padding:28px 32px;">
         <p style="font-size:0.83rem;color:#64748b;margin:0 0 10px;">Google Sheets에서 요청서 전체를 복사 → 아래에 붙여넣기</p>
-        <input id="seReqSheetUrl" type="url" placeholder="Google Sheets 링크 (선택)"
-            style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;margin-bottom:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input id="seReqEpUrl" type="url" placeholder="사내 출고요청서 링크 (ep.fursys.com/...)"
+                style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+            <input id="seReqSheetUrl" type="url" placeholder="Google Sheets 링크"
+                style="box-sizing:border-box;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+        </div>
         <textarea id="seReqPasteArea" rows="8" placeholder="Google Sheets에서 매출외출고 요청서 내용을 전체 복사해서 여기에 붙여넣으세요."
             style="width:100%;box-sizing:border-box;padding:12px;border:1.5px dashed #cbd5e1;border-radius:10px;font-size:0.82rem;background:#fff;color:#0f172a;resize:vertical;font-family:'Outfit',sans-serif;margin-bottom:8px;"></textarea>
         <button onclick="seParseRequest()" style="padding:8px 20px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer;">파싱하기</button>
@@ -14268,11 +14272,12 @@ async function seSubmitRequest() {
     if (!_seReqParsed) return;
     const msgEl = document.getElementById('seReqSaveMsg');
     msgEl.textContent = '저장 중...';
+    const epUrl    = (document.getElementById('seReqEpUrl')?.value    || '').trim() || null;
     const sheetUrl = (document.getElementById('seReqSheetUrl')?.value || '').trim() || null;
     const { data: req, error: e1 } = await _sb.from('outgoing_requests').insert({
         title: _seReqParsed.title, department: _seReqParsed.department,
         requester: _seReqParsed.requester, delivery_date: _seReqParsed.deliveryDate || null,
-        order_no: _seReqParsed.orderNo || null, sheet_url: sheetUrl,
+        order_no: _seReqParsed.orderNo || null, ep_url: epUrl, sheet_url: sheetUrl,
     }).select().single();
     if (e1) { msgEl.style.color='#ef4444'; msgEl.textContent='저장 실패: '+e1.message; return; }
 
@@ -14291,6 +14296,8 @@ async function seSubmitRequest() {
     _seReqParsed = null;
     document.getElementById('seReqPreview').style.display = 'none';
     document.getElementById('seReqPasteArea').value = '';
+    const epEl = document.getElementById('seReqEpUrl');
+    if (epEl) epEl.value = '';
     const urlEl = document.getElementById('seReqSheetUrl');
     if (urlEl) urlEl.value = '';
     seLoadRequestList();
@@ -14301,7 +14308,7 @@ async function seLoadRequestList() {
     if (!el) return;
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await _sb.from('outgoing_requests')
-        .select('id,title,department,requester,delivery_date,order_no,sheet_url,created_at')
+        .select('id,title,department,requester,delivery_date,order_no,ep_url,sheet_url,created_at')
         .order('created_at', { ascending: false }).limit(30);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
@@ -14314,7 +14321,7 @@ async function seLoadRequestList() {
                 <div style="cursor:pointer;flex:1;" onclick="seToggleReqItems('${r.id}')">
                     <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
                     <div style="font-size:0.75rem;color:var(--se-muted);">${r.department || ''} · ${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
-                    <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}${r.sheet_url ? ` · <a href="${r.sheet_url}" target="_blank" style="color:#3b82f6;text-decoration:none;">📊 Sheets</a>` : ''}</div>
+                    <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}${r.ep_url ? ` · <a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">🔗 출고요청서</a>` : ''}${r.sheet_url ? ` · <a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : ''}</div>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
                     <button onclick="seStartEditRequest('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:#3b82f6;font-size:0.75rem;cursor:pointer;">수정</button>
@@ -14333,7 +14340,8 @@ async function seLoadRequestList() {
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">담당자<input id="req-f-req-${r.id}" value="${esc(r.requester)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">납기일<input id="req-f-del-${r.id}" value="${esc(r.delivery_date)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">수주번호<input id="req-f-ord-${r.id}" value="${esc(r.order_no)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
-                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;grid-column:1/-1;">Sheets 링크<input id="req-f-url-${r.id}" type="url" value="${esc(r.sheet_url)}" placeholder="https://docs.google.com/..." style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;grid-column:1/-1;">사내 출고요청서 링크<input id="req-f-ep-${r.id}" type="url" value="${esc(r.ep_url)}" placeholder="https://ep.fursys.com/WebFlow/..." style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;grid-column:1/-1;">Google Sheets 링크<input id="req-f-url-${r.id}" type="url" value="${esc(r.sheet_url)}" placeholder="https://docs.google.com/..." style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button onclick="seUpdateRequest('${r.id}')" style="padding:6px 16px;border-radius:6px;border:none;background:#003EFF;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">저장</button>
@@ -14455,6 +14463,7 @@ async function seUpdateRequest(id) {
         requester:     document.getElementById(`req-f-req-${id}`).value.trim(),
         delivery_date: document.getElementById(`req-f-del-${id}`).value.trim(),
         order_no:      document.getElementById(`req-f-ord-${id}`).value.trim(),
+        ep_url:        document.getElementById(`req-f-ep-${id}`)?.value.trim() || null,
         sheet_url:     document.getElementById(`req-f-url-${id}`).value.trim() || null,
     }).eq('id', id);
     if (error) { msg.textContent = '저장 실패'; msg.style.color = '#ef4444'; return; }
