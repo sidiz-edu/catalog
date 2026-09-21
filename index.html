@@ -14273,10 +14273,30 @@ function seParseRequest() {
 async function seSubmitRequest() {
     if (!_seReqParsed) return;
     const msgEl = document.getElementById('seReqSaveMsg');
-    msgEl.textContent = '저장 중...';
+    msgEl.textContent = '중복 확인 중...';
+    msgEl.style.color = '#64748b';
     const epUrl      = (document.getElementById('seReqEpUrl')?.value    || '').trim() || null;
     const sheetUrl   = (document.getElementById('seReqSheetUrl')?.value || '').trim() || null;
     const reqDate    = (document.getElementById('seReqDate')?.value     || '').trim() || null;
+    const orderNo    = _seReqParsed.orderNo || null;
+
+    // 중복 체크
+    const dupChecks = [];
+    if (orderNo) dupChecks.push(_sb.from('outgoing_requests').select('id,title,request_date,order_no').eq('order_no', orderNo));
+    if (epUrl)   dupChecks.push(_sb.from('outgoing_requests').select('id,title,request_date,ep_url').eq('ep_url', epUrl));
+    const dupResults = await Promise.all(dupChecks);
+    const dupItems = [];
+    dupResults.forEach(({ data }) => (data || []).forEach(r => {
+        if (!dupItems.find(d => d.id === r.id)) dupItems.push(r);
+    }));
+    if (dupItems.length > 0) {
+        const names = dupItems.map(r => `"${r.title}"(${r.request_date || '날짜없음'})`).join(', ');
+        msgEl.style.color = '#ef4444';
+        msgEl.textContent = `중복 저장 불가 — 이미 존재하는 요청서와 겹칩니다: ${names}`;
+        return;
+    }
+
+    msgEl.textContent = '저장 중...';
     const { data: req, error: e1 } = await _sb.from('outgoing_requests').insert({
         title: _seReqParsed.title,
         requester: _seReqParsed.requester, delivery_date: _seReqParsed.deliveryDate || null,
