@@ -14120,6 +14120,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 <script>
 const SE_PW = 'SDZ2026';
 let seCurrentStore = null;
+let seDisplayData = [];
+let seReqSkuSet = new Set();
+let sePendingDeletes = [];
+let seStoreZones = [];
 const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
 
 function openSELogin() {
@@ -14583,13 +14587,9 @@ async function seLoadStore() {
     await seRenderList(storeId);
 }
 
-let seDisplayData = [];
-let seReqSkuSet = new Set(); // 해당 매장의 요청서에서 들어온 SKU 셋
-let _seEditPhotos = []; // 수정 모달: 현재 사진 URL 목록
-let _seAddPhotos = [];  // 추가 모달: 업로드할 파일 목록 (File 객체)
-let _seAddPhotoBlobs = []; // 추가 모달: 미리보기 blob URL 목록
-let sePendingDeletes = [];
-let seStoreZones = [];
+let _seEditPhotos = [];
+let _seAddPhotos = [];
+let _seAddPhotoBlobs = [];
 let seSearchQuery = '', seSortCol = '', seSortDir = 'asc';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
