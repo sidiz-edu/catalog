@@ -14368,29 +14368,20 @@ async function seToggleReqItems(id) {
             displays = dData || [];
         }
 
-        // 각 항목에 대해 매칭 전시품 찾기 (매칭 레벨 포함)
+        // item_code + color_code = sku 완전 일치만 매칭
         const matchItem = it => {
             if (!it.store_id || !it.item_code) return null;
-            const results = [];
-            for (const d of displays) {
-                if (d.store_id !== it.store_id) continue;
-                const level = _skuMatch(it.item_code, it.color_code, d.sku);
-                if (level) results.push({ d, level });
-            }
-            // exact → model → family 순 정렬
-            const order = { exact: 0, model: 1, family: 2 };
-            results.sort((a, b) => order[a.level] - order[b.level]);
-            return results;
+            return displays.filter(d =>
+                d.store_id === it.store_id && _skuMatch(it.item_code, it.color_code, d.sku) === 'exact'
+            );
         };
 
-        const levelLabel = { exact: '🎯', model: '🔍', family: '〜' };
         const matchBadge = matches => {
             if (!matches) return `<span style="color:#94a3b8;font-size:0.72rem;">⚪ 매장 미매칭</span>`;
             if (!matches.length) return `<span style="color:#ef4444;font-size:0.72rem;">❌ 전시 없음</span>`;
-            return matches.map(({ d, level }) => {
+            return matches.map(d => {
                 const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
-                const lbl = levelLabel[level] || '';
-                return `<span style="font-size:0.72rem;display:block;line-height:1.7;">${lbl} ${status} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span></span>`;
+                return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span></span>`;
             }).join('');
         };
 
