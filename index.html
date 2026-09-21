@@ -6512,6 +6512,13 @@ function rebuildProductGrid() {
     });
 }
 
+// 프로모션 플래그 (variantData 초기화 이전에 선언 필요)
+const _baseDiscountActive = new Date().toISOString().slice(0,10) >= '2026-06-17';
+const _chuseokActive = (() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return today >= '2026-09-18' && today <= '2026-09-27';
+})();
+
 // 페이지 로드 시 저장된 편집 내용 적용
 document.addEventListener('DOMContentLoaded', async () => {
     if (!_baseDiscountActive) {
@@ -7733,8 +7740,6 @@ const variantData = {
     });
 })();
 
-// 금액대 기본 할인: 2026-06-16 하루 제외, 6/17부터 자동 재개
-const _baseDiscountActive = new Date().toISOString().slice(0,10) >= '2026-06-17';
 const DISCOUNT_TIERS = [
     { min: 5000000, rate: 0.15, label: '500만원 이상' },
     { min: 3000000, rate: 0.13, label: '300만원 이상' },
@@ -7752,10 +7757,6 @@ const GROUP_PROMOS = {};
 const _huhakgiActive = (() => {
     const today = new Date().toISOString().slice(0, 10);
     return today >= '2026-08-10' && today <= '2026-08-31';
-})();
-const _chuseokActive = (() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return today >= '2026-09-18' && today <= '2026-09-27';
 })();
 const CHUSEOK_PREMIUM_IDS = new Set(['t80', 't90']); // gcpro는 표시가격에 추석 프로모션 반영
 const HUHAKGI_SETS = [
