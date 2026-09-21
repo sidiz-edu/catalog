@@ -14285,8 +14285,6 @@ async function seSubmitRequest() {
         request_id: req.id, product_name: i.productName, item_code: i.itemCode,
         color_code: i.colorCode, qty: i.qty, unit_price: i.unitPrice || null,
         store_name_raw: i.storeNameRaw, store_id: i.storeId || null,
-        address: i.address, postal_code: i.postalCode,
-        contact_name: i.contactName, contact_phone: i.contactPhone,
     }));
     const { error: e2 } = await _sb.from('outgoing_request_items').insert(rows);
     if (e2) { msgEl.style.color='#ef4444'; msgEl.textContent='항목 저장 실패: '+e2.message; return; }
@@ -14426,7 +14424,6 @@ async function seToggleReqItems(id) {
                     <th style="padding:6px 10px;text-align:right;white-space:nowrap;">단가</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">매장</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">전시 현황</th>
-                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">담당자</th>
                 </tr></thead>
                 <tbody>
                     ${items.map((it, i) => {
@@ -14439,7 +14436,6 @@ async function seToggleReqItems(id) {
                             <td style="padding:6px 10px;text-align:right;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</td>
                             <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
                             <td style="padding:6px 10px;">${matchBadge(matches)}</td>
-                            <td style="padding:6px 10px;">${it.contact_name||''}${it.contact_phone?` ${it.contact_phone}`:''}</td>
                         </tr>`;
                     }).join('')}
                 </tbody>
