@@ -7568,8 +7568,8 @@ const variantData = {
         { name: 'T90 천연가죽',        price: 1390000, comparePrice: 1450000 },
     ],
     gcpro: [
-        { name: 'GC PRO 리뉴얼 일반형',   price: 710000, comparePrice: 790000 },
-        { name: 'GC PRO 리뉴얼 쿨링/LED', price: 910000, comparePrice: 990000 },
+        { name: 'GC PRO 리뉴얼 일반형',   price: _chuseokActive ? 646100 : 710000, comparePrice: _chuseokActive ? 710000 : 790000 },
+        { name: 'GC PRO 리뉴얼 쿨링/LED', price: _chuseokActive ? 828100 : 910000, comparePrice: _chuseokActive ? 910000 : 990000 },
         { name: '토트넘 GC PRO',          price: 770000, comparePrice: 790000 },
     ],
     gx: [
@@ -7757,7 +7757,7 @@ const _chuseokActive = (() => {
     const today = new Date().toISOString().slice(0, 10);
     return today >= '2026-09-18' && today <= '2026-09-27';
 })();
-const CHUSEOK_PREMIUM_IDS = new Set(['t80', 't90', 'gcpro']);
+const CHUSEOK_PREMIUM_IDS = new Set(['t80', 't90']); // gcpro는 표시가격에 추석 프로모션 반영
 const HUHAKGI_SETS = [
     { main: 'ringo2', pair: 'coverRingo2' },
     { main: 'ible',   pair: 'stepo' },
