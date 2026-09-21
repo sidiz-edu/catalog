@@ -14022,6 +14022,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 </div>
 
 <!-- 매출외 요청서 독립 패널 -->
+<!-- 매출외 요청서 역방향 조회 모달 -->
+<div id="seReqLookupModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:520px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div style="font-size:0.65rem;color:#94a3b8;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">매출외 요청서 연결</div>
+                <div id="seReqLookupSku" style="font-size:0.9rem;font-weight:700;color:#f1f5f9;font-family:monospace;"></div>
+            </div>
+            <button onclick="document.getElementById('seReqLookupModal').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:6px 14px;color:#94a3b8;cursor:pointer;font-size:0.82rem;">닫기</button>
+        </div>
+        <div id="seReqLookupBody" style="overflow-y:auto;flex:1;font-size:0.83rem;"></div>
+    </div>
+</div>
+
 <div id="reqPanel" style="display:none;position:fixed;inset:0;z-index:2500;background:var(--se-bg,#f8fafc);flex-direction:column;font-family:'Outfit',sans-serif;">
     <div style="background:#003EFF;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div>
@@ -14440,6 +14454,41 @@ async function seUpdateRequest(id) {
     seLoadRequestList();
 }
 
+async function seShowReqForSku(sku, storeId) {
+    const modal = document.getElementById('seReqLookupModal');
+    const body  = document.getElementById('seReqLookupBody');
+    document.getElementById('seReqLookupSku').textContent = sku;
+    body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
+    modal.style.display = 'flex';
+
+    // sku → item_code / color_code 분리 (마지막 - 이전이 item_code)
+    const lastDash = sku.lastIndexOf('-');
+    const itemCode  = lastDash >= 0 ? sku.slice(0, lastDash) : sku;
+    const colorCode = lastDash >= 0 ? sku.slice(lastDash + 1) : '';
+
+    const { data: items, error } = await _sb
+        .from('outgoing_request_items')
+        .select('*, outgoing_requests(id,title,department,requester,delivery_date,order_no,created_at)')
+        .eq('store_id', storeId)
+        .eq('item_code', itemCode)
+        .eq('color_code', colorCode);
+
+    if (error || !items || !items.length) {
+        body.innerHTML = '<p style="color:#94a3b8;font-size:0.82rem;">연결된 매출외 요청서가 없습니다.</p>';
+        return;
+    }
+
+    body.innerHTML = items.map(it => {
+        const r = it.outgoing_requests;
+        if (!r) return '';
+        return `<div style="border:1px solid #334155;border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f172a;">
+            <div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;">${r.title}</div>
+            <div style="font-size:0.75rem;color:#94a3b8;">${r.department||''} · ${r.requester||''} · 납기 ${r.delivery_date||'-'} · 수주번호 ${r.order_no||'-'}</div>
+            <div style="font-size:0.72rem;color:#475569;margin-top:3px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'} · 수량 ${it.qty??'-'} · 단가 ${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</div>
+        </div>`;
+    }).join('');
+}
+
 async function seDeleteRequest(id) {
     if (!confirm('이 요청서를 삭제할까요? (항목도 함께 삭제됩니다)')) return;
     await _sb.from('outgoing_requests').delete().eq('id', id);
@@ -14581,6 +14630,7 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
+                ${row.sku ? `<button class="se-del-btn" style="background:#7c3aed;color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="이 전시품과 연결된 매출외 요청서">📄</button>` : ''}
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>
                   <button class="se-del-btn" style="background:#16a34a;color:#fff;border:none;font-size:0.7rem;" onclick="seOpenSoldModal('${row.id}')">✅ 판매완료</button>
