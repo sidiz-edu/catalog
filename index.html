@@ -14287,15 +14287,108 @@ async function seLoadRequestList() {
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
-    el.innerHTML = data.map(r => `
-        <div style="border:1px solid var(--se-border);border-radius:10px;padding:14px 16px;margin-bottom:8px;background:var(--se-surface);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-            <div>
-                <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title}</div>
-                <div style="font-size:0.75rem;color:var(--se-muted);">${r.department || ''} · ${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
-                <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}</div>
+    el.innerHTML = data.map(r => {
+        const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        return `
+        <div id="req-card-${r.id}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
+            <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                <div style="cursor:pointer;flex:1;" onclick="seToggleReqItems('${r.id}')">
+                    <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
+                    <div style="font-size:0.75rem;color:var(--se-muted);">${r.department || ''} · ${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
+                    <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button onclick="seStartEditRequest('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:#3b82f6;font-size:0.75rem;cursor:pointer;">수정</button>
+                    <button onclick="seDeleteRequest('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:#ef4444;font-size:0.75rem;cursor:pointer;">삭제</button>
+                </div>
             </div>
-            <button onclick="seDeleteRequest('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:#ef4444;font-size:0.75rem;cursor:pointer;flex-shrink:0;">삭제</button>
-        </div>`).join('');
+            <!-- 항목 목록 (아코디언) -->
+            <div id="req-items-${r.id}" style="display:none;border-top:1px solid var(--se-border);padding:0 16px 14px;background:#f8fafc;">
+                <div id="req-items-body-${r.id}" style="margin-top:12px;font-size:0.8rem;color:#64748b;">불러오는 중...</div>
+            </div>
+            <!-- 수정 폼 -->
+            <div id="req-edit-${r.id}" style="display:none;padding:14px 16px;background:#f1f5f9;border-top:1px solid var(--se-border);">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">제목<input id="req-f-title-${r.id}" value="${esc(r.title)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">부서<input id="req-f-dept-${r.id}" value="${esc(r.department)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">담당자<input id="req-f-req-${r.id}" value="${esc(r.requester)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">납기일<input id="req-f-del-${r.id}" value="${esc(r.delivery_date)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">수주번호<input id="req-f-ord-${r.id}" value="${esc(r.order_no)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button onclick="seUpdateRequest('${r.id}')" style="padding:6px 16px;border-radius:6px;border:none;background:#003EFF;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">저장</button>
+                    <button onclick="seCancelEditRequest('${r.id}')" style="padding:6px 14px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;color:#64748b;font-size:0.82rem;cursor:pointer;">취소</button>
+                    <span id="req-edit-msg-${r.id}" style="font-size:0.78rem;color:#64748b;"></span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function seToggleReqItems(id) {
+    const area = document.getElementById(`req-items-${id}`);
+    const arrow = document.getElementById(`req-arrow-${id}`);
+    const open = area.style.display === '';
+    area.style.display = open ? 'none' : '';
+    arrow.textContent = open ? '▼ 항목 보기' : '▲ 접기';
+    if (!open) {
+        const body = document.getElementById(`req-items-body-${id}`);
+        body.textContent = '불러오는 중...';
+        const { data, error } = await _sb.from('outgoing_request_items')
+            .select('*').eq('request_id', id).order('created_at');
+        if (error || !data || !data.length) {
+            body.innerHTML = '<span style="color:#94a3b8;">항목이 없습니다.</span>'; return;
+        }
+        body.innerHTML = `<div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+                <thead><tr style="background:#e2e8f0;color:#475569;">
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">제품명</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">품목코드</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">색상</th>
+                    <th style="padding:6px 10px;text-align:center;white-space:nowrap;">수량</th>
+                    <th style="padding:6px 10px;text-align:right;white-space:nowrap;">단가</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">매장</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">주소</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">담당자</th>
+                </tr></thead>
+                <tbody>
+                    ${data.map((it, i) => `<tr style="background:${i%2?'#f8fafc':'#fff'};">
+                        <td style="padding:6px 10px;">${it.product_name||'-'}</td>
+                        <td style="padding:6px 10px;">${it.item_code||'-'}</td>
+                        <td style="padding:6px 10px;">${it.color_code||'-'}</td>
+                        <td style="padding:6px 10px;text-align:center;">${it.qty??'-'}</td>
+                        <td style="padding:6px 10px;text-align:right;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</td>
+                        <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
+                        <td style="padding:6px 10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.address||'-'}</td>
+                        <td style="padding:6px 10px;">${it.contact_name||''}${it.contact_phone?` ${it.contact_phone}`:''}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+    }
+}
+
+function seStartEditRequest(id) {
+    document.getElementById(`req-view-${id}`).style.display = 'none';
+    document.getElementById(`req-edit-${id}`).style.display = '';
+    document.getElementById(`req-f-title-${id}`).focus();
+}
+function seCancelEditRequest(id) {
+    document.getElementById(`req-edit-${id}`).style.display = 'none';
+    document.getElementById(`req-view-${id}`).style.display = 'flex';
+}
+async function seUpdateRequest(id) {
+    const msg = document.getElementById(`req-edit-msg-${id}`);
+    msg.textContent = '저장 중...'; msg.style.color = '#64748b';
+    const { error } = await _sb.from('outgoing_requests').update({
+        title:         document.getElementById(`req-f-title-${id}`).value.trim(),
+        department:    document.getElementById(`req-f-dept-${id}`).value.trim(),
+        requester:     document.getElementById(`req-f-req-${id}`).value.trim(),
+        delivery_date: document.getElementById(`req-f-del-${id}`).value.trim(),
+        order_no:      document.getElementById(`req-f-ord-${id}`).value.trim(),
+    }).eq('id', id);
+    if (error) { msg.textContent = '저장 실패'; msg.style.color = '#ef4444'; return; }
+    seLoadRequestList();
 }
 
 async function seDeleteRequest(id) {
