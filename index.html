@@ -14210,13 +14210,12 @@ function seParseRequest() {
     msgEl.textContent = '';
 
     const lines = raw.split('\n').map(l => l.split('\t').map(c => c.trim()));
-    let title = '', department = '', requester = '', deliveryDate = '', orderNo = '';
+    let title = '', requester = '', deliveryDate = '', orderNo = '';
     let headerRowIdx = -1;
 
     for (let i = 0; i < lines.length; i++) {
         const r = lines[i], c0 = r[0] || '';
         if (!title && (c0.includes('※') || (c0.includes('매출외') && c0.length > 4))) title = c0;
-        if (c0.replace(/\s/g,'').includes('신청부서')) department = r[1] || r[3] || '';
         if (c0.replace(/\s/g,'') === '담당') requester = r[1] || '';
         if (c0.replace(/\s/g,'').includes('요청납기')) deliveryDate = r[1] || '';
         if (c0.replace(/\s/g,'').includes('수주번호')) orderNo = r[1] || '';
@@ -14246,11 +14245,11 @@ function seParseRequest() {
 
     if (!items.length) { msgEl.textContent = '항목을 찾지 못했습니다.'; return; }
 
-    _seReqParsed = { title: title || '(제목 없음)', department, requester, deliveryDate, orderNo, items };
+    _seReqParsed = { title: title || '(제목 없음)', requester, deliveryDate, orderNo, items };
 
     // 메타 표시
     document.getElementById('seReqMeta').innerHTML = [
-        ['제목', _seReqParsed.title], ['부서', department], ['담당', requester],
+        ['제목', _seReqParsed.title], ['담당', requester],
         ['납기', deliveryDate], ['수주번호', orderNo || '(미입력)'],
     ].map(([k,v]) => `<div><span style="color:var(--se-muted);font-size:0.75rem;">${k}</span><div style="font-weight:600;">${v || '-'}</div></div>`).join('');
 
@@ -14279,7 +14278,7 @@ async function seSubmitRequest() {
     const sheetUrl   = (document.getElementById('seReqSheetUrl')?.value || '').trim() || null;
     const reqDate    = (document.getElementById('seReqDate')?.value     || '').trim() || null;
     const { data: req, error: e1 } = await _sb.from('outgoing_requests').insert({
-        title: _seReqParsed.title, department: _seReqParsed.department,
+        title: _seReqParsed.title,
         requester: _seReqParsed.requester, delivery_date: _seReqParsed.deliveryDate || null,
         order_no: _seReqParsed.orderNo || null, ep_url: epUrl, sheet_url: sheetUrl,
         request_date: reqDate,
@@ -14314,7 +14313,7 @@ async function seLoadRequestList() {
     if (!el) return;
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await _sb.from('outgoing_requests')
-        .select('id,title,department,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
+        .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
         .order('created_at', { ascending: false }).limit(30);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
@@ -14326,7 +14325,7 @@ async function seLoadRequestList() {
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                 <div style="cursor:pointer;flex:1;" onclick="seToggleReqItems('${r.id}')">
                     <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
-                    <div style="font-size:0.75rem;color:var(--se-muted);">${r.department || ''} · ${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
+                    <div style="font-size:0.75rem;color:var(--se-muted);">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
                     <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">${r.request_date ? `작성일 ${r.request_date} · ` : ''}등록: ${r.created_at ? r.created_at.slice(0,10) : '-'}${r.ep_url ? ` · <a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">🔗 출고요청서</a>` : ''}${r.sheet_url ? ` · <a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : ''}</div>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -14342,7 +14341,6 @@ async function seLoadRequestList() {
             <div id="req-edit-${r.id}" style="display:none;padding:14px 16px;background:#f1f5f9;border-top:1px solid var(--se-border);">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">제목<input id="req-f-title-${r.id}" value="${esc(r.title)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
-                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">부서<input id="req-f-dept-${r.id}" value="${esc(r.department)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">담당자<input id="req-f-req-${r.id}" value="${esc(r.requester)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">납기일<input id="req-f-del-${r.id}" type="date" value="${esc(r.delivery_date)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">수주번호<input id="req-f-ord-${r.id}" value="${esc(r.order_no)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
@@ -14464,7 +14462,6 @@ async function seUpdateRequest(id) {
     msg.textContent = '저장 중...'; msg.style.color = '#64748b';
     const { error } = await _sb.from('outgoing_requests').update({
         title:         document.getElementById(`req-f-title-${id}`).value.trim(),
-        department:    document.getElementById(`req-f-dept-${id}`).value.trim(),
         requester:     document.getElementById(`req-f-req-${id}`).value.trim(),
         delivery_date: document.getElementById(`req-f-del-${id}`).value.trim(),
         order_no:      document.getElementById(`req-f-ord-${id}`).value.trim(),
@@ -14490,7 +14487,7 @@ async function seShowReqForSku(sku, storeId) {
 
     const { data: items, error } = await _sb
         .from('outgoing_request_items')
-        .select('*, outgoing_requests(id,title,department,requester,delivery_date,order_no,created_at)')
+        .select('*, outgoing_requests(id,title,requester,delivery_date,order_no,created_at)')
         .eq('store_id', storeId)
         .eq('item_code', itemCode)
         .eq('color_code', colorCode);
@@ -14505,7 +14502,7 @@ async function seShowReqForSku(sku, storeId) {
         if (!r) return '';
         return `<div style="border:1px solid #334155;border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f172a;">
             <div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;">${r.title}</div>
-            <div style="font-size:0.75rem;color:#94a3b8;">${r.department||''} · ${r.requester||''} · 납기 ${r.delivery_date||'-'} · 수주번호 ${r.order_no||'-'}</div>
+            <div style="font-size:0.75rem;color:#94a3b8;">${r.requester||''} · 납기 ${r.delivery_date||'-'} · 수주번호 ${r.order_no||'-'}</div>
             <div style="font-size:0.72rem;color:#475569;margin-top:3px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'} · 수량 ${it.qty??'-'} · 단가 ${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</div>
         </div>`;
     }).join('');
