@@ -14238,6 +14238,25 @@ function seResolveStoreId(raw) {
         || SE_STORE_MAP[r + '점']
         || null;
 }
+
+// 비고가 비어 있는 양식 대비 — 도착지/주소 문자열에서 매장명을 찾아 보조 매칭
+let _seAddrKeys = null;
+function seStoreFromAddress(addr) {
+    if (!addr) return null;
+    if (!_seAddrKeys) {
+        _seAddrKeys = Object.keys(SE_STORE_MAP)
+            .map(k => [k.replace(/\s/g, '').replace(/\(.*?\)/g, '').replace(/점$/, ''), SE_STORE_MAP[k]])
+            .filter(([base]) => base.length >= 2)
+            .sort((x, y) => y[0].length - x[0].length);   // 긴 이름 먼저 (스타필드수원 > 수원)
+    }
+    const packed = addr.replace(/\s/g, '');
+    const tokens = addr.split(/[\s,()]+/).filter(Boolean);
+    for (const [base, id] of _seAddrKeys) {
+        // 2~3자 지명은 어절 앞부분만 비교 — '부산 해운대구'가 '대구'로 오인되는 것을 막는다
+        if (base.length >= 4 ? packed.includes(base) : tokens.some(t => t.startsWith(base))) return id;
+    }
+    return null;
+}
 const SE_STORE_MAP = {
     '논현점':'nonhyeon', '합정점':'hapjeong', '대전점':'daejeon',
     '평택점':'pyeongtaek', '대구점':'daegu', '송파점':'songpa',
@@ -14288,7 +14307,7 @@ function seParseRequest() {
     msgEl.textContent = '';
 
     const lines = seParseTSV(raw);
-    let title = '', requester = '', deliveryDate = '', orderNo = '';
+    let title = '', requester = '', deliveryDate = '', orderNo = '', destAddr = '';
     let headerRowIdx = -1;
 
     for (let i = 0; i < lines.length; i++) {
@@ -14297,6 +14316,7 @@ function seParseRequest() {
         if (c0.replace(/\s/g,'') === '담당') requester = r[1] || '';
         if (c0.replace(/\s/g,'').includes('요청납기')) deliveryDate = r[1] || '';
         if (c0.replace(/\s/g,'').includes('수주번호')) orderNo = r[1] || '';
+        if (!destAddr && c0.replace(/\s/g,'').includes('도착지')) destAddr = r[1] || '';
         if (c0.replace(/\s/g,'').includes('제품명') || c0.replace(/\s/g,'').includes('제 품 명')) {
             headerRowIdx = i; break;
         }
@@ -14331,15 +14351,22 @@ function seParseRequest() {
         const num = c => parseInt(val(c).replace(/[^0-9]/g, '')) || 0;
         if (/^(합계|총계|소계|계)$/.test((r[0] || '').replace(/\s/g, ''))) break;
         if (!r[0] || !val(cCode)) continue;   // 빈 행·구분선은 건너뜀 (break 금지)
-        const storeNameRaw = val(cStore);
+        const addr = val(cAddr);
+        let storeNameRaw = val(cStore);
+        // 비고 → 행 주소 → 요청서 도착지 순으로 매장 탐색
+        let storeId = seResolveStoreId(storeNameRaw)
+            || seStoreFromAddress(addr)
+            || seStoreFromAddress(destAddr);
+        if (storeId && !storeNameRaw) {
+            storeNameRaw = storeData.find(s => s.id === storeId)?.name || storeId;
+        }
         items.push({
             productName: r[0], itemCode: val(cCode), colorCode: val(cColor),
             qty: num(cQty) || 1,
             unitPrice: num(cUnit),
             amount: num(cAmt),
-            storeNameRaw,
-            storeId: seResolveStoreId(storeNameRaw),
-            address: val(cAddr), postalCode: val(cPost),
+            storeNameRaw, storeId,
+            address: addr, postalCode: val(cPost),
             contactName: val(cName), contactPhone: val(cPhone),
         });
     }
