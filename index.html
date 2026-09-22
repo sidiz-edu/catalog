@@ -14115,7 +14115,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                 <div id="seReqFilterBar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
                 <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
-                    placeholder="제품명 · 품목코드 · 색상 · 매장 · 제목 · 수주번호 검색"
+                    placeholder="공백으로 여러 조건 (예: T90 논현 / SB01F 피팅존 / 2026-08 수원)"
                     style="flex:1;min-width:240px;box-sizing:border-box;padding:6px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.78rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
                 <span id="seReqSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
             </div>
@@ -14558,6 +14558,16 @@ const SE_KIND_STYLE = {
     mixed:  ['🔀 혼합',      '#fef3c7', '#b45309'],
 };
 
+// 공백으로 구분된 단어를 모두 포함해야 매칭 (예: "t90 논현")
+function seSearchMatcher(raw) {
+    const terms = (raw || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return () => true;
+    return hay => {
+        const packed = hay.replace(/[\s-]/g, '');
+        return terms.every(t => hay.includes(t) || packed.includes(t.replace(/[\s-]/g, '')));
+    };
+}
+
 let _seReqKind = 'all';
 let _seReqView = 'list';
 let _seFlatRows = null;   // 품목 전체보기 데이터 (최초 전환 시 로드)
@@ -14625,11 +14635,9 @@ async function seLoadFlatRows() {
 function seRenderFlat() {
     const body = document.getElementById('seReqFlatBody');
     if (!body || !_seFlatRows) return;
-    const q = (document.getElementById('seReqSearch')?.value || '').trim().toLowerCase();
-    const qn = q.replace(/[\s-]/g, '');
+    const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
     const rows = _seFlatRows.filter(x =>
-        (_seReqKind === 'all' || _seReqKind === 'mixed' || x.kind === _seReqKind) &&
-        (!q || x.hay.includes(q) || x.hay.replace(/[\s-]/g, '').includes(qn)));
+        (_seReqKind === 'all' || _seReqKind === 'mixed' || x.kind === _seReqKind) && hit(x.hay));
 
     const cnt = document.getElementById('seReqSearchCount');
     if (cnt) cnt.textContent = `${rows.length} / ${_seFlatRows.length}개 품목`;
@@ -14689,15 +14697,14 @@ function seFilterRequests(kind) {
 // 구분 필터 + 검색어를 함께 적용
 function seApplyReqFilters() {
     if (_seReqView === 'flat') { seRenderFlat(); return; }
-    const q = (document.getElementById('seReqSearch')?.value || '').trim().toLowerCase();
-    const qn = q.replace(/[\s-]/g, '');
+    const q = (document.getElementById('seReqSearch')?.value || '').trim();
+    const match = seSearchMatcher(q);
     const cards = document.querySelectorAll('#seReqListBody > div[data-kind]');
     let shown = 0;
     cards.forEach(c => {
         const kindOk = _seReqKind === 'all' || c.dataset.kind === _seReqKind;
         const hay = c.dataset.search || '';
-        const hit = !q || hay.includes(q) || hay.replace(/[\s-]/g, '').includes(qn);
-        const on = kindOk && hit;
+        const on = kindOk && match(hay);
         c.style.display = on ? '' : 'none';
         if (on) shown++;
     });
