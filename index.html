@@ -6537,9 +6537,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCartBadge();
     // 새로고침 후 SE Management 자동 복귀
     if ((location.hash === '#se' || location.hash === '#se-req') && localStorage.getItem('seAuth') === '1') {
+        const _initHash = location.hash;
         setTimeout(() => {
             openSEPanel();
-            if (location.hash === '#se-req') seSwitchToRequest();
+            if (_initHash === '#se-req') seSwitchToRequest();
         }, 300);
     }
 });
