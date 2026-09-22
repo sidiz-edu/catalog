@@ -14555,13 +14555,18 @@ const SE_CHAIR_CODES = new Set([  // 품목명에 부품 단어가 섞였지만 
     'T250NF',        // 리니에 블랙쉘 (플렉스등판, 회전형)
     'VTNF500HLDA',   // T50 회전형
 ]);
+const SE_PROMO_CODES = new Set([  // 판촉물 — FHXZ 접두는 콜라보 의자에도 쓰이므로 코드를 명시한다
+    'FHXZ2503001',   // 토트넘 포토카드
+]);
 const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|받침대)/;
 
 function seItemClass(itemCode, productName) {
     const c = (itemCode || '').replace(/\s/g, '').toUpperCase();
+    if (SE_PROMO_CODES.has(c)) return 'promo';
     if (SE_CHAIR_CODES.has(c)) return 'chair';
     if (SE_PART_CODES.has(c))  return 'part';
-    if (c.startsWith('FHXZ') || /[가-힣]/.test(c)) return 'promo';   // 판촉물·컬러칩
+    if (/[가-힣]/.test(c)) return 'promo';                        // 컬러칩 등 코드가 한글인 것
+    if (/(포토카드|엽서|스티커|굿즈)/.test(productName || '')) return 'promo';
     return SE_REPAIR_RE.test(productName || '') ? 'part' : 'chair';
 }
 
