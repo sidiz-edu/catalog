@@ -14442,6 +14442,17 @@ async function seSubmitRequest() {
 
 // 이지리페어(부품·소모품) 판별 — 품목명 기준
 const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|포토카드)/;
+// 날짜 칩 — 년도별로 색상 구분 [글자색, 배경색]
+const SE_YEAR_COLOR = {
+    2023: ['#be123c', '#fff1f2'],
+    2024: ['#d97706', '#fffbeb'],
+    2025: ['#0d9488', '#f0fdfa'],
+    2026: ['#003EFF', '#eff6ff'],
+    2027: ['#7c3aed', '#f5f3ff'],
+    2028: ['#db2777', '#fdf2f8'],
+};
+const seYearColor = y => SE_YEAR_COLOR[y] || ['#475569', '#f1f5f9'];
+
 const SE_KIND_STYLE = {
     chair:  ['🪑 의자',      '#eef2ff', '#4338ca'],
     repair: ['🔧 이지리페어', '#e0f2fe', '#0369a1'],
@@ -14512,6 +14523,7 @@ async function seLoadRequestList() {
     el.innerHTML = data.map(r => {
         const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         const [ry, rm, rd] = (r.request_date || '').split('-');
+        const [yFg, yBg] = seYearColor(ry);
         const links = [
             r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">🔗 출고요청서</a>` : '',
             r.sheet_url ? `<a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : '',
@@ -14519,10 +14531,10 @@ async function seLoadRequestList() {
         return `
         <div id="req-card-${r.id}" data-kind="${kindOf(r.id)}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
-                <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:58px;padding-right:14px;border-right:1px solid var(--se-border);" onclick="seToggleReqItems('${r.id}')">
+                <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:62px;padding:9px 11px;border-radius:10px;background:${yBg};" onclick="seToggleReqItems('${r.id}')">
                     ${r.request_date
-                        ? `<div style="font-size:1.75rem;font-weight:800;color:#003EFF;line-height:1;letter-spacing:-1px;">${rd}</div>
-                           <div style="font-size:0.7rem;color:var(--se-muted);margin-top:4px;font-weight:700;">${ry}.${rm}</div>`
+                        ? `<div style="font-size:1.75rem;font-weight:800;color:${yFg};line-height:1;letter-spacing:-1px;">${rd}</div>
+                           <div style="font-size:0.7rem;color:${yFg};opacity:0.8;margin-top:4px;font-weight:700;">${ry}.${rm}</div>`
                         : `<div style="font-size:1.2rem;color:#cbd5e1;line-height:1.6;">—</div>`}
                 </div>
                 <div style="cursor:pointer;flex:1;min-width:0;" onclick="seToggleReqItems('${r.id}')">
