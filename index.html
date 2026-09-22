@@ -14239,6 +14239,11 @@ function seResolveStoreId(raw) {
         || null;
 }
 
+// 주소에 매장명이 안 들어가는 매장 — 주소 키워드로 보조 매칭
+const SE_ADDR_HINT = {
+    '해운대': 'centum',   // 센텀점: 부산 해운대구 해운대로
+};
+
 // 비고가 비어 있는 양식 대비 — 도착지/주소 문자열에서 매장명을 찾아 보조 매칭
 let _seAddrKeys = null;
 function seStoreFromAddress(addr) {
@@ -14254,6 +14259,10 @@ function seStoreFromAddress(addr) {
     for (const [base, id] of _seAddrKeys) {
         // 2~3자 지명은 어절 앞부분만 비교 — '부산 해운대구'가 '대구'로 오인되는 것을 막는다
         if (base.length >= 4 ? packed.includes(base) : tokens.some(t => t.startsWith(base))) return id;
+    }
+    // 매장명이 없는 주소는 지역 키워드로 판단
+    for (const [hint, id] of Object.entries(SE_ADDR_HINT)) {
+        if (packed.includes(hint)) return id;
     }
     return null;
 }
