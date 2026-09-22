@@ -14428,6 +14428,30 @@ function _skuMatch(itemCode, colorCode, sku) {
     return false;
 }
 
+async function seEditUnitPrice(td, itemId, currentPrice) {
+    if (td.querySelector('input')) return;
+    const span = td.querySelector('span');
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.value = currentPrice !== null && currentPrice !== undefined ? currentPrice : '';
+    input.style.cssText = 'width:90px;padding:2px 6px;border:1px solid #3b82f6;border-radius:4px;font-size:0.82rem;text-align:right;';
+    td.innerHTML = '';
+    td.appendChild(input);
+    input.focus();
+    input.select();
+    const save = async () => {
+        const val = input.value.trim() === '' ? null : parseInt(input.value.replace(/[^0-9]/g,''));
+        const { error } = await _sb.from('outgoing_request_items').update({ unit_price: val }).eq('id', itemId);
+        td.innerHTML = error
+            ? `<span style="border-bottom:1px dashed #ef4444;color:#ef4444;" title="${error.message}">${currentPrice!=null?currentPrice.toLocaleString():'-'}</span>`
+            : `<span style="border-bottom:1px dashed #94a3b8;" onclick="seEditUnitPrice(this.parentElement,'${itemId}',${val??'null'})">${val!=null?val.toLocaleString():'-'}</span>`;
+        td.style.cursor = 'pointer';
+        td.onclick = () => seEditUnitPrice(td, itemId, val);
+    };
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { td.innerHTML = `<span style="border-bottom:1px dashed #94a3b8;">${currentPrice!=null?currentPrice.toLocaleString():'-'}</span>`; td.onclick = () => seEditUnitPrice(td, itemId, currentPrice); } });
+}
+
 async function seToggleReqItems(id) {
     const area = document.getElementById(`req-items-${id}`);
     const arrow = document.getElementById(`req-arrow-${id}`);
@@ -14493,7 +14517,7 @@ async function seToggleReqItems(id) {
                             <td style="padding:6px 10px;font-family:monospace;">${it.item_code||'-'}</td>
                             <td style="padding:6px 10px;">${it.color_code||'-'}</td>
                             <td style="padding:6px 10px;text-align:center;">${it.qty??'-'}</td>
-                            <td style="padding:6px 10px;text-align:right;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</td>
+                            <td style="padding:6px 10px;text-align:right;cursor:pointer;" title="클릭하여 단가 수정" onclick="seEditUnitPrice(this,'${it.id}',${it.unit_price??'null'})"><span style="border-bottom:1px dashed #94a3b8;">${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</span></td>
                             <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
                             <td style="padding:6px 10px;">${matchBadge(matches)}</td>
                         </tr>`;
