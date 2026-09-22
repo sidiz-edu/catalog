@@ -6202,6 +6202,7 @@ async function checkAdminPw() {
         adminFailCount = 0;
         closeAdminModal();
         enterAdminMode();
+        if (location.hash === '#se-req') seSwitchToRequest();
     } else {
         adminFailCount++;
         input.classList.add('error');
@@ -6218,15 +6219,17 @@ async function checkAdminPw() {
 }
 
 // ── 관리자 모드 진입/퇴장 ──
-function enterAdminMode() {
+function enterAdminMode(silent) {
     isAdminMode = true;
+    localStorage.setItem('adminAuth', '1');
     document.body.classList.add('admin-mode');
     document.getElementById('adminBar').classList.add('open');
     document.querySelectorAll('[data-editable]').forEach(el => { el.contentEditable = 'true'; });
-    showToast('✅ 관리자 모드 진입');
+    if (!silent) showToast('✅ 관리자 모드 진입');
 }
 function exitAdminMode() {
     isAdminMode = false;
+    localStorage.removeItem('adminAuth');
     document.body.classList.remove('admin-mode');
     document.getElementById('adminBar').classList.remove('open');
     document.querySelectorAll('[data-editable]').forEach(el => { el.contentEditable = 'false'; });
@@ -14134,10 +14137,7 @@ function closeSELogin() { document.getElementById('seLoginOverlay').classList.re
 function seConfirmLogin() {
     if (document.getElementById('sePasswordInput').value === SE_PW) {
         localStorage.setItem('seAuth', '1');
-        closeSELogin();
-        const goReq = location.hash === '#se-req';
-        openSEPanel(goReq);
-        if (goReq) seSwitchToRequest();
+        closeSELogin(); openSEPanel();
     } else {
         document.getElementById('seLoginError').textContent = '비밀번호가 올바르지 않습니다.';
     }
@@ -14201,17 +14201,23 @@ function seSwitchToRequest() {
 }
 function closeReqPanel() {
     document.getElementById('reqPanel').style.display = 'none';
-    history.replaceState(null, '', location.pathname + location.search + '#se');
+    history.replaceState(null, '', location.pathname + location.search);
 }
 
 // 새로고침 / 링크 직접 접속 시 SE 화면 복귀
 function seRestoreFromHash() {
     const h = location.hash;
-    if (h !== '#se' && h !== '#se-req') return;
-    if (localStorage.getItem('seAuth') !== '1') { openSELogin(); return; }
-    try { openSEPanel(true); } catch (e) { console.error('openSEPanel 실패', e); }
+    // 매출외 요청서 — 관리자 모드로 진입하는 화면
     if (h === '#se-req') {
+        if (localStorage.getItem('adminAuth') !== '1') { openAdminModal(); return; }
+        try { enterAdminMode(true); } catch (e) { console.error('enterAdminMode 실패', e); }
         try { seSwitchToRequest(); } catch (e) { console.error('seSwitchToRequest 실패', e); }
+        return;
+    }
+    // 전시 관리(SE) 패널
+    if (h === '#se') {
+        if (localStorage.getItem('seAuth') !== '1') { openSELogin(); return; }
+        try { openSEPanel(true); } catch (e) { console.error('openSEPanel 실패', e); }
     }
 }
 if (document.readyState === 'loading') {
