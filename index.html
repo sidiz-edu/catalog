@@ -6535,14 +6535,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initComparePicker();
     applyGuestParams();
     updateCartBadge();
-    // 새로고침 후 SE Management 자동 복귀
-    if ((location.hash === '#se' || location.hash === '#se-req') && localStorage.getItem('seAuth') === '1') {
-        const _initHash = location.hash;
-        setTimeout(() => {
-            openSEPanel();
-            if (_initHash === '#se-req') seSwitchToRequest();
-        }, 300);
-    }
 });
 
 // ══════════════════════════════════════════════
@@ -14142,13 +14134,16 @@ function closeSELogin() { document.getElementById('seLoginOverlay').classList.re
 function seConfirmLogin() {
     if (document.getElementById('sePasswordInput').value === SE_PW) {
         localStorage.setItem('seAuth', '1');
-        closeSELogin(); openSEPanel();
+        closeSELogin();
+        const goReq = location.hash === '#se-req';
+        openSEPanel(goReq);
+        if (goReq) seSwitchToRequest();
     } else {
         document.getElementById('seLoginError').textContent = '비밀번호가 올바르지 않습니다.';
     }
 }
-function openSEPanel() {
-    location.hash = 'se';
+function openSEPanel(keepHash) {
+    if (!keepHash) location.hash = 'se';
     document.getElementById('seMgmtPanel').classList.add('open');
     // 매장 드롭다운
     const sel = document.getElementById('seStoreSelect');
@@ -14207,6 +14202,22 @@ function seSwitchToRequest() {
 function closeReqPanel() {
     document.getElementById('reqPanel').style.display = 'none';
     history.replaceState(null, '', location.pathname + location.search + '#se');
+}
+
+// 새로고침 / 링크 직접 접속 시 SE 화면 복귀
+function seRestoreFromHash() {
+    const h = location.hash;
+    if (h !== '#se' && h !== '#se-req') return;
+    if (localStorage.getItem('seAuth') !== '1') { openSELogin(); return; }
+    try { openSEPanel(true); } catch (e) { console.error('openSEPanel 실패', e); }
+    if (h === '#se-req') {
+        try { seSwitchToRequest(); } catch (e) { console.error('seSwitchToRequest 실패', e); }
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(seRestoreFromHash, 400));
+} else {
+    setTimeout(seRestoreFromHash, 400);
 }
 
 // ── 매출외 요청서 ──
