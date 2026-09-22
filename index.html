@@ -14568,9 +14568,31 @@ function seSearchMatcher(raw) {
     };
 }
 
+// 구분 필터 바 — 뷰에 따라 집계 단위가 달라진다 (요청서 '건' / 품목 '개')
+// counts.mixed가 null이면 품목 단위라 '혼합'이 성립하지 않으므로 비활성 표시
+function seRenderKindBar(total, counts, unit) {
+    const bar = document.getElementById('seReqFilterBar');
+    if (!bar) return;
+    const entries = [['all', `전체 (${total}${unit})`]];
+    ['chair', 'repair', 'mixed'].forEach(k => {
+        if (counts[k] === null || counts[k] === undefined) {
+            entries.push([k, `${SE_KIND_STYLE[k][0]} —`, true]);
+        } else {
+            entries.push([k, `${SE_KIND_STYLE[k][0]} (${counts[k]})`, false]);
+        }
+    });
+    bar.innerHTML = entries.map(([k, label, off]) => {
+        const active = !off && k === _seReqKind;
+        const fg = off ? '#cbd5e1' : (k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2]);
+        return `<button id="req-kind-${k}" ${off ? 'disabled title="품목 단위에서는 적용되지 않습니다"' : `onclick="seFilterRequests('${k}')"`}
+            style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:${off?'not-allowed':'pointer'};background:${active?'#003EFF':'#fff'};color:${active?'#fff':fg};border:1px solid ${active?'#003EFF':'#e2e8f0'};">${label}</button>`;
+    }).join('');
+}
+
 let _seReqKind = 'all';
 let _seReqView = 'list';
 let _seFlatRows = null;   // 품목 전체보기 데이터 (최초 전환 시 로드)
+let _seReqCounts = null;  // 요청서 단위 집계 (뷰 복귀 시 필터 바 복원용)
 
 function seSetReqView(v) {
     _seReqView = v;
@@ -14584,8 +14606,9 @@ function seSetReqView(v) {
         b.style.color = on ? '#fff' : '#003EFF';
         b.style.border = on ? '1px solid #003EFF' : '1px solid #e2e8f0';
     });
-    if (v === 'flat') seLoadFlatRows();
-    else seApplyReqFilters();
+    if (v === 'flat') { seLoadFlatRows(); return; }
+    if (_seReqCounts) seRenderKindBar(_seReqCounts.total, _seReqCounts.counts, '건');
+    seApplyReqFilters();
 }
 
 async function seLoadFlatRows() {
@@ -14635,9 +14658,17 @@ async function seLoadFlatRows() {
 function seRenderFlat() {
     const body = document.getElementById('seReqFlatBody');
     if (!body || !_seFlatRows) return;
+    // 품목 단위에서는 '혼합'이 성립하지 않으므로 전체로 되돌린다
+    if (_seReqKind === 'mixed') _seReqKind = 'all';
+    seRenderKindBar(_seFlatRows.length, {
+        chair:  _seFlatRows.filter(x => x.kind === 'chair').length,
+        repair: _seFlatRows.filter(x => x.kind === 'repair').length,
+        mixed:  null,
+    }, '개');
+
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
     const rows = _seFlatRows.filter(x =>
-        (_seReqKind === 'all' || _seReqKind === 'mixed' || x.kind === _seReqKind) && hit(x.hay));
+        (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
 
     const cnt = document.getElementById('seReqSearchCount');
     if (cnt) cnt.textContent = `${rows.length} / ${_seFlatRows.length}개 품목`;
@@ -14756,19 +14787,11 @@ async function seLoadRequestList() {
         return `<span style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${bg};color:${fg};white-space:nowrap;">${label}</span>`;
     };
 
-    // 구분별 필터 바
-    const bar = document.getElementById('seReqFilterBar');
-    if (bar) {
-        const counts = { chair: 0, repair: 0, mixed: 0 };
-        data.forEach(r => { const k = kindOf(r.id); if (k in counts) counts[k]++; });
-        bar.innerHTML = [['all', `전체 (${data.length})`], ...Object.keys(counts)
-            .map(k => [k, `${SE_KIND_STYLE[k][0]} (${counts[k]})`])]
-            .map(([k, label]) => {
-                const active = k === _seReqKind;
-                const fg = k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2];
-                return `<button id="req-kind-${k}" onclick="seFilterRequests('${k}')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${active?'#003EFF':'#fff'};color:${active?'#fff':fg};border:1px solid ${active?'#003EFF':'#e2e8f0'};">${label}</button>`;
-            }).join('');
-    }
+    // 구분별 필터 바 (요청서 단위 집계)
+    const counts = { chair: 0, repair: 0, mixed: 0 };
+    data.forEach(r => { const k = kindOf(r.id); if (k in counts) counts[k]++; });
+    _seReqCounts = { total: data.length, counts };
+    if (_seReqView === 'list') seRenderKindBar(data.length, counts, '건');
     el.innerHTML = data.map(r => {
         const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         const [ry, rm, rd] = (r.request_date || '').split('-');
