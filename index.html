@@ -14095,7 +14095,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         </div>
 
         <div style="margin-top:36px;">
-            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
+            <div id="seReqFilterBar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
         </div>
     </div>
@@ -14441,6 +14442,25 @@ async function seSubmitRequest() {
 
 // 이지리페어(부품·소모품) 판별 — 품목명 기준
 const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|포토카드)/;
+const SE_KIND_STYLE = {
+    chair:  ['🪑 의자',      '#eef2ff', '#4338ca'],
+    repair: ['🔧 이지리페어', '#e0f2fe', '#0369a1'],
+    mixed:  ['🔀 혼합',      '#fef3c7', '#b45309'],
+};
+
+function seFilterRequests(kind) {
+    document.querySelectorAll('#seReqListBody > div[data-kind]').forEach(c => {
+        c.style.display = (kind === 'all' || c.dataset.kind === kind) ? '' : 'none';
+    });
+    ['all', ...Object.keys(SE_KIND_STYLE)].forEach(k => {
+        const b = document.getElementById(`req-kind-${k}`);
+        if (!b) return;
+        const active = k === kind;
+        b.style.background = active ? '#003EFF' : '#fff';
+        b.style.color = active ? '#fff' : (k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2]);
+        b.style.border = active ? '1px solid #003EFF' : '1px solid #e2e8f0';
+    });
+}
 
 async function seLoadRequestList() {
     const el = document.getElementById('seReqListBody');
@@ -14464,14 +14484,31 @@ async function seLoadRequestList() {
         const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, repair: 0 });
         SE_REPAIR_RE.test(it.product_name || '') ? m.repair++ : m.chair++;
     });
-    const kindBadge = id => {
+    const kindOf = id => {
         const m = mix[id];
-        if (!m) return '';
-        const [label, bg, fg] = m.chair && m.repair ? ['🔀 혼합', '#fef3c7', '#b45309']
-            : m.repair ? ['🔧 이지리페어', '#e0f2fe', '#0369a1']
-            : ['🪑 의자', '#eef2ff', '#4338ca'];
+        if (!m) return 'empty';
+        return m.chair && m.repair ? 'mixed' : m.repair ? 'repair' : 'chair';
+    };
+    const kindBadge = id => {
+        const k = kindOf(id);
+        if (k === 'empty') return '';
+        const [label, bg, fg] = SE_KIND_STYLE[k];
         return `<span style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${bg};color:${fg};white-space:nowrap;">${label}</span>`;
     };
+
+    // 구분별 필터 바
+    const bar = document.getElementById('seReqFilterBar');
+    if (bar) {
+        const counts = { chair: 0, repair: 0, mixed: 0 };
+        data.forEach(r => { const k = kindOf(r.id); if (k in counts) counts[k]++; });
+        bar.innerHTML = [['all', `전체 (${data.length})`], ...Object.keys(counts)
+            .map(k => [k, `${SE_KIND_STYLE[k][0]} (${counts[k]})`])]
+            .map(([k, label]) => {
+                const active = k === 'all';
+                const fg = k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2];
+                return `<button id="req-kind-${k}" onclick="seFilterRequests('${k}')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${active?'#003EFF':'#fff'};color:${active?'#fff':fg};border:1px solid ${active?'#003EFF':'#e2e8f0'};">${label}</button>`;
+            }).join('');
+    }
     el.innerHTML = data.map(r => {
         const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         const [ry, rm, rd] = (r.request_date || '').split('-');
@@ -14480,7 +14517,7 @@ async function seLoadRequestList() {
             r.sheet_url ? `<a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : '',
         ].filter(Boolean).join(' · ');
         return `
-        <div id="req-card-${r.id}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
+        <div id="req-card-${r.id}" data-kind="${kindOf(r.id)}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
                 <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:58px;padding-right:14px;border-right:1px solid var(--se-border);" onclick="seToggleReqItems('${r.id}')">
                     ${r.request_date
