@@ -14112,7 +14112,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 
         <div>
             <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
-            <div id="seReqFilterBar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <div id="seReqFilterBar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+                <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
+                    placeholder="제품명 · 품목코드 · 색상 · 매장 · 제목 · 수주번호 검색"
+                    style="flex:1;min-width:240px;box-sizing:border-box;padding:6px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.78rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+                <span id="seReqSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
+            </div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
             <button onclick="seOpenReqForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
         </div>
@@ -14547,10 +14553,10 @@ const SE_KIND_STYLE = {
     mixed:  ['🔀 혼합',      '#fef3c7', '#b45309'],
 };
 
+let _seReqKind = 'all';
+
 function seFilterRequests(kind) {
-    document.querySelectorAll('#seReqListBody > div[data-kind]').forEach(c => {
-        c.style.display = (kind === 'all' || c.dataset.kind === kind) ? '' : 'none';
-    });
+    _seReqKind = kind;
     ['all', ...Object.keys(SE_KIND_STYLE)].forEach(k => {
         const b = document.getElementById(`req-kind-${k}`);
         if (!b) return;
@@ -14559,6 +14565,25 @@ function seFilterRequests(kind) {
         b.style.color = active ? '#fff' : (k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2]);
         b.style.border = active ? '1px solid #003EFF' : '1px solid #e2e8f0';
     });
+    seApplyReqFilters();
+}
+
+// 구분 필터 + 검색어를 함께 적용
+function seApplyReqFilters() {
+    const q = (document.getElementById('seReqSearch')?.value || '').trim().toLowerCase();
+    const qn = q.replace(/[\s-]/g, '');
+    const cards = document.querySelectorAll('#seReqListBody > div[data-kind]');
+    let shown = 0;
+    cards.forEach(c => {
+        const kindOk = _seReqKind === 'all' || c.dataset.kind === _seReqKind;
+        const hay = c.dataset.search || '';
+        const hit = !q || hay.includes(q) || hay.replace(/[\s-]/g, '').includes(qn);
+        const on = kindOk && hit;
+        c.style.display = on ? '' : 'none';
+        if (on) shown++;
+    });
+    const cnt = document.getElementById('seReqSearchCount');
+    if (cnt) cnt.textContent = (q || _seReqKind !== 'all') ? `${shown} / ${cards.length}건` : '';
 }
 
 async function seLoadRequestList() {
@@ -14569,13 +14594,22 @@ async function seLoadRequestList() {
         _sb.from('outgoing_requests')
             .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
             .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
-        _sb.from('outgoing_request_items').select('request_id,product_name'),
+        _sb.from('outgoing_request_items').select('request_id,product_name,item_code,color_code,store_name_raw'),
     ]);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
     const cntEl = document.getElementById('seReqCount');
     if (cntEl) cntEl.textContent = `${data.length}건`;
+
+    // 요청서별 검색 대상 텍스트 (품목명·품목코드·색상·매장)
+    const searchBag = {};
+    (itemsRes.data || []).forEach(it => {
+        const bag = searchBag[it.request_id] || (searchBag[it.request_id] = new Set());
+        [it.product_name, it.item_code, it.color_code, it.store_name_raw,
+         `${it.item_code || ''}-${it.color_code || ''}`]
+            .forEach(v => { if (v) bag.add(String(v).toLowerCase()); });
+    });
 
     // 요청서별 품목 구성 → 의자 / 이지리페어 / 혼합
     const mix = {};
@@ -14603,7 +14637,7 @@ async function seLoadRequestList() {
         bar.innerHTML = [['all', `전체 (${data.length})`], ...Object.keys(counts)
             .map(k => [k, `${SE_KIND_STYLE[k][0]} (${counts[k]})`])]
             .map(([k, label]) => {
-                const active = k === 'all';
+                const active = k === _seReqKind;
                 const fg = k === 'all' ? '#003EFF' : SE_KIND_STYLE[k][2];
                 return `<button id="req-kind-${k}" onclick="seFilterRequests('${k}')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${active?'#003EFF':'#fff'};color:${active?'#fff':fg};border:1px solid ${active?'#003EFF':'#e2e8f0'};">${label}</button>`;
             }).join('');
@@ -14616,8 +14650,12 @@ async function seLoadRequestList() {
             r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">🔗 출고요청서</a>` : '',
             r.sheet_url ? `<a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : '',
         ].filter(Boolean).join(' · ');
+        const hay = [r.title, r.requester, r.order_no, r.request_date, r.delivery_date,
+                     ...(searchBag[r.id] || [])]
+            .filter(Boolean).join(' ').toLowerCase()
+            .replace(/"/g, '&quot;');
         return `
-        <div id="req-card-${r.id}" data-kind="${kindOf(r.id)}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
+        <div id="req-card-${r.id}" data-kind="${kindOf(r.id)}" data-search="${hay}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
                 <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:62px;padding:9px 11px;border-radius:10px;background:${yBg};" onclick="seToggleReqItems('${r.id}')">
                     ${r.request_date
@@ -14658,6 +14696,7 @@ async function seLoadRequestList() {
             </div>
         </div>`;
     }).join('');
+    seApplyReqFilters();   // 재로드 후에도 선택된 구분·검색어 유지
 }
 
 // SKU 매칭 — 3단계 우선순위
