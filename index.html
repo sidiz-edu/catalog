@@ -14146,6 +14146,16 @@ let sePendingDeletes = [];
 let seStoreZones = [];
 const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
 
+// SE 관리 전용 매장 — 고객용 매장 안내·견적 화면에는 노출하지 않으므로 storeData에 넣지 않는다
+const SE_EXTRA_STORES = [
+    { id: 'iloom_daegu',   name: '일룸 대구점',     region: '대구' },
+    { id: 'iloom_daejeon', name: '일룸 대전둔산점', region: '대전' },
+    { id: 'iloom_songpa',  name: '일룸 송파점',     region: '서울' },
+    { id: 'kimpo',         name: '현대김포점',      region: '경기' },
+    { id: 'livingpower',   name: '리빙파워센터',    region: '기타' },
+];
+const seStores = () => [...storeData, ...SE_EXTRA_STORES];
+
 function openSELogin() {
     document.getElementById('seLoginOverlay').classList.add('open');
     document.getElementById('sePasswordInput').value = '';
@@ -14167,7 +14177,7 @@ function openSEPanel(keepHash) {
     // 매장 드롭다운
     const sel = document.getElementById('seStoreSelect');
     if (sel.options.length <= 1) {
-        storeData.forEach(s => {
+        seStores().forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id; opt.textContent = `${s.name} (${s.region})`;
             sel.appendChild(opt);
@@ -15177,7 +15187,7 @@ function seOpenMoveModal() {
     const modal = document.getElementById('seMoveModal');
     const sel = document.getElementById('seMoveTargetStore');
     sel.innerHTML = '<option value="">대상 매장 선택</option>';
-    storeData.forEach(s => {
+    seStores().forEach(s => {
         if (s.id === seCurrentStore) return;
         const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name} (${s.region})`; sel.appendChild(o);
     });
@@ -15199,7 +15209,7 @@ async function seConfirmMove() {
     if (!targetId)   { msg.style.color='#f87171'; msg.textContent='대상 매장을 선택하세요.'; return; }
     if (!moverName)  { msg.style.color='#f87171'; msg.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoveByName').focus(); return; }
     msg.style.color='var(--se-muted)'; msg.textContent='이동 중...';
-    const targetStore = storeData.find(s => s.id === targetId);
+    const targetStore = seStores().find(s => s.id === targetId);
     const targetName = targetStore ? targetStore.name : targetId;
     const ids = [..._sePendingMoveIds];
     try {
@@ -16839,7 +16849,7 @@ function seRenderOverview() {
 
     if (_ovView === 'list') {
         grid.className = '';
-        const storeMap = Object.fromEntries(storeData.map(s => [s.id, s]));
+        const storeMap = Object.fromEntries(seStores().map(s => [s.id, s]));
         const sorted = [...rows].sort((a, b) => {
             const sa = storeMap[a.store_id]?.name || a.store_id;
             const sb = storeMap[b.store_id]?.name || b.store_id;
@@ -16882,7 +16892,7 @@ function seRenderOverview() {
         const byStore = {};
         rows.forEach(r => { if (!byStore[r.store_id]) byStore[r.store_id]=[]; byStore[r.store_id].push(r); });
         grid.className = 'se-overview-grid';
-        grid.innerHTML = storeData.map(s => {
+        grid.innerHTML = seStores().map(s => {
             const storeRows = byStore[s.id] || [];
             const chips = storeRows.length
                 ? storeRows.map(r => {
