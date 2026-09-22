@@ -14095,7 +14095,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         </div>
 
         <div style="margin-top:36px;">
-            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;">저장된 요청서</div>
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
         </div>
     </div>
@@ -14445,10 +14445,12 @@ async function seLoadRequestList() {
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await _sb.from('outgoing_requests')
         .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
-        .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(30);
+        .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
+    const cntEl = document.getElementById('seReqCount');
+    if (cntEl) cntEl.textContent = `${data.length}건`;
     el.innerHTML = data.map(r => {
         const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         const [ry, rm, rd] = (r.request_date || '').split('-');
