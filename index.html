@@ -6536,10 +6536,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyGuestParams();
     updateCartBadge();
     // 새로고침 후 SE Management 자동 복귀
-    if (location.hash === '#se' && sessionStorage.getItem('seAuth') === '1') {
+    if (location.hash === '#se' && localStorage.getItem('seAuth') === '1') {
         setTimeout(() => {
             openSEPanel();
-            if (sessionStorage.getItem('seReqOpen') === '1') seSwitchToRequest();
+            if (localStorage.getItem('seReqOpen') === '1') seSwitchToRequest();
         }, 300);
     }
 });
@@ -14140,7 +14140,7 @@ function openSELogin() {
 function closeSELogin() { document.getElementById('seLoginOverlay').classList.remove('open'); }
 function seConfirmLogin() {
     if (document.getElementById('sePasswordInput').value === SE_PW) {
-        sessionStorage.setItem('seAuth', '1');
+        localStorage.setItem('seAuth', '1');
         closeSELogin(); openSEPanel();
     } else {
         document.getElementById('seLoginError').textContent = '비밀번호가 올바르지 않습니다.';
@@ -14172,7 +14172,8 @@ function openSEPanel() {
 }
 function closeSEPanel() {
     document.getElementById('seMgmtPanel').classList.remove('open');
-    sessionStorage.removeItem('seAuth');
+    localStorage.removeItem('seAuth');
+    localStorage.removeItem('seReqOpen');
     history.replaceState(null, '', location.pathname + location.search);
 }
 
@@ -14200,12 +14201,12 @@ function seSwitchTab(tab) {
 
 function seSwitchToRequest() {
     document.getElementById('reqPanel').style.display = 'flex';
-    sessionStorage.setItem('seReqOpen', '1');
+    localStorage.setItem('seReqOpen', '1');
     seLoadRequestList();
 }
 function closeReqPanel() {
     document.getElementById('reqPanel').style.display = 'none';
-    sessionStorage.removeItem('seReqOpen');
+    localStorage.removeItem('seReqOpen');
 }
 
 // ── 매출외 요청서 ──
