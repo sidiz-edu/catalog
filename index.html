@@ -6536,10 +6536,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyGuestParams();
     updateCartBadge();
     // 새로고침 후 SE Management 자동 복귀
-    if (location.hash === '#se' && localStorage.getItem('seAuth') === '1') {
+    if ((location.hash === '#se' || location.hash === '#se-req') && localStorage.getItem('seAuth') === '1') {
         setTimeout(() => {
             openSEPanel();
-            if (localStorage.getItem('seReqOpen') === '1') seSwitchToRequest();
+            if (location.hash === '#se-req') seSwitchToRequest();
         }, 300);
     }
 });
@@ -14173,7 +14173,6 @@ function openSEPanel() {
 function closeSEPanel() {
     document.getElementById('seMgmtPanel').classList.remove('open');
     localStorage.removeItem('seAuth');
-    localStorage.removeItem('seReqOpen');
     history.replaceState(null, '', location.pathname + location.search);
 }
 
@@ -14201,12 +14200,12 @@ function seSwitchTab(tab) {
 
 function seSwitchToRequest() {
     document.getElementById('reqPanel').style.display = 'flex';
-    localStorage.setItem('seReqOpen', '1');
+    location.hash = 'se-req';
     seLoadRequestList();
 }
 function closeReqPanel() {
     document.getElementById('reqPanel').style.display = 'none';
-    localStorage.removeItem('seReqOpen');
+    history.replaceState(null, '', location.pathname + location.search + '#se');
 }
 
 // ── 매출외 요청서 ──
