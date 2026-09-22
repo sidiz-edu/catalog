@@ -14041,10 +14041,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Admin</div>
             <div style="font-size:1.1rem;font-weight:600;color:#fff;">매출외출고 요청서</div>
         </div>
-        <button onclick="closeReqPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">닫기</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="seOpenReqForm()" style="background:#fff;border:none;border-radius:8px;padding:8px 16px;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서</button>
+            <button onclick="closeReqPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">닫기</button>
+        </div>
     </div>
-    <div id="seReqScroll" style="flex:1;overflow-y:auto;padding:28px 32px;position:relative;">
-        <p id="seReqFormTop" style="font-size:0.83rem;color:#64748b;margin:0 0 10px;">Google Sheets에서 요청서 전체를 복사 → 아래에 붙여넣기</p>
+    <div id="seReqScroll" style="flex:1;overflow-y:auto;padding:28px 32px;">
+
+    <!-- 새 요청서 입력 (모달) -->
+    <div id="seReqFormModal" onclick="if(event.target===this)seCloseReqForm()" style="display:none;position:fixed;inset:0;z-index:2600;background:rgba(15,23,42,0.6);align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto;">
+      <div style="background:var(--se-bg,#f8fafc);border-radius:14px;width:min(1080px,100%);box-shadow:0 24px 64px rgba(0,0,0,0.35);overflow:hidden;">
+        <div style="background:#003EFF;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:1rem;font-weight:700;color:#fff;">＋ 새 요청서 입력</div>
+            <button onclick="seCloseReqForm()" style="background:rgba(255,255,255,0.18);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:0.95rem;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:20px 22px 24px;">
+        <p style="font-size:0.83rem;color:#64748b;margin:0 0 10px;">Google Sheets에서 요청서 전체를 복사 → 아래에 붙여넣기</p>
         <input id="seReqTitle" type="text" placeholder="제목"
             style="box-sizing:border-box;width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;margin-bottom:8px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -14093,16 +14105,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button onclick="seSubmitRequest()" style="padding:10px 28px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">Supabase에 저장</button>
             <span id="seReqSaveMsg" style="margin-left:12px;font-size:0.82rem;color:#64748b;"></span>
         </div>
+        </div>
+      </div>
+    </div>
+    <!-- /새 요청서 입력 모달 -->
 
-        <div style="margin-top:36px;">
+        <div>
             <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
             <div id="seReqFilterBar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
-            <button onclick="seJumpToForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
+            <button onclick="seOpenReqForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
         </div>
     </div>
-    <button id="seReqFab" onclick="seJumpToForm()" title="새 요청서 입력"
-        style="display:none;position:absolute;right:26px;bottom:22px;z-index:10;padding:11px 18px;border-radius:24px;border:none;background:#003EFF;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,62,255,0.35);font-family:'Outfit',sans-serif;">＋ 새 요청서</button>
 </div>
 
 <!-- 이동 모달 — seMgmtPanel 밖에 위치해야 position:fixed 정상 동작 -->
@@ -14199,25 +14213,17 @@ function seSwitchTab(tab) {
     if (tab === 'store') seLoadStore();
 }
 
-function seJumpToForm() {
-    document.getElementById('seReqFormTop')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => document.getElementById('seReqTitle')?.focus(), 350);
+function seOpenReqForm() {
+    document.getElementById('seReqFormModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('seReqTitle')?.focus(), 80);
 }
-
-// 목록을 내려다보는 중에도 입력으로 돌아갈 수 있게 플로팅 버튼 노출
-function seBindReqFab() {
-    const sc = document.getElementById('seReqScroll'), fab = document.getElementById('seReqFab');
-    if (!sc || !fab || sc.dataset.fabBound) return;
-    sc.dataset.fabBound = '1';
-    sc.addEventListener('scroll', () => {
-        fab.style.display = sc.scrollTop > 320 ? '' : 'none';
-    });
+function seCloseReqForm() {
+    document.getElementById('seReqFormModal').style.display = 'none';
 }
 
 function seSwitchToRequest() {
     document.getElementById('reqPanel').style.display = 'flex';
     location.hash = 'se-req';
-    seBindReqFab();
     seLoadRequestList();
 }
 function closeReqPanel() {
@@ -14496,6 +14502,7 @@ async function seSubmitRequest() {
         const el = document.getElementById(id); if (el) el.value = '';
     });
     seLoadRequestList();
+    setTimeout(seCloseReqForm, 1200);   // 저장 완료 메시지를 잠깐 보여준 뒤 닫기
     if (seCurrentStore) seRenderList(seCurrentStore);
 }
 
