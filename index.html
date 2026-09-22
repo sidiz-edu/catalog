@@ -14439,18 +14439,39 @@ async function seSubmitRequest() {
     if (seCurrentStore) seRenderList(seCurrentStore);
 }
 
+// 이지리페어(부품·소모품) 판별 — 품목명 기준
+const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|포토카드)/;
+
 async function seLoadRequestList() {
     const el = document.getElementById('seReqListBody');
     if (!el) return;
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
-    const { data, error } = await _sb.from('outgoing_requests')
-        .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
-        .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500);
+    const [{ data, error }, itemsRes] = await Promise.all([
+        _sb.from('outgoing_requests')
+            .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
+            .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
+        _sb.from('outgoing_request_items').select('request_id,product_name'),
+    ]);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
     const cntEl = document.getElementById('seReqCount');
     if (cntEl) cntEl.textContent = `${data.length}건`;
+
+    // 요청서별 품목 구성 → 의자 / 이지리페어 / 혼합
+    const mix = {};
+    (itemsRes.data || []).forEach(it => {
+        const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, repair: 0 });
+        SE_REPAIR_RE.test(it.product_name || '') ? m.repair++ : m.chair++;
+    });
+    const kindBadge = id => {
+        const m = mix[id];
+        if (!m) return '';
+        const [label, bg, fg] = m.chair && m.repair ? ['🔀 혼합', '#fef3c7', '#b45309']
+            : m.repair ? ['🔧 이지리페어', '#e0f2fe', '#0369a1']
+            : ['🪑 의자', '#eef2ff', '#4338ca'];
+        return `<span style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${bg};color:${fg};white-space:nowrap;">${label}</span>`;
+    };
     el.innerHTML = data.map(r => {
         const esc = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         const [ry, rm, rd] = (r.request_date || '').split('-');
@@ -14468,7 +14489,7 @@ async function seLoadRequestList() {
                         : `<div style="font-size:1.2rem;color:#cbd5e1;line-height:1.6;">—</div>`}
                 </div>
                 <div style="cursor:pointer;flex:1;min-width:0;" onclick="seToggleReqItems('${r.id}')">
-                    <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
+                    <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${kindBadge(r.id)} ${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
                     <div style="font-size:0.75rem;color:var(--se-muted);">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
                     ${links ? `<div style="font-size:0.78rem;margin-top:3px;font-weight:600;">${links}</div>` : ''}
                 </div>
