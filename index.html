@@ -14154,7 +14154,19 @@ const SE_EXTRA_STORES = [
     { id: 'kimpo',         name: '현대김포점',      region: '경기' },
     { id: 'livingpower',   name: '리빙파워센터',    region: '기타' },
 ];
-const seStores = () => [...storeData, ...SE_EXTRA_STORES];
+// SE 화면 정렬: 더 프로그레시브 → 스타필드 → 커넥트현대 → 기타 → 일룸 → 테스트
+// (storeData 자체 순서는 고객용 매장 안내에 쓰이므로 건드리지 않는다)
+const seStoreRank = s =>
+      /테스트/.test(s.name)      ? 5
+    : /^일룸/.test(s.name)       ? 4
+    : /프로그레시브/.test(s.name) ? 0
+    : /^스타필드/.test(s.name)    ? 1
+    : /커넥트현대/.test(s.name)   ? 2
+    : 3;
+const seStores = () => [...storeData, ...SE_EXTRA_STORES]
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => seStoreRank(a.s) - seStoreRank(b.s) || a.i - b.i)
+    .map(x => x.s);
 
 function openSELogin() {
     document.getElementById('seLoginOverlay').classList.add('open');
