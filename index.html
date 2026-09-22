@@ -14725,7 +14725,8 @@ async function seToggleReqItems(id) {
             return head + matches.map(d => {
                 const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
                 const q = d.quantity || 1;
-                return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span></span>`;
+                const loc = [d.location, d.memo].map(v => (v || '').trim()).filter(Boolean).join(' · ');
+                return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span>${loc ? ` <span style="color:#0f766e;font-weight:600;">📍 ${loc}</span>` : ''}</span>`;
             }).join('');
         };
 
