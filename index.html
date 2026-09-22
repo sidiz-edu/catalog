@@ -14112,13 +14112,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 
         <div>
             <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                 <div id="seReqFilterBar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
                 <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
                     placeholder="제품명 · 품목코드 · 색상 · 매장 · 제목 · 수주번호 검색"
                     style="flex:1;min-width:240px;box-sizing:border-box;padding:6px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.78rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
                 <span id="seReqSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
             </div>
+            <div style="display:flex;gap:6px;margin-bottom:12px;">
+                <button id="seReqView-list" onclick="seSetReqView('list')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#003EFF;color:#fff;border:1px solid #003EFF;">📋 요청서별</button>
+                <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📄 품목 전체보기</button>
+            </div>
+            <div id="seReqFlatBody" style="display:none;"></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
             <button onclick="seOpenReqForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
         </div>
@@ -14554,6 +14559,119 @@ const SE_KIND_STYLE = {
 };
 
 let _seReqKind = 'all';
+let _seReqView = 'list';
+let _seFlatRows = null;   // 품목 전체보기 데이터 (최초 전환 시 로드)
+
+function seSetReqView(v) {
+    _seReqView = v;
+    document.getElementById('seReqListBody').style.display = v === 'list' ? '' : 'none';
+    document.getElementById('seReqFlatBody').style.display = v === 'flat' ? '' : 'none';
+    ['list', 'flat'].forEach(k => {
+        const b = document.getElementById(`seReqView-${k}`);
+        if (!b) return;
+        const on = k === v;
+        b.style.background = on ? '#003EFF' : '#fff';
+        b.style.color = on ? '#fff' : '#003EFF';
+        b.style.border = on ? '1px solid #003EFF' : '1px solid #e2e8f0';
+    });
+    if (v === 'flat') seLoadFlatRows();
+    else seApplyReqFilters();
+}
+
+async function seLoadFlatRows() {
+    const body = document.getElementById('seReqFlatBody');
+    if (_seFlatRows) { seRenderFlat(); return; }
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
+    const [itemsRes, dispRes] = await Promise.all([
+        _sb.from('outgoing_request_items')
+            .select('*, outgoing_requests(id,title,request_date,order_no,ep_url)'),
+        _sb.from('store_displays').select('store_id,sku,quantity,purpose,sold,location,memo'),
+    ]);
+    if (itemsRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${itemsRes.error.message}</p>`; return; }
+
+    const n = s => (s || '').replace(/\s/g, '').toUpperCase();
+    const key = (st, sku) => `${st}|${sku}`;
+
+    // 매장·SKU별 전시 수량 / 전체 요청 수량
+    const dispMap = {}, reqTot = {};
+    (dispRes.data || []).forEach(d => {
+        const k = key(d.store_id, n(d.sku));
+        (dispMap[k] || (dispMap[k] = [])).push(d);
+    });
+    (itemsRes.data || []).forEach(it => {
+        if (!it.store_id || !it.item_code) return;
+        const k = key(it.store_id, n(it.item_code) + '-' + n(it.color_code));
+        reqTot[k] = (reqTot[k] || 0) + (it.qty || 0);
+    });
+
+    _seFlatRows = (itemsRes.data || []).map(it => {
+        const r = it.outgoing_requests || {};
+        const sku = n(it.item_code) + '-' + n(it.color_code);
+        const k = key(it.store_id, sku);
+        const ds = it.store_id ? (dispMap[k] || []) : null;
+        const have = (ds || []).reduce((s, d) => s + (d.quantity || 1), 0);
+        const want = reqTot[k] || 0;
+        const status = !it.store_id ? 'unmatched' : !ds.length ? 'none' : have === want ? 'exists' : 'mismatch';
+        return {
+            it, r, sku, have, want, status, ds: ds || [],
+            kind: SE_REPAIR_RE.test(it.product_name || '') ? 'repair' : 'chair',
+            hay: [r.title, r.order_no, it.product_name, it.item_code, it.color_code,
+                  sku, it.store_name_raw, r.request_date].filter(Boolean).join(' ').toLowerCase(),
+        };
+    }).sort((a, b) => (b.r.request_date || '').localeCompare(a.r.request_date || ''));
+    seRenderFlat();
+}
+
+function seRenderFlat() {
+    const body = document.getElementById('seReqFlatBody');
+    if (!body || !_seFlatRows) return;
+    const q = (document.getElementById('seReqSearch')?.value || '').trim().toLowerCase();
+    const qn = q.replace(/[\s-]/g, '');
+    const rows = _seFlatRows.filter(x =>
+        (_seReqKind === 'all' || _seReqKind === 'mixed' || x.kind === _seReqKind) &&
+        (!q || x.hay.includes(q) || x.hay.replace(/[\s-]/g, '').includes(qn)));
+
+    const cnt = document.getElementById('seReqSearchCount');
+    if (cnt) cnt.textContent = `${rows.length} / ${_seFlatRows.length}개 품목`;
+
+    if (!rows.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 품목이 없습니다.</p>'; return; }
+
+    const badge = x => {
+        if (x.status === 'unmatched') return `<span style="color:#94a3b8;">⚪ 매장 미매칭</span>`;
+        if (x.status === 'none')      return `<span style="color:#ef4444;">❌ 전시 없음</span>`;
+        const loc = x.ds.map(d => [d.location, d.memo].map(v => (v || '').trim()).filter(Boolean).join(' · '))
+                        .filter(Boolean).join(' / ');
+        const head = x.have === x.want
+            ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
+            : `<span style="color:#f59e0b;font-weight:700;">⚠ ${x.have}/${x.want}</span>`;
+        return head + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
+    };
+
+    body.innerHTML = `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.76rem;background:var(--se-surface);">
+        <thead><tr style="background:#e2e8f0;color:#475569;">
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">작성일</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">제품명</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">품목코드</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">색상</th>
+            <th style="padding:7px 9px;text-align:center;white-space:nowrap;">수량</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시 현황</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">요청서</th>
+        </tr></thead>
+        <tbody>${rows.map((x, i) => `
+            <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 9px;white-space:nowrap;font-weight:600;">${x.r.request_date || '-'}</td>
+                <td style="padding:6px 9px;">${x.it.product_name || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${x.it.item_code || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${x.it.color_code || '-'}</td>
+                <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
+                <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
+                <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
+                <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-')}</td>
+            </tr>`).join('')}</tbody>
+    </table></div>`;
+}
 
 function seFilterRequests(kind) {
     _seReqKind = kind;
@@ -14570,6 +14688,7 @@ function seFilterRequests(kind) {
 
 // 구분 필터 + 검색어를 함께 적용
 function seApplyReqFilters() {
+    if (_seReqView === 'flat') { seRenderFlat(); return; }
     const q = (document.getElementById('seReqSearch')?.value || '').trim().toLowerCase();
     const qn = q.replace(/[\s-]/g, '');
     const cards = document.querySelectorAll('#seReqListBody > div[data-kind]');
@@ -14589,6 +14708,7 @@ function seApplyReqFilters() {
 async function seLoadRequestList() {
     const el = document.getElementById('seReqListBody');
     if (!el) return;
+    _seFlatRows = null;   // 데이터가 바뀌었으니 전체보기 캐시 폐기
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [{ data, error }, itemsRes] = await Promise.all([
         _sb.from('outgoing_requests')
@@ -14696,7 +14816,8 @@ async function seLoadRequestList() {
             </div>
         </div>`;
     }).join('');
-    seApplyReqFilters();   // 재로드 후에도 선택된 구분·검색어 유지
+    if (_seReqView === 'flat') seLoadFlatRows();   // 전체보기 데이터 재구성
+    else seApplyReqFilters();                       // 선택된 구분·검색어 유지
 }
 
 // SKU 매칭 — 3단계 우선순위
