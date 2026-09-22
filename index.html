@@ -13988,8 +13988,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <button class="se-ov-filter" data-filter="전시" onclick="seSetOverviewFilter('전시')">전시</button>
                     <button class="se-ov-filter" data-filter="판매" onclick="seSetOverviewFilter('판매')">판매</button>
                     <button class="se-ov-filter" data-filter="창고" onclick="seSetOverviewFilter('창고')">창고보관</button>
-                    <input id="seOvSearch" type="text" placeholder="제품명 검색" oninput="seRenderOverview()"
-                        style="padding:4px 10px;font-size:0.72rem;border:1px solid var(--se-border);border-radius:3px;background:var(--se-surface);color:var(--se-text);width:120px;">
+                    <input id="seOvSearch" type="text" placeholder="제품명 · 제품코드 · 색상코드" oninput="seRenderOverview()"
+                        style="padding:4px 10px;font-size:0.72rem;border:1px solid var(--se-border);border-radius:3px;background:var(--se-surface);color:var(--se-text);width:190px;">
                 </div>
                 <div style="display:flex; gap:6px; align-items:center;">
                     <button id="seOvViewCard" class="se-ov-filter active" onclick="seSetOverviewView('card')">카드</button>
@@ -16651,10 +16651,15 @@ function seRenderOverview() {
     if (!grid) return;
     const q = (document.getElementById('seOvSearch')?.value || '').trim().toLowerCase();
     let rows = _ovFilter ? _ovData.filter(r => r.purpose === _ovFilter) : _ovData;
-    if (q) rows = rows.filter(r => {
-        const p = SE_PRODUCTS.find(x => x.id === r.product_id);
-        return (p ? p.name : r.product_id).toLowerCase().includes(q);
-    });
+    if (q) {
+        const qn = q.replace(/[\s-]/g, '');   // 하이픈/공백 무시 비교 (T80U0KG-BK65 ↔ t80u0kgbk65)
+        rows = rows.filter(r => {
+            const p = SE_PRODUCTS.find(x => x.id === r.product_id);
+            const hay = [p ? p.name : r.product_id, r.product_id, r.sku, r.color_code]
+                .filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(q) || hay.replace(/[\s-]/g, '').includes(qn);
+        });
+    }
 
     if (_ovView === 'list') {
         grid.className = '';
@@ -16670,6 +16675,7 @@ function seRenderOverview() {
             <thead><tr style="border-bottom:2px solid var(--se-border);color:var(--se-muted);font-size:0.68rem;letter-spacing:0.06em;">
                 <th style="padding:8px 10px;text-align:left;font-weight:500;">매장</th>
                 <th style="padding:8px 10px;text-align:left;font-weight:500;">제품명</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:500;">제품코드</th>
                 <th style="padding:8px 10px;text-align:left;font-weight:500;">구분</th>
                 <th style="padding:8px 10px;text-align:center;font-weight:500;">수량</th>
                 <th style="padding:8px 10px;text-align:left;font-weight:500;">위치</th>
@@ -16686,6 +16692,7 @@ function seRenderOverview() {
                 return `<tr style="border-bottom:1px solid var(--se-border);background:${bg};">
                     <td style="padding:8px 10px;color:var(--se-text);">${s ? s.name : r.store_id}</td>
                     <td style="padding:8px 10px;color:var(--se-text);font-weight:500;">${name}</td>
+                    <td style="padding:8px 10px;color:var(--se-muted);font-family:monospace;">${r.sku || '-'}</td>
                     <td style="padding:8px 10px;color:var(--se-muted);">${r.purpose || '-'}</td>
                     <td style="padding:8px 10px;text-align:center;color:var(--se-text);">${r.quantity ?? 1}</td>
                     <td style="padding:8px 10px;color:var(--se-muted);">${r.location || '-'}</td>
