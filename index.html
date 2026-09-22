@@ -14428,6 +14428,23 @@ function _skuMatch(itemCode, colorCode, sku) {
     return false;
 }
 
+function seFilterItems(reqId, filter, btn) {
+    const table = document.getElementById(`req-table-${reqId}`);
+    if (!table) return;
+    table.querySelectorAll('tr[data-status]').forEach(tr => {
+        tr.style.display = (filter === 'all' || tr.dataset.status === filter) ? '' : 'none';
+    });
+    // 버튼 스타일 토글
+    ['all','none'].forEach(f => {
+        const b = document.getElementById(`req-filter-${f}-${reqId}`);
+        if (!b) return;
+        const active = f === filter;
+        b.style.background = active ? '#003EFF' : '#fff';
+        b.style.color = active ? '#fff' : (f === 'none' ? '#ef4444' : '#003EFF');
+        b.style.border = active ? '1px solid #003EFF' : '1px solid #e2e8f0';
+    });
+}
+
 async function seEditUnitPrice(td, itemId, currentPrice) {
     if (td.querySelector('input')) return;
     const span = td.querySelector('span');
@@ -14498,8 +14515,14 @@ async function seToggleReqItems(id) {
             }).join('');
         };
 
-        body.innerHTML = `<div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        const noDisplayCount = items.filter(it => { const m = it.store_id ? matchItem(it) : null; return m !== null && m.length === 0; }).length;
+        body.innerHTML = `
+            <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+                <button id="req-filter-all-${id}" onclick="seFilterItems('${id}','all',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #003EFF;background:#003EFF;color:#fff;font-size:0.75rem;cursor:pointer;">전체 (${items.length})</button>
+                <button id="req-filter-none-${id}" onclick="seFilterItems('${id}','none',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#ef4444;font-size:0.75rem;cursor:pointer;">❌ 전시 없음 (${noDisplayCount})</button>
+            </div>
+            <div style="overflow-x:auto;">
+            <table id="req-table-${id}" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
                 <thead><tr style="background:#e2e8f0;color:#475569;">
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">제품명</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">품목코드</th>
@@ -14512,7 +14535,8 @@ async function seToggleReqItems(id) {
                 <tbody>
                     ${items.map((it, i) => {
                         const matches = it.store_id ? matchItem(it) : null;
-                        return `<tr style="background:${i%2?'#f8fafc':'#fff'};">
+                        const status = matches === null ? 'unmatched' : matches.length === 0 ? 'none' : 'exists';
+                        return `<tr data-status="${status}" style="background:${i%2?'#f8fafc':'#fff'};">
                             <td style="padding:6px 10px;">${it.product_name||'-'}</td>
                             <td style="padding:6px 10px;font-family:monospace;">${it.item_code||'-'}</td>
                             <td style="padding:6px 10px;">${it.color_code||'-'}</td>
@@ -14524,6 +14548,7 @@ async function seToggleReqItems(id) {
                     }).join('')}
                 </tbody>
             </table>
+            </div>
         </div>`;
     }
 }
