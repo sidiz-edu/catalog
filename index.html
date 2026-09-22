@@ -14303,21 +14303,43 @@ function seParseRequest() {
 
     if (headerRowIdx < 0) { msgEl.textContent = '제품 표를 찾지 못했습니다. 열 머리글(제품명, 품목코드...)이 포함되어 있는지 확인해주세요.'; return; }
 
+    // 양식마다 시공가 등 칼럼이 추가되어 순서가 달라지므로 헤더에서 위치를 찾는다
+    const hdr = lines[headerRowIdx].map(h => h.replace(/\s/g, ''));
+    const findCol = (...names) => {
+        for (const n of names) {
+            const i = hdr.findIndex(h => h.includes(n));
+            if (i >= 0) return i;
+        }
+        return -1;
+    };
+    const cCode  = findCol('품목코드');
+    const cColor = findCol('색상');
+    const cQty   = findCol('수량');
+    const cUnit  = findCol('공장도가', '단가');
+    const cAmt   = findCol('금액');
+    const cStore = findCol('비고');
+    const cAddr  = findCol('주소');
+    const cPost  = findCol('우편번호');
+    const cName  = findCol('이름');
+    const cPhone = findCol('연락처');
+
     const items = [];
     for (let i = headerRowIdx + 1; i < lines.length; i++) {
         const r = lines[i];
-        if (!r[0] || r[0].includes('합계') || r[0].includes('총계')) break;
-        if (r.length < 8 || !r[1]) continue;
-        const storeNameRaw = r[7] || '';
+        const val = c => (c >= 0 ? (r[c] || '') : '');
+        const num = c => parseInt(val(c).replace(/[^0-9]/g, '')) || 0;
+        if (/^(합계|총계|소계|계)$/.test((r[0] || '').replace(/\s/g, ''))) break;
+        if (!r[0] || !val(cCode)) continue;   // 빈 행·구분선은 건너뜀 (break 금지)
+        const storeNameRaw = val(cStore);
         items.push({
-            productName: r[0], itemCode: r[1], colorCode: r[2],
-            qty: parseInt(r[3]) || 1,
-            unitPrice: parseInt((r[4] || '').replace(/[^0-9]/g, '')) || 0,
-            amount: parseInt((r[5] || '').replace(/[^0-9]/g, '')) || 0,
+            productName: r[0], itemCode: val(cCode), colorCode: val(cColor),
+            qty: num(cQty) || 1,
+            unitPrice: num(cUnit),
+            amount: num(cAmt),
             storeNameRaw,
             storeId: seResolveStoreId(storeNameRaw),
-            address: r[8] || '', postalCode: r[9] || '',
-            contactName: r[10] || '', contactPhone: r[11] || '',
+            address: val(cAddr), postalCode: val(cPost),
+            contactName: val(cName), contactPhone: val(cPhone),
         });
     }
 
