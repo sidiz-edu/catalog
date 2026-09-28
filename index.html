@@ -13852,6 +13852,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
                 <div id="seKindBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
+                <!-- 매출외출고 요청서 연결 여부 -->
+                <div id="seLinkBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
                 <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
                     oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
                     style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.85rem;background:var(--se-raised);color:var(--se-text);margin-bottom:10px;font-family:'Outfit',sans-serif;">
@@ -15732,7 +15734,7 @@ async function seLoadStore() {
 let _seEditPhotos = [];
 let _seAddPhotos = [];
 let _seAddPhotoBlobs = [];
-let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all';
+let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all', seLinkFilter = 'all';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
@@ -15770,6 +15772,8 @@ function seRenderTable(storeId) {
     const kindOf = row => row.sold ? 'sold' : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
     const kc = { display: 0, selling: 0, sold: 0, store: 0 };
     seDisplayData.forEach(r => kc[kindOf(r)]++);
+    // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
+    if (seKindFilter !== 'all' && !kc[seKindFilter]) seKindFilter = 'all';
     const bar = document.getElementById('seKindBar');
     if (bar) {
         bar.innerHTML = [
@@ -15786,10 +15790,31 @@ function seRenderTable(storeId) {
          }).join('');
     }
 
+    // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
+    const kindPass = row => seKindFilter === 'all' || kindOf(row) === seKindFilter;
+    const linkOf = row => (row.sku && seReqSkuSet.has(row.sku.toUpperCase())) ? 'linked' : 'unlinked';
+    const lc = { linked: 0, unlinked: 0 };
+    seDisplayData.filter(kindPass).forEach(r => lc[linkOf(r)]++);
+    // 구분을 바꿔 해당 연결 상태가 0건이 되면 빈 표에 갇히므로 푼다
+    if (seLinkFilter !== 'all' && !lc[seLinkFilter]) seLinkFilter = 'all';
+    const lbar = document.getElementById('seLinkBar');
+    if (lbar) {
+        lbar.innerHTML = lc.unlinked === 0 ? '' : [
+            ['all', `매출외출고 전체 (${lc.linked + lc.unlinked})`, '#0f766e'],
+            ['linked', `📄 연결됨 (${lc.linked})`, '#16a34a'],
+            ['unlinked', `❌ 요청서 없음 (${lc.unlinked})`, '#ef4444'],
+        ].map(([k, label, fg]) => {
+            const on = k === seLinkFilter;
+            return `<button onclick="seLinkFilter='${k}';seRenderTable(seCurrentStore)"
+                style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?fg:'var(--se-border)'};">${label}</button>`;
+        }).join('');
+    }
+
     // 검색 필터
     const q = seSearchQuery.trim().toLowerCase();
     let rows = seDisplayData.filter(row => {
-        if (seKindFilter !== 'all' && kindOf(row) !== seKindFilter) return false;
+        if (!kindPass(row)) return false;
+        if (seLinkFilter !== 'all' && linkOf(row) !== seLinkFilter) return false;
         if (!q) return true;
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         const name = (prod ? prod.name : row.product_id).toLowerCase();
