@@ -13850,6 +13850,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
                     <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
+                <div id="seKindBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
                 <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
                     oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
                     style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.85rem;background:var(--se-raised);color:var(--se-text);margin-bottom:10px;font-family:'Outfit',sans-serif;">
@@ -15184,7 +15185,7 @@ async function seLoadStore() {
 let _seEditPhotos = [];
 let _seAddPhotos = [];
 let _seAddPhotoBlobs = [];
-let seSearchQuery = '', seSortCol = '', seSortDir = 'asc';
+let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
@@ -15218,9 +15219,30 @@ function seRenderTable(storeId) {
         tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
+    // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
+    const kindOf = row => row.sold ? 'sold' : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
+    const kc = { display: 0, selling: 0, sold: 0, store: 0 };
+    seDisplayData.forEach(r => kc[kindOf(r)]++);
+    const bar = document.getElementById('seKindBar');
+    if (bar) {
+        bar.innerHTML = [
+            ['all', `전체 (${seDisplayData.length})`, '#003EFF'],
+            ['display', `🪑 전시 (${kc.display})`, '#3b82f6'],
+            ['sold', `✅ 판매완료 (${kc.sold})`, '#16a34a'],
+            ['selling', `🏷 판매중 (${kc.selling})`, '#ea580c'],
+            ['store', `📦 창고 (${kc.store})`, '#475569'],
+        ].filter(([k]) => k === 'all' || kc[k] > 0)
+         .map(([k, label, fg]) => {
+            const on = k === seKindFilter;
+            return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
+                style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?'#003EFF':'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?'#003EFF':'var(--se-border)'};">${label}</button>`;
+         }).join('');
+    }
+
     // 검색 필터
     const q = seSearchQuery.trim().toLowerCase();
     let rows = seDisplayData.filter(row => {
+        if (seKindFilter !== 'all' && kindOf(row) !== seKindFilter) return false;
         if (!q) return true;
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         const name = (prod ? prod.name : row.product_id).toLowerCase();
