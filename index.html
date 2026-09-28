@@ -14246,10 +14246,15 @@ async function seLoadRecoveryReports() {
     ]);
     if (rRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${rRes.error.message}</p>`; return; }
     _recReports = rRes.data || [];
+    const docOfRep = {};
+    _recReports.forEach(r => { docOfRep[r.id] = r.doc_no; });
     _recItems = (iRes.data || []).map(x => ({
         ...x,
+        // 소속 보고서 문서번호까지 넣어야 "매출외26-08-00003 TOT7A"처럼 묶어서 검색된다
         _hay: [x.order_no, x.order_title, x.item_code, x.color_code,
-               `${x.item_code || ''}-${x.color_code || ''}`, x.warehouse, x.store_id]
+               `${x.item_code || ''}-${x.color_code || ''}`, x.warehouse, x.store_id,
+               x.raw_item_code, x.raw_color_code,   // 정정 전 원문 코드로도 찾히게
+               docOfRep[x.report_id]]
               .filter(Boolean).join(' ').toLowerCase(),
     }));
     seRenderRecovery();
@@ -14339,13 +14344,16 @@ function seRenderRecovery() {
                         <tbody>${its.map((x, i) => {
                             const mo = seMoNo(x.order_title);
                             const req = mo ? (_seReqByMo || {})[mo] : null;
+                            // 품의 원문의 오기를 요청서 기준으로 정정한 행은 원문 값을 함께 보여준다
+                            const raw = (was, now) => (was && was !== now)
+                                ? `<div style="font-size:0.66rem;color:#b45309;margin-top:1px;" title="${(x.correction_note||'').replace(/"/g,'&quot;')}">원문 ${was}</div>` : '';
                             return `
                             <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
                                 <td style="padding:5px 8px;text-align:center;color:#94a3b8;">${x.seq}</td>
                                 <td style="padding:5px 8px;font-family:monospace;white-space:nowrap;">${x.order_no || '-'}</td>
                                 <td style="padding:5px 8px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.order_title||'').replace(/"/g,'&quot;')}">${x.order_title || '-'}</td>
-                                <td style="padding:5px 8px;font-family:monospace;">${x.item_code || '-'}</td>
-                                <td style="padding:5px 8px;font-family:monospace;">${x.color_code || '-'}</td>
+                                <td style="padding:5px 8px;font-family:monospace;">${x.item_code || '-'}${raw(x.raw_item_code, x.item_code)}</td>
+                                <td style="padding:5px 8px;font-family:monospace;">${x.color_code || '-'}${raw(x.raw_color_code, x.color_code)}</td>
                                 <td style="padding:5px 8px;text-align:center;">${x.qty ?? '-'}</td>
                                 <td style="padding:5px 8px;text-align:right;">${_wonR(x.unrecovered_amount)}</td>
                                 <td style="padding:5px 8px;white-space:nowrap;">${x.warehouse || '-'}</td>
