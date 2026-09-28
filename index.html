@@ -14139,8 +14139,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📄 품목 전체보기</button>
                 <button id="seReqView-doc" onclick="seSetReqView('doc')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">🔢 문서번호 입력</button>
             </div>
-            <!-- 전시 현황 필터 — 품목 전체보기에서만 뜬다 -->
-            <div id="seReqStatusBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
+            <!-- 전시 현황 · 매장 필터 — 품목 전체보기에서만 뜬다 -->
+            <div id="seReqStatusBar" style="display:none;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;"></div>
+            <div id="seReqStoreBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
             <div id="seReqFlatBody" style="display:none;"></div>
             <div id="seReqDocBody" style="display:none;"></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
@@ -15008,8 +15009,10 @@ function seSetReqView(v) {
     document.getElementById('seReqListBody').style.display = v === 'list' ? '' : 'none';
     document.getElementById('seReqFlatBody').style.display = v === 'flat' ? '' : 'none';
     document.getElementById('seReqDocBody').style.display = v === 'doc' ? '' : 'none';
-    const sBar = document.getElementById('seReqStatusBar');
-    if (sBar) sBar.style.display = v === 'flat' ? 'flex' : 'none';
+    ['seReqStatusBar', 'seReqStoreBar'].forEach(idv => {
+        const b = document.getElementById(idv);
+        if (b) b.style.display = v === 'flat' ? 'flex' : 'none';
+    });
     ['list', 'flat', 'doc'].forEach(k => {
         const b = document.getElementById(`seReqView-${k}`);
         if (!b) return;
@@ -15140,6 +15143,17 @@ async function seLoadFlatRows() {
     seRenderFlat();
 }
 
+// 위치 표시 — '회수대장 미회수(판매)'는 판매완료 표시와 겹치므로 화면에서는 뺀다.
+// dropStatus를 주면 상태 배지가 이미 말해주는 '판매완료' 같은 값도 빼서 같은 말이 두 번 뜨지 않게 한다.
+function seDisplayLoc(d, opts) {
+    const dropStatus = opts && opts.dropStatus;
+    return [d.location, d.memo]
+        .map(v => (v || '').trim())
+        .filter(v => v && !/^회수대장/.test(v)
+                       && !(dropStatus && /^(판매완료|판매중|창고|창고보관)$/.test(v)))
+        .join(' · ');
+}
+
 // 전시 현황 분류 — 품목 전체보기의 '전시 현황' 칼럼과 같은 기준
 const seFlatStatus = x =>
       x.status === 'unmatched' ? 'unmatched'
@@ -15175,6 +15189,36 @@ function seFilterStatus(k) {
     seRenderFlat();
 }
 
+let _seReqStore = 'all';
+
+// 매장 필터 — 매장 순서는 SE 드롭다운과 같게(더프→스타필드→커넥트현대→기타→일룸) 맞춘다
+function seRenderStoreBar(base) {
+    const bar = document.getElementById('seReqStoreBar');
+    if (!bar) return;
+    const c = {}, label = {};
+    base.forEach(x => {
+        const id = x.it.store_id || '(미매칭)';
+        c[id] = (c[id] || 0) + 1;
+        if (!label[id]) label[id] = x.it.store_name_raw || id;
+    });
+    const order = seStores().map(s => s.id);
+    const keys = Object.keys(c).sort((a, b) => {
+        const ia = order.indexOf(a), ib = order.indexOf(b);
+        return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+    bar.innerHTML = [['all', `매장 전체 (${base.length})`], ...keys.map(k => [k, `${label[k]} (${c[k]})`])]
+        .map(([k, txt]) => {
+            const on = k === _seReqStore;
+            return `<button onclick="seFilterStore('${k}')"
+                style="padding:4px 10px;border-radius:6px;font-size:0.73rem;cursor:pointer;background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#0f766e'};border:1px solid ${on?'#0f766e':'#e2e8f0'};font-family:'Outfit',sans-serif;">${txt}</button>`;
+        }).join('');
+}
+
+function seFilterStore(k) {
+    _seReqStore = k;
+    seRenderFlat();
+}
+
 function seRenderFlat() {
     const body = document.getElementById('seReqFlatBody');
     if (!body || !_seFlatRows) return;
@@ -15185,14 +15229,18 @@ function seRenderFlat() {
     }, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
-    // 구분·검색을 먼저 적용하고, 그 결과 안에서 전시 현황을 센다
+    // 구분·검색을 먼저 적용한다. 두 필터 바는 서로의 결과 안에서 세므로,
+    // 버튼에 적힌 숫자가 "그걸 눌렀을 때 실제로 남는 개수"가 된다.
     const base = _seFlatRows.filter(x =>
         (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
-    seRenderStatusBar(base);
-    const rows = base.filter(x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus);
+    const byStore  = x => _seReqStore === 'all' || (x.it.store_id || '(미매칭)') === _seReqStore;
+    const byStatus = x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus;
+    seRenderStatusBar(base.filter(byStore));
+    seRenderStoreBar(base.filter(byStatus));
+    const rows = base.filter(x => byStore(x) && byStatus(x));
 
     const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = _seReqStatus === 'all'
+    if (cnt) cnt.textContent = (_seReqStatus === 'all' && _seReqStore === 'all')
         ? `${rows.length} / ${_seFlatRows.length}개 품목`
         : `${rows.length}개 / 조건 ${base.length}개 · 전체 ${_seFlatRows.length}개`;
 
@@ -15201,8 +15249,7 @@ function seRenderFlat() {
     const badge = x => {
         if (x.status === 'unmatched') return `<span style="color:#94a3b8;">⚪ 매장 미매칭</span>`;
         if (x.status === 'none')      return `<span style="color:#ef4444;">❌ 전시 없음</span>`;
-        const loc = x.ds.map(d => [d.location, d.memo].map(v => (v || '').trim()).filter(Boolean).join(' · '))
-                        .filter(Boolean).join(' / ');
+        const loc = x.ds.map(seDisplayLoc).filter(Boolean).join(' / ');
         const head = x.have === x.want
             ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
             : `<span style="color:#f59e0b;font-weight:700;">⚠ ${x.have}/${x.want}</span>`;
@@ -15529,7 +15576,7 @@ async function seToggleReqItems(id) {
             return head + matches.map(d => {
                 const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
                 const q = d.quantity || 1;
-                const loc = [d.location, d.memo].map(v => (v || '').trim()).filter(Boolean).join(' · ');
+                const loc = seDisplayLoc(d, { dropStatus: true });
                 return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span>${loc ? ` <span style="color:#0f766e;font-weight:600;">📍 ${loc}</span>` : ''}</span>`;
             }).join('');
         };
