@@ -14176,6 +14176,65 @@ function closeRecoveryPanel() {
 }
 const _wonR = n => (n == null ? '-' : Number(n).toLocaleString() + '원');
 
+// ── 요청서 ↔ 회수 보고서 연결 ─────────────────────────────
+// 요청서 문서번호(시디즈-매출외25-06-00006)와 회수 명세의 수주건명([매출외25-06-00006] ...)에
+// 공통으로 들어있는 매출외 번호가 유일한 연결 키다. 199건 전부 이 키로 매칭된다.
+function seMoNo(s) {
+    const m = /매출외(\d{2})-?(\d{2})-?(\d{5})/.exec(String(s || '').replace(/\s/g, ''));
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+
+let _seReqByMo = null;   // 매출외번호 → 요청서
+let _seRecByMo = null;   // 매출외번호 → { n, amt, docs[] }
+
+async function seEnsureReqIndex() {
+    if (_seReqByMo) return _seReqByMo;
+    const { data } = await _sb.from('outgoing_requests').select('id,doc_no,title,request_date');
+    _seReqByMo = {};
+    (data || []).forEach(r => { const mo = seMoNo(r.doc_no); if (mo) _seReqByMo[mo] = r; });
+    return _seReqByMo;
+}
+
+async function seEnsureRecIndex() {
+    if (_seRecByMo) return _seRecByMo;
+    const [rr, ri] = await Promise.all([
+        _sb.from('recovery_reports').select('id,doc_no'),
+        _sb.from('recovery_report_items').select('report_id,order_title,unrecovered_amount'),
+    ]);
+    const docOf = {};
+    (rr.data || []).forEach(r => { docOf[r.id] = r.doc_no; });
+    _seRecByMo = {};
+    (ri.data || []).forEach(x => {
+        const mo = seMoNo(x.order_title);
+        if (!mo) return;
+        const e = _seRecByMo[mo] || (_seRecByMo[mo] = { n: 0, amt: 0, docs: [] });
+        e.n++; e.amt += Number(x.unrecovered_amount) || 0;
+        const d = docOf[x.report_id];
+        if (d && !e.docs.includes(d)) e.docs.push(d);
+    });
+    return _seRecByMo;
+}
+
+// 요청서 → 해당 매출외 번호의 회수 명세로 이동
+function seOpenRecoveryFor(mo) {
+    const box = document.getElementById('recSearch');
+    if (box) box.value = '매출외' + mo;
+    openRecoveryPanel();
+}
+
+// 회수 명세 → 해당 매출외 번호의 요청서로 이동
+function seOpenRequestFor(mo) {
+    closeRecoveryPanel();
+    const panel = document.getElementById('reqPanel');
+    const box = document.getElementById('seReqSearch');
+    if (box) box.value = '매출외' + mo;
+    // 부속품만 든 요청서도 걸리도록 구분 필터를 푼다.
+    // 패널이 닫혀 있으면 필터 바가 아직 없으므로 값만 바꿔두고 렌더에 맡긴다.
+    if (!panel || panel.style.display !== 'flex') { _seReqKind = 'all'; seSwitchToRequest(); return; }
+    if (_seReqView !== 'list') seSetReqView('list');
+    seFilterRequests('all');
+}
+
 let _recReports = null, _recItems = null;
 
 async function seLoadRecoveryReports() {
@@ -14183,6 +14242,7 @@ async function seLoadRecoveryReports() {
     const [rRes, iRes] = await Promise.all([
         _sb.from('recovery_reports').select('*').order('report_date', { ascending: false }),
         _sb.from('recovery_report_items').select('*').order('seq'),
+        seEnsureReqIndex(),
     ]);
     if (rRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${rRes.error.message}</p>`; return; }
     _recReports = rRes.data || [];
@@ -14273,8 +14333,12 @@ function seRenderRecovery() {
                             <th style="padding:6px 8px;text-align:left;">수주건명</th><th style="padding:6px 8px;text-align:left;">단품코드</th>
                             <th style="padding:6px 8px;text-align:left;">색상</th><th style="padding:6px 8px;text-align:center;">수량</th>
                             <th style="padding:6px 8px;text-align:right;">미회수금액</th><th style="padding:6px 8px;text-align:left;">창고</th>
+                            <th style="padding:6px 8px;text-align:center;">요청서</th>
                         </tr></thead>
-                        <tbody>${its.map((x, i) => `
+                        <tbody>${its.map((x, i) => {
+                            const mo = seMoNo(x.order_title);
+                            const req = mo ? (_seReqByMo || {})[mo] : null;
+                            return `
                             <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
                                 <td style="padding:5px 8px;text-align:center;color:#94a3b8;">${x.seq}</td>
                                 <td style="padding:5px 8px;font-family:monospace;white-space:nowrap;">${x.order_no || '-'}</td>
@@ -14284,7 +14348,11 @@ function seRenderRecovery() {
                                 <td style="padding:5px 8px;text-align:center;">${x.qty ?? '-'}</td>
                                 <td style="padding:5px 8px;text-align:right;">${_wonR(x.unrecovered_amount)}</td>
                                 <td style="padding:5px 8px;white-space:nowrap;">${x.warehouse || '-'}</td>
-                            </tr>`).join('')}</tbody>
+                                <td style="padding:5px 8px;text-align:center;white-space:nowrap;">${req
+                                    ? `<button onclick="seOpenRequestFor('${mo}')" title="${(req.title||'').replace(/"/g,'&quot;')}"
+                                         style="padding:2px 8px;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 ${mo}</button>`
+                                    : `<span style="color:#cbd5e1;">-</span>`}</td>
+                            </tr>`; }).join('')}</tbody>
                     </table>
                 </div>
             </div>
@@ -14877,6 +14945,7 @@ async function seSaveDocNo(id) {
     const cnt = document.getElementById('seReqSearchCount');
     if (cnt) cnt.textContent = `입력 ${done} / ${_seDocRows.length}건`;
     _seFlatRows = null;   // 전체보기 캐시 갱신
+    _seReqByMo = null;    // 회수 보고서 ↔ 요청서 연결 인덱스 재구성
 }
 
 async function seLoadFlatRows() {
@@ -15025,9 +15094,10 @@ async function seLoadRequestList() {
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [{ data, error }, itemsRes] = await Promise.all([
         _sb.from('outgoing_requests')
-            .select('id,title,requester,delivery_date,order_no,ep_url,sheet_url,request_date,created_at')
+            .select('id,title,requester,delivery_date,order_no,doc_no,ep_url,sheet_url,request_date,created_at')
             .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
         _sb.from('outgoing_request_items').select('request_id,product_name,item_code,color_code,store_name_raw'),
+        seEnsureRecIndex(),
     ]);
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
@@ -15074,10 +15144,19 @@ async function seLoadRequestList() {
             r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">🔗 출고요청서</a>` : '',
             r.sheet_url ? `<a href="${r.sheet_url}" target="_blank" style="color:#16a34a;text-decoration:none;">📊 Sheets</a>` : '',
         ].filter(Boolean).join(' · ');
-        const hay = [r.title, r.requester, r.order_no, r.request_date, r.delivery_date,
+        const hay = [r.title, r.requester, r.order_no, r.doc_no, r.request_date, r.delivery_date,
                      ...(searchBag[r.id] || [])]
             .filter(Boolean).join(' ').toLowerCase()
             .replace(/"/g, '&quot;');
+        const mo = seMoNo(r.doc_no);
+        const rec = mo ? (_seRecByMo || {})[mo] : null;
+        const docChip = r.doc_no
+            ? `<span style="font-size:0.7rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#f1f5f9;color:#475569;white-space:nowrap;">${r.doc_no}</span>`
+            : '';
+        const recChip = rec
+            ? `<button onclick="event.stopPropagation();seOpenRecoveryFor('${mo}')" title="${rec.docs.join(', ')}"
+                 style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;">💰 회수 ${rec.n}건 · ${rec.amt.toLocaleString()}원</button>`
+            : '';
         return `
         <div id="req-card-${r.id}" data-kind="${['chair','part','promo'].filter(k => hasClass(r.id, k)).join(' ')}" data-search="${hay}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
@@ -15089,6 +15168,7 @@ async function seLoadRequestList() {
                 </div>
                 <div style="cursor:pointer;flex:1;min-width:0;" onclick="seToggleReqItems('${r.id}')">
                     <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${kindBadge(r.id)} ${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
+                    ${docChip || recChip ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">${docChip}${recChip}</div>` : ''}
                     <div style="font-size:0.75rem;color:var(--se-muted);">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
                     ${links ? `<div style="font-size:0.78rem;margin-top:3px;font-weight:600;">${links}</div>` : ''}
                 </div>
