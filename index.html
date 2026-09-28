@@ -14275,8 +14275,9 @@ function seRenderRecovery() {
     }).filter(v => !searching || v.headHit || v.matched.length);
 
     const cnt = document.getElementById('recSearchCount');
+    // 문서 자체가 걸린 보고서는 명세 전체를 보여주므로 matched가 아니라 실제 표시 건수로 센다
     if (cnt) cnt.textContent = searching
-        ? `${view.reduce((s, v) => s + v.matched.length, 0)}건 / 보고서 ${view.length}개`
+        ? `${view.reduce((s, v) => s + v.its.length, 0)}건 / 보고서 ${view.length}개`
         : `보고서 ${_recReports.length}개 · 명세 ${_recItems.length}건`;
 
     if (!view.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;padding:12px 0;">검색 결과가 없습니다.</p>'; return; }
