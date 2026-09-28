@@ -15345,8 +15345,8 @@ async function seToggleReqItems(id) {
             if (!matches.length) return `<span style="color:#ef4444;font-size:0.72rem;">❌ 전시 없음</span>`;
             const have = displayQty(matches), req = reqQty || 0, diff = have - req;
             const head = diff === 0
-                ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 요청 ${req}</span>`
-                : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 요청 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
+                ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
+                : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 매출외출고 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
             return head + matches.map(d => {
                 const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
                 const q = d.quantity || 1;
