@@ -15982,22 +15982,16 @@ function seRenderTable(storeId) {
                 ` : ''}
                 ${row.purpose === '판매' && row.sold ? `<button class="se-del-btn" style="background:#94a3b8;color:#fff;border:none;font-size:0.7rem;" onclick="seToggleSold('${row.id}',false)">↩ 판매취소</button>` : ''}
             </td>
-            <!-- 매출외수주번호·링크는 요청서/회수 보고서에서 끌어온 값이므로 SE 화면에서는 읽기 전용 -->
+            <!-- 매출외수주번호·링크는 요청서/회수 보고서에서 끌어온 값이므로 표시만 하고 수정 버튼은 두지 않는다 -->
             <td style="text-align:center;min-width:110px;vertical-align:middle;">
                 ${row.sales_order_no
-                    ? `<div style="font-size:0.75rem;color:#1e40af;font-weight:600;">${row.sales_order_no}</div>${isAdminMode ? `<button class="se-del-btn" style="background:#64748b;color:#fff;border:none;font-size:0.7rem;padding:2px 6px;margin-top:3px;" onclick="seSetSalesOrderNo('${row.id}')">수정</button>` : ''}`
-                    : (isAdminMode
-                        ? `<button class="se-del-btn" style="background:#e2e8f0;color:#64748b;border:none;" onclick="seSetSalesOrderNo('${row.id}')">+ 수주번호</button>`
-                        : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`)
-                }
+                    ? `<div style="font-size:0.75rem;color:#1e40af;font-weight:600;">${row.sales_order_no}</div>`
+                    : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
             </td>
             <td style="text-align:center;min-width:80px;vertical-align:middle;">
                 ${row.sales_link
-                    ? `<a href="${row.sales_link}" target="_blank" style="font-size:0.78rem;color:#3b82f6;text-decoration:none;display:block;">🔗 링크</a>${isAdminMode ? `<button class="se-del-btn" style="background:#64748b;color:#fff;border:none;font-size:0.7rem;padding:2px 6px;margin-top:3px;" onclick="seSetSalesLink('${row.id}')">수정</button>` : ''}`
-                    : (isAdminMode
-                        ? `<button class="se-del-btn" style="background:#e2e8f0;color:#64748b;border:none;" onclick="seSetSalesLink('${row.id}')">+ 링크</button>`
-                        : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`)
-                }
+                    ? `<a href="${row.sales_link}" target="_blank" style="font-size:0.78rem;color:#3b82f6;text-decoration:none;">🔗 링크</a>`
+                    : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
             </td>
         </tr>`;
     }).join('');
