@@ -14172,8 +14172,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button id="recView-report" onclick="seSetRecView('report')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#0f766e;color:#fff;border:1px solid #0f766e;font-family:'Outfit',sans-serif;">📋 보고서별</button>
             <button id="recView-flat" onclick="seSetRecView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#0f766e;border:1px solid var(--se-border);font-family:'Outfit',sans-serif;">📄 명세 전체보기</button>
         </div>
-        <!-- 창고 필터 — 명세 전체보기에서만 뜬다 -->
-        <div id="recWhBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
+        <!-- 매장 필터 — 명세 전체보기에서만 뜬다 -->
+        <div id="recStoreBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
         <div id="recFlatBody" style="display:none;"></div>
         <div id="recoveryBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
     </div>
@@ -14278,13 +14278,13 @@ async function seLoadRecoveryReports() {
 
 // ── 명세 전체보기 ──────────────────────────────────
 // 보고서 8건의 명세를 한 표로 펼쳐 제품·매장·창고로 걸러 본다
-let _recView = 'report', _recWh = 'all', _recCodeName = null;
+let _recView = 'report', _recStore = 'all', _recCodeName = null;
 
 function seSetRecView(v) {
     _recView = v;
     document.getElementById('recoveryBody').style.display = v === 'report' ? '' : 'none';
     document.getElementById('recFlatBody').style.display  = v === 'flat' ? '' : 'none';
-    document.getElementById('recWhBar').style.display      = v === 'flat' ? 'flex' : 'none';
+    document.getElementById('recStoreBar').style.display      = v === 'flat' ? 'flex' : 'none';
     ['report', 'flat'].forEach(k => {
         const b = document.getElementById(`recView-${k}`);
         if (!b) return;
@@ -14326,19 +14326,24 @@ function seRenderRecoveryFlat() {
     const hit = seSearchMatcher(document.getElementById('recSearch')?.value);
     const base = _recItems.filter(x => hit(x._hay));
 
-    // 창고 필터 바 — 검색 결과 안에서 집계
-    const wc = {};
-    base.forEach(x => { const w = x.warehouse || '(미지정)'; wc[w] = (wc[w] || 0) + 1; });
-    const bar = document.getElementById('recWhBar');
-    if (bar) bar.innerHTML = [['all', `창고 전체 (${base.length})`],
-        ...Object.entries(wc).sort((a, b) => b[1] - a[1]).map(([w, n]) => [w, `${w} (${n})`])]
+    // 매장 필터 바 — 검색 결과 안에서 집계. 순서는 SE 드롭다운과 같게 맞춘다
+    const sc = {};
+    base.forEach(x => { const s = x.store_id || '(미지정)'; sc[s] = (sc[s] || 0) + 1; });
+    const order = seStores().map(s => s.id);
+    const keys = Object.keys(sc).sort((a, b) => {
+        const ia = order.indexOf(a), ib = order.indexOf(b);
+        return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+    const bar = document.getElementById('recStoreBar');
+    if (bar) bar.innerHTML = [['all', `매장 전체 (${base.length})`],
+        ...keys.map(k => [k, `${nameOf[k] || k} (${sc[k]})`])]
         .map(([k, label]) => {
-            const on = k === _recWh;
-            return `<button onclick="seFilterRecWh('${k.replace(/'/g, "\\'")}')"
-                style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#0f766e'};border:1px solid ${on?'#0f766e':'var(--se-border)'};font-family:'Outfit',sans-serif;">${label}</button>`;
+            const on = k === _recStore;
+            return `<button onclick="seFilterRecStore('${k}')"
+                style="padding:4px 10px;border-radius:6px;font-size:0.73rem;cursor:pointer;background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#0f766e'};border:1px solid ${on?'#0f766e':'var(--se-border)'};font-family:'Outfit',sans-serif;">${label}</button>`;
         }).join('');
 
-    const rows = base.filter(x => _recWh === 'all' || (x.warehouse || '(미지정)') === _recWh);
+    const rows = base.filter(x => _recStore === 'all' || (x.store_id || '(미지정)') === _recStore);
     const total = rows.reduce((s, x) => s + (Number(x.unrecovered_amount) || 0), 0);
 
     const cnt = document.getElementById('recSearchCount');
@@ -14394,8 +14399,8 @@ function seRenderRecoveryFlat() {
     </table></div>`;
 }
 
-function seFilterRecWh(w) {
-    _recWh = w;
+function seFilterRecStore(id) {
+    _recStore = id;
     seRenderRecoveryFlat();
 }
 
