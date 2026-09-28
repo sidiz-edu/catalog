@@ -13874,71 +13874,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <tbody id="seDisplayList"></tbody>
                     </table>
                 </div>
-                <div class="se-add-box">
-                    <h4>+ 전시 제품 추가</h4>
-                    <div class="se-add-grid">
-                        <select id="seAddSeries" onchange="sePopulateSkuList(this.value)"><option value="">시리즈 선택</option></select>
-                        <select id="seAddPurpose" onchange="seToggleSoldField()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                            <option value="전시">전시</option>
-                            <option value="판매">판매</option>
-                            <option value="창고">창고 보관</option>
-                        </select>
-                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <span>전시 시작일</span>
-                                <label style="display:flex;align-items:center;gap:3px;font-size:0.72rem;cursor:pointer;">
-                                    <input type="checkbox" id="seAddDateUnknown" onchange="seToggleDateUnknown('add')"> 모름
-                                </label>
-                            </div>
-                            <input type="date" id="seAddDate">
-                        </label>
-                    </div>
-                    <div class="se-add-grid">
-                        <input type="text" id="seAddSku" list="seSkuList" placeholder="단품코드 (예: T50HDA3KK)" autocomplete="off" onchange="sePopulateColorCodes(this.value)">
-                        <datalist id="seSkuList"></datalist>
-                        <input type="text" id="seAddColor" list="seColorCodeList" placeholder="색상코드 (예: 5G1WW)" autocomplete="off">
-                        <datalist id="seColorCodeList"></datalist>
-                    </div>
-                    <div class="se-add-grid" style="grid-template-columns: 80px 1fr 1fr;">
-                        <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
-                        <div style="position:relative;">
-                            <input type="text" id="seAddLocation" placeholder="위치 선택 또는 입력" autocomplete="off"
-                                style="width:100%;box-sizing:border-box;"
-                                onfocus="seShowLocList('seAddLocation')"
-                                onclick="seShowLocList('seAddLocation')"
-                                oninput="seFilterLocList('seAddLocation')"
-                                onblur="setTimeout(function(){seHideLocList()},150)">
-                        </div>
-                        <input type="text" id="seAddMemo" placeholder="메모 (선택)">
-                    </div>
-                    <div id="seAddSoldRow" style="display:none;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap;">
-                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
-                            <input type="checkbox" id="seAddSold">
-                            판매 완료
-                        </label>
-                        <select id="seAddGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
-                            <option value="">등급 선택</option>
-                            <option value="A">A등급 (50% 할인)</option>
-                            <option value="B">B등급 (60% 할인)</option>
-                        </select>
-                        <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
-                    </div>
-                    <div class="se-add-grid" style="grid-template-columns: 1fr;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
-                            <span>📷 사진 첨부</span>
-                            <div id="seAddPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
-                            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px dashed var(--se-border);border-radius:8px;font-size:0.78rem;color:var(--se-muted);width:fit-content;">
-                                ＋ 사진 추가
-                                <input type="file" id="seAddPhoto" accept="image/*" multiple style="display:none;" onchange="seHandleAddPhotoAdd(this)">
-                            </label>
-                        </label>
-                    </div>
-                    <div class="se-add-row">
-                        <input type="text" id="seAddUpdater" placeholder="수정자 이름">
-                        <button class="se-save-btn" onclick="seAddDisplay()">추가</button>
-                    </div>
-                    <div class="se-msg" id="seAddMsg"></div>
-                </div>
+                <!-- '요청서 없음'을 볼 때 짝이 될 만한 반대편 목록을 붙인다 -->
+                <div id="seUnmatchedRef" style="display:none;margin-top:18px;"></div>
+                <button onclick="seOpenAddModal()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed var(--se-border);background:var(--se-surface);color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
             </div>
             <div id="seStorePlaceholder" style="color:#475569; font-size:0.85rem; padding:40px 0 0;">
                 매장을 선택하면 전시 현황이 표시됩니다.
@@ -14404,6 +14342,66 @@ function seFilterRecStore(id) {
     seRenderRecoveryFlat();
 }
 
+// '요청서 없음' 전시품을 볼 때, 반대편(요청서엔 있는데 전시품이 없는 품목)을 아래에 붙인다.
+// 둘은 같은 실물이 코드 오타로 갈라진 경우가 많아 나란히 봐야 짝이 보인다.
+function seRenderUnmatchedRef() {
+    const box = document.getElementById('seUnmatchedRef');
+    if (!box) return;
+    if (seLinkFilter !== 'unlinked') { box.style.display = 'none'; return; }
+
+    const have = new Set(seDisplayData.filter(d => d.sku).map(d => d.sku.toUpperCase()));
+    const bag = {};
+    seReqItems.forEach(it => {
+        if (!it.item_code || !it.color_code) return;
+        const sku = `${it.item_code}-${it.color_code}`.toUpperCase();
+        if (have.has(sku)) return;
+        const e = bag[sku] || (bag[sku] = { sku, name: it.product_name || '', qty: 0, reqs: [] });
+        e.qty += it.qty || 1;
+        const r = it.outgoing_requests;
+        if (r && !e.reqs.some(x => x.title === r.title && x.request_date === r.request_date)) e.reqs.push(r);
+    });
+    const rows = Object.values(bag).sort((a, b) =>
+        (b.reqs[0]?.request_date || '').localeCompare(a.reqs[0]?.request_date || '') || a.sku.localeCompare(b.sku));
+
+    box.style.display = '';
+    if (!rows.length) {
+        box.innerHTML = `<div style="border:1px dashed var(--se-border);border-radius:10px;padding:16px;color:#94a3b8;font-size:0.82rem;">
+            이 매장은 매출외출고 요청서의 품목이 전시품에 모두 등록돼 있습니다. 위 목록은 요청서 없이 등록된 전시품입니다.</div>`;
+        return;
+    }
+    box.innerHTML = `
+    <div style="border:1px solid #fcd34d;border-radius:10px;overflow:hidden;background:var(--se-surface);">
+        <div style="background:#fffbeb;padding:11px 15px;border-bottom:1px solid #fcd34d;">
+            <div style="font-size:0.85rem;font-weight:700;color:#b45309;">📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건</div>
+            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">위 목록(요청서 없는 전시품)과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.</div>
+        </div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+            <thead><tr style="background:#f1f5f9;color:#475569;">
+                <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품명</th>
+                <th style="padding:7px 10px;text-align:left;white-space:nowrap;">품목코드</th>
+                <th style="padding:7px 10px;text-align:left;white-space:nowrap;">색상</th>
+                <th style="padding:7px 10px;text-align:center;">요청수량</th>
+                <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
+            </tr></thead>
+            <tbody>${rows.map((x, i) => {
+                const [code, ...rest] = x.sku.split('-');
+                return `
+                <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
+                    <td style="padding:6px 10px;white-space:nowrap;">${x.name || '-'}</td>
+                    <td style="padding:6px 10px;font-family:monospace;font-weight:600;">${code}</td>
+                    <td style="padding:6px 10px;font-family:monospace;">${rest.join('-') || '-'}</td>
+                    <td style="padding:6px 10px;text-align:center;font-weight:600;">${x.qty}</td>
+                    <td style="padding:6px 10px;color:#64748b;">${x.reqs.map(r =>
+                        `<div style="line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px;">
+                            <span style="font-family:monospace;color:#94a3b8;">${r.request_date || ''}</span>
+                            ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${r.title || '-'}</a>` : (r.title || '-')}
+                         </div>`).join('') || '-'}</td>
+                </tr>`; }).join('')}</tbody>
+        </table></div>
+    </div>`;
+}
+
 function seRenderRecovery() {
     if (_recView === 'flat') { seRenderRecoveryFlat(); return; }
     const body = document.getElementById('recoveryBody');
@@ -14524,6 +14522,83 @@ function seToggleRecoveryItems(id) {
 }
 </script>
 
+<!-- 전시 제품 추가 모달 — seMgmtPanel 밖에 위치해야 position:fixed 정상 동작 -->
+<div id="seAddModal" onclick="if(event.target===this)seCloseAddModal()" style="display:none;position:fixed;inset:0;z-index:2600;background:rgba(15,23,42,0.6);align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto;">
+  <div style="background:var(--se-bg,#f8fafc);border-radius:14px;width:min(1080px,100%);box-shadow:0 24px 64px rgba(0,0,0,0.35);overflow:hidden;">
+    <div style="background:#003EFF;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:1rem;font-weight:700;color:#fff;">＋ 전시 제품 추가</div>
+        <div id="seAddModalStore" style="font-size:0.8rem;color:rgba(255,255,255,0.85);"></div>
+        <button onclick="seCloseAddModal()" style="background:rgba(255,255,255,0.18);border:none;border-radius:8px;width:30px;height:30px;color:#fff;font-size:0.95rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:18px 22px 22px;">
+                <div class="se-add-box" style="border:none;padding:0;margin:0;background:transparent;">
+                    <div class="se-add-grid">
+                        <select id="seAddSeries" onchange="sePopulateSkuList(this.value)"><option value="">시리즈 선택</option></select>
+                        <select id="seAddPurpose" onchange="seToggleSoldField()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
+                            <option value="전시">전시</option>
+                            <option value="판매">판매</option>
+                            <option value="창고">창고 보관</option>
+                        </select>
+                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span>전시 시작일</span>
+                                <label style="display:flex;align-items:center;gap:3px;font-size:0.72rem;cursor:pointer;">
+                                    <input type="checkbox" id="seAddDateUnknown" onchange="seToggleDateUnknown('add')"> 모름
+                                </label>
+                            </div>
+                            <input type="date" id="seAddDate">
+                        </label>
+                    </div>
+                    <div class="se-add-grid">
+                        <input type="text" id="seAddSku" list="seSkuList" placeholder="단품코드 (예: T50HDA3KK)" autocomplete="off" onchange="sePopulateColorCodes(this.value)">
+                        <datalist id="seSkuList"></datalist>
+                        <input type="text" id="seAddColor" list="seColorCodeList" placeholder="색상코드 (예: 5G1WW)" autocomplete="off">
+                        <datalist id="seColorCodeList"></datalist>
+                    </div>
+                    <div class="se-add-grid" style="grid-template-columns: 80px 1fr 1fr;">
+                        <input type="number" id="seAddQty" placeholder="개수" min="1" value="1">
+                        <div style="position:relative;">
+                            <input type="text" id="seAddLocation" placeholder="위치 선택 또는 입력" autocomplete="off"
+                                style="width:100%;box-sizing:border-box;"
+                                onfocus="seShowLocList('seAddLocation')"
+                                onclick="seShowLocList('seAddLocation')"
+                                oninput="seFilterLocList('seAddLocation')"
+                                onblur="setTimeout(function(){seHideLocList()},150)">
+                        </div>
+                        <input type="text" id="seAddMemo" placeholder="메모 (선택)">
+                    </div>
+                    <div id="seAddSoldRow" style="display:none;align-items:center;gap:12px;padding:4px 0;flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
+                            <input type="checkbox" id="seAddSold">
+                            판매 완료
+                        </label>
+                        <select id="seAddGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
+                            <option value="">등급 선택</option>
+                            <option value="A">A등급 (50% 할인)</option>
+                            <option value="B">B등급 (60% 할인)</option>
+                        </select>
+                        <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
+                    </div>
+                    <div class="se-add-grid" style="grid-template-columns: 1fr;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
+                            <span>📷 사진 첨부</span>
+                            <div id="seAddPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
+                            <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px dashed var(--se-border);border-radius:8px;font-size:0.78rem;color:var(--se-muted);width:fit-content;">
+                                ＋ 사진 추가
+                                <input type="file" id="seAddPhoto" accept="image/*" multiple style="display:none;" onchange="seHandleAddPhotoAdd(this)">
+                            </label>
+                        </label>
+                    </div>
+                    <div class="se-add-row">
+                        <input type="text" id="seAddUpdater" placeholder="수정자 이름">
+                        <button class="se-save-btn" onclick="seAddDisplay()">추가</button>
+                    </div>
+                    <div class="se-msg" id="seAddMsg"></div>
+                </div>
+    </div>
+  </div>
+</div>
+
 <!-- 이동 모달 — seMgmtPanel 밖에 위치해야 position:fixed 정상 동작 -->
 <div id="seMoveModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
     <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px 24px;width:340px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
@@ -14547,6 +14622,7 @@ const SE_PW = 'SDZ2026';
 let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
+let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
 let sePendingDeletes = [];
 let seStoreZones = [];
 const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
@@ -15747,11 +15823,14 @@ async function seRenderList(storeId) {
         const [displaysRes, zonesRes, reqItemsRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
-            _sb.from('outgoing_request_items').select('item_code,color_code').eq('store_id', storeId)
+            _sb.from('outgoing_request_items')
+               .select('item_code,color_code,product_name,qty,outgoing_requests(title,request_date,doc_no,ep_url)')
+               .eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
         seStoreZones = zonesRes.data || [];
+        seReqItems = reqItemsRes.data || [];
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
@@ -15851,6 +15930,7 @@ function seRenderTable(storeId) {
         const el = document.getElementById(`seSortIcon_${col}`);
         if (el) el.textContent = seSortCol === col ? (seSortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
     });
+    seRenderUnmatchedRef();
     const activeRows = rows.map((row) => {
         const i = seDisplayData.indexOf(row);
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
@@ -16060,6 +16140,20 @@ function seOpenMoveModal() {
 function seCloseMoveModal() {
     document.getElementById('seMoveModal').style.display = 'none';
     _sePendingMoveIds = [];
+}
+
+// 전시 제품 추가 — 목록 아래 인라인 폼이 길어져 팝업으로 뺐다
+function seOpenAddModal() {
+    if (!seCurrentStore) { alert('매장을 먼저 선택해 주세요.'); return; }
+    const label = document.getElementById('seAddModalStore');
+    if (label) label.textContent = (seStores().find(s => s.id === seCurrentStore)?.name) || seCurrentStore;
+    const msg = document.getElementById('seAddMsg');
+    if (msg) msg.textContent = '';
+    document.getElementById('seAddModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('seAddSeries')?.focus(), 50);
+}
+function seCloseAddModal() {
+    document.getElementById('seAddModal').style.display = 'none';
 }
 async function seConfirmMove() {
     const targetId  = document.getElementById('seMoveTargetStore').value;
@@ -16330,6 +16424,7 @@ async function seAddDisplay() {
         _seAddPhotos = []; _seAddPhotoBlobs = [];
         seRenderAddPhotoGrid();
         await seRenderList(storeId);
+        seCloseAddModal();   // 저장됐으면 팝업을 닫아 목록에서 결과를 바로 보게 한다
         setTimeout(() => msg.textContent='', 3000);
     } catch(e) { msg.className='se-msg err'; msg.textContent='오류: '+e.message; }
 }
