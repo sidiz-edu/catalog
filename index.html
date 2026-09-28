@@ -15254,8 +15254,15 @@ function seRenderTable(storeId) {
         const i = seDisplayData.indexOf(row);
         const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         const dt = new Date(row.updated_at).toLocaleString('ko-KR', { year:'2-digit', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-        const imgCell = row.image_url
-            ? `<td><a href="${row.image_url}" target="_blank"><img src="${row.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;"></a></td>`
+        const photos = (row.image_urls && row.image_urls.length) ? row.image_urls
+                     : (row.image_url ? [row.image_url] : []);
+        const photoLabel = [prod?.name || row.product_id, row.sku].filter(Boolean).join(' · ');
+        const imgCell = photos.length
+            ? `<td><div style="position:relative;display:inline-block;cursor:zoom-in;"
+                    onclick='openSePhoto(${JSON.stringify(photos).replace(/'/g, "&#39;")}, ${JSON.stringify(photoLabel).replace(/'/g, "&#39;")})'>
+                    <img src="${photos[0]}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;display:block;">
+                    ${photos.length > 1 ? `<span style="position:absolute;right:-3px;bottom:-3px;background:#003EFF;color:#fff;font-size:0.6rem;font-weight:700;border-radius:8px;padding:1px 5px;">${photos.length}</span>` : ''}
+               </div></td>`
             : `<td style="color:#94a3b8;">-</td>`;
         const purposeCell = row.purpose === '판매'
             ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;">${row.sold ? '✅ 판매완료' : '판매중'}</span></td>`
@@ -17173,6 +17180,49 @@ async function seLoadOverview() {
 <div id="seLocDropdown" style="display:none;position:fixed;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:8px;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.2);"></div>
 
 <!-- QR 확대 모달 -->
+<!-- 전시품 사진 뷰어 -->
+<div id="sePhotoModal" onclick="closeSePhoto()" style="display:none;position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+    <div id="sePhotoLabel" style="color:#fff;font-size:0.9rem;font-weight:600;text-align:center;padding:0 16px;"></div>
+    <div onclick="event.stopPropagation()" style="position:relative;display:flex;align-items:center;gap:10px;max-width:92vw;">
+        <button id="sePhotoPrev" onclick="seStepPhoto(-1)" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;flex-shrink:0;">‹</button>
+        <img id="sePhotoImg" src="" alt="전시품 사진" style="max-width:min(820px,80vw);max-height:76vh;border-radius:12px;display:block;background:#1e293b;">
+        <button id="sePhotoNext" onclick="seStepPhoto(1)" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;flex-shrink:0;">›</button>
+    </div>
+    <div id="sePhotoCount" style="color:rgba(255,255,255,0.75);font-size:0.78rem;"></div>
+    <button onclick="closeSePhoto()" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:50%;width:38px;height:38px;font-size:1.1rem;cursor:pointer;">✕</button>
+</div>
+<script>
+let _sePhotos = [], _sePhotoIdx = 0;
+function openSePhoto(urls, label) {
+    _sePhotos = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
+    if (!_sePhotos.length) return;
+    _sePhotoIdx = 0;
+    document.getElementById('sePhotoLabel').textContent = label || '';
+    document.getElementById('sePhotoModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    seStepPhoto(0);
+}
+function seStepPhoto(d) {
+    const n = _sePhotos.length;
+    _sePhotoIdx = (_sePhotoIdx + d + n) % n;
+    document.getElementById('sePhotoImg').src = _sePhotos[_sePhotoIdx];
+    document.getElementById('sePhotoCount').textContent = n > 1 ? `${_sePhotoIdx + 1} / ${n}` : '';
+    const show = n > 1 ? '' : 'none';
+    document.getElementById('sePhotoPrev').style.display = show;
+    document.getElementById('sePhotoNext').style.display = show;
+}
+function closeSePhoto() {
+    document.getElementById('sePhotoModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+    if (document.getElementById('sePhotoModal')?.style.display !== 'flex') return;
+    if (e.key === 'Escape') closeSePhoto();
+    if (e.key === 'ArrowLeft')  seStepPhoto(-1);
+    if (e.key === 'ArrowRight') seStepPhoto(1);
+});
+</script>
+
 <div id="qrModal" onclick="closeQrModal()" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;flex-direction:column;gap:14px;">
     <div onclick="event.stopPropagation()" style="background:#fff;border-radius:16px;padding:24px 28px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.4);max-width:min(340px,90vw);">
         <div id="qrModalLabel" style="font-size:0.95rem;font-weight:700;color:#1d4ed8;margin-bottom:14px;"></div>
