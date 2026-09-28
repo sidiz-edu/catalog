@@ -14139,6 +14139,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📄 품목 전체보기</button>
                 <button id="seReqView-doc" onclick="seSetReqView('doc')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">🔢 문서번호 입력</button>
             </div>
+            <!-- 전시 현황 필터 — 품목 전체보기에서만 뜬다 -->
+            <div id="seReqStatusBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
             <div id="seReqFlatBody" style="display:none;"></div>
             <div id="seReqDocBody" style="display:none;"></div>
             <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
@@ -14871,6 +14873,8 @@ function seSetReqView(v) {
     document.getElementById('seReqListBody').style.display = v === 'list' ? '' : 'none';
     document.getElementById('seReqFlatBody').style.display = v === 'flat' ? '' : 'none';
     document.getElementById('seReqDocBody').style.display = v === 'doc' ? '' : 'none';
+    const sBar = document.getElementById('seReqStatusBar');
+    if (sBar) sBar.style.display = v === 'flat' ? 'flex' : 'none';
     ['list', 'flat', 'doc'].forEach(k => {
         const b = document.getElementById(`seReqView-${k}`);
         if (!b) return;
@@ -15001,6 +15005,41 @@ async function seLoadFlatRows() {
     seRenderFlat();
 }
 
+// 전시 현황 분류 — 품목 전체보기의 '전시 현황' 칼럼과 같은 기준
+const seFlatStatus = x =>
+      x.status === 'unmatched' ? 'unmatched'
+    : x.status === 'none'      ? 'none'
+    : x.have === x.want        ? 'ok' : 'diff';
+
+const SE_STATUS_STYLE = {
+    ok:        ['✔ 일치',        '#16a34a'],
+    diff:      ['⚠ 수량 불일치',  '#f59e0b'],
+    none:      ['❌ 전시 없음',    '#ef4444'],
+    unmatched: ['⚪ 매장 미매칭',  '#94a3b8'],
+};
+let _seReqStatus = 'all';
+
+function seRenderStatusBar(base) {
+    const bar = document.getElementById('seReqStatusBar');
+    if (!bar) return;
+    const c = { ok: 0, diff: 0, none: 0, unmatched: 0 };
+    base.forEach(x => c[seFlatStatus(x)]++);
+    const entries = [['all', `전시 현황 전체 (${base.length})`, '#003EFF'],
+        ...Object.keys(SE_STATUS_STYLE)
+            .filter(k => c[k] > 0)
+            .map(k => [k, `${SE_STATUS_STYLE[k][0]} (${c[k]})`, SE_STATUS_STYLE[k][1]])];
+    bar.innerHTML = entries.map(([k, label, fg]) => {
+        const on = k === _seReqStatus;
+        return `<button onclick="seFilterStatus('${k}')"
+            style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'#fff'};color:${on?'#fff':fg};border:1px solid ${on?fg:'#e2e8f0'};font-family:'Outfit',sans-serif;">${label}</button>`;
+    }).join('');
+}
+
+function seFilterStatus(k) {
+    _seReqStatus = k;
+    seRenderFlat();
+}
+
 function seRenderFlat() {
     const body = document.getElementById('seReqFlatBody');
     if (!body || !_seFlatRows) return;
@@ -15011,11 +15050,16 @@ function seRenderFlat() {
     }, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
-    const rows = _seFlatRows.filter(x =>
+    // 구분·검색을 먼저 적용하고, 그 결과 안에서 전시 현황을 센다
+    const base = _seFlatRows.filter(x =>
         (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
+    seRenderStatusBar(base);
+    const rows = base.filter(x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus);
 
     const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = `${rows.length} / ${_seFlatRows.length}개 품목`;
+    if (cnt) cnt.textContent = _seReqStatus === 'all'
+        ? `${rows.length} / ${_seFlatRows.length}개 품목`
+        : `${rows.length}개 / 조건 ${base.length}개 · 전체 ${_seFlatRows.length}개`;
 
     if (!rows.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 품목이 없습니다.</p>'; return; }
 
