@@ -14161,10 +14161,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     <div style="flex:1;overflow-y:auto;padding:24px 28px;">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
             <input id="recSearch" type="text" oninput="seRenderRecovery()"
-                placeholder="매출외 번호 · 수주번호 · 문서번호 · 품목코드 · 색상 · 매장 · 건명 (공백으로 여러 조건)"
+                placeholder="제품명 · 품목코드 · 색상 · 매장 · 창고 · 문서번호 · 수주번호 · 건명 (공백으로 여러 조건)"
                 style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
             <span id="recSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
         </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+            <button id="recView-report" onclick="seSetRecView('report')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#0f766e;color:#fff;border:1px solid #0f766e;font-family:'Outfit',sans-serif;">📋 보고서별</button>
+            <button id="recView-flat" onclick="seSetRecView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#0f766e;border:1px solid var(--se-border);font-family:'Outfit',sans-serif;">📄 명세 전체보기</button>
+        </div>
+        <!-- 창고 필터 — 명세 전체보기에서만 뜬다 -->
+        <div id="recWhBar" style="display:none;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
+        <div id="recFlatBody" style="display:none;"></div>
         <div id="recoveryBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
     </div>
 </div>
@@ -14245,24 +14252,152 @@ async function seLoadRecoveryReports() {
         _sb.from('recovery_reports').select('*').order('report_date', { ascending: false }),
         _sb.from('recovery_report_items').select('*').order('seq'),
         seEnsureReqIndex(),
+        seEnsureCodeNames(),
     ]);
     if (rRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${rRes.error.message}</p>`; return; }
     _recReports = rRes.data || [];
-    const docOfRep = {};
+    const docOfRep = {}, storeName = {};
     _recReports.forEach(r => { docOfRep[r.id] = r.doc_no; });
+    seStores().forEach(s => { storeName[s.id] = s.name; });
     _recItems = (iRes.data || []).map(x => ({
         ...x,
-        // 소속 보고서 문서번호까지 넣어야 "매출외26-08-00003 TOT7A"처럼 묶어서 검색된다
+        // 소속 보고서 문서번호까지 넣어야 "매출외26-08-00003 TOT7A"처럼 묶어서 검색된다.
+        // 제품명·매장 한글명도 넣어 "링고 성수"처럼 눈에 보이는 말로 찾을 수 있게 한다.
         _hay: [x.order_no, x.order_title, x.item_code, x.color_code,
                `${x.item_code || ''}-${x.color_code || ''}`, x.warehouse, x.store_id,
                x.raw_item_code, x.raw_color_code,   // 정정 전 원문 코드로도 찾히게
-               docOfRep[x.report_id]]
+               docOfRep[x.report_id], storeName[x.store_id],
+               (_recCodeName || {})[(x.item_code || '').toUpperCase().replace(/\s/g, '')]]
               .filter(Boolean).join(' ').toLowerCase(),
     }));
     seRenderRecovery();
 }
 
+// ── 명세 전체보기 ──────────────────────────────────
+// 보고서 8건의 명세를 한 표로 펼쳐 제품·매장·창고로 걸러 본다
+let _recView = 'report', _recWh = 'all', _recCodeName = null;
+
+function seSetRecView(v) {
+    _recView = v;
+    document.getElementById('recoveryBody').style.display = v === 'report' ? '' : 'none';
+    document.getElementById('recFlatBody').style.display  = v === 'flat' ? '' : 'none';
+    document.getElementById('recWhBar').style.display      = v === 'flat' ? 'flex' : 'none';
+    ['report', 'flat'].forEach(k => {
+        const b = document.getElementById(`recView-${k}`);
+        if (!b) return;
+        const on = k === v;
+        b.style.background = on ? '#0f766e' : '#fff';
+        b.style.color      = on ? '#fff' : '#0f766e';
+        b.style.border     = on ? '1px solid #0f766e' : '1px solid var(--se-border)';
+    });
+    seRenderRecovery();
+}
+
+// 명세에는 제품명이 없다 — 요청서 품목에서 품목코드별 제품명을 끌어온다
+async function seEnsureCodeNames() {
+    if (_recCodeName) return _recCodeName;
+    const { data } = await _sb.from('outgoing_request_items').select('item_code,product_name');
+    const freq = {};
+    (data || []).forEach(x => {
+        const c = (x.item_code || '').toUpperCase().replace(/\s/g, '');
+        if (!c || !x.product_name) return;
+        (freq[c] || (freq[c] = {}))[x.product_name] = (freq[c][x.product_name] || 0) + 1;
+    });
+    _recCodeName = {};
+    Object.entries(freq).forEach(([c, names]) => {
+        _recCodeName[c] = Object.entries(names).sort((a, b) => b[1] - a[1])[0][0];
+    });
+    return _recCodeName;
+}
+
+function seRenderRecoveryFlat() {
+    const body = document.getElementById('recFlatBody');
+    if (!body || !_recItems) return;
+    const docOf = {}, dateOf = {}, epOf = {};
+    _recReports.forEach(r => { docOf[r.id] = r.doc_no; dateOf[r.id] = r.report_date; epOf[r.id] = r.ep_url; });
+    // 표에서는 '시디즈' 접두를 떼어 칼럼 폭을 아낀다 (더프/스타필드/커넥트현대 구분은 남긴다)
+    const nameOf = {};
+    seStores().forEach(s => { nameOf[s.id] = (s.name || '').replace(/^시디즈\s*/, ''); });
+    const shortDoc = d => (d || '-').replace(/^시디즈-/, '');
+
+    const hit = seSearchMatcher(document.getElementById('recSearch')?.value);
+    const base = _recItems.filter(x => hit(x._hay));
+
+    // 창고 필터 바 — 검색 결과 안에서 집계
+    const wc = {};
+    base.forEach(x => { const w = x.warehouse || '(미지정)'; wc[w] = (wc[w] || 0) + 1; });
+    const bar = document.getElementById('recWhBar');
+    if (bar) bar.innerHTML = [['all', `창고 전체 (${base.length})`],
+        ...Object.entries(wc).sort((a, b) => b[1] - a[1]).map(([w, n]) => [w, `${w} (${n})`])]
+        .map(([k, label]) => {
+            const on = k === _recWh;
+            return `<button onclick="seFilterRecWh('${k.replace(/'/g, "\\'")}')"
+                style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?'#0f766e':'#fff'};color:${on?'#fff':'#0f766e'};border:1px solid ${on?'#0f766e':'var(--se-border)'};font-family:'Outfit',sans-serif;">${label}</button>`;
+        }).join('');
+
+    const rows = base.filter(x => _recWh === 'all' || (x.warehouse || '(미지정)') === _recWh);
+    const total = rows.reduce((s, x) => s + (Number(x.unrecovered_amount) || 0), 0);
+
+    const cnt = document.getElementById('recSearchCount');
+    if (cnt) cnt.textContent = `${rows.length}건 · ${total.toLocaleString()}원`;
+
+    if (!rows.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;padding:12px 0;">해당 명세가 없습니다.</p>'; return; }
+
+    body.innerHTML = `
+    <div style="display:flex;gap:18px;flex-wrap:wrap;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:0.8rem;">
+        <span><b style="color:#0f766e;">명세</b> ${rows.length}건</span>
+        <span><b style="color:#0f766e;">미회수금액</b> ${total.toLocaleString()}원</span>
+        <span><b style="color:#0f766e;">매장</b> ${new Set(rows.map(x => x.store_id)).size}곳</span>
+        <span><b style="color:#0f766e;">보고서</b> ${new Set(rows.map(x => x.report_id)).size}건</span>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.76rem;background:var(--se-surface);">
+        <thead><tr style="background:#e2e8f0;color:#475569;">
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">보고일</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">제품명</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">품목코드</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">색상</th>
+            <th style="padding:7px 9px;text-align:center;">수량</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:right;white-space:nowrap;">미회수금액</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">창고</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">보고서</th>
+            <th style="padding:7px 9px;text-align:center;">요청서</th>
+        </tr></thead>
+        <tbody>${rows.map((x, i) => {
+            const code = (x.item_code || '').toUpperCase().replace(/\s/g, '');
+            const raw = (was, now) => (was && was !== now)
+                ? `<div style="font-size:0.66rem;color:#b45309;" title="${(x.correction_note||'').replace(/"/g,'&quot;')}">원문 ${was}</div>` : '';
+            const mo = seMoNo(x.order_title);
+            const req = mo ? (_seReqByMo || {})[mo] : null;
+            return `
+            <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 9px;white-space:nowrap;font-weight:600;">${dateOf[x.report_id] || '-'}</td>
+                <td style="padding:6px 9px;white-space:nowrap;">${(_recCodeName || {})[code] || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${x.item_code || '-'}${raw(x.raw_item_code, x.item_code)}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${x.color_code || '-'}${raw(x.raw_color_code, x.color_code)}</td>
+                <td style="padding:6px 9px;text-align:center;">${x.qty ?? '-'}</td>
+                <td style="padding:6px 9px;white-space:nowrap;">${nameOf[x.store_id] || x.store_id || '-'}</td>
+                <td style="padding:6px 9px;text-align:right;font-variant-numeric:tabular-nums;">${_wonR(x.unrecovered_amount)}</td>
+                <td style="padding:6px 9px;white-space:nowrap;">${x.warehouse || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;font-size:0.7rem;white-space:nowrap;" title="${docOf[x.report_id] || ''}">${epOf[x.report_id]
+                    ? `<a href="${epOf[x.report_id]}" target="_blank" style="color:#0f766e;text-decoration:none;">${shortDoc(docOf[x.report_id])} 🔗</a>`
+                    : shortDoc(docOf[x.report_id])}</td>
+                <td style="padding:6px 9px;text-align:center;white-space:nowrap;">${req
+                    ? `<button onclick="seOpenRequestFor('${mo}')" title="${(req.title||'').replace(/"/g,'&quot;')}"
+                         style="padding:2px 8px;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 ${mo}</button>`
+                    : `<span style="color:#cbd5e1;">-</span>`}</td>
+            </tr>`; }).join('')}</tbody>
+    </table></div>`;
+}
+
+function seFilterRecWh(w) {
+    _recWh = w;
+    seRenderRecoveryFlat();
+}
+
 function seRenderRecovery() {
+    if (_recView === 'flat') { seRenderRecoveryFlat(); return; }
     const body = document.getElementById('recoveryBody');
     if (!_recReports) return;
     if (!_recReports.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;">등록된 회수 보고서가 없습니다.</p>'; return; }
