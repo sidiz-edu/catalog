@@ -15565,21 +15565,23 @@ function seRenderTable(storeId) {
         const loc = (row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'')).toLowerCase();
         return name.includes(q) || purpose.includes(q) || sku.includes(q) || color.includes(q) || loc.includes(q);
     });
-    // 정렬
-    if (seSortCol) {
-        const getVal = (row, col) => {
-            if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
-            if (col === 'purpose') return row.purpose || '';
-            if (col === 'sku') return row.sku || '';
-            if (col === 'color') return row.color_code || '';
-            if (col === 'location') return row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'');
-            return '';
-        };
-        rows = [...rows].sort((a, b) => {
-            const va = getVal(a, seSortCol), vb = getVal(b, seSortCol);
-            return seSortDir === 'asc' ? va.localeCompare(vb, 'ko') : vb.localeCompare(va, 'ko');
-        });
-    }
+    // 정렬 — 판매완료는 현재 전시품과 섞이지 않게 항상 맨 아래로 모은다.
+    // 칼럼 정렬은 그 다음 기준이고, 정렬을 안 걸었으면 원래 순서를 유지한다.
+    const getVal = (row, col) => {
+        if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
+        if (col === 'purpose') return row.purpose || '';
+        if (col === 'sku') return row.sku || '';
+        if (col === 'color') return row.color_code || '';
+        if (col === 'location') return row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'');
+        return '';
+    };
+    rows = rows.map((r, i) => ({ r, i })).sort((a, b) => {
+        const d = (a.r.sold ? 1 : 0) - (b.r.sold ? 1 : 0);
+        if (d) return d;
+        if (!seSortCol) return a.i - b.i;
+        const va = getVal(a.r, seSortCol), vb = getVal(b.r, seSortCol);
+        return (seSortDir === 'asc' ? 1 : -1) * va.localeCompare(vb, 'ko') || a.i - b.i;
+    }).map(x => x.r);
     // 정렬 아이콘 업데이트
     ['name','purpose','sku','color','location'].forEach(col => {
         const el = document.getElementById(`seSortIcon_${col}`);
