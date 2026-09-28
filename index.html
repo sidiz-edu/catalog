@@ -14155,6 +14155,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <button onclick="closeRecoveryPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;">닫기</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:24px 28px;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+            <input id="recSearch" type="text" oninput="seRenderRecovery()"
+                placeholder="매출외 번호 · 수주번호 · 문서번호 · 품목코드 · 색상 · 매장 · 건명 (공백으로 여러 조건)"
+                style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+            <span id="recSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
+        </div>
         <div id="recoveryBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
     </div>
 </div>
@@ -14168,6 +14174,8 @@ function closeRecoveryPanel() {
 }
 const _wonR = n => (n == null ? '-' : Number(n).toLocaleString() + '원');
 
+let _recReports = null, _recItems = null;
+
 async function seLoadRecoveryReports() {
     const body = document.getElementById('recoveryBody');
     const [rRes, iRes] = await Promise.all([
@@ -14175,11 +14183,43 @@ async function seLoadRecoveryReports() {
         _sb.from('recovery_report_items').select('*').order('seq'),
     ]);
     if (rRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${rRes.error.message}</p>`; return; }
-    const reports = rRes.data || [], items = iRes.data || [];
-    if (!reports.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;">등록된 회수 보고서가 없습니다.</p>'; return; }
+    _recReports = rRes.data || [];
+    _recItems = (iRes.data || []).map(x => ({
+        ...x,
+        _hay: [x.order_no, x.order_title, x.item_code, x.color_code,
+               `${x.item_code || ''}-${x.color_code || ''}`, x.warehouse, x.store_id]
+              .filter(Boolean).join(' ').toLowerCase(),
+    }));
+    seRenderRecovery();
+}
 
-    body.innerHTML = reports.map(r => {
-        const its = items.filter(x => x.report_id === r.id);
+function seRenderRecovery() {
+    const body = document.getElementById('recoveryBody');
+    if (!_recReports) return;
+    if (!_recReports.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;">등록된 회수 보고서가 없습니다.</p>'; return; }
+
+    const raw = document.getElementById('recSearch')?.value || '';
+    const hit = seSearchMatcher(raw);
+    const searching = raw.trim() !== '';
+
+    // 문서 자체가 걸리면 전체 명세를, 아니면 걸린 명세만 보여준다
+    const view = _recReports.map(r => {
+        const all = _recItems.filter(x => x.report_id === r.id);
+        const headHay = [r.doc_no, r.title, r.author, r.dept, r.lead_order_no, r.reason, r.account]
+            .filter(Boolean).join(' ').toLowerCase();
+        const headHit = hit(headHay);
+        const matched = all.filter(x => hit(x._hay));
+        return { r, all, its: (!searching || headHit) ? all : matched, matched, headHit };
+    }).filter(v => !searching || v.headHit || v.matched.length);
+
+    const cnt = document.getElementById('recSearchCount');
+    if (cnt) cnt.textContent = searching
+        ? `${view.reduce((s, v) => s + v.matched.length, 0)}건 / 보고서 ${view.length}개`
+        : `보고서 ${_recReports.length}개 · 명세 ${_recItems.length}건`;
+
+    if (!view.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;padding:12px 0;">검색 결과가 없습니다.</p>'; return; }
+
+    body.innerHTML = view.map(({ r, its, matched, headHit }) => {
         const appr = (r.approvals || []).map(a =>
             `<span style="display:inline-block;background:#f1f5f9;border-radius:6px;padding:3px 9px;margin:0 4px 4px 0;font-size:0.72rem;">
                <b style="color:#0f766e;">${a['단계']}</b> ${a['이름']} <span style="color:#94a3b8;">${a['일자']}</span></span>`).join('');
@@ -14223,8 +14263,8 @@ async function seLoadRecoveryReports() {
             <div style="padding:0 18px 16px;">
                 <button onclick="seToggleRecoveryItems('${r.id}')" id="rec-btn-${r.id}"
                     style="padding:6px 14px;border-radius:7px;border:1px solid var(--se-border);background:transparent;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;">
-                    ▼ 명세 ${its.length}건 보기</button>
-                <div id="rec-items-${r.id}" style="display:none;margin-top:10px;overflow-x:auto;">
+                    ${matched.length && !headHit ? '▲' : '▼'} 명세 ${its.length}건${matched.length && !headHit ? ` 접기 (검색 일치)` : ' 보기'}</button>
+                <div id="rec-items-${r.id}" style="display:${matched.length && !headHit ? '' : 'none'};margin-top:10px;overflow-x:auto;">
                     <table style="width:100%;border-collapse:collapse;font-size:0.73rem;">
                         <thead><tr style="background:#e2e8f0;color:#475569;">
                             <th style="padding:6px 8px;">#</th><th style="padding:6px 8px;text-align:left;">수주번호</th>
