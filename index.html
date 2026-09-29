@@ -13925,7 +13925,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
                 <div id="seKindBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
                 <!-- 매출외출고 요청서 연결 여부 -->
-                <div id="seLinkBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
+                <div id="seLinkBar" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;"></div>
+                <div id="seLinkDesc" style="margin-bottom:9px;font-size:0.72rem;line-height:1.65;color:var(--se-muted);"></div>
                 <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
                     oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
                     style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.85rem;background:var(--se-raised);color:var(--se-text);margin-bottom:10px;font-family:'Outfit',sans-serif;">
@@ -14445,7 +14446,7 @@ function seRenderUnmatchedRef() {
     <div style="border:1px solid #fcd34d;border-radius:10px;overflow:hidden;background:var(--se-surface);">
         <div style="background:#fffbeb;padding:11px 15px;border-bottom:1px solid #fcd34d;">
             <div style="font-size:0.85rem;font-weight:700;color:#b45309;">📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건</div>
-            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">위 목록(요청서 없는 전시품)과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.</div>
+            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">위 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.</div>
         </div>
         <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
@@ -15958,16 +15959,32 @@ function seRenderTable(storeId) {
     // 구분을 바꿔 해당 연결 상태가 0건이 되면 빈 표에 갇히므로 푼다
     if (seLinkFilter !== 'all' && !lc[seLinkFilter]) seLinkFilter = 'all';
     const lbar = document.getElementById('seLinkBar');
+    const ldesc = document.getElementById('seLinkDesc');
+    // 연결 여부는 용어만으로 뜻이 안 잡혀서 선택한 상태의 설명을 바로 아래 붙인다
+    const LINK_DESC = {
+        linked: '매출외출고 요청서(시디즈 본사 담당자 작성)에도 기록되어 있고 매장에서도 갖고 있는 제품',
+        unlinked: '매출외출고 요청서(시디즈 본사 담당자 작성)에는 기록되어 있지 않지만 매장에서 갖고 있는 제품',
+    };
     if (lbar) {
-        lbar.innerHTML = lc.unlinked === 0 ? '' : [
-            ['all', `매출외출고 전체 (${lc.linked + lc.unlinked})`, '#0f766e'],
+        lbar.innerHTML = lc.unlinked === 0 ? '' :
+            `<span style="font-size:0.72rem;color:var(--se-muted);margin-right:2px;">매출외출고 연결</span>` + [
+            ['all', `전체 (${lc.linked + lc.unlinked})`, '#0f766e'],
             ['linked', `📄 연결됨 (${lc.linked})`, '#16a34a'],
-            ['unlinked', `❌ 요청서 없음 (${lc.unlinked})`, '#ef4444'],
+            ['unlinked', `❌ 연결X (${lc.unlinked})`, '#ef4444'],
         ].map(([k, label, fg]) => {
             const on = k === seLinkFilter;
             return `<button onclick="seLinkFilter='${k}';seRenderTable(seCurrentStore)"
                 style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?fg:'var(--se-border)'};">${label}</button>`;
         }).join('');
+    }
+    if (ldesc) {
+        ldesc.innerHTML = lc.unlinked === 0 ? '' : (
+            seLinkFilter === 'all'
+                ? `<div><b style="color:#16a34a;font-weight:600;">연결됨</b> — ${LINK_DESC.linked}</div>`
+                + `<div><b style="color:#ef4444;font-weight:600;">연결X</b> — ${LINK_DESC.unlinked}</div>`
+                : `<div><b style="color:${seLinkFilter === 'linked' ? '#16a34a' : '#ef4444'};font-weight:600;">`
+                + `${seLinkFilter === 'linked' ? '연결됨' : '연결X'}</b> — ${LINK_DESC[seLinkFilter]}</div>`
+        );
     }
 
     // 검색 필터
