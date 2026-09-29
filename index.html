@@ -15073,25 +15073,25 @@ const SE_CHAIR_CODES = new Set([  // 품목명에 부품 단어가 섞였지만 
     'T250NF',        // 리니에 블랙쉘 (플렉스등판, 회전형)
     'VTNF500HLDA',   // T50 회전형
 ]);
-const SE_PROMO_CODES = new Set([  // 판촉물 — FHXZ 접두는 콜라보 의자에도 쓰이므로 코드를 명시한다
+// 판촉물은 따로 세지 않고 부속품에 포함한다 — FHXZ 접두는 콜라보 의자에도 쓰이므로 코드를 명시한다
+const SE_PROMO_CODES = new Set([
     'FHXZ2503001',   // 토트넘 포토카드
 ]);
 const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|받침대)/;
 
 function seItemClass(itemCode, productName) {
     const c = (itemCode || '').replace(/\s/g, '').toUpperCase();
-    if (SE_PROMO_CODES.has(c)) return 'promo';
+    if (SE_PROMO_CODES.has(c)) return 'part';
     if (SE_CHAIR_CODES.has(c)) return 'chair';
     if (SE_PART_CODES.has(c))  return 'part';
-    if (/[가-힣]/.test(c)) return 'promo';                        // 컬러칩 등 코드가 한글인 것
-    if (/(포토카드|엽서|스티커|굿즈)/.test(productName || '')) return 'promo';
+    if (/[가-힣]/.test(c)) return 'part';                         // 컬러칩 등 코드가 한글인 것
+    if (/(포토카드|엽서|스티커|굿즈)/.test(productName || '')) return 'part';
     return SE_REPAIR_RE.test(productName || '') ? 'part' : 'chair';
 }
 
 const SE_CLASS_STYLE = {
     chair: ['🪑 의자',   '#eef2ff', '#4338ca'],
     part:  ['🔧 부속품', '#e0f2fe', '#0369a1'],
-    promo: ['🎁 판촉물', '#fffbeb', '#b45309'],
 };
 // 날짜 칩 — 년도별로 색상 구분 [글자색, 배경색]
 const SE_YEAR_COLOR = {
@@ -15120,7 +15120,7 @@ function seSearchMatcher(raw) {
 function seRenderKindBar(total, counts, unit) {
     const bar = document.getElementById('seReqFilterBar');
     if (!bar) return;
-    const entries = [['all', `전체 (${total}${unit})`], ...['chair', 'part', 'promo']
+    const entries = [['all', `전체 (${total}${unit})`], ...Object.keys(SE_CLASS_STYLE)
         .map(k => [k, `${SE_CLASS_STYLE[k][0]} (${counts[k] ?? 0})`])];
     bar.innerHTML = entries.map(([k, label]) => {
         const active = k === _seReqKind;
@@ -15357,7 +15357,6 @@ function seRenderFlat() {
     seRenderKindBar(_seFlatRows.length, {
         chair: _seFlatRows.filter(x => x.kind === 'chair').length,
         part:  _seFlatRows.filter(x => x.kind === 'part').length,
-        promo: _seFlatRows.filter(x => x.kind === 'promo').length,
     }, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
@@ -15483,10 +15482,10 @@ async function seLoadRequestList() {
             .forEach(v => { if (v) bag.add(String(v).toLowerCase()); });
     });
 
-    // 요청서별 품목 구성 (의자·부속품·판촉물을 각각 몇 개 품고 있는지)
+    // 요청서별 품목 구성 (의자·부속품을 각각 몇 개 품고 있는지)
     const mix = {};
     (itemsRes.data || []).forEach(it => {
-        const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, part: 0, promo: 0 });
+        const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, part: 0 });
         m[seItemClass(it.item_code, it.product_name)]++;
     });
     // 필터는 "해당 분류를 포함하는 요청서"를 남긴다 (한 요청서가 여러 분류를 가질 수 있음)
@@ -15494,15 +15493,15 @@ async function seLoadRequestList() {
     const kindBadge = id => {
         const m = mix[id];
         if (!m) return '';
-        return ['chair', 'part', 'promo'].filter(k => m[k] > 0).map(k => {
+        return Object.keys(SE_CLASS_STYLE).filter(k => m[k] > 0).map(k => {
             const [label, bg, fg] = SE_CLASS_STYLE[k];
             return `<span style="font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${bg};color:${fg};white-space:nowrap;">${label} ${m[k]}</span>`;
         }).join(' ');
     };
 
     // 구분별 필터 바 (요청서 단위 집계)
-    const counts = { chair: 0, part: 0, promo: 0 };
-    data.forEach(r => ['chair','part','promo'].forEach(k => { if (hasClass(r.id, k)) counts[k]++; }));
+    const counts = { chair: 0, part: 0 };
+    data.forEach(r => Object.keys(SE_CLASS_STYLE).forEach(k => { if (hasClass(r.id, k)) counts[k]++; }));
     _seReqCounts = { total: data.length, counts };
     if (_seReqView === 'list') seRenderKindBar(data.length, counts, '건');
     el.innerHTML = data.map(r => {
@@ -15527,7 +15526,7 @@ async function seLoadRequestList() {
                  style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;">💰 회수 ${rec.n}건 · ${rec.amt.toLocaleString()}원</button>`
             : '';
         return `
-        <div id="req-card-${r.id}" data-kind="${['chair','part','promo'].filter(k => hasClass(r.id, k)).join(' ')}" data-search="${hay}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
+        <div id="req-card-${r.id}" data-kind="${Object.keys(SE_CLASS_STYLE).filter(k => hasClass(r.id, k)).join(' ')}" data-search="${hay}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
                 <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:62px;padding:9px 11px;border-radius:10px;background:${yBg};" onclick="seToggleReqItems('${r.id}')">
                     ${r.request_date
@@ -15646,7 +15645,7 @@ async function seToggleReqItems(id) {
         if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
             body.innerHTML = '<span style="color:#94a3b8;">항목이 없습니다.</span>'; return;
         }
-        // 부속품·판촉물은 별도 관리하므로 목록 화면에서는 선택된 분류만 보여준다
+        // 선택한 분류(의자·부속품)만 목록에 보여준다
         const allItems = itemsRes.data;
         const items = _seReqKind === 'all'
             ? allItems
