@@ -14105,8 +14105,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <span id="seReqSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
             </div>
             <div style="display:flex;gap:6px;margin-bottom:12px;">
-                <button id="seReqView-list" onclick="seSetReqView('list')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#003EFF;color:#fff;border:1px solid #003EFF;">📋 요청서별</button>
-                <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📄 품목 전체보기</button>
+                <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#003EFF;color:#fff;border:1px solid #003EFF;">📄 품목 전체보기</button>
+                <button id="seReqView-list" onclick="seSetReqView('list')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📋 요청서별</button>
                 <button id="seReqView-doc" onclick="seSetReqView('doc')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">🔢 문서번호 입력</button>
             </div>
             <!-- 전시 현황 · 매장 필터 — 품목 전체보기에서만 뜬다 -->
@@ -14729,7 +14729,7 @@ function seOnStoreChange() {
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
-    else if (tab === 'request')  { seSetReqView(seScopedStore() ? 'flat' : 'list'); seRenderScopeNote(); }
+    else if (tab === 'request')  { seSetReqView(_seReqView === 'doc' ? 'doc' : 'flat'); seRenderScopeNote(); }
     else if (tab === 'recovery') { seRenderRecovery(); seRenderScopeNote(); }
     else seLoadStore();
 }
@@ -15134,7 +15134,7 @@ function seRenderKindBar(total, counts, unit) {
 }
 
 let _seReqKind = 'chair';   // 기본은 의자만
-let _seReqView = 'list';
+let _seReqView = 'flat';   // 기본은 품목 전체보기
 let _seFlatRows = null;   // 품목 전체보기 데이터 (최초 전환 시 로드)
 let _seReqCounts = null;  // 요청서 단위 집계 (뷰 복귀 시 필터 바 복원용)
 
