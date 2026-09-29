@@ -14098,6 +14098,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     <!-- /새 요청서 입력 모달 -->
 
         <div>
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;padding:10px 13px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;font-size:0.78rem;line-height:1.6;color:#1e40af;">
+                <span style="flex-shrink:0;">📌</span>
+                <span><b>시공비는 사별단품마스터에서 확인합니다.</b> 요청서의 금액은 공장도가가 아니라 시공가 기준이라, 단가를 적기 전에 사별단품마스터에서 해당 품목의 시공비를 먼저 확인하세요.</span>
+            </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                 <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
                 <button onclick="seOpenReqForm()" style="margin-left:auto;background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서</button>
