@@ -15167,24 +15167,6 @@ function seSetReqView(v) {
 }
 
 // 문서번호 일괄 입력 — EP 링크를 옆에 두고 한 표에서 채운다
-async function seSaveDocNo(id) {
-    const input = document.getElementById(`doc-in-${id}`);
-    const msg = document.getElementById(`doc-msg-${id}`);
-    const val = input.value.trim() || null;
-    const row = (_seReqRows || []).find(r => r.id === id);
-    if (row && (row.doc_no || null) === val) { msg.textContent = ''; return; }
-    msg.textContent = '저장 중...'; msg.style.color = '#64748b';
-    const { error } = await _sb.from('outgoing_requests').update({ doc_no: val }).eq('id', id);
-    if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#ef4444'; return; }
-    if (row) row.doc_no = val;
-    input.style.borderColor = val ? '#86efac' : '#cbd5e1';
-    input.style.background  = val ? '#f0fdf4' : '#fff';
-    msg.textContent = '✓'; msg.style.color = '#16a34a';
-    setTimeout(() => { msg.textContent = ''; }, 1200);
-    _seFlatRows = null;   // 전체보기 캐시 갱신
-    _seReqByMo = null;    // 회수 보고서 ↔ 요청서 연결 인덱스 재구성
-}
-
 async function seLoadFlatRows() {
     const body = document.getElementById('seReqFlatBody');
     if (_seFlatRows) { seRenderFlat(); return; }
@@ -15471,12 +15453,9 @@ async function seLoadRequestList() {
             .replace(/"/g, '&quot;');
         const mo = seMoNo(r.doc_no);
         const rec = mo ? (_seRecByMo || {})[mo] : null;
-        // 문서번호는 카드에서 바로 고친다 — 별도 입력 화면을 두면 어느 요청서였는지 잃는다
-        const docChip = `<span onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;">
-                <input id="doc-in-${r.id}" value="${esc(r.doc_no)}" placeholder="문서번호 입력"
-                  onchange="seSaveDocNo('${r.id}')" onkeydown="if(event.key==='Enter')this.blur()"
-                  style="width:172px;padding:2px 7px;border:1px solid ${r.doc_no?'#86efac':'#cbd5e1'};border-radius:5px;font-size:0.7rem;font-weight:700;font-family:monospace;background:${r.doc_no?'#f0fdf4':'#fff'};color:#0f172a;">
-                <span id="doc-msg-${r.id}" style="font-size:0.72rem;"></span></span>`;
+        const docChip = r.doc_no
+            ? `<span style="font-size:0.7rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#f1f5f9;color:#475569;white-space:nowrap;">${r.doc_no}</span>`
+            : `<span style="font-size:0.7rem;font-weight:600;padding:2px 7px;border-radius:5px;background:#fef3c7;color:#b45309;white-space:nowrap;">문서번호 없음</span>`;
         const recChip = rec
             ? `<button onclick="event.stopPropagation();seOpenRecoveryFor('${mo}')" title="${rec.docs.join(', ')}"
                  style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;">💰 회수 ${rec.n}건 · ${rec.amt.toLocaleString()}원</button>`
@@ -15509,6 +15488,7 @@ async function seLoadRequestList() {
             <div id="req-edit-${r.id}" style="display:none;padding:14px 16px;background:#f1f5f9;border-top:1px solid var(--se-border);">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">제목<input id="req-f-title-${r.id}" value="${esc(r.title)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
+                    <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">문서번호<input id="req-f-doc-${r.id}" value="${esc(r.doc_no)}" placeholder="시디즈-매출외25-06-00006" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;font-family:monospace;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">담당자<input id="req-f-req-${r.id}" value="${esc(r.requester)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">납기일<input id="req-f-del-${r.id}" type="date" value="${esc(r.delivery_date)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
                     <label style="font-size:0.75rem;color:#64748b;display:flex;flex-direction:column;gap:3px;">수주번호<input id="req-f-ord-${r.id}" value="${esc(r.order_no)}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;"></label>
@@ -15738,11 +15718,14 @@ async function seUpdateRequest(id) {
         requester:     document.getElementById(`req-f-req-${id}`).value.trim(),
         delivery_date: document.getElementById(`req-f-del-${id}`).value.trim(),
         order_no:      document.getElementById(`req-f-ord-${id}`).value.trim(),
+        doc_no:        document.getElementById(`req-f-doc-${id}`)?.value.trim() || null,
         ep_url:        document.getElementById(`req-f-ep-${id}`)?.value.trim() || null,
         sheet_url:     document.getElementById(`req-f-url-${id}`).value.trim() || null,
         request_date:  document.getElementById(`req-f-date-${id}`)?.value.trim() || null,
     }).eq('id', id);
     if (error) { msg.textContent = '저장 실패'; msg.style.color = '#ef4444'; return; }
+    _seFlatRows = null;   // 전체보기 캐시 갱신
+    _seReqByMo = null;    // 회수 보고서 ↔ 요청서 연결 인덱스 재구성
     seLoadRequestList();
 }
 
