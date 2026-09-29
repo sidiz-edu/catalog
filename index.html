@@ -14111,10 +14111,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <!-- 전시 현황 · 매장 필터 — 품목 전체보기에서만 뜬다 -->
             <div id="seReqStatusBar" style="display:none;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;"></div>
-            <div id="seReqFlatBody" style="display:none;"></div>
+            <div id="seReqFlatBody"></div>
             <div id="seReqDocBody" style="display:none;"></div>
             <div id="seReqScopeNote" style="display:none;font-size:0.76rem;color:var(--se-muted);background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
-            <div id="seReqListBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
+            <div id="seReqListBody" style="display:none;"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
             <button onclick="seOpenReqForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
         </div>
     </div>
@@ -14729,7 +14729,7 @@ function seOnStoreChange() {
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
-    else if (tab === 'request')  { seSetReqView(_seReqView === 'doc' ? 'doc' : 'flat'); seRenderScopeNote(); }
+    else if (tab === 'request')  { seSetReqView(_seReqView); seRenderScopeNote(); }
     else if (tab === 'recovery') { seRenderRecovery(); seRenderScopeNote(); }
     else seLoadStore();
 }
@@ -14761,7 +14761,9 @@ function seSwitchTab(tab) {
     if (tab === 'overview') seLoadOverview();
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
     if (tab === 'store') seLoadStore();
-    if (tab === 'request') { seLoadRequestList(); seRenderScopeNote(); }
+    // seSetReqView를 거쳐야 목록/전체보기 display가 맞춰진다. 직접 seLoadRequestList를
+    // 부르면 _seReqView는 flat인데 화면은 요청서별이 보이는 어긋남이 생긴다.
+    if (tab === 'request') { seSetReqView(_seReqView); seRenderScopeNote(); }
     if (tab === 'recovery') { seLoadRecoveryReports(); seRenderScopeNote(); }
 }
 
