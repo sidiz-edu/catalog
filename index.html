@@ -14392,14 +14392,18 @@ function seRenderRecoveryFlat() {
 function seRenderUnmatchedRef() {
     const box = document.getElementById('seUnmatchedRef');
     if (!box) return;
-    if (seLinkFilter !== 'unlinked') { box.style.display = 'none'; return; }
+    if (seLinkFilter !== 'unlinked' && seLinkFilter !== 'qty') { box.style.display = 'none'; return; }
+    // 수량 다름을 볼 때는 같은 표에 요청·전시 수량을 나란히 둔다
+    const qtyMode = seLinkFilter === 'qty';
 
-    const have = new Set(seDisplayData.filter(d => d.sku).map(d => d.sku.toUpperCase()));
+    const dispQty = {};
+    seDisplayData.forEach(d => { if (d.sku) { const k = d.sku.toUpperCase(); dispQty[k] = (dispQty[k] || 0) + (d.quantity || 0); } });
+    const have = new Set(Object.keys(dispQty));
     const bag = {};
     seReqItems.forEach(it => {
         if (!it.item_code || !it.color_code) return;
         const sku = `${it.item_code}-${it.color_code}`.toUpperCase();
-        if (have.has(sku)) return;
+        if (qtyMode ? (!have.has(sku) || (seReqQty[sku] || 0) === (dispQty[sku] || 0)) : have.has(sku)) return;
         const e = bag[sku] || (bag[sku] = { sku, name: it.product_name || '', qty: 0, reqs: [] });
         e.qty += it.qty || 1;
         const r = it.outgoing_requests;
@@ -14411,14 +14415,18 @@ function seRenderUnmatchedRef() {
     box.style.display = '';
     if (!rows.length) {
         box.innerHTML = `<div style="border:1px dashed var(--se-border);border-radius:10px;padding:16px;color:#94a3b8;font-size:0.82rem;">
-            이 매장은 매출외출고 요청서의 품목이 전시품에 모두 등록돼 있습니다. 위 목록은 요청서 없이 등록된 전시품입니다.</div>`;
+            ${qtyMode ? '수량이 다른 품목이 없습니다.' : '이 매장은 매출외출고 요청서의 품목이 전시품에 모두 등록돼 있습니다. 위 목록은 요청서 없이 등록된 전시품입니다.'}</div>`;
         return;
     }
     box.innerHTML = `
     <div style="border:1px solid #fcd34d;border-radius:10px;overflow:hidden;background:var(--se-surface);">
         <div style="background:#fffbeb;padding:11px 15px;border-bottom:1px solid #fcd34d;">
-            <div style="font-size:0.85rem;font-weight:700;color:#b45309;">📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건</div>
-            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">위 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#b45309;">${qtyMode
+                ? `⚠ 요청 수량과 전시 수량이 다른 품목 ${rows.length}건`
+                : `📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건`}</div>
+            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">${qtyMode
+                ? '요청서로 나간 대수와 지금 등록된 대수가 다릅니다. 나머지가 어디 있는지 적어주세요.'
+                : '위 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.'}</div>
         </div>
         <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
@@ -14427,6 +14435,7 @@ function seRenderUnmatchedRef() {
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">품목코드</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">색상</th>
                 <th style="padding:7px 10px;text-align:center;">요청수량</th>
+                ${qtyMode ? '<th style="padding:7px 10px;text-align:center;">전시수량</th>' : ''}
                 <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품 향방에 대한 매장 설명</th>
             </tr></thead>
@@ -14438,6 +14447,7 @@ function seRenderUnmatchedRef() {
                     <td style="padding:6px 10px;font-family:monospace;font-weight:600;">${code}</td>
                     <td style="padding:6px 10px;font-family:monospace;">${rest.join('-') || '-'}</td>
                     <td style="padding:6px 10px;text-align:center;font-weight:600;">${x.qty}</td>
+                    ${qtyMode ? `<td style="padding:6px 10px;text-align:center;font-weight:700;color:${(dispQty[x.sku]||0) > x.qty ? '#0369a1' : '#b45309'};">${dispQty[x.sku] || 0}</td>` : ''}
                     <td style="padding:6px 10px;color:#64748b;">${x.reqs.map(r =>
                         `<div style="line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px;">
                             <span style="font-family:monospace;color:#94a3b8;">${r.request_date || ''}</span>
@@ -14676,6 +14686,7 @@ let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
+let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
 let sePendingDeletes = [];
 let seStoreZones = [];
@@ -15859,6 +15870,12 @@ async function seRenderList(storeId) {
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
+        seReqQty = {};
+        (reqItemsRes.data || []).forEach(it => {
+            if (!it.item_code || !it.color_code) return;
+            const k = `${it.item_code}-${it.color_code}`.toUpperCase();
+            seReqQty[k] = (seReqQty[k] || 0) + (it.qty || 0);
+        });
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
@@ -15901,8 +15918,20 @@ function seRenderTable(storeId) {
 
     // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
     const kindPass = row => seKindFilter === 'all' || kindOf(row) === seKindFilter;
-    const linkOf = row => (row.sku && seReqSkuSet.has(row.sku.toUpperCase())) ? 'linked' : 'unlinked';
-    const lc = { linked: 0, unlinked: 0 };
+    // 전시품 쪽 SKU별 합계 — 요청 수량과 견줘 '수량 다름'을 가른다
+    const dispQty = {};
+    seDisplayData.forEach(r => {
+        if (!r.sku) return;
+        const k = r.sku.toUpperCase();
+        dispQty[k] = (dispQty[k] || 0) + (r.quantity || 0);
+    });
+    const linkOf = row => {
+        if (!row.sku) return 'unlinked';
+        const k = row.sku.toUpperCase();
+        if (!seReqSkuSet.has(k)) return 'unlinked';
+        return (seReqQty[k] || 0) === (dispQty[k] || 0) ? 'linked' : 'qty';
+    };
+    const lc = { linked: 0, qty: 0, unlinked: 0 };
     seDisplayData.filter(kindPass).forEach(r => lc[linkOf(r)]++);
     // 구분을 바꿔 해당 연결 상태가 0건이 되면 빈 표에 갇히므로 푼다
     if (seLinkFilter !== 'all' && !lc[seLinkFilter]) seLinkFilter = 'all';
@@ -15911,13 +15940,15 @@ function seRenderTable(storeId) {
     // 연결 여부는 용어만으로 뜻이 안 잡혀서 선택한 상태의 설명을 바로 아래 붙인다
     const LINK_DESC = {
         linked: '매출외출고 요청서(시디즈 본사 담당자 작성)에도 기록되어 있고 매장에서도 갖고 있는 제품',
+        qty: '매출외출고 요청서에도 기록되어 있지만 <b>수량이 서로 다른</b> 제품',
         unlinked: '매출외출고 요청서(시디즈 본사 담당자 작성)에는 기록되어 있지 않지만 매장에서 갖고 있는 제품',
     };
     if (lbar) {
-        lbar.innerHTML = lc.unlinked === 0 ? '' :
+        lbar.innerHTML = (lc.unlinked === 0 && lc.qty === 0) ? '' :
             `<span style="font-size:0.72rem;color:var(--se-muted);margin-right:2px;">매출외출고 연결</span>` + [
-            ['all', `전체 (${lc.linked + lc.unlinked})`, '#0f766e'],
+            ['all', `전체 (${lc.linked + lc.qty + lc.unlinked})`, '#0f766e'],
             ['linked', `📄 연결됨 (${lc.linked})`, '#16a34a'],
+            ['qty', `⚠ 수량 다름 (${lc.qty})`, '#b45309'],
             ['unlinked', `❌ 연결X (${lc.unlinked})`, '#ef4444'],
         ].map(([k, label, fg]) => {
             const on = k === seLinkFilter;
@@ -15926,13 +15957,12 @@ function seRenderTable(storeId) {
         }).join('');
     }
     if (ldesc) {
-        ldesc.innerHTML = lc.unlinked === 0 ? '' : (
-            seLinkFilter === 'all'
-                ? `<div><b style="color:#16a34a;font-weight:600;">연결됨</b> — ${LINK_DESC.linked}</div>`
-                + `<div><b style="color:#ef4444;font-weight:600;">연결X</b> — ${LINK_DESC.unlinked}</div>`
-                : `<div><b style="color:${seLinkFilter === 'linked' ? '#16a34a' : '#ef4444'};font-weight:600;">`
-                + `${seLinkFilter === 'linked' ? '연결됨' : '연결X'}</b> — ${LINK_DESC[seLinkFilter]}</div>`
-        );
+        const LINK_LABEL = { linked: ['연결됨', '#16a34a'], qty: ['수량 다름', '#b45309'], unlinked: ['연결X', '#ef4444'] };
+        const line = k => `<div><b style="color:${LINK_LABEL[k][1]};font-weight:600;">${LINK_LABEL[k][0]}</b> — ${LINK_DESC[k]}</div>`;
+        ldesc.innerHTML = (lc.unlinked === 0 && lc.qty === 0) ? ''
+            : (seLinkFilter === 'all'
+                ? Object.keys(LINK_LABEL).filter(k => lc[k]).map(line).join('')
+                : line(seLinkFilter));
     }
 
     // 검색 필터
