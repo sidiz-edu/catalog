@@ -581,9 +581,11 @@
         .sku-copy-btn { background:none; border:1px solid #d1d5db; border-radius:4px; padding:2px 7px; font-size:0.63rem; color:#6b7280; cursor:pointer; transition:all 0.15s; line-height:1.4; }
         .sku-copy-btn:hover { border-color:var(--sidiz-navy); color:var(--sidiz-navy); }
         /* 코드 리뉴얼 이력 — 카탈로그엔 최신 코드만 있어 과거 출고 기록과 연결이 안 된다 */
-        .old-code-row { flex-basis:100%; display:none; align-items:center; gap:5px; flex-wrap:wrap; margin-top:4px; }
+        .old-code-row { flex-basis:100%; display:none; flex-direction:column; gap:3px; margin-top:4px; }
         .old-code-row.on { display:flex; }
-        .old-code-label { font-size:0.6rem; color:#9ca3af; letter-spacing:0.3px; }
+        .old-code-line { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+        .old-code-label { font-size:0.6rem; color:#9ca3af; letter-spacing:0.3px; flex-shrink:0; }
+        .code-part-chip { font-size:0.64rem; color:#475569; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:4px; padding:1px 6px; cursor:help; }
         .old-code-chip { font-family:'Outfit',monospace; font-size:0.66rem; color:#b45309; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:1px 6px; cursor:help; letter-spacing:0.4px; }
         .old-code-chip.guess { color:#6b7280; background:#f9fafb; border-color:#e5e7eb; }
         .color-cart-row { margin: 8px 0 16px; }
@@ -10478,22 +10480,36 @@ function oldCodeChain(code) {
     return out;
 }
 
+// 제품코드 가운데의 옵션 문자열을 풀어준다.
+// HLDA = 헤드레스트+럼버서포트, HDA = 럼버서포트 빠짐, LDA = 헤드레스트 빠짐.
+// 세대 차이가 아니라 구성 차이라서, 코드가 비슷해도 다른 모델이다.
+function decodeSkuOptions(base) {
+    const m = /\d([HLDAF]{2,5})(?=[A-Z]{0,2}\d|$)/.exec((base || '').toUpperCase());
+    if (!m) return [];
+    return [...m[1]].filter(c => OPTION_LETTERS[c]).map(c => ({ c, label: OPTION_LETTERS[c].label }));
+}
+
 function renderDetailOldCode(sku) {
     const box = document.getElementById('detailOldCode');
     if (!box) return;
     const s = (sku || '').toUpperCase();
     const dash = s.lastIndexOf('-');
-    const rows = [
-        ...oldCodeChain(dash > 0 ? s.substring(0, dash) : s),
-        ...(dash > 0 ? oldCodeChain(s.substring(dash + 1)) : []),
-    ];
-    box.classList.toggle('on', rows.length > 0);
-    if (!rows.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<span class="old-code-label">이전 코드</span>' + rows.map(h => {
-        const guess = h.confidence === '추정';
-        const when = h.new_first_due ? `${h.new_first_due}부터 ${h.new_code}` : `${h.new_code}로 변경`;
-        return `<span class="old-code-chip${guess ? ' guess' : ''}" title="${h.old_code} → ${when}${guess ? ' (추정)' : ''}">${h.old_code}${guess ? '?' : ''}</span>`;
-    }).join('');
+    const base = dash > 0 ? s.substring(0, dash) : s;
+    const hist = [...oldCodeChain(base), ...(dash > 0 ? oldCodeChain(s.substring(dash + 1)) : [])];
+    const parts = decodeSkuOptions(base);
+    box.classList.toggle('on', hist.length > 0 || parts.length > 0);
+    if (!hist.length && !parts.length) { box.innerHTML = ''; return; }
+
+    const partLine = parts.length ? `
+        <div class="old-code-line"><span class="old-code-label">구성</span>${parts.map(p =>
+            `<span class="code-part-chip" title="코드의 ${p.c} = ${p.label}">${p.label}</span>`).join('')}</div>` : '';
+    const histLine = hist.length ? `
+        <div class="old-code-line"><span class="old-code-label">이전 코드</span>${hist.map(h => {
+            const guess = h.confidence === '추정';
+            const when = h.new_first_due ? `${h.new_first_due}부터 ${h.new_code}` : `${h.new_code}로 변경`;
+            return `<span class="old-code-chip${guess ? ' guess' : ''}" title="${h.old_code} → ${when}${guess ? ' (추정)' : ''}">${h.old_code}${guess ? '?' : ''}</span>`;
+        }).join('')}</div>` : '';
+    box.innerHTML = partLine + histLine;
 }
 
 function updateDetailOldCode(sku) {
