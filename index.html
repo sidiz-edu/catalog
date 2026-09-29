@@ -14428,6 +14428,7 @@ function seRenderUnmatchedRef() {
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">색상</th>
                 <th style="padding:7px 10px;text-align:center;">요청수량</th>
                 <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
+                <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품 향방에 대한 매장 설명</th>
             </tr></thead>
             <tbody>${rows.map((x, i) => {
                 const [code, ...rest] = x.sku.split('-');
@@ -14442,9 +14443,38 @@ function seRenderUnmatchedRef() {
                             <span style="font-family:monospace;color:#94a3b8;">${r.request_date || ''}</span>
                             ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${r.title || '-'}</a>` : (r.title || '-')}
                          </div>`).join('') || '-'}</td>
+                    <td style="padding:4px 10px;">
+                        <input id="gap-in-${i}" data-sku="${x.sku}" value="${(seGapNotes[x.sku]?.note || '').replace(/"/g,'&quot;')}"
+                          placeholder="예: 판매됨 / 창고 보관 / 타 매장 이동"
+                          onchange="seSaveGapNote(this)" onkeydown="if(event.key==='Enter')this.blur()"
+                          style="width:230px;padding:5px 9px;border:1px solid ${seGapNotes[x.sku]?.note ? '#86efac' : '#cbd5e1'};border-radius:6px;font-size:0.76rem;background:${seGapNotes[x.sku]?.note ? '#f0fdf4' : '#fff'};color:#0f172a;font-family:'Outfit',sans-serif;">
+                        <span id="gap-msg-${i}" style="margin-left:5px;font-size:0.72rem;"></span>
+                        ${seGapNotes[x.sku]?.updated_by ? `<div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;">${seGapNotes[x.sku].updated_by}</div>` : ''}
+                    </td>
                 </tr>`; }).join('')}</tbody>
         </table></div>
     </div>`;
+}
+
+// 제품 향방에 대한 매장 설명 — 요청서엔 있는데 전시품에 없는 품목이 어디로 갔는지
+async function seSaveGapNote(input) {
+    const sku = input.dataset.sku;
+    const msg = document.getElementById(input.id.replace('gap-in-', 'gap-msg-'));
+    const note = input.value.trim() || null;
+    if ((seGapNotes[sku]?.note || null) === note) return;
+    const who = (localStorage.getItem('seUserName') || '').trim() || null;
+    msg.textContent = '저장 중...'; msg.style.color = '#64748b';
+    const { error } = note === null
+        ? await _sb.from('display_gap_notes').delete().eq('store_id', seCurrentStore).eq('sku', sku)
+        : await _sb.from('display_gap_notes')
+            .upsert({ store_id: seCurrentStore, sku, note, updated_by: who, updated_at: new Date().toISOString() },
+                    { onConflict: 'store_id,sku' });
+    if (error) { msg.textContent = '✗ ' + error.message; msg.style.color = '#ef4444'; return; }
+    seGapNotes[sku] = note === null ? {} : { note, updated_by: who };
+    input.style.borderColor = note ? '#86efac' : '#cbd5e1';
+    input.style.background  = note ? '#f0fdf4' : '#fff';
+    msg.textContent = '✓'; msg.style.color = '#16a34a';
+    setTimeout(() => { msg.textContent = ''; }, 1200);
 }
 
 function seRenderRecovery() {
@@ -14645,6 +14675,7 @@ const SE_PW = 'SDZ2026';
 let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
+let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
 let sePendingDeletes = [];
 let seStoreZones = [];
@@ -15811,17 +15842,20 @@ async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const [displaysRes, zonesRes, reqItemsRes] = await Promise.all([
+        const [displaysRes, zonesRes, reqItemsRes, notesRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
                .select('item_code,color_code,product_name,qty,outgoing_requests(title,request_date,doc_no,ep_url)')
-               .eq('store_id', storeId)
+               .eq('store_id', storeId),
+            _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
         seStoreZones = zonesRes.data || [];
         seReqItems = reqItemsRes.data || [];
+        seGapNotes = {};
+        (notesRes.data || []).forEach(n => { seGapNotes[(n.sku || '').toUpperCase()] = n; });
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
