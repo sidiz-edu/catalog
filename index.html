@@ -14495,10 +14495,6 @@ function seRenderRecovery() {
         const appr = (r.approvals || []).map(a =>
             `<span style="display:inline-block;background:#f1f5f9;border-radius:6px;padding:3px 9px;margin:0 4px 4px 0;font-size:0.72rem;">
                <b style="color:#0f766e;">${a['단계']}</b> ${a['이름']} <span style="color:#94a3b8;">${a['일자']}</span></span>`).join('');
-        const wh = (r.warehouses || []).map(w =>
-            `<tr><td style="padding:5px 10px;">${w['창고']}</td><td style="padding:5px 10px;color:#64748b;">${w['담당'] || '-'}</td>
-                 <td style="padding:5px 10px;text-align:right;">${w['수량']}</td>
-                 <td style="padding:5px 10px;text-align:right;font-weight:600;">${_wonR(w['미회수금액'])}</td></tr>`).join('');
         return `
         <div style="border:1px solid var(--se-border);border-radius:12px;background:var(--se-surface);margin-bottom:14px;overflow:hidden;">
             <div style="padding:16px 18px;border-bottom:1px solid var(--se-border);">
@@ -14513,26 +14509,8 @@ function seRenderRecovery() {
                 </div>
                 <div style="margin-top:10px;">${appr}</div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--se-border);">
-                ${[['출고금액', r.out_amount], ['입고금액', r.recovered_amount],
-                   ['미회수', r.unrecovered_amount], ['폐기', r.disposed_amount]]
-                  .map(([k, v], i) => `<div style="background:var(--se-surface);padding:12px 14px;">
-                    <div style="font-size:0.7rem;color:var(--se-muted);">${k}</div>
-                    <div style="font-size:0.95rem;font-weight:700;${i===2?'color:#dc2626;':''}">${_wonR(v)}</div></div>`).join('')}
-            </div>
-            <div style="padding:14px 18px;display:flex;gap:20px;flex-wrap:wrap;font-size:0.78rem;">
-                <span><b style="color:var(--se-muted);">사유</b> ${r.reason || '-'}</span>
-                <span><b style="color:var(--se-muted);">계정과목</b> ${r.account || '-'}</span>
-                <span><b style="color:var(--se-muted);">보고</b> ${r.report_owner || '-'}</span>
-            </div>
-            ${wh ? `<div style="padding:0 18px 14px;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
-                    <thead><tr style="background:#f1f5f9;color:#475569;">
-                        <th style="padding:6px 10px;text-align:left;">창고</th><th style="padding:6px 10px;text-align:left;">담당</th>
-                        <th style="padding:6px 10px;text-align:right;">수량</th><th style="padding:6px 10px;text-align:right;">미회수금액</th>
-                    </tr></thead><tbody>${wh}</tbody>
-                </table></div>` : ''}
-            <div style="padding:0 18px 16px;">
+            <!-- 금액 요약·사유/계정과목·창고별 미회수 표는 품의 문서 내용이라 화면에서 뺀다 -->
+            <div style="padding:14px 18px 16px;">
                 <button onclick="seToggleRecoveryItems('${r.id}')" id="rec-btn-${r.id}"
                     style="padding:6px 14px;border-radius:7px;border:1px solid var(--se-border);background:transparent;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;">
                     ${matched.length && !headHit ? '▲' : '▼'} 명세 ${its.length}건${matched.length && !headHit ? ` 접기 (검색 일치)` : ' 보기'}</button>
