@@ -15350,19 +15350,18 @@ function seRenderFlat() {
             <th style="padding:7px 9px;text-align:center;white-space:nowrap;">수량</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시 현황</th>
-            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">비고</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">요청서</th>
         </tr></thead>
         <tbody>${rows.map((x, i) => `
             <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
                 <td style="padding:6px 9px;white-space:nowrap;font-weight:600;">${x.r.request_date || '-'}</td>
-                <td style="padding:6px 9px;">${x.it.product_name || '-'}</td>
+                <td style="padding:6px 9px;">${x.it.product_name || '-'}${x.it.memo
+                    ? `<div style="font-size:0.66rem;color:#b45309;line-height:1.4;">${x.it.memo}</div>` : ''}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${x.it.item_code || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${x.it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
                 <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
-                <td style="padding:6px 9px;font-size:0.7rem;color:#b45309;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(x.it.memo||'').replace(/"/g,'&quot;')}">${x.it.memo || ''}</td>
                 <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-')}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
@@ -15686,14 +15685,14 @@ async function seToggleReqItems(id) {
                     <th style="padding:6px 10px;text-align:right;white-space:nowrap;">금액</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">매장</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">전시 현황</th>
-                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">비고</th>
                 </tr></thead>
                 <tbody>
                     ${items.map((it, i) => {
                         const matches = it.store_id ? matchItem(it) : null;
                         const status = itemStatus(it);
                         return `<tr data-status="${status}" style="background:${i%2?'#f8fafc':'#fff'};">
-                            <td style="padding:6px 10px;">${it.product_name||'-'}</td>
+                            <td style="padding:6px 10px;">${it.product_name||'-'}${it.memo
+                                ? `<div style="font-size:0.68rem;color:#b45309;line-height:1.4;">${it.memo}</div>` : ''}</td>
                             <td style="padding:6px 10px;font-family:monospace;">${it.item_code||'-'}</td>
                             <td style="padding:6px 10px;">${it.color_code||'-'}</td>
                             <td style="padding:6px 10px;text-align:center;">${it.qty??'-'}</td>
@@ -15701,7 +15700,6 @@ async function seToggleReqItems(id) {
                             <td style="padding:6px 10px;text-align:right;font-weight:600;">${it.amount!=null?it.amount.toLocaleString():'-'}</td>
                             <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
                             <td style="padding:6px 10px;">${matchBadge(matches, reqTotalOf(it))}</td>
-                            <td style="padding:6px 10px;font-size:0.72rem;color:#b45309;max-width:200px;">${it.memo || ''}</td>
                         </tr>`;
                     }).join('')}
                 </tbody>
