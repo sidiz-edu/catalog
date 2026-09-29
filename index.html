@@ -14112,12 +14112,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div style="display:flex;gap:6px;margin-bottom:12px;">
                 <button id="seReqView-flat" onclick="seSetReqView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#003EFF;color:#fff;border:1px solid #003EFF;">📄 품목 전체보기</button>
                 <button id="seReqView-list" onclick="seSetReqView('list')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">📋 요청서별</button>
-                <button id="seReqView-doc" onclick="seSetReqView('doc')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#003EFF;border:1px solid #e2e8f0;">🔢 문서번호 입력</button>
             </div>
             <!-- 전시 현황 · 매장 필터 — 품목 전체보기에서만 뜬다 -->
             <div id="seReqStatusBar" style="display:none;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;"></div>
             <div id="seReqFlatBody"></div>
-            <div id="seReqDocBody" style="display:none;"></div>
             <div id="seReqScopeNote" style="display:none;font-size:0.76rem;color:var(--se-muted);background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
             <div id="seReqListBody" style="display:none;"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
             <button onclick="seOpenReqForm()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed #cbd5e1;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서 입력</button>
@@ -15149,12 +15147,11 @@ function seSetReqView(v) {
     _seReqView = v;
     document.getElementById('seReqListBody').style.display = v === 'list' ? '' : 'none';
     document.getElementById('seReqFlatBody').style.display = v === 'flat' ? '' : 'none';
-    document.getElementById('seReqDocBody').style.display = v === 'doc' ? '' : 'none';
     ['seReqStatusBar'].forEach(idv => {
         const b = document.getElementById(idv);
         if (b) b.style.display = v === 'flat' ? 'flex' : 'none';
     });
-    ['list', 'flat', 'doc'].forEach(k => {
+    ['list', 'flat'].forEach(k => {
         const b = document.getElementById(`seReqView-${k}`);
         if (!b) return;
         const on = k === v;
@@ -15163,7 +15160,6 @@ function seSetReqView(v) {
         b.style.border = on ? '1px solid #003EFF' : '1px solid #e2e8f0';
     });
     if (v === 'flat') { seLoadFlatRows(); return; }
-    if (v === 'doc')  { seRenderDocEntry(); return; }
     if (_seReqCounts) seRenderKindBar(_seReqCounts.total, _seReqCounts.counts, '건');
     // 카드의 '이 매장 N품목' 배지는 렌더 시점의 매장을 담고 있어 다시 그려야 한다
     if (_seReqStoreScope !== seScopedStore()) { seLoadRequestList(); return; }
@@ -15171,61 +15167,11 @@ function seSetReqView(v) {
 }
 
 // 문서번호 일괄 입력 — EP 링크를 옆에 두고 한 표에서 채운다
-let _seDocRows = null;
-async function seRenderDocEntry() {
-    const body = document.getElementById('seReqDocBody');
-    if (!_seDocRows) {
-        body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
-        const { data, error } = await _sb.from('outgoing_requests')
-            .select('id,title,request_date,order_no,doc_no,ep_url')
-            .order('request_date', { ascending: false, nullsFirst: false }).limit(500);
-        if (error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${error.message}</p>`; return; }
-        _seDocRows = data || [];
-    }
-    const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
-    const rows = _seDocRows.filter(r =>
-        hit([r.title, r.order_no, r.doc_no, r.request_date].filter(Boolean).join(' ').toLowerCase()));
-    const done = _seDocRows.filter(r => (r.doc_no || '').trim()).length;
-
-    const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = `입력 ${done} / ${_seDocRows.length}건`;
-
-    body.innerHTML = `
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:0.78rem;color:#1e40af;">
-        문서번호를 입력하고 <b>Enter</b> 또는 칸 밖을 클릭하면 바로 저장됩니다. 🔗 버튼으로 EP 원문을 새 탭에서 열어 확인하세요.
-      </div>
-      <div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
-      <table style="width:100%;border-collapse:collapse;font-size:0.78rem;background:var(--se-surface);">
-        <thead><tr style="background:#e2e8f0;color:#475569;">
-          <th style="padding:7px 9px;text-align:left;white-space:nowrap;">작성일</th>
-          <th style="padding:7px 9px;text-align:left;">제목</th>
-          <th style="padding:7px 9px;text-align:left;white-space:nowrap;">수주번호</th>
-          <th style="padding:7px 9px;text-align:left;white-space:nowrap;">문서번호</th>
-          <th style="padding:7px 9px;text-align:center;">EP</th>
-        </tr></thead>
-        <tbody>${rows.map((r, i) => `
-          <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
-            <td style="padding:5px 9px;white-space:nowrap;font-weight:600;">${r.request_date || '-'}</td>
-            <td style="padding:5px 9px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(r.title||'').replace(/"/g,'&quot;')}">${r.title || '-'}</td>
-            <td style="padding:5px 9px;font-family:monospace;color:#64748b;white-space:nowrap;">${r.order_no || '-'}</td>
-            <td style="padding:5px 9px;">
-              <input id="doc-in-${r.id}" value="${(r.doc_no || '').replace(/"/g,'&quot;')}" placeholder="매출외25-06-00006"
-                onchange="seSaveDocNo('${r.id}')" onkeydown="if(event.key==='Enter')this.blur()"
-                style="width:190px;padding:4px 8px;border:1px solid ${r.doc_no?'#86efac':'#cbd5e1'};border-radius:6px;font-size:0.78rem;font-family:monospace;background:${r.doc_no?'#f0fdf4':'#fff'};color:#0f172a;">
-              <span id="doc-msg-${r.id}" style="margin-left:6px;font-size:0.72rem;"></span>
-            </td>
-            <td style="padding:5px 9px;text-align:center;">
-              ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="text-decoration:none;font-size:0.9rem;" title="EP 원문 열기">🔗</a>` : '-'}
-            </td>
-          </tr>`).join('')}</tbody>
-      </table></div>`;
-}
-
 async function seSaveDocNo(id) {
     const input = document.getElementById(`doc-in-${id}`);
     const msg = document.getElementById(`doc-msg-${id}`);
     const val = input.value.trim() || null;
-    const row = _seDocRows.find(r => r.id === id);
+    const row = (_seReqRows || []).find(r => r.id === id);
     if (row && (row.doc_no || null) === val) { msg.textContent = ''; return; }
     msg.textContent = '저장 중...'; msg.style.color = '#64748b';
     const { error } = await _sb.from('outgoing_requests').update({ doc_no: val }).eq('id', id);
@@ -15235,9 +15181,6 @@ async function seSaveDocNo(id) {
     input.style.background  = val ? '#f0fdf4' : '#fff';
     msg.textContent = '✓'; msg.style.color = '#16a34a';
     setTimeout(() => { msg.textContent = ''; }, 1200);
-    const done = _seDocRows.filter(r => (r.doc_no || '').trim()).length;
-    const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = `입력 ${done} / ${_seDocRows.length}건`;
     _seFlatRows = null;   // 전체보기 캐시 갱신
     _seReqByMo = null;    // 회수 보고서 ↔ 요청서 연결 인덱스 재구성
 }
@@ -15335,6 +15278,7 @@ function seFilterStatus(k) {
 
 let _seReqStoreMix = {};   // request_id -> {store_id: 품목수}
 let _seReqStoreScope = null;   // 카드가 어느 매장 기준으로 렌더됐는지
+let _seReqRows = null;         // 요청서 목록 원본 (문서번호 인라인 저장에 쓴다)
 
 // 매장 필터 — 매장 순서는 SE 드롭다운과 같게(더프→스타필드→커넥트현대→기타→일룸) 맞춘다
 function seRenderFlat() {
@@ -15427,7 +15371,6 @@ function seFilterRequests(kind) {
 // 구분 필터 + 검색어를 함께 적용
 function seApplyReqFilters() {
     if (_seReqView === 'flat') { seRenderFlat(); return; }
-    if (_seReqView === 'doc')  { seRenderDocEntry(); return; }
     const q = (document.getElementById('seReqSearch')?.value || '').trim();
     const match = seSearchMatcher(q);
     const cards = document.querySelectorAll('#seReqListBody > div[data-kind]');
@@ -15448,7 +15391,7 @@ function seApplyReqFilters() {
 async function seLoadRequestList() {
     const el = document.getElementById('seReqListBody');
     if (!el) return;
-    _seFlatRows = null; _seDocRows = null;   // 데이터가 바뀌었으니 캐시 폐기
+    _seFlatRows = null;   // 데이터가 바뀌었으니 캐시 폐기
     el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [{ data, error }, itemsRes] = await Promise.all([
         _sb.from('outgoing_requests')
@@ -15460,6 +15403,7 @@ async function seLoadRequestList() {
     if (error || !data || !data.length) {
         el.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">저장된 요청서가 없습니다.</p>'; return;
     }
+    _seReqRows = data;
     const cntEl = document.getElementById('seReqCount');
     if (cntEl) cntEl.textContent = `${data.length}건`;
 
@@ -15527,9 +15471,12 @@ async function seLoadRequestList() {
             .replace(/"/g, '&quot;');
         const mo = seMoNo(r.doc_no);
         const rec = mo ? (_seRecByMo || {})[mo] : null;
-        const docChip = r.doc_no
-            ? `<span style="font-size:0.7rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#f1f5f9;color:#475569;white-space:nowrap;">${r.doc_no}</span>`
-            : '';
+        // 문서번호는 카드에서 바로 고친다 — 별도 입력 화면을 두면 어느 요청서였는지 잃는다
+        const docChip = `<span onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;">
+                <input id="doc-in-${r.id}" value="${esc(r.doc_no)}" placeholder="문서번호 입력"
+                  onchange="seSaveDocNo('${r.id}')" onkeydown="if(event.key==='Enter')this.blur()"
+                  style="width:172px;padding:2px 7px;border:1px solid ${r.doc_no?'#86efac':'#cbd5e1'};border-radius:5px;font-size:0.7rem;font-weight:700;font-family:monospace;background:${r.doc_no?'#f0fdf4':'#fff'};color:#0f172a;">
+                <span id="doc-msg-${r.id}" style="font-size:0.72rem;"></span></span>`;
         const recChip = rec
             ? `<button onclick="event.stopPropagation();seOpenRecoveryFor('${mo}')" title="${rec.docs.join(', ')}"
                  style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;">💰 회수 ${rec.n}건 · ${rec.amt.toLocaleString()}원</button>`
@@ -15545,7 +15492,7 @@ async function seLoadRequestList() {
                 </div>
                 <div style="cursor:pointer;flex:1;min-width:0;" onclick="seToggleReqItems('${r.id}')">
                     <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">${storeBadge(r.id)} ${kindBadge(r.id)} ${r.title} <span id="req-arrow-${r.id}" style="font-size:0.7rem;color:#94a3b8;">▼ 항목 보기</span></div>
-                    ${docChip || recChip ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">${docChip}${recChip}</div>` : ''}
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">${docChip}${recChip}</div>
                     <div style="font-size:0.75rem;color:var(--se-muted);">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
                     ${links ? `<div style="font-size:0.78rem;margin-top:3px;font-weight:600;">${links}</div>` : ''}
                 </div>
