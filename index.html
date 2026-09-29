@@ -14426,10 +14426,10 @@ function seRenderUnmatchedRef() {
     <div style="border:1px solid #fcd34d;border-radius:10px;overflow:hidden;background:var(--se-surface);">
         <div style="background:#fffbeb;padding:11px 15px;border-bottom:1px solid #fcd34d;">
             <div style="font-size:0.85rem;font-weight:700;color:#b45309;">${qtyMode
-                ? `⚠ 요청 수량과 전시 수량이 다른 품목 ${rows.length}건`
+                ? `⚠ 문서 상 수량과 전시 수량이 다른 품목 ${rows.length}건`
                 : `📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건`}</div>
             <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">${qtyMode
-                ? '요청서로 나간 대수와 지금 등록된 대수가 다릅니다. 나머지가 어디 있는지 적어주세요.'
+                ? '매출외출고 요청서에 적힌 대수와 지금 등록된 대수가 다릅니다. 나머지가 어디 있는지 적어주세요.'
                 : '위 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.'}</div>
         </div>
         <div style="overflow-x:auto;">
@@ -14438,7 +14438,7 @@ function seRenderUnmatchedRef() {
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품명</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">품목코드</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">색상</th>
-                <th style="padding:7px 10px;text-align:center;">요청수량</th>
+                <th style="padding:7px 10px;text-align:center;white-space:nowrap;">문서 상 수량</th>
                 ${qtyMode ? '<th style="padding:7px 10px;text-align:center;">전시수량</th>' : ''}
                 <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품 향방에 대한 매장 설명</th>
