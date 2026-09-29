@@ -14728,8 +14728,8 @@ function seOnStoreChange() {
     try { localStorage.setItem('seLastStore', seScopedStore()); } catch (e) {}
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
-    // 요청서는 카드에 "이 매장 N품목" 배지를 새로 그려야 해서 목록을 다시 렌더한다
-    else if (tab === 'request')  { seLoadRequestList(); seRenderScopeNote(); }
+    // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
+    else if (tab === 'request')  { seSetReqView(seScopedStore() ? 'flat' : 'list'); seRenderScopeNote(); }
     else if (tab === 'recovery') { seRenderRecovery(); seRenderScopeNote(); }
     else seLoadStore();
 }
@@ -15158,6 +15158,8 @@ function seSetReqView(v) {
     if (v === 'flat') { seLoadFlatRows(); return; }
     if (v === 'doc')  { seRenderDocEntry(); return; }
     if (_seReqCounts) seRenderKindBar(_seReqCounts.total, _seReqCounts.counts, '건');
+    // 카드의 '이 매장 N품목' 배지는 렌더 시점의 매장을 담고 있어 다시 그려야 한다
+    if (_seReqStoreScope !== seScopedStore()) { seLoadRequestList(); return; }
     seApplyReqFilters();
 }
 
@@ -15325,31 +15327,34 @@ function seFilterStatus(k) {
 }
 
 let _seReqStoreMix = {};   // request_id -> {store_id: 품목수}
+let _seReqStoreScope = null;   // 카드가 어느 매장 기준으로 렌더됐는지
 
 // 매장 필터 — 매장 순서는 SE 드롭다운과 같게(더프→스타필드→커넥트현대→기타→일룸) 맞춘다
 function seRenderFlat() {
     const body = document.getElementById('seReqFlatBody');
     if (!body || !_seFlatRows) return;
-    seRenderKindBar(_seFlatRows.length, {
-        chair: _seFlatRows.filter(x => x.kind === 'chair').length,
-        part:  _seFlatRows.filter(x => x.kind === 'part').length,
+    // 매장을 좁혔으면 구분 숫자도 그 매장 안에서 센다 — 25건만 보이는데
+    // 버튼에 81건이 적혀 있으면 어긋나 보인다
+    const scoped = seScopedStore();
+    const inScope = _seFlatRows.filter(x => !scoped || x.it.store_id === scoped);
+    seRenderKindBar(inScope.length, {
+        chair: inScope.filter(x => x.kind === 'chair').length,
+        part:  inScope.filter(x => x.kind === 'part').length,
     }, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
     // 구분·검색을 먼저 적용한다. 두 필터 바는 서로의 결과 안에서 세므로,
     // 버튼에 적힌 숫자가 "그걸 눌렀을 때 실제로 남는 개수"가 된다.
-    const base = _seFlatRows.filter(x =>
+    const base = inScope.filter(x =>
         (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
-    const scoped = seScopedStore();
-    const byStore  = x => !scoped || x.it.store_id === scoped;
     const byStatus = x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus;
-    seRenderStatusBar(base.filter(byStore));
-    const rows = base.filter(x => byStore(x) && byStatus(x));
+    seRenderStatusBar(base);
+    const rows = base.filter(byStatus);
 
     const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = (_seReqStatus === 'all' && !seScopedStore())
+    if (cnt) cnt.textContent = (_seReqStatus === 'all' && !scoped)
         ? `${rows.length} / ${_seFlatRows.length}개 품목`
-        : `${rows.length}개 / 조건 ${base.length}개 · 전체 ${_seFlatRows.length}개`;
+        : `${rows.length}개${scoped ? ` / 이 매장 ${inScope.length}개` : ''} · 전체 ${_seFlatRows.length}개`;
 
     if (!rows.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 품목이 없습니다.</p>'; return; }
 
@@ -15472,6 +15477,7 @@ async function seLoadRequestList() {
     // 요청서별 매장 구성 — 81건 중 29건이 여러 매장에 걸쳐 있어서,
     // 매장을 좁히면 "그 매장 품목이 몇 개인지"를 같이 보여줘야 한다
     _seReqStoreMix = {};
+    _seReqStoreScope = seScopedStore();
     (itemsRes.data || []).forEach(it => {
         if (!it.store_id) return;
         const m = _seReqStoreMix[it.request_id] || (_seReqStoreMix[it.request_id] = {});
