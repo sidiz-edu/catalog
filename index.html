@@ -13919,6 +13919,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div id="seStoreContent" style="display:none;">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
+                <div id="seDragHint" style="font-size:0.72rem;color:var(--se-muted);">행을 끌어 순서를 바꿀 수 있습니다</div>
                     <button onclick="seOpenAddModal()" style="margin-left:auto;background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
                 </div>
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
@@ -15886,6 +15887,72 @@ async function seRenderList(storeId) {
         tbody.innerHTML = `<tr><td colspan="12" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
+// ── 행 드래그로 순서 바꾸기 ──
+// 열 정렬(seSortCol)이 걸려 있으면 그쪽이 이기므로 드래그를 막는다.
+// 판매완료는 항상 아래로 모으므로 같은 묶음 안에서만 옮길 수 있다.
+let _seDragId = null;
+
+function seDragStart(e) {
+    const tr = e.currentTarget;
+    _seDragId = tr.dataset.id;
+    tr.style.opacity = '0.4';
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', _seDragId); } catch (_) {}
+}
+function seDragOver(e) {
+    if (!_seDragId) return;
+    const tr = e.currentTarget;
+    if (tr.dataset.id === _seDragId) return;
+    const src = seDisplayData.find(r => r.id === _seDragId);
+    if (!src || (src.sold ? 1 : 0) !== Number(tr.dataset.sold)) return;   // 판매완료끼리만
+    e.preventDefault();
+    const mid = tr.getBoundingClientRect().top + tr.offsetHeight / 2;
+    tr.style.borderTop = e.clientY < mid ? '2px solid #003EFF' : '';
+    tr.style.borderBottom = e.clientY < mid ? '' : '2px solid #003EFF';
+}
+function seDragEnd() {
+    _seDragId = null;
+    document.querySelectorAll('#seDisplayList tr').forEach(tr => {
+        tr.style.opacity = ''; tr.style.borderTop = ''; tr.style.borderBottom = '';
+    });
+}
+async function seDrop(e) {
+    e.preventDefault();
+    const tr = e.currentTarget;
+    const targetId = tr.dataset.id;
+    const dragId = _seDragId;
+    seDragEnd();
+    if (!dragId || dragId === targetId) return;
+
+    // 지금 화면에 보이는 순서를 기준으로 다시 늘어놓는다
+    const order = [...document.querySelectorAll('#seDisplayList tr[data-id]')].map(x => x.dataset.id);
+    const from = order.indexOf(dragId);
+    let to = order.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const mid = tr.getBoundingClientRect().top + tr.offsetHeight / 2;
+    if (e.clientY >= mid) to += 1;
+    if (to > from) to -= 1;
+    order.splice(to, 0, order.splice(from, 1)[0]);
+
+    // 화면 먼저 바꾸고 저장한다 — 실패하면 되돌린다
+    const before = seDisplayData.map(r => ({ id: r.id, sort_order: r.sort_order }));
+    order.forEach((id, idx) => {
+        const row = seDisplayData.find(r => r.id === id);
+        if (row) row.sort_order = idx;
+    });
+    seRenderTable(seCurrentStore);
+
+    const writes = order.map((id, idx) =>
+        _sb.from('store_displays').update({ sort_order: idx }).eq('id', id));
+    const results = await Promise.all(writes);
+    const failed = results.find(r => r.error);
+    if (failed) {
+        before.forEach(b => { const row = seDisplayData.find(r => r.id === b.id); if (row) row.sort_order = b.sort_order; });
+        seRenderTable(seCurrentStore);
+        alert('순서를 저장하지 못했습니다: ' + failed.error.message);
+    }
+}
+
 function seToggleSort(col) {
     if (seSortCol === col) seSortDir = seSortDir === 'asc' ? 'desc' : 'asc';
     else { seSortCol = col; seSortDir = 'asc'; }
@@ -15996,10 +16063,22 @@ function seRenderTable(storeId) {
     rows = rows.map((r, i) => ({ r, i })).sort((a, b) => {
         const d = (a.r.sold ? 1 : 0) - (b.r.sold ? 1 : 0);
         if (d) return d;
-        if (!seSortCol) return a.i - b.i;
-        const va = getVal(a.r, seSortCol), vb = getVal(b.r, seSortCol);
-        return (seSortDir === 'asc' ? 1 : -1) * va.localeCompare(vb, 'ko') || a.i - b.i;
+        if (seSortCol) {
+            const va = getVal(a.r, seSortCol), vb = getVal(b.r, seSortCol);
+            return (seSortDir === 'asc' ? 1 : -1) * va.localeCompare(vb, 'ko') || a.i - b.i;
+        }
+        // 손으로 옮긴 순서가 있으면 그게 먼저, 없는 행은 기존 순서로 뒤에
+        const oa = a.r.sort_order, ob = b.r.sort_order;
+        if (oa != null && ob != null) return oa - ob || a.i - b.i;
+        if (oa != null) return -1;
+        if (ob != null) return 1;
+        return a.i - b.i;
     }).map(x => x.r);
+    // 열 정렬 중에는 드래그가 먹히지 않으므로 안내를 바꾼다
+    const dragHint = document.getElementById('seDragHint');
+    if (dragHint) dragHint.textContent = seSortCol
+        ? '열 정렬 중에는 순서를 바꿀 수 없습니다 — 정렬을 풀면 드래그할 수 있습니다'
+        : '행을 끌어 순서를 바꿀 수 있습니다';
     // 정렬 아이콘 업데이트
     ['name','purpose','sku','color','location'].forEach(col => {
         const el = document.getElementById(`seSortIcon_${col}`);
@@ -16031,7 +16110,10 @@ function seRenderTable(storeId) {
                 ${row.buyer_phone ? `&nbsp;📞 ****${row.buyer_phone}` : ''}
                 ${row.sold_at ? `&nbsp;🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
               </div>` : '';
-        return `<tr>
+        const dragOn = !seSortCol;
+        return `<tr data-id="${row.id}" data-sold="${row.sold ? 1 : 0}" ${dragOn ? 'draggable="true"' : ''}
+                    ondragstart="seDragStart(event)" ondragover="seDragOver(event)" ondrop="seDrop(event)" ondragend="seDragEnd(event)"
+                    ${dragOn ? 'style="cursor:grab;"' : ''}>
             <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
             ${purposeCell}
