@@ -14148,9 +14148,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab active" data-tab="store" onclick="seSwitchTab('store')">전시품</button>
             <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">공간</button>
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
-            <!-- 요청서·회수 보고서는 금액·결재 정보가 있어 관리자 모드에서만 노출한다 -->
-            <button class="se-tab se-tab-admin" data-tab="request" onclick="seSwitchTab('request')" style="display:none;">📄 매출외출고 요청서</button>
-            <button class="se-tab se-tab-admin" data-tab="recovery" onclick="seSwitchTab('recovery')" style="display:none;">🧾 회수 보고서</button>
+            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">📄 매출외출고 요청서</button>
+            <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">🧾 회수 보고서</button>
         </div>
     </div>
 </div>
@@ -14768,10 +14767,6 @@ function seOnStoreChange() {
 }
 
 function seSwitchTab(tab) {
-    // 관리자 전용 탭은 관리자 모드에서만 — 금액·결재 정보가 들어 있다
-    document.querySelectorAll('.se-tab-admin').forEach(t => t.style.display = isAdminMode ? '' : 'none');
-    if ((tab === 'request' || tab === 'recovery') && !isAdminMode) tab = 'store';
-
     document.querySelectorAll('.se-tab').forEach(t =>
         t.classList.toggle('active', t.dataset.tab === tab));
     const isLayout = tab === 'zone';
