@@ -3807,8 +3807,8 @@
         <button class="admin-bar-btn" onclick="openQuotePanel()">📋 견적 이력</button>
         <button class="admin-bar-btn" onclick="openAdminQuestions()">💬 질문함</button>
         <button class="admin-bar-btn" onclick="openSELogs()">📊 SE 학습 기록</button>
-        <button class="admin-bar-btn" onclick="seSwitchToRequest()">📄 매출외 요청서</button>
-        <button class="admin-bar-btn" onclick="openRecoveryPanel()">🧾 회수 보고서</button>
+        <!-- 매출외 요청서·회수 보고서는 SE MANAGEMENT 탭으로 옮겼다 -->
+
         <button class="admin-bar-btn" onclick="saveAllEdits()">💾 저장</button>
         <button class="admin-bar-btn danger" onclick="openResetModal()">↺ 초기화</button>
         <button class="admin-bar-btn" onclick="exitAdminMode()">✕ 나가기</button>
@@ -14164,7 +14164,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
 </div>
 
-<!-- 매출외 요청서 독립 패널 -->
 <!-- 매출외 요청서 역방향 조회 모달 -->
 <div id="seReqLookupModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
     <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:520px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
