@@ -13917,6 +13917,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
             </div>
             <div id="seStoreContent" style="display:none;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
+                    <button onclick="seOpenAddModal()" style="margin-left:auto;background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
+                </div>
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
                     <span id="seSelCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
                     <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
@@ -13948,7 +13952,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
                 <!-- '요청서 없음'을 볼 때 짝이 될 만한 반대편 목록을 붙인다 -->
                 <div id="seUnmatchedRef" style="display:none;margin-top:18px;"></div>
-                <button onclick="seOpenAddModal()" style="margin:16px 0 8px;width:100%;padding:12px;border-radius:10px;border:1.5px dashed var(--se-border);background:var(--se-surface);color:#003EFF;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
             </div>
             <div id="seStorePlaceholder" style="color:#475569; font-size:0.85rem; padding:40px 0 0;">
                 매장을 선택하면 전시 현황이 표시됩니다.
@@ -14030,7 +14033,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <!-- 매출외출고 요청서 탭 (관리자 전용) -->
         <div id="seTabRequest" style="display:none;">
     
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button onclick="seOpenReqForm()" style="background:#003EFF;border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서</button></div>
     <div id="seReqScroll">
 
     <!-- 새 요청서 입력 (모달) -->
@@ -14096,7 +14098,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     <!-- /새 요청서 입력 모달 -->
 
         <div>
-            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">저장된 요청서 <span id="seReqCount" style="color:#003EFF;"></span></div>
+                <button onclick="seOpenReqForm()" style="margin-left:auto;background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 새 요청서</button>
+            </div>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                 <div id="seReqFilterBar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
                 <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
