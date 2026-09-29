@@ -13818,7 +13818,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <!-- 이동 모달 -->
             <div id="seEditModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
                 <div style="background:#fff;border:none;border-radius:16px;padding:0;width:420px;max-width:92vw;display:flex;flex-direction:column;gap:0;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.18);">
-                    <div style="background:#003EFF;border-radius:16px 16px 0 0;padding:20px 24px;font-size:0.72rem;font-weight:700;color:#fff;letter-spacing:0.18em;text-transform:uppercase;font-family:'Outfit',sans-serif;">전시품 수정</div>
+                    <div style="background:#003EFF;border-radius:16px 16px 0 0;padding:20px 24px;font-size:0.72rem;font-weight:700;color:#fff;letter-spacing:0.18em;text-transform:uppercase;font-family:'Outfit',sans-serif;" id="seEditModalTitle">전시품 수정</div>
                     <div style="padding:24px;display:flex;flex-direction:column;gap:12px;">
                     <input type="hidden" id="seEditId">
                     <div style="display:flex;flex-direction:column;gap:4px;">
@@ -13911,7 +13911,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <div id="seEditMsg" style="font-size:0.78rem;min-height:18px;color:#ef4444;"></div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
                         <button onclick="seCloseEditModal()" style="padding:8px 18px;border-radius:8px;border:1.5px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.82rem;font-family:'Outfit',sans-serif;">취소</button>
-                        <button onclick="seSubmitEdit()" style="padding:8px 18px;border-radius:8px;border:none;background:#003EFF;color:#fff;cursor:pointer;font-weight:700;font-size:0.82rem;font-family:'Outfit',sans-serif;">저장</button>
+                        <button id="seEditSubmitBtn" onclick="seSubmitEdit()" style="padding:8px 18px;border-radius:8px;border:none;background:#003EFF;color:#fff;cursor:pointer;font-weight:700;font-size:0.82rem;font-family:'Outfit',sans-serif;">저장</button>
                     </div>
                 </div>
                 </div>
@@ -16045,6 +16045,7 @@ function seRenderTable(storeId) {
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
+                <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
                 ${row.sku ? (() => {
@@ -16268,9 +16269,30 @@ async function seConfirmMove() {
     }
 }
 
+// 같은 제품이 여러 구역에 놓이는 일이 잦아, 수정 모달을 그대로 쓰되 저장만 새 행으로 한다
+let _seCopyMode = false;
+
+function seCopyDisplay(id) {
+    seOpenEditModal(id).then(() => {
+        _seCopyMode = true;
+        const t = document.getElementById('seEditModalTitle');
+        if (t) t.textContent = '전시품 복사';
+        const b = document.getElementById('seEditSubmitBtn');
+        if (b) b.textContent = '복사본 저장';
+        const m = document.getElementById('seEditMsg');
+        if (m) { m.style.color = '#0369a1'; m.textContent = '같은 내용으로 새 행을 만듭니다. 위치·수량을 바꿔 저장하세요.'; }
+        document.getElementById('seEditLocation')?.focus();
+    });
+}
+
 async function seOpenEditModal(id) {
     const row = seDisplayData.find(r => r.id === id);
     if (!row) return;
+    _seCopyMode = false;
+    const _t = document.getElementById('seEditModalTitle');
+    if (_t) _t.textContent = '전시품 수정';
+    const _b = document.getElementById('seEditSubmitBtn');
+    if (_b) _b.textContent = '저장';
     document.getElementById('seEditId').value = id;
     document.getElementById('seEditMsg').textContent = '';
     // 시리즈 드롭다운 채우기
@@ -16433,6 +16455,21 @@ async function seSubmitEdit() {
     if (finalUrls.length || _seEditPhotos.length === 0) {
         updates.image_urls = finalUrls;
         updates.image_url = finalUrls[0] || null;
+    }
+    if (_seCopyMode) {
+        // 원본의 매출외 연결값(수주번호·링크)도 같이 가져간다 — 같은 출고 건에서 나온 물건이다
+        const src = seDisplayData.find(r => r.id === id) || {};
+        const record = { ...updates, store_id: seCurrentStore,
+            sales_order_no: src.sales_order_no || null, sales_link: src.sales_link || null,
+            catalog_visible: false };
+        const { data, error: insErr } = await _sb.from('store_displays').insert(record).select().single();
+        if (insErr) { msg.style.color = '#ef4444'; msg.textContent = '복사 실패: ' + insErr.message; return; }
+        seDisplayData.push(data);
+        _seCopyMode = false;
+        seCloseEditModal();
+        seRenderTable(seCurrentStore);
+        showToast && showToast('📋 복사했습니다');
+        return;
     }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
