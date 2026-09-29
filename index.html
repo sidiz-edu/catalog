@@ -15188,7 +15188,7 @@ async function seLoadFlatRows() {
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [itemsRes, dispRes] = await Promise.all([
         _sb.from('outgoing_request_items')
-            .select('*, outgoing_requests(id,title,request_date,order_no,ep_url)'),
+            .select('*, outgoing_requests(id,title,request_date,order_no,doc_no,ep_url)'),
         _sb.from('store_displays').select('store_id,sku,quantity,purpose,sold,location,memo'),
     ]);
     if (itemsRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${itemsRes.error.message}</p>`; return; }
@@ -15220,7 +15220,8 @@ async function seLoadFlatRows() {
             it, r, sku, have, want, status, ds: ds || [],
             kind: seItemClass(it.item_code, it.product_name),
             hay: [r.title, r.order_no, it.product_name, it.item_code, it.color_code,
-                  sku, it.store_name_raw, r.request_date].filter(Boolean).join(' ').toLowerCase(),
+                  sku, it.store_name_raw, r.request_date, it.memo, r.doc_no]
+                 .filter(Boolean).join(' ').toLowerCase(),
         };
     }).sort((a, b) => (b.r.request_date || '').localeCompare(a.r.request_date || ''));
     seRenderFlat();
@@ -15349,6 +15350,7 @@ function seRenderFlat() {
             <th style="padding:7px 9px;text-align:center;white-space:nowrap;">수량</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시 현황</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">비고</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">요청서</th>
         </tr></thead>
         <tbody>${rows.map((x, i) => `
@@ -15360,6 +15362,7 @@ function seRenderFlat() {
                 <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
                 <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
+                <td style="padding:6px 9px;font-size:0.7rem;color:#b45309;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(x.it.memo||'').replace(/"/g,'&quot;')}">${x.it.memo || ''}</td>
                 <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-')}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
@@ -15683,6 +15686,7 @@ async function seToggleReqItems(id) {
                     <th style="padding:6px 10px;text-align:right;white-space:nowrap;">금액</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">매장</th>
                     <th style="padding:6px 10px;text-align:left;white-space:nowrap;">전시 현황</th>
+                    <th style="padding:6px 10px;text-align:left;white-space:nowrap;">비고</th>
                 </tr></thead>
                 <tbody>
                     ${items.map((it, i) => {
@@ -15697,6 +15701,7 @@ async function seToggleReqItems(id) {
                             <td style="padding:6px 10px;text-align:right;font-weight:600;">${it.amount!=null?it.amount.toLocaleString():'-'}</td>
                             <td style="padding:6px 10px;${!it.store_id?'color:#ef4444;':''}">${it.store_name_raw||''}${it.store_id?` <span style="color:#22c55e;font-size:0.7rem;">(${it.store_id})</span>`:'<span style="font-size:0.7rem;"> ⚠미매칭</span>'}</td>
                             <td style="padding:6px 10px;">${matchBadge(matches, reqTotalOf(it))}</td>
+                            <td style="padding:6px 10px;font-size:0.72rem;color:#b45309;max-width:200px;">${it.memo || ''}</td>
                         </tr>`;
                     }).join('')}
                 </tbody>
