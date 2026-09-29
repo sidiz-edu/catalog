@@ -580,6 +580,12 @@
         .detail-sku-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
         .sku-copy-btn { background:none; border:1px solid #d1d5db; border-radius:4px; padding:2px 7px; font-size:0.63rem; color:#6b7280; cursor:pointer; transition:all 0.15s; line-height:1.4; }
         .sku-copy-btn:hover { border-color:var(--sidiz-navy); color:var(--sidiz-navy); }
+        /* 코드 리뉴얼 이력 — 카탈로그엔 최신 코드만 있어 과거 출고 기록과 연결이 안 된다 */
+        .old-code-row { flex-basis:100%; display:none; align-items:center; gap:5px; flex-wrap:wrap; margin-top:4px; }
+        .old-code-row.on { display:flex; }
+        .old-code-label { font-size:0.6rem; color:#9ca3af; letter-spacing:0.3px; }
+        .old-code-chip { font-family:'Outfit',monospace; font-size:0.66rem; color:#b45309; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:1px 6px; cursor:help; letter-spacing:0.4px; }
+        .old-code-chip.guess { color:#6b7280; background:#f9fafb; border-color:#e5e7eb; }
         .color-cart-row { margin: 8px 0 16px; }
         .btn-color-cart {
             display: inline-flex; align-items: center; gap: 6px;
@@ -10446,6 +10452,54 @@ function copySku(part) {
     );
 }
 
+// ── 코드 리뉴얼 이력 ──
+// 매장 직원은 홈페이지 최신 코드를 입력하고 매출외출고 요청서에는 출고 당시 코드가 남는다.
+// 카탈로그엔 최신 코드만 있으니, 구코드를 같이 보여줘야 과거 기록과 연결된다.
+let _codeHist = null;
+
+async function ensureCodeHistory() {
+    if (_codeHist) return _codeHist;
+    const { data } = await _sb.from('code_history')
+        .select('old_code,new_code,kind,new_first_due,confidence');
+    _codeHist = data || [];
+    return _codeHist;
+}
+
+// 최신 코드에서 거슬러 올라가며 체인을 만든다 (T90HLDA2KK → 1KK → 0KK)
+function oldCodeChain(code) {
+    const out = [];
+    let cur = (code || '').toUpperCase();
+    for (let i = 0; i < 5 && cur; i++) {
+        const row = (_codeHist || []).find(h => (h.new_code || '').toUpperCase() === cur);
+        if (!row) break;
+        out.push(row);
+        cur = (row.old_code || '').toUpperCase();
+    }
+    return out;
+}
+
+function renderDetailOldCode(sku) {
+    const box = document.getElementById('detailOldCode');
+    if (!box) return;
+    const s = (sku || '').toUpperCase();
+    const dash = s.lastIndexOf('-');
+    const rows = [
+        ...oldCodeChain(dash > 0 ? s.substring(0, dash) : s),
+        ...(dash > 0 ? oldCodeChain(s.substring(dash + 1)) : []),
+    ];
+    box.classList.toggle('on', rows.length > 0);
+    if (!rows.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<span class="old-code-label">이전 코드</span>' + rows.map(h => {
+        const guess = h.confidence === '추정';
+        const when = h.new_first_due ? `${h.new_first_due}부터 ${h.new_code}` : `${h.new_code}로 변경`;
+        return `<span class="old-code-chip${guess ? ' guess' : ''}" title="${h.old_code} → ${when}${guess ? ' (추정)' : ''}">${h.old_code}${guess ? '?' : ''}</span>`;
+    }).join('');
+}
+
+function updateDetailOldCode(sku) {
+    ensureCodeHistory().then(() => renderDetailOldCode(sku)).catch(() => {});
+}
+
 // ── DETAIL COLOR SWITCH ──
 function switchDetailColor(productId, idx) {
     const colors = _currentSpecColors[productId] || productColors[productId];
@@ -10500,6 +10554,7 @@ function switchDetailColor(productId, idx) {
     _currentDetailSku = c.sku || (specColors ? (specColors[idx]?.sku || '') : (productSkus[productId]?.[idx] || ''));
     const skuEl = document.getElementById('detailSkuDisplay');
     if (skuEl) skuEl.textContent = _currentDetailSku;
+    updateDetailOldCode(_currentDetailSku);
     // 색상 담기 버튼 업데이트
     const colorCartBtn = document.getElementById('detailColorCartBtn');
     if (colorCartBtn) {
@@ -10719,6 +10774,7 @@ function showDetail(productId) {
                 <span id="detailSkuDisplay"></span>
                 <button class="sku-copy-btn" onclick="copySku('base')">제품코드</button>
                 <button class="sku-copy-btn" onclick="copySku('color')">색상코드</button>
+                <div class="old-code-row" id="detailOldCode"></div>
             </div>
             <span id="detailColorPrice"></span>
         </div>
