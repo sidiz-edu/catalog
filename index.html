@@ -15450,7 +15450,8 @@ function seFilterRequests(kind) {
         b.style.border = active ? '1px solid #003EFF' : '1px solid #e2e8f0';
     });
     // 펼쳐둔 항목 목록은 이전 분류로 렌더된 상태이므로 접어서 다시 열게 한다
-    document.querySelectorAll('[id^="req-items-"]').forEach(a => {
+    // 안쪽 req-items-body-*까지 잡으면 본문이 숨겨진 채로 남아 항목이 안 보인다
+    document.querySelectorAll('[id^="req-items-"]:not([id^="req-items-body-"])').forEach(a => {
         if (a.style.display === '') {
             a.style.display = 'none';
             const arrow = document.getElementById(a.id.replace('req-items-', 'req-arrow-'));
