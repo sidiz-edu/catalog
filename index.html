@@ -15800,15 +15800,34 @@ async function seShowReqForSku(sku, storeId) {
         return;
     }
 
-    body.innerHTML = items.map(it => {
+    // 같은 요청서에 같은 품목이 여러 행으로 들어있는 경우가 많다 — 요청서 단위로 합친다
+    const byReq = new Map();
+    items.forEach(it => {
         const r = it.outgoing_requests;
-        if (!r) return '';
+        if (!r) return;
+        let g = byReq.get(r.id);
+        if (!g) { g = { r, qty: 0, rows: 0, prices: new Set() }; byReq.set(r.id, g); }
+        g.qty += it.qty || 0;
+        g.rows++;
+        if (it.unit_price != null) g.prices.add(it.unit_price);
+    });
+    if (!byReq.size) {
+        body.innerHTML = '<p style="color:#94a3b8;font-size:0.82rem;">연결된 매출외 요청서가 없습니다.</p>';
+        return;
+    }
+
+    body.innerHTML = [...byReq.values()].map(g => {
+        const r = g.r;
         const esc = s => (s || '').replace(/'/g, "\'");
+        const price = g.prices.size === 1 ? [...g.prices][0].toLocaleString()
+                    : g.prices.size > 1  ? [...g.prices].sort((a, b) => a - b).map(p => p.toLocaleString()).join(' / ')
+                    : '-';
+        const rowNote = g.rows > 1 ? ` <span style="color:#475569;">(${g.rows}행 합계)</span>` : '';
         return `<div style="border:1px solid #334155;border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f172a;">
             <div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;">${r.title}</div>
             ${r.doc_no ? `<div style="font-size:0.72rem;font-family:monospace;color:#94a3b8;margin-bottom:3px;">${r.doc_no}</div>` : ''}
             <div style="font-size:0.75rem;color:#94a3b8;">${r.requester||''} · 납기 ${r.delivery_date||'-'} · 수주번호 ${r.order_no||'-'}</div>
-            <div style="font-size:0.72rem;color:#475569;margin-top:3px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'} · 수량 ${it.qty??'-'} · 단가 ${it.unit_price!=null?it.unit_price.toLocaleString():'-'}</div>
+            <div style="font-size:0.72rem;color:#475569;margin-top:3px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'} · 수량 ${g.qty}${rowNote} · 단가 ${price}</div>
             <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;">
                 <button onclick="seJumpToRequest('${r.id}','${esc(r.doc_no || r.title)}')"
                     style="background:#003EFF;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📋 카탈로그에서 보기</button>
