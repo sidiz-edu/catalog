@@ -15990,7 +15990,7 @@ async function seRenderList(storeId) {
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
-               .select('item_code,color_code,product_name,qty,memo,outgoing_requests(title,request_date,doc_no,ep_url)')
+               .select('item_code,color_code,product_name,qty,memo,outgoing_requests(id,title,request_date,doc_no,ep_url,order_no,delivery_date)')
                .eq('store_id', storeId),
             _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId)
         ]);
@@ -16627,6 +16627,21 @@ function seEditPopulateColorCodes(productCode) {
     if (!productCode || !seriesName || !displaySkuData[seriesName]?.[productCode]) return;
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
+// 그 SKU의 출고 문서가 한 건으로 특정될 때만 연결값을 준다.
+// 등록할 때마다 손으로 넣게 하면 새 행은 계속 비어 있게 된다 (9/28 일괄 연결 이후 58행이 그랬다).
+function seAutoLinkFor(sku) {
+    if (!sku) return null;
+    const key = sku.toUpperCase();
+    const docs = {};
+    (seReqItems || []).forEach(it => {
+        if (!it.item_code) return;
+        const s = (it.item_code + (it.color_code ? '-' + it.color_code : '')).toUpperCase();
+        if (s === key && it.outgoing_requests) docs[it.outgoing_requests.id] = it.outgoing_requests;
+    });
+    const list = Object.values(docs);
+    return list.length === 1 ? list[0] : null;
+}
+
 async function seSubmitEdit() {
     const id = document.getElementById('seEditId').value;
     const updater = document.getElementById('seEditUpdater').value.trim();
@@ -16677,8 +16692,10 @@ async function seSubmitEdit() {
     if (_seCopyMode) {
         // 원본의 매출외 연결값(수주번호·링크)도 같이 가져간다 — 같은 출고 건에서 나온 물건이다
         const src = seDisplayData.find(r => r.id === id) || {};
+        const cAuto = seAutoLinkFor(updates.sku);
         const record = { ...updates, store_id: seCurrentStore,
-            sales_order_no: src.sales_order_no || null, sales_link: src.sales_link || null,
+            sales_order_no: src.sales_order_no || cAuto?.order_no || null,
+            sales_link:     src.sales_link     || cAuto?.ep_url   || null,
             catalog_visible: false };
         const { data, error: insErr } = await _sb.from('store_displays').insert(record).select().single();
         if (insErr) { msg.style.color = '#ef4444'; msg.textContent = '복사 실패: ' + insErr.message; return; }
@@ -16689,8 +16706,21 @@ async function seSubmitEdit() {
         showToast && showToast('📋 복사했습니다');
         return;
     }
+    // 품목코드를 바꿨으면 기존 링크는 다른 제품 것이라 다시 잡는다
+    const cur = seDisplayData.find(r => r.id === id) || {};
+    const auto = seAutoLinkFor(updates.sku);
+    if ((cur.sku || '') !== (updates.sku || '')) {
+        updates.sales_link     = auto?.ep_url   || null;
+        updates.sales_order_no = auto?.order_no || null;
+    } else if (auto) {
+        if (!cur.sales_link && auto.ep_url)        updates.sales_link     = auto.ep_url;
+        if (!cur.sales_order_no && auto.order_no)  updates.sales_order_no = auto.order_no;
+    }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
+    if (auto && (updates.sales_link || updates.sales_order_no)) {
+        showToast && showToast('🔗 ' + (auto.doc_no || auto.title) + ' 에 연결했습니다');
+    }
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx !== -1) seDisplayData[idx] = { ...seDisplayData[idx], ...updates };
     seCloseEditModal();
@@ -16735,9 +16765,15 @@ async function seAddDisplay() {
             record.image_url = imageUrls[0];
             record.image_urls = imageUrls;
         }
+        const auto = seAutoLinkFor(sku);
+        if (auto) {
+            record.sales_link     = auto.ep_url   || null;
+            record.sales_order_no = auto.order_no || null;
+        }
         const { error } = await _sb.from('store_displays').insert(record);
         if (error) throw error;
-        msg.className='se-msg ok'; msg.textContent='✓ 저장되었습니다.';
+        msg.className='se-msg ok';
+        msg.textContent = auto ? `✓ 저장 · ${auto.doc_no || auto.title} 에 연결` : '✓ 저장되었습니다.';
         document.getElementById('seAddSeries').value = '';
         document.getElementById('seAddSku').value = '';
         document.getElementById('seAddColor').value = '';
