@@ -15780,6 +15780,7 @@ async function seShowReqForSku(sku, storeId) {
     const modal = document.getElementById('seReqLookupModal');
     const body  = document.getElementById('seReqLookupBody');
     document.getElementById('seReqLookupSku').textContent = sku;
+    _seReqLookupCtx = { sku, storeId };
     body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
     modal.style.display = 'flex';
 
@@ -15829,13 +15830,79 @@ async function seShowReqForSku(sku, storeId) {
             <div style="font-size:0.75rem;color:#94a3b8;">${r.requester||''} · 납기 ${r.delivery_date||'-'} · 수주번호 ${r.order_no||'-'}</div>
             <div style="font-size:0.72rem;color:#475569;margin-top:3px;">등록: ${r.created_at ? r.created_at.slice(0,10) : '-'} · 수량 ${g.qty}${rowNote} · 단가 ${price}</div>
             <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;">
-                <button onclick="seJumpToRequest('${r.id}','${esc(r.doc_no || r.title)}')"
-                    style="background:#003EFF;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📋 카탈로그에서 보기</button>
+                <button onclick="seReqLookupDetail('${r.id}')"
+                    style="background:#003EFF;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📋 요청서 전체 보기</button>
                 ${r.ep_url ? `<a href="${r.ep_url}" target="_blank"
                     style="background:rgba(255,255,255,0.1);border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;text-decoration:none;">🔗 EP 원문</a>` : ''}
             </div>
         </div>`;
     }).join('');
+}
+
+let _seReqLookupCtx = null;   // 상세에서 목록으로 되돌아가기 위한 진입 정보
+
+// 팝업을 떠나지 않고 그 요청서의 전체 품목을 펼쳐 본다
+async function seReqLookupDetail(reqId) {
+    const body = document.getElementById('seReqLookupBody');
+    body.innerHTML = '<p style="color:#94a3b8;">불러오는 중...</p>';
+    const [reqRes, itemRes] = await Promise.all([
+        _sb.from('outgoing_requests').select('*').eq('id', reqId).single(),
+        _sb.from('outgoing_request_items').select('*').eq('request_id', reqId).order('created_at')
+    ]);
+    const r = reqRes.data;
+    const rows = itemRes.data || [];
+    if (!r) { body.innerHTML = '<p style="color:#f87171;">요청서를 불러오지 못했습니다.</p>'; return; }
+
+    const cur = (_seReqLookupCtx?.sku || '').toUpperCase();
+    const curStore = _seReqLookupCtx?.storeId || '';
+    const totQty = rows.reduce((s, it) => s + (it.qty || 0), 0);
+    const totAmt = rows.reduce((s, it) => s + (it.amount || 0), 0);
+    const esc = s => (s || '').replace(/'/g, "\'");
+
+    const trs = rows.map(it => {
+        const sku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
+        const mine = sku === cur && (!curStore || it.store_id === curStore);
+        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">
+            <td style="padding:5px 8px;color:#e2e8f0;">${mine ? '🎯 ' : ''}${it.product_name || '-'}</td>
+            <td style="padding:5px 8px;font-family:monospace;color:#94a3b8;">${it.item_code || '-'}</td>
+            <td style="padding:5px 8px;font-family:monospace;color:#94a3b8;">${it.color_code || '-'}</td>
+            <td style="padding:5px 8px;text-align:right;color:#e2e8f0;">${it.qty ?? '-'}</td>
+            <td style="padding:5px 8px;text-align:right;color:#94a3b8;">${it.unit_price != null ? it.unit_price.toLocaleString() : '-'}</td>
+            <td style="padding:5px 8px;color:#94a3b8;white-space:nowrap;">${it.store_name_raw || it.store_id || '-'}</td>
+        </tr>`;
+    }).join('');
+
+    body.innerHTML = `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+            <button onclick="seReqLookupBack()" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#cbd5e1;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">← 목록</button>
+            <button onclick="seJumpToRequest('${r.id}','${esc(r.doc_no || r.title)}')" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 요청서 탭에서 열기</button>
+            ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="background:rgba(255,255,255,0.1);border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;text-decoration:none;">🔗 EP 원문</a>` : ''}
+        </div>
+        <div style="border:1px solid #334155;border-radius:10px;padding:12px 14px;background:#0f172a;">
+            <div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;">${r.title}</div>
+            ${r.doc_no ? `<div style="font-size:0.72rem;font-family:monospace;color:#94a3b8;margin-bottom:3px;">${r.doc_no}</div>` : ''}
+            <div style="font-size:0.75rem;color:#94a3b8;">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
+            <div style="font-size:0.72rem;color:#475569;margin-top:3px;">품목 ${rows.length}행 · 수량 ${totQty}${totAmt ? ` · 합계 ${totAmt.toLocaleString()}원` : ''}</div>
+        </div>
+        <div style="overflow-x:auto;margin-top:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+                <thead><tr style="color:#64748b;text-align:left;border-bottom:1px solid #334155;">
+                    <th style="padding:5px 8px;font-weight:600;">제품명</th>
+                    <th style="padding:5px 8px;font-weight:600;">품목코드</th>
+                    <th style="padding:5px 8px;font-weight:600;">색상</th>
+                    <th style="padding:5px 8px;font-weight:600;text-align:right;">수량</th>
+                    <th style="padding:5px 8px;font-weight:600;text-align:right;">단가</th>
+                    <th style="padding:5px 8px;font-weight:600;">매장</th>
+                </tr></thead>
+                <tbody>${trs}</tbody>
+            </table>
+        </div>`;
+    body.scrollTop = 0;
+}
+
+function seReqLookupBack() {
+    if (!_seReqLookupCtx) { document.getElementById('seReqLookupModal').style.display = 'none'; return; }
+    seShowReqForSku(_seReqLookupCtx.sku, _seReqLookupCtx.storeId);
 }
 
 // 전시품에서 그 품목이 든 요청서 카드로 건너뛴다 — 목록을 눈으로 훑지 않아도 되게
