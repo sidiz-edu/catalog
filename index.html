@@ -8233,6 +8233,11 @@ const displaySkuData = {
         'VTNF500HDA': ['458D'],
         'VTNF500HLDA': ['451M', '452M'],
     },
+    // 분해도 전시용 — 현장에서 조립하지 않아 일반 T50 전시와 따로 센다.
+    // 코드는 T50과 같으므로 시리즈로 가른다.
+    'T50 전시분해': {
+        'VTNF500HLDA': ['451M'],
+    },
     'T50 2세대': {
         'T51HLDA0KK': ['5F1WW', '5F6ABK', '5F6ABK(블랙)'],
     },
@@ -15138,6 +15143,7 @@ const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드
 // 분해도 전시용은 현장에서 조립하지 않아 일반 전시 의자와 성격이 다르다.
 // 같은 코드(VTNF500HLDA-451M)가 일반 전시로도 나가므로 코드가 아니라 요청서 비고로 가른다.
 const SE_DEMO_RE = /분해/;
+const SE_DEMO_SERIES = 'T50 전시분해';   // 시리즈 드롭다운에서 직접 고를 수 있는 값
 
 function seItemClass(itemCode, productName, memo) {
     if (SE_DEMO_RE.test((memo || '') + ' ' + (productName || ''))) return 'demo';
@@ -16092,7 +16098,8 @@ function seRenderTable(storeId) {
         return;
     }
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
-    const isDemo = row => SE_DEMO_RE.test(row.memo || '') || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
+    const isDemo = row => row.product_id === SE_DEMO_SERIES || SE_DEMO_RE.test(row.memo || '')
+                        || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
     const kindOf = row => row.sold ? 'sold' : isDemo(row) ? 'demo'
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
     const kc = { display: 0, selling: 0, sold: 0, store: 0, demo: 0 };
