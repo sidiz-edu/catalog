@@ -14690,6 +14690,7 @@ const SE_PW = 'SDZ2026';
 let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
+let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
@@ -15134,7 +15135,12 @@ const SE_PROMO_CODES = new Set([
 ]);
 const SE_REPAIR_RE = /(커버|등판|좌판|팔걸이|패드|바퀴|글라이드|헤드레스트|받침대)/;
 
-function seItemClass(itemCode, productName) {
+// 분해도 전시용은 현장에서 조립하지 않아 일반 전시 의자와 성격이 다르다.
+// 같은 코드(VTNF500HLDA-451M)가 일반 전시로도 나가므로 코드가 아니라 요청서 비고로 가른다.
+const SE_DEMO_RE = /분해/;
+
+function seItemClass(itemCode, productName, memo) {
+    if (SE_DEMO_RE.test((memo || '') + ' ' + (productName || ''))) return 'demo';
     const c = (itemCode || '').replace(/\s/g, '').toUpperCase();
     if (SE_PROMO_CODES.has(c)) return 'part';
     if (SE_CHAIR_CODES.has(c)) return 'chair';
@@ -15147,6 +15153,7 @@ function seItemClass(itemCode, productName) {
 const SE_CLASS_STYLE = {
     chair: ['🪑 의자',   '#eef2ff', '#4338ca'],
     part:  ['🔧 부속품', '#e0f2fe', '#0369a1'],
+    demo:  ['🧩 T50 전시분해', '#fef3c7', '#b45309'],
 };
 // 날짜 칩 — 년도별로 색상 구분 [글자색, 배경색]
 const SE_YEAR_COLOR = {
@@ -15250,7 +15257,7 @@ async function seLoadFlatRows() {
         const status = !it.store_id ? 'unmatched' : !ds.length ? 'none' : have === want ? 'exists' : 'mismatch';
         return {
             it, r, sku, have, want, status, ds: ds || [],
-            kind: seItemClass(it.item_code, it.product_name),
+            kind: seItemClass(it.item_code, it.product_name, it.memo),
             hay: [r.title, r.order_no, it.product_name, it.item_code, it.color_code,
                   sku, it.store_name_raw, r.request_date, it.memo, r.doc_no]
                  .filter(Boolean).join(' ').toLowerCase(),
@@ -15317,10 +15324,9 @@ function seRenderFlat() {
     // 버튼에 81건이 적혀 있으면 어긋나 보인다
     const scoped = seScopedStore();
     const inScope = _seFlatRows.filter(x => !scoped || x.it.store_id === scoped);
-    seRenderKindBar(inScope.length, {
-        chair: inScope.filter(x => x.kind === 'chair').length,
-        part:  inScope.filter(x => x.kind === 'part').length,
-    }, '개');
+    const flatCounts = {};
+    Object.keys(SE_CLASS_STYLE).forEach(k => flatCounts[k] = inScope.filter(x => x.kind === k).length);
+    seRenderKindBar(inScope.length, flatCounts, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
     // 구분·검색을 먼저 적용한다. 두 필터 바는 서로의 결과 안에서 세므로,
@@ -15426,7 +15432,7 @@ async function seLoadRequestList() {
         _sb.from('outgoing_requests')
             .select('id,title,requester,delivery_date,order_no,doc_no,ep_url,sheet_url,request_date,created_at')
             .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
-        _sb.from('outgoing_request_items').select('request_id,product_name,item_code,color_code,store_name_raw,store_id'),
+        _sb.from('outgoing_request_items').select('request_id,product_name,item_code,color_code,store_name_raw,store_id,memo'),
         seEnsureRecIndex(),
     ]);
     if (error || !data || !data.length) {
@@ -15448,8 +15454,8 @@ async function seLoadRequestList() {
     // 요청서별 품목 구성 (의자·부속품을 각각 몇 개 품고 있는지)
     const mix = {};
     (itemsRes.data || []).forEach(it => {
-        const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, part: 0 });
-        m[seItemClass(it.item_code, it.product_name)]++;
+        const m = mix[it.request_id] || (mix[it.request_id] = { chair: 0, part: 0, demo: 0 });
+        m[seItemClass(it.item_code, it.product_name, it.memo)]++;
     });
     // 필터는 "해당 분류를 포함하는 요청서"를 남긴다 (한 요청서가 여러 분류를 가질 수 있음)
     const hasClass = (id, k) => (mix[id]?.[k] || 0) > 0;
@@ -15482,7 +15488,8 @@ async function seLoadRequestList() {
     };
 
     // 구분별 필터 바 (요청서 단위 집계)
-    const counts = { chair: 0, part: 0 };
+    const counts = {};
+    Object.keys(SE_CLASS_STYLE).forEach(k => counts[k] = 0);
     data.forEach(r => Object.keys(SE_CLASS_STYLE).forEach(k => { if (hasClass(r.id, k)) counts[k]++; }));
     _seReqCounts = { total: data.length, counts };
     if (_seReqView === 'list') seRenderKindBar(data.length, counts, '건');
@@ -15633,7 +15640,7 @@ async function seToggleReqItems(id) {
         const allItems = scoped ? itemsRes.data.filter(it => it.store_id === scoped) : itemsRes.data;
         const items = _seReqKind === 'all'
             ? allItems
-            : allItems.filter(it => seItemClass(it.item_code, it.product_name) === _seReqKind);
+            : allItems.filter(it => seItemClass(it.item_code, it.product_name, it.memo) === _seReqKind);
         if (!items.length) {
             const n = SE_CLASS_STYLE[_seReqKind]?.[0] || '해당 분류';
             body.innerHTML = `<span style="color:#94a3b8;font-size:0.8rem;">이 요청서에 ${n} 품목이 없습니다. (전체 ${allItems.length}개)</span>`;
@@ -15977,7 +15984,7 @@ async function seRenderList(storeId) {
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
-               .select('item_code,color_code,product_name,qty,outgoing_requests(title,request_date,doc_no,ep_url)')
+               .select('item_code,color_code,product_name,qty,memo,outgoing_requests(title,request_date,doc_no,ep_url)')
                .eq('store_id', storeId),
             _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId)
         ]);
@@ -15990,6 +15997,10 @@ async function seRenderList(storeId) {
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
+        // 분해도 전시용 SKU — 전시품 행에는 비고가 없을 수 있어 요청서 비고에서 가져온다
+        seDemoSku = new Set((reqItemsRes.data || [])
+            .filter(it => it.item_code && it.color_code && SE_DEMO_RE.test((it.memo || '') + ' ' + (it.product_name || '')))
+            .map(it => `${it.item_code}-${it.color_code}`.toUpperCase()));
         seReqQty = {};
         (reqItemsRes.data || []).forEach(it => {
             if (!it.item_code || !it.color_code) return;
@@ -16081,8 +16092,10 @@ function seRenderTable(storeId) {
         return;
     }
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
-    const kindOf = row => row.sold ? 'sold' : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
-    const kc = { display: 0, selling: 0, sold: 0, store: 0 };
+    const isDemo = row => SE_DEMO_RE.test(row.memo || '') || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
+    const kindOf = row => row.sold ? 'sold' : isDemo(row) ? 'demo'
+                        : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
+    const kc = { display: 0, selling: 0, sold: 0, store: 0, demo: 0 };
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
     if (seKindFilter !== 'all' && !kc[seKindFilter]) seKindFilter = 'all';
@@ -16091,6 +16104,7 @@ function seRenderTable(storeId) {
         bar.innerHTML = [
             ['all', `전체 (${seDisplayData.length})`, '#003EFF'],
             ['display', `🪑 전시 (${kc.display})`, '#3b82f6'],
+            ['demo', `🧩 T50 전시분해 (${kc.demo})`, '#b45309'],
             ['sold', `✅ 판매완료 (${kc.sold})`, '#16a34a'],
             ['selling', `🏷 판매중 (${kc.selling})`, '#ea580c'],
             ['store', `📦 창고 (${kc.store})`, '#475569'],
