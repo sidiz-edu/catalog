@@ -580,6 +580,8 @@
         .detail-sku-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
         .sku-copy-btn { background:none; border:1px solid #d1d5db; border-radius:4px; padding:2px 7px; font-size:0.63rem; color:#6b7280; cursor:pointer; transition:all 0.15s; line-height:1.4; }
         .sku-copy-btn:hover { border-color:var(--sidiz-navy); color:var(--sidiz-navy); }
+        .sku-copy-full { border-color:var(--sidiz-navy); color:var(--sidiz-navy); font-weight:700; }
+        .sku-copy-full:hover { background:var(--sidiz-navy); color:#fff; }
         /* 코드 리뉴얼 이력 — 카탈로그엔 최신 코드만 있어 과거 출고 기록과 연결이 안 된다 */
         .old-code-row { flex-basis:100%; display:none; flex-direction:column; gap:3px; margin-top:4px; }
         .old-code-row.on { display:flex; }
@@ -10451,12 +10453,19 @@ function copySku(part) {
     const sku = document.getElementById('detailSkuDisplay')?.textContent?.trim() || '';
     if (!sku) return;
     const dashIdx = sku.lastIndexOf('-');
-    const text = part === 'base'
-        ? (dashIdx > 0 ? sku.substring(0, dashIdx) : sku)
+    const LABEL = { base: '제품코드', color: '색상코드', full: '제품코드+색상코드' };
+    const text = part === 'full' ? sku
+        : part === 'base' ? (dashIdx > 0 ? sku.substring(0, dashIdx) : sku)
         : (dashIdx > 0 ? sku.substring(dashIdx + 1) : sku);
-    navigator.clipboard.writeText(text).then(() =>
-        showToast(`📋 ${part === 'base' ? '제품코드' : '색상코드'} 복사됨`)
-    );
+    navigator.clipboard.writeText(text)
+        .then(() => showToast(`📋 ${LABEL[part]} 복사 — ${text}`))
+        .catch(() => {   // 클립보드를 막는 브라우저에선 직접 고를 수 있게 짚어준다
+            const el = document.getElementById('detailSkuDisplay');
+            if (!el) return;
+            const r = document.createRange(); r.selectNodeContents(el);
+            const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+            showToast('복사가 막혀 있어 코드를 선택했습니다 — Ctrl+C 를 누르세요');
+        });
 }
 
 // ── 코드 리뉴얼 이력 ──
@@ -10793,6 +10802,7 @@ function showDetail(productId) {
         <div class="detail-color-info">
             <div class="detail-sku-row">
                 <span id="detailSkuDisplay"></span>
+                <button class="sku-copy-btn sku-copy-full" onclick="copySku('full')" title="제품코드-색상코드를 한 번에 복사">📋 전체</button>
                 <button class="sku-copy-btn" onclick="copySku('base')">제품코드</button>
                 <button class="sku-copy-btn" onclick="copySku('color')">색상코드</button>
                 <div class="old-code-row" id="detailOldCode"></div>
