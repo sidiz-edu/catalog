@@ -4075,7 +4075,7 @@
     <div class="promo-banner" id="promoBanner">
         <div class="promo-banner-header" onclick="togglePromoBanner()">
             <div class="promo-banner-title">
-                <span class="month-chip">9월 행사</span>
+                <span class="month-chip" id="promoMonthChip">행사</span>
                 이달의 행사 &amp; 쿠폰
             </div>
             <span class="promo-banner-toggle-icon">▼</span>
@@ -4115,35 +4115,6 @@
                     <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;">쿨링/LED: <b>840,000원</b> (15%↓) / 일반: <b>640,000원</b> (19%↓)</span>
                 </div>
                 <div class="promo-card-footer">📅 9/4(금) ~ 10/7(수) · 포스팅 ~10/11(일)</div>
-            </div>
-            <!-- 추석 프로모션 -->
-            <div class="promo-card" style="--pc-accent:#ea580c;">
-                <span class="promo-card-icon">🎑</span>
-                <div class="promo-card-series">추석 한정 · 오프라인 전용</div>
-                <div class="promo-card-name">추석 프로모션</div>
-                <div class="promo-card-desc">
-                    <div class="promo-rate-row"><span class="rate-label">T80 · T90 · GC PRO</span><span class="rate-val" style="background:#ea580c;">추가 9%</span></div>
-                    <div class="promo-rate-row"><span class="rate-label">그 외 제품</span><span class="rate-val" style="background:#ea580c;">5%</span></div>
-                    <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:4px;">GC PRO 퀘스트 <b>중복 적용 가능</b></span>
-                    <div style="margin-top:7px;padding:5px 8px;background:#fff7ed;border-radius:6px;font-size:0.75rem;color:#9a3412;line-height:1.5;">
-                        📝 <b>네이버 스마트플레이스 리뷰</b> 작성 시 쿠폰 제공<br>
-                        <span style="color:#6b7280;font-size:0.72rem;">리뷰 누적 → 상위 노출 · 방문 전환율 향상 (현장 유연 운용)</span>
-                    </div>
-                    <div style="display:flex;gap:10px;margin-top:10px;justify-content:center;">
-                        <div style="text-align:center;">
-                            <img id="qrDiscount" src="./assets/qr-discount.png" style="width:88px;height:88px;border:1px solid #e5e7eb;border-radius:4px;display:block;cursor:zoom-in;" alt="5,9% 할인 쿠폰 QR" onclick="openQrModal(this.src,'5,9% 제품 할인 쿠폰')" onerror="this.style.cssText='width:88px;height:88px;border:1px solid #e5e7eb;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#aaa;background:#f9fafb;'">
-                            <div style="font-size:0.7rem;font-weight:700;color:#1d4ed8;margin-top:4px;">5,9% 할인 쿠폰</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <img id="qrOlly" src="./assets/qr-olly.png" style="width:88px;height:88px;border:1px solid #e5e7eb;border-radius:4px;display:block;cursor:zoom-in;" alt="올리 2,900원 쿠폰 QR" onclick="openQrModal(this.src,'올리 2,900원 구매 쿠폰')" onerror="this.style.cssText='width:88px;height:88px;border:1px solid #e5e7eb;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#aaa;background:#f9fafb;'">
-                            <div style="font-size:0.7rem;font-weight:700;color:#1d4ed8;margin-top:4px;">올리 2,900원 쿠폰</div>
-                        </div>
-                    </div>
-                    <div style="font-size:0.72rem;color:#ea580c;font-weight:600;margin-top:6px;text-align:center;">
-                        🛋️ 올리 구매권 증정 (1구매 1개 · 재고 소진 시 종료)
-                    </div>
-                </div>
-                <div class="promo-card-footer">📅 9/18(금) ~ 9/27(일) · 오프라인 전용</div>
             </div>
             <!-- 신규가입 -->
             <div class="promo-card" style="--pc-accent:#10b981;">
@@ -6529,11 +6500,6 @@ function rebuildProductGrid() {
 
 // 프로모션 플래그 (variantData 초기화 이전에 선언 필요)
 const _baseDiscountActive = new Date().toISOString().slice(0,10) >= '2026-06-17';
-const _chuseokActive = (() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return today >= '2026-09-18' && today <= '2026-09-27';
-})();
-
 // 페이지 로드 시 저장된 편집 내용 적용
 document.addEventListener('DOMContentLoaded', async () => {
     if (!_baseDiscountActive) {
@@ -7586,8 +7552,8 @@ const variantData = {
         { name: 'T90 천연가죽',        price: 1390000, comparePrice: 1450000 },
     ],
     gcpro: [
-        { name: 'GC PRO 리뉴얼 일반형',   price: _chuseokActive ? 646100 : 710000, comparePrice: _chuseokActive ? 710000 : 790000 },
-        { name: 'GC PRO 리뉴얼 쿨링/LED', price: _chuseokActive ? 828100 : 910000, comparePrice: _chuseokActive ? 910000 : 990000 },
+        { name: 'GC PRO 리뉴얼 일반형',   price: 710000, comparePrice: 790000 },
+        { name: 'GC PRO 리뉴얼 쿨링/LED', price: 910000, comparePrice: 990000 },
         { name: '토트넘 GC PRO',          price: 770000, comparePrice: 790000 },
     ],
     gx: [
@@ -7769,7 +7735,6 @@ const _huhakgiActive = (() => {
     const today = new Date().toISOString().slice(0, 10);
     return today >= '2026-08-10' && today <= '2026-08-31';
 })();
-const CHUSEOK_PREMIUM_IDS = new Set(['t80', 't90']); // gcpro는 표시가격에 추석 프로모션 반영
 const HUHAKGI_SETS = [
     { main: 'ringo2', pair: 'coverRingo2' },
     { main: 'ible',   pair: 'stepo' },
@@ -10330,6 +10295,15 @@ function toggleNavDropdown(toggleEl) {
 }
 
 // ── 이달의 행사 & 쿠폰 ──
+// 달 표기는 손으로 두면 넘어간 달이 그대로 남는다 (10월에 '9월 행사'가 떠 있었다)
+(() => {
+    const set = () => {
+        const el = document.getElementById('promoMonthChip');
+        if (el) el.textContent = (new Date().getMonth() + 1) + '월 행사';
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', set);
+    else set();
+})();
 const PROMO_DATA = {
     new: {
         t50:    { name: 'T50 2세대',     orig: 439000, final: 398050 },
@@ -11014,17 +10988,6 @@ function getBestDiscount(cart) {
         if (gcproAmt > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt, type: 'gcpro_coupon' });
     }
 
-    // 6) 추석 프로모션: T80/T90/GC PRO 9%, 그 외 5% (2026-09-18 ~ 2026-09-27, 오프라인 전용)
-    if (_chuseokActive) {
-        let chuseokAmt = 0;
-        for (const i of cart) {
-            if (COUPON_NEVER.has(i.productId)) continue;
-            const rate = CHUSEOK_PREMIUM_IDS.has(i.productId) ? 0.09 : 0.05;
-            chuseokAmt += Math.round(i.price * i.qty * rate);
-        }
-        if (chuseokAmt > 0) candidates.push({ label: '추석 프로모션', amt: chuseokAmt, type: 'chuseok' });
-    }
-
     if (candidates.length === 0) return null;
     // 가장 할인 금액이 큰 것 선택
     return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
@@ -11083,17 +11046,6 @@ function getAllDiscountCandidates(cart) {
     if (gcproEligible2.length > 0) {
         const gcproAmt2 = gcproEligible2.reduce((s, i) => s + 111000 * i.qty, 0);
         if (gcproAmt2 > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt2, type: 'gcpro_coupon' });
-    }
-
-    // 6) 추석 프로모션: T80/T90/GC PRO 9%, 그 외 5% (2026-09-18 ~ 2026-09-27, 오프라인 전용)
-    if (_chuseokActive) {
-        let chuseokAmt2 = 0;
-        for (const i of cart) {
-            if (COUPON_NEVER.has(i.productId)) continue;
-            const rate = CHUSEOK_PREMIUM_IDS.has(i.productId) ? 0.09 : 0.05;
-            chuseokAmt2 += Math.round(i.price * i.qty * rate);
-        }
-        if (chuseokAmt2 > 0) candidates.push({ label: '추석 프로모션', amt: chuseokAmt2, type: 'chuseok' });
     }
 
     if (candidates.length === 0) return { best: null, candidates: [] };
