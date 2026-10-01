@@ -13857,7 +13857,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <label style="font-size:0.78rem;color:var(--se-muted);">반출</label>
                         <select id="seEditExit" onchange="seEditToggleExit()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                             <option value="">반출 안 함 (매장 보유)</option>
-                            <option value="판매">✅ 판매완료</option>
+                            <option value="판매">판매完</option>
                             <option value="폐기">🗑 폐기</option>
                             <option value="연구소">🔬 연구소 반출</option>
                         </select>
@@ -15740,7 +15740,7 @@ async function seToggleReqItems(id) {
                 ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
                 : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 매출외출고 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
             return head + matches.map(d => {
-                const status = d.sold ? '✅ 판매완료' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
+                const status = d.sold ? '판매完' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
                 const q = d.quantity || 1;
                 const loc = seDisplayLoc(d, { dropStatus: true });
                 return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span>${loc ? ` <span style="color:#0f766e;font-weight:600;">📍 ${loc}</span>` : ''}</span>`;
@@ -16167,7 +16167,7 @@ function seRenderTable(storeId) {
         if (need.length) {
             const list = need.slice(0, 6).map(r => r.sku).join(', ') + (need.length > 6 ? ` 외 ${need.length - 6}건` : '');
             const mix = Object.entries(need.reduce((a, r) => {
-                const e = seExitOf(r); const k = e ? e.icon + ' ' + e.label : '반출';
+                const e = seExitOf(r); const k = e ? seExitLabel(e) : '반출';
                 a[k] = (a[k] || 0) + 1; return a;
             }, {})).map(([k, n]) => `${k} ${n}`).join(' · ');
             alertBox.innerHTML = `<div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
@@ -16190,7 +16190,7 @@ function seRenderTable(storeId) {
             ['all', `전체 (${seDisplayData.length})`, '#003EFF'],
             ['display', `🪑 전시 (${kc.display})`, '#3b82f6'],
             ['demo', `🧩 T50 전시분해 (${kc.demo})`, '#b45309'],
-            ['sold', `✅ 판매완료 (${kc.sold})`, '#16a34a'],
+            ['sold', `판매完 (${kc.sold})`, '#16a34a'],
             ['disposed', `🗑 폐기 (${kc.disposed})`, '#7c2d12'],
             ['research', `🔬 연구소 반출 (${kc.research})`, '#6d28d9'],
             ['selling', `🏷 판매중 (${kc.selling})`, '#ea580c'],
@@ -16327,7 +16327,7 @@ function seRenderTable(storeId) {
                 </div>` : '';
         const exit = seExitOf(row);
         const purposeCell = exit
-            ? `<td><span class="se-tag" style="background:${exit.bg};color:#fff;">${exit.icon} ${exit.label}</span>${recBadge}</td>`
+            ? `<td><span class="se-tag" style="background:${exit.bg};color:#fff;white-space:nowrap;">${seExitLabel(exit)}</span>${recBadge}</td>`
             : row.purpose === '판매'
             ? `<td><span class="se-tag" style="background:#ea580c;color:#fff;">판매중</span></td>`
             : row.purpose === '창고'
@@ -16388,7 +16388,7 @@ function seRenderTable(storeId) {
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
             <td></td>
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
-            <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매완료' : '판매중') : row.purpose === '창고' ? '창고' : '전시'}</span></td>
+            <td><span class="se-tag" style="opacity:0.5;">${row.purpose === '판매' ? (row.sold ? '판매完' : '판매중') : row.purpose === '창고' ? '창고' : '전시'}</span></td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
@@ -16747,11 +16747,12 @@ function seEditPopulateColorCodes(productCode) {
 // 전시품이 전시에서 빠지는 사유. sold 은 '빠졌다'는 사실, exit_type 은 그 사유다.
 // 사유가 무엇이든 회수 및 처리결과 보고서는 똑같이 필요하다 (금액은 전부 미회수로 잡힌다).
 const SE_EXIT = {
-    '판매':   { icon: '✅', label: '판매완료', bg: '#16a34a', buyer: true  },
+    '판매':   { icon: '',  label: '판매完',  bg: '#16a34a', buyer: true  },
     '폐기':   { icon: '🗑', label: '폐기',     bg: '#7c2d12', buyer: false },
     '연구소': { icon: '🔬', label: '연구소 반출', bg: '#6d28d9', buyer: false },
 };
 const seExitOf = row => SE_EXIT[row.exit_type] || (row.sold ? SE_EXIT['판매'] : null);
+const seExitLabel = e => [e.icon, e.label].filter(Boolean).join(' ');
 
 // 반출했는데 회수 보고서에 오르지 않은 행 — 회수대장 등록을 해야 하는 것
 function seNeedsRecovery(row) {
