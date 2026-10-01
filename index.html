@@ -13976,6 +13976,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <th onclick="seToggleSort('name')" style="cursor:pointer;user-select:none;white-space:nowrap;">제품명<span id="seSortIcon_name" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('major')" style="cursor:pointer;user-select:none;white-space:nowrap;">대분류<span id="seSortIcon_major" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('minor')" style="cursor:pointer;user-select:none;white-space:nowrap;">소분류<span id="seSortIcon_minor" style="color:#94a3b8;"> ↕</span></th>
+                                <th id="seThSource" onclick="seToggleSort('source')" style="cursor:pointer;user-select:none;white-space:nowrap;display:none;">조달<span id="seSortIcon_source" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('sku')" style="cursor:pointer;user-select:none;white-space:nowrap;">단품코드<span id="seSortIcon_sku" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
                                 <th>개수</th><th>사진</th><th>전시 시작일</th>
@@ -16016,7 +16017,7 @@ let _seAddPhotoBlobs = [];
 let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all', seLinkFilter = 'all';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="16" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="17" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
         const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
@@ -16062,7 +16063,7 @@ async function seRenderList(storeId) {
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="16" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="17" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 // ── 행 드래그로 순서 바꾸기 ──
@@ -16140,7 +16141,7 @@ function seToggleSort(col) {
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
-        tbody.innerHTML = '<tr><td colspan="16" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="17" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
@@ -16157,6 +16158,8 @@ function seRenderTable(storeId) {
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
     const kindAvail = k => k === 'as' ? asCount : k === 'needrec' ? recCount
         : k === 'demo' ? demoCount
+        : k === 'src_store' ? seDisplayData.filter(r => seSourceOf(r) === 'store').length
+        : k === 'src_hq'    ? seDisplayData.filter(r => seSourceOf(r) === 'hq').length
         : k === 'in' ? seDisplayData.filter(r => !r.sold).length
         : k === 'out' ? seDisplayData.filter(r =>  r.sold).length : kc[k];
     if (seKindFilter !== 'all' && !kindAvail(seKindFilter)) seKindFilter = 'all';
@@ -16189,8 +16192,11 @@ function seRenderTable(storeId) {
     if (bar) {
         const inN  = seDisplayData.filter(r => !r.sold).length;
         const outN = seDisplayData.filter(r =>  r.sold).length;
+        const srcN = { store: 0, hq: 0 };
+        seDisplayData.forEach(r => { const s = seSourceOf(r); if (s) srcN[s]++; });
         const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN
-            : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount : kc[k];
+            : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount
+            : k === 'src_store' ? srcN.store : k === 'src_hq' ? srcN.hq : kc[k];
 
         // 대분류는 늘 색이 채워진 채로 둔다. 무엇을 고르든 소분류보다 무거워 보여야
         // 위아래 관계가 눈에서 뒤집히지 않는다. 선택은 테두리 링으로 표시한다.
@@ -16223,6 +16229,12 @@ function seRenderTable(storeId) {
         };
 
         const plain = ([k, label, color]) => minor(k, label, color);
+        // 조달 열은 섞여 있는 매장에서만 보인다
+        const showSrc = srcN.store > 0 || srcN.hq > 0;
+        const thSrc = document.getElementById('seThSource');
+        if (thSrc) thSrc.style.display = showSrc ? '' : 'none';
+        setTimeout(() => document.querySelectorAll('#seDisplayList .se-src-cell')
+            .forEach(c => c.style.display = showSrc ? '' : 'none'), 0);
         const extras = [
             ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309'],
             ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c'],
@@ -16246,6 +16258,11 @@ function seRenderTable(storeId) {
                     ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12'],
                 ])}
             </div>
+            ${(srcN.store || srcN.hq) ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">조달</span>
+                ${[['src_store', `매장구매 (${srcN.store})`, SE_SOURCE.store[1]],
+                   ['src_hq',    `본사구매 (${srcN.hq})`,    SE_SOURCE.hq[1]]]
+                  .filter(([k]) => avail(k)).map(plain).join('')}</div>` : ''}
             ${extras.length ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                 <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">따로 보기</span>
                 ${extras.map(plain).join('')}</div>` : ''}`;
@@ -16256,6 +16273,8 @@ function seRenderTable(storeId) {
         || (seKindFilter === 'as' ? hasOpenIssue(row)
           : seKindFilter === 'needrec' ? seNeedsRecovery(row)
           : seKindFilter === 'demo' ? (!row.sold && isDemo(row))
+          : seKindFilter === 'src_store' ? seSourceOf(row) === 'store'
+          : seKindFilter === 'src_hq'    ? seSourceOf(row) === 'hq'
           : seKindFilter === 'in'  ? !row.sold
           : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
@@ -16326,6 +16345,7 @@ function seRenderTable(storeId) {
         if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
         if (col === 'major') return seMajorOf(row);
         if (col === 'minor') return seMinorOf(row)[0];
+        if (col === 'source') return (SE_SOURCE[seSourceOf(row)] || [''])[0];
         if (col === 'sku') return row.sku || '';
         if (col === 'color') return row.color_code || '';
         if (col === 'location') return row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'');
@@ -16373,9 +16393,13 @@ function seRenderTable(storeId) {
         const needRec = seNeedsRecovery(row);
         const [majLabel, majBg] = SE_MAJOR[seMajorOf(row)];
         const [minLabel, minBg] = seMinorOf(row);
+        const src = seSourceOf(row);
         const purposeCell =
             `<td><span class="se-tag" style="background:${majBg};color:#fff;white-space:nowrap;">${majLabel}</span></td>` +
-            `<td><span class="se-tag" style="background:${minBg};color:#fff;white-space:nowrap;">${minLabel}</span></td>`;
+            `<td><span class="se-tag" style="background:${minBg};color:#fff;white-space:nowrap;">${minLabel}</span></td>` +
+            `<td class="se-src-cell" style="display:none;">${src
+                ? `<span class="se-tag" style="background:${SE_SOURCE[src][1]};color:#fff;white-space:nowrap;">${SE_SOURCE[src][0]}</span>`
+                : '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>'}</td>`;
         const buyerInfo = row.sold && (row.buyer_name || row.buyer_phone)
             ? `<div style="font-size:0.72rem;color:#64748b;margin-top:3px;line-height:1.5;">
                 ${row.buyer_name ? `👤 ${row.buyer_name}씨` : ''}
@@ -16436,6 +16460,7 @@ function seRenderTable(storeId) {
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${SE_MAJOR[seMajorOf(row)][0]}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${seMinorOf(row)[0]}</span></td>
+            <td class="se-src-cell" style="display:none;">-</td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
@@ -16826,6 +16851,19 @@ const SE_PURPOSE = {
     '창고': ['창고',    '#475569'],
     '판매': ['판매 중', '#ea580c'],
 };
+// 조달 경로 — 매장이 직접 산 것과 본사가 매출외출고로 보낸 것.
+// 두 매장만 매장 자체 구매가 섞여 있어 그 매장에서만 쓴다.
+const SE_DIRECT_STORES = new Set(['kimpo', 'livingpower']);
+const SE_SOURCE = {
+    store: ['매장구매', '#0f766e'],
+    hq:    ['본사구매', '#1d4ed8'],
+};
+function seSourceOf(row) {
+    if (!SE_DIRECT_STORES.has(row.store_id)) return null;
+    if (/매장\s*직접\s*구매/.test(row.memo || '')) return 'store';   // 메모가 가장 분명한 근거
+    return (row.sales_order_no || row.sales_link) ? 'hq' : 'store';
+}
+
 const seMajorOf = row => row.sold ? 'out' : 'in';
 const seMinorOf = row => row.sold
     ? (() => { const e = seExitOf(row); return [seExitLabel(e), e.bg]; })()
