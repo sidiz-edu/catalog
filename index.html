@@ -14696,6 +14696,8 @@ let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
 let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
+let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시품 현황에서 가져온다)
+let seIssueOrphans = [];       // 전시품 목록에 같은 SKU가 없는 기록 — 코드가 바뀌었을 수 있다
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
@@ -15986,13 +15988,14 @@ async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const [displaysRes, zonesRes, reqItemsRes, notesRes] = await Promise.all([
+        const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
                .select('item_code,color_code,product_name,qty,memo,outgoing_requests(id,title,request_date,doc_no,ep_url,order_no,delivery_date)')
                .eq('store_id', storeId),
-            _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId)
+            _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId),
+            _sb.from('display_issues').select('*').eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
@@ -16000,6 +16003,11 @@ async function seRenderList(storeId) {
         seReqItems = reqItemsRes.data || [];
         seGapNotes = {};
         (notesRes.data || []).forEach(n => { seGapNotes[(n.sku || '').toUpperCase()] = n; });
+        seIssues = {};
+        (issuesRes.data || []).forEach(x => {
+            const k = (x.sku || '').toUpperCase();
+            (seIssues[k] = seIssues[k] || []).push(x);
+        });
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
@@ -16103,9 +16111,11 @@ function seRenderTable(storeId) {
     const kindOf = row => row.sold ? 'sold' : isDemo(row) ? 'demo'
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
     const kc = { display: 0, selling: 0, sold: 0, store: 0, demo: 0 };
+    const hasOpenIssue = row => (seIssues[(row.sku || '').toUpperCase()] || []).some(seIssueOpen);
+    const asCount = seDisplayData.filter(hasOpenIssue).length;
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
-    if (seKindFilter !== 'all' && !kc[seKindFilter]) seKindFilter = 'all';
+    if (seKindFilter !== 'all' && (seKindFilter === 'as' ? !asCount : !kc[seKindFilter])) seKindFilter = 'all';
     const bar = document.getElementById('seKindBar');
     if (bar) {
         bar.innerHTML = [
@@ -16115,7 +16125,8 @@ function seRenderTable(storeId) {
             ['sold', `✅ 판매완료 (${kc.sold})`, '#16a34a'],
             ['selling', `🏷 판매중 (${kc.selling})`, '#ea580c'],
             ['store', `📦 창고 (${kc.store})`, '#475569'],
-        ].filter(([k]) => k === 'all' || kc[k] > 0)
+            ['as',   `⚠ A/S 조치 남음 (${asCount})`, '#b91c1c'],
+        ].filter(([k]) => k === 'all' || (k === 'as' ? asCount > 0 : kc[k] > 0))
          .map(([k, label, fg]) => {
             const on = k === seKindFilter;
             return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
@@ -16124,7 +16135,8 @@ function seRenderTable(storeId) {
     }
 
     // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
-    const kindPass = row => seKindFilter === 'all' || kindOf(row) === seKindFilter;
+    const kindPass = row => seKindFilter === 'all'
+        || (seKindFilter === 'as' ? hasOpenIssue(row) : kindOf(row) === seKindFilter);
     // 전시품 쪽 SKU별 합계 — 요청 수량과 견줘 '수량 다름'을 가른다
     const dispQty = {};
     seDisplayData.forEach(r => {
@@ -16259,7 +16271,7 @@ function seRenderTable(storeId) {
             ${imgCell}
             <td>${row.display_since || '-'}</td>
             <td style="font-size:0.78rem;color:var(--se-text);">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
-            <td style="color:#94a3b8;">${row.memo || '-'}</td>
+            <td style="color:#94a3b8;">${seIssueChip(row.sku)}${row.memo ? (row.sku && seIssues[row.sku.toUpperCase()] ? '<br>' : '') + row.memo : (seIssueChip(row.sku) ? '' : '-')}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
@@ -16627,6 +16639,40 @@ function seEditPopulateColorCodes(productCode) {
     if (!productCode || !seriesName || !displaySkuData[seriesName]?.[productCode]) return;
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
+// 품질·A/S 기록 — 조치가 남았는지로 색을 가른다
+const seIssueOpen = x => !x.as_status || /필요|신청/.test(x.as_status);
+function seIssueChip(sku) {
+    const list = seIssues[(sku || '').toUpperCase()];
+    if (!list || !list.length) return '';
+    const open = list.filter(seIssueOpen).length;
+    const bg = open ? '#fef2f2' : '#f0fdf4', fg = open ? '#b91c1c' : '#15803d', br = open ? '#fecaca' : '#bbf7d0';
+    const tip = list.map(x => [x.symptom, x.inspection, x.tech_note, x.as_status, x.plan_date, x.done_date]
+                              .filter(Boolean).join(' · ')).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
+    return `<button onclick="seShowIssues('${sku}')" title="${tip}"
+        style="border:1px solid ${br};background:${bg};color:${fg};border-radius:5px;padding:1px 7px;
+               font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;"
+        >${open ? '⚠' : '✔'} A/S ${list.length}</button>`;
+}
+function seShowIssues(sku) {
+    const list = seIssues[(sku || '').toUpperCase()] || [];
+    const body = document.getElementById('seReqLookupBody');
+    document.getElementById('seReqLookupSku').textContent = sku;
+    _seReqLookupCtx = null;
+    body.innerHTML = list.map(x => {
+        const rows = [['전시품 특이사항', x.symptom], ['품질팀 점검사항', x.inspection],
+                      ['기술팀 점검사항', x.tech_note], ['A/S 접수', x.as_status],
+                      ['조치 일정', x.plan_date], ['조치 완료', x.done_date], ['위치', [x.zone, x.pos].filter(Boolean).join(' ')]]
+            .filter(([, v]) => v)
+            .map(([k, v]) => `<div style="display:flex;gap:8px;margin-top:3px;"><span style="color:#64748b;min-width:92px;flex-shrink:0;">${k}</span><span style="color:#e2e8f0;">${v}</span></div>`).join('');
+        return `<div style="border:1px solid ${seIssueOpen(x) ? '#7f1d1d' : '#334155'};border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f172a;font-size:0.78rem;">
+            <div style="font-weight:700;color:${seIssueOpen(x) ? '#fca5a5' : '#86efac'};margin-bottom:5px;">${seIssueOpen(x) ? '⚠ 조치 남음' : '✔ 조치 완료'}</div>
+            ${rows}
+            <div style="font-size:0.68rem;color:#475569;margin-top:7px;">${x.source || ''}</div>
+        </div>`;
+    }).join('');
+    document.getElementById('seReqLookupModal').style.display = 'flex';
+}
+
 // 그 SKU의 출고 문서가 한 건으로 특정될 때만 연결값을 준다.
 // 등록할 때마다 손으로 넣게 하면 새 행은 계속 비어 있게 된다 (9/28 일괄 연결 이후 58행이 그랬다).
 function seAutoLinkFor(sku) {
