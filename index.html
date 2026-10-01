@@ -13852,6 +13852,40 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <option value="창고">창고 보관</option>
                         </select>
                     </div>
+                    <!-- 반출 — 전시에서 빠진 사유. 사유가 무엇이든 회수 보고서가 필요하다 -->
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:0.78rem;color:var(--se-muted);">반출</label>
+                        <select id="seEditExit" onchange="seEditToggleExit()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                            <option value="">반출 안 함 (매장 보유)</option>
+                            <option value="판매">✅ 판매완료</option>
+                            <option value="폐기">🗑 폐기</option>
+                            <option value="연구소">🔬 연구소 반출</option>
+                        </select>
+                    </div>
+                    <div id="seEditExitFields" style="display:none;flex-direction:column;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;">
+                        <div style="font-size:0.74rem;color:#b45309;line-height:1.6;">🧾 <b>회수 및 처리결과 보고서</b>가 필요합니다. 등록될 때까지 목록에 빨갛게 표시됩니다.</div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">반출 일시</label>
+                            <input type="datetime-local" id="seEditExitAt" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">사유 상세 <span id="seEditExitHint" style="color:#94a3b8;">(선택)</span></label>
+                            <input type="text" id="seEditExitNote" placeholder="예: 등판·헤드 오염으로 폐기" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                        </div>
+                        <div id="seEditBuyerFields" style="display:none;flex-direction:column;gap:10px;">
+                            <div style="font-size:0.73rem;color:#64748b;background:#f8fafc;border-radius:6px;padding:7px 10px;">🔒 성(姓)과 전화번호 뒷 4자리만 기록합니다.</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+                                    <label style="font-size:0.78rem;color:var(--se-muted);">구매자 성</label>
+                                    <input type="text" id="seEditBuyerName" placeholder="김" maxlength="5" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+                                    <label style="font-size:0.78rem;color:var(--se-muted);">전화 뒷 4자리</label>
+                                    <input type="tel" id="seEditBuyerPhone" placeholder="1234" maxlength="4" inputmode="numeric" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                         <div style="display:flex;flex-direction:column;gap:4px;">
                             <label style="font-size:0.78rem;color:var(--se-muted);">개수</label>
@@ -13891,9 +13925,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         </label>
                     </div>
                     <div id="seEditSaleFields" style="display:none;flex-direction:column;gap:10px;">
-                        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--se-muted);cursor:pointer;">
-                            <input type="checkbox" id="seEditSold"> 판매 완료
-                        </label>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                             <div style="display:flex;flex-direction:column;gap:4px;">
                                 <label style="font-size:0.78rem;color:var(--se-muted);">등급</label>
@@ -16337,8 +16368,7 @@ function seRenderTable(storeId) {
                 })() : ''}
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
-                ${!row.sold ? `<button class="se-del-btn" style="background:#16a34a;color:#fff;border:none;font-size:0.7rem;" onclick="seOpenSoldModal('${row.id}')" title="판매·폐기·연구소 반출 처리">📤 반출</button>` : ''}
-                ${row.sold ? `<button class="se-del-btn" style="background:#94a3b8;color:#fff;border:none;font-size:0.7rem;" onclick="seToggleSold('${row.id}',false)">↩ 반출취소</button>` : ''}
+
             </td>
             <!-- 매출외수주번호·링크는 요청서/회수 보고서에서 끌어온 값이므로 표시만 하고 수정 버튼은 두지 않는다 -->
             <td style="text-align:center;min-width:110px;vertical-align:middle;">
@@ -16605,7 +16635,14 @@ async function seOpenEditModal(id) {
     _seEditPhotos = [...(row.image_urls || [])];
     if (!_seEditPhotos.length && row.image_url) _seEditPhotos = [row.image_url];
     seRenderEditPhotoGrid();
-    document.getElementById('seEditSold').checked = !!row.sold;
+    document.getElementById('seEditExit').value = row.exit_type || (row.sold ? '판매' : '');
+    document.getElementById('seEditExitNote').value = row.exit_note || '';
+    const _at = row.sold_at ? new Date(row.sold_at) : new Date();
+    document.getElementById('seEditExitAt').value =
+        new Date(_at.getTime() - _at.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('seEditBuyerName').value = row.buyer_name || '';
+    document.getElementById('seEditBuyerPhone').value = row.buyer_phone || '';
+    seEditToggleExit();
     document.getElementById('seEditGrade').value = row.grade || '';
     document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
     document.getElementById('seEditUpdater').value = '';
@@ -16673,6 +16710,22 @@ function seHideLocList() {
     if (dd) dd.style.display = 'none';
     _seLocActiveInput = null;
 }
+// 반출 사유를 고르면 일시·사유를 받고, 판매일 때만 구매자 칸을 연다
+function seEditToggleExit() {
+    const kind = document.getElementById('seEditExit').value;
+    const box = document.getElementById('seEditExitFields');
+    box.style.display = kind ? 'flex' : 'none';
+    if (!kind) return;
+    const buyer = !!SE_EXIT[kind]?.buyer;
+    document.getElementById('seEditBuyerFields').style.display = buyer ? 'flex' : 'none';
+    document.getElementById('seEditExitHint').textContent =
+        buyer ? '(선택)' : '(권장 — 보고서 사유로 그대로 쓸 수 있습니다)';
+    document.getElementById('seEditExitNote').placeholder =
+          kind === '폐기'   ? '예: 등판·헤드 오염으로 폐기'
+        : kind === '연구소' ? '예: 메쉬 내구성 분석용으로 연구소 반출'
+        :                     '예: 위탁매출거래처 변경 후 현장 판매';
+}
+
 function seEditToggleSaleFields() {
     const isSale = document.getElementById('seEditPurpose').value === '판매';
     document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
@@ -16779,11 +16832,26 @@ async function seSubmitEdit() {
         updated_at: new Date().toISOString(),
     };
     if (purpose === '판매') {
-        updates.sold = document.getElementById('seEditSold').checked;
         updates.grade = document.getElementById('seEditGrade').value || null;
         updates.consumer_price = parseInt(document.getElementById('seEditConsumerPrice').value) || null;
     } else {
-        updates.sold = false; updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
+        updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
+    }
+    const exitKind = document.getElementById('seEditExit').value;
+    if (exitKind) {
+        const at = document.getElementById('seEditExitAt').value;
+        const buyer = !!SE_EXIT[exitKind]?.buyer;
+        Object.assign(updates, {
+            sold: true, exit_type: exitKind,
+            sold_at: at ? new Date(at).toISOString() : new Date().toISOString(),
+            exit_note: document.getElementById('seEditExitNote').value.trim() || null,
+            buyer_name:  buyer ? (document.getElementById('seEditBuyerName').value.trim() || null) : null,
+            buyer_phone: buyer ? (document.getElementById('seEditBuyerPhone').value.replace(/\D/g, '').slice(-4) || null) : null,
+        });
+        if (!buyer) updates.catalog_visible = false;
+    } else {
+        Object.assign(updates, { sold: false, exit_type: null, exit_note: null, sold_at: null,
+                                 buyer_name: null, buyer_phone: null, buyer_address: null });
     }
     msg.textContent = '저장 중...';
     // _seEditPhotos 중 File 객체인 것들 업로드
@@ -16932,107 +17000,6 @@ async function seHardDelete(id, storeId, j) {
     } catch(e) { alert('삭제 오류: '+e.message); }
 }
 
-function seOpenSoldModal(id) {
-    const row = seDisplayData.find(r => r.id === id);
-    if (!row) return;
-    const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
-    const now = new Date();
-    const localDT = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
-    const modal = document.createElement('div');
-    modal.id = 'seSoldModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
-    const reasonBtn = k => `<button type="button" id="seExitBtn-${k}" onclick="seExitPick('${k}')"
-            style="flex:1;min-width:92px;padding:9px 8px;border-radius:8px;border:1px solid var(--se-border,#e2e8f0);
-                   background:var(--se-surface);color:var(--se-text);cursor:pointer;font-size:0.82rem;font-weight:600;
-                   font-family:'Outfit',sans-serif;">${SE_EXIT[k].icon} ${SE_EXIT[k].label}</button>`;
-    modal.innerHTML = `
-      <div style="background:var(--se-surface,#fff);border-radius:12px;padding:28px;width:min(480px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-        <h3 style="margin:0 0 6px;font-size:1rem;">📤 반출 처리</h3>
-        <p style="margin:0 0 16px;color:#64748b;font-size:0.85rem;">${prod?.name || row.product_id} ${row.sku ? '· '+row.sku : ''} ${row.color_code ? '/ '+row.color_code : ''}</p>
-        <label style="font-size:0.8rem;color:var(--se-muted);display:block;margin-bottom:6px;">반출 사유</label>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px;">${Object.keys(SE_EXIT).map(reasonBtn).join('')}</div>
-        <input type="hidden" id="seExitType" value="판매">
-        <div style="font-size:0.74rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.6;">
-          🧾 사유와 상관없이 <b>회수 및 처리결과 보고서</b>가 필요합니다. 보고서가 등록될 때까지 목록에 빨갛게 표시됩니다.
-        </div>
-        <div style="display:grid;gap:12px;">
-          <label style="font-size:0.8rem;color:var(--se-muted);">반출 일시
-            <input id="seSoldAt" type="datetime-local" value="${localDT}" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
-          </label>
-          <div id="seBuyerFields" style="display:grid;gap:12px;">
-            <div style="font-size:0.75rem;color:#94a3b8;background:#f8fafc;border-radius:8px;padding:8px 12px;">🔒 개인정보 최소 수집 — 성(姓)과 전화번호 뒷 4자리만 기록합니다.</div>
-            <label style="font-size:0.8rem;color:var(--se-muted);">구매자 성 <span style="color:#94a3b8;">(예: 김) &nbsp;※ 꼭 성만 입력하세요</span>
-              <input id="seBuyerName" type="text" placeholder="김" maxlength="5" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
-            </label>
-            <label style="font-size:0.8rem;color:var(--se-muted);">전화번호 뒷 4자리
-              <input id="seBuyerPhone" type="tel" placeholder="1234" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
-            </label>
-          </div>
-          <label style="font-size:0.8rem;color:var(--se-muted);">사유 상세 <span style="color:#94a3b8;" id="seExitNoteHint">(선택)</span>
-            <input id="seExitNote" type="text" placeholder="예: 등판·헤드 오염으로 폐기" style="margin-top:4px;display:block;width:100%;padding:7px 10px;border:1px solid var(--se-border,#e2e8f0);border-radius:6px;font-size:0.85rem;background:var(--se-surface);color:var(--se-text);box-sizing:border-box;">
-          </label>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">
-          <button onclick="document.getElementById('seSoldModal').remove()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--se-border,#e2e8f0);background:var(--se-surface);color:var(--se-text);cursor:pointer;font-size:0.85rem;">취소</button>
-          <button id="seExitSubmit" onclick="seConfirmSold('${id}')" style="padding:8px 18px;border-radius:6px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-size:0.85rem;font-weight:600;">반출 처리</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-    seExitPick(row.purpose === '판매' ? '판매' : '폐기');
-}
-
-// 사유를 고르면 구매자 칸을 숨기거나 보인다 — 폐기·연구소 반출에는 구매자가 없다
-function seExitPick(kind) {
-    document.getElementById('seExitType').value = kind;
-    Object.keys(SE_EXIT).forEach(k => {
-        const b = document.getElementById('seExitBtn-' + k);
-        if (!b) return;
-        const on = k === kind;
-        b.style.background  = on ? SE_EXIT[k].bg : 'var(--se-surface)';
-        b.style.color       = on ? '#fff' : 'var(--se-text)';
-        b.style.borderColor = on ? SE_EXIT[k].bg : 'var(--se-border,#e2e8f0)';
-    });
-    const e = SE_EXIT[kind];
-    document.getElementById('seBuyerFields').style.display = e.buyer ? 'grid' : 'none';
-    document.getElementById('seExitNote').placeholder =
-          kind === '폐기'   ? '예: 등판·헤드 오염으로 폐기'
-        : kind === '연구소' ? '예: 메쉬 내구성 분석용으로 연구소 반출'
-        :                     '예: 위탁매출거래처 변경 후 현장 판매';
-    document.getElementById('seExitNoteHint').textContent =
-        e.buyer ? '(선택)' : '(권장 — 보고서 사유로 그대로 쓸 수 있습니다)';
-    const btn = document.getElementById('seExitSubmit');
-    btn.style.background = e.bg;
-    btn.textContent = e.label + ' 처리';
-}
-
-async function seConfirmSold(id) {
-    const idx = seDisplayData.findIndex(r => r.id === id);
-    if (idx === -1) return;
-    const kind  = document.getElementById('seExitType').value || '판매';
-    const buyer = SE_EXIT[kind].buyer;
-    const soldAt = document.getElementById('seSoldAt').value;
-    const note   = document.getElementById('seExitNote').value.trim();
-    const buyerName  = buyer ? document.getElementById('seBuyerName').value.trim() : '';
-    const buyerPhone = buyer ? document.getElementById('seBuyerPhone').value.replace(/\D/g,'').slice(-4) : '';
-    const patch = {
-        sold: true, exit_type: kind,
-        sold_at: soldAt ? new Date(soldAt).toISOString() : new Date().toISOString(),
-        exit_note: note || null,
-        buyer_name: buyerName || null, buyer_phone: buyerPhone || null,
-        updated_at: new Date().toISOString()
-    };
-    if (!buyer) patch.catalog_visible = false;   // 판매가 아니면 카탈로그에 내걸 일이 없다
-    try {
-        const { error } = await _sb.from('store_displays').update(patch).eq('id', id);
-        if (error) throw error;
-        Object.assign(seDisplayData[idx], patch, { sold_at: soldAt });
-        document.getElementById('seSoldModal')?.remove();
-        seRenderTable(seCurrentStore);
-        showToast && showToast(SE_EXIT[kind].icon + ' ' + SE_EXIT[kind].label + ' 처리 — 회수 보고서 등록이 필요합니다');
-    } catch(e) { alert('오류: ' + e.message); }
-}
-
 function seRemoveEditPhoto(i) {
     if (_seEditPhotos[i] && _seEditPhotos[i]._blob) URL.revokeObjectURL(_seEditPhotos[i]._blob);
     _seEditPhotos.splice(i, 1);
@@ -17103,20 +17070,6 @@ async function seHandleAddPhotoAdd(input) {
     seRenderAddPhotoGrid();
 }
 
-async function seToggleSold(id, newVal) {
-    // 반출을 되돌리면 사유·일시·구매자도 같이 비운다
-    const idx = seDisplayData.findIndex(r => r.id === id);
-    if (idx === -1) return;
-    try {
-        const updates = { sold: newVal, updated_at: new Date().toISOString() };
-        if (!newVal) Object.assign(updates, { sold_at: null, exit_type: null, exit_note: null,
-                                              buyer_name: null, buyer_phone: null, buyer_address: null });
-        const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
-        if (error) throw error;
-        Object.assign(seDisplayData[idx], updates);
-        seRenderTable(seCurrentStore);
-    } catch(e) { alert('오류: '+e.message); }
-}
 async function seToggleCatalogVisible(id, newVal) {
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx === -1) return;
