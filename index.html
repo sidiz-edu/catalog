@@ -8248,6 +8248,95 @@ const displaySkuData = {
     },
 };
 
+// 전시품·요청서에 실제로 쓰이는데 위 목록에 없던 코드 48건.
+// 자동완성에 안 떠서 매장이 손으로 치다 오타를 내던 자리다 (5FIG, S60SFUOKK 같은 것이 그렇게 생겼다).
+// 아래는 넣지 않았다 — 자동완성에 오타를 박으면 오히려 퍼진다:
+//   오타로 본 것   S60SFUOKK-452NWW(0→O) · TNF509H-WW(TNE509H) · T00V1KG-BK65 ·
+//                  G100HDAWJ-* · G10HDAWJ0KK-* · M071E-* · T800HLDAS-L096 · T900HLDA-4B1MNI(1→I)
+//   코드가 아닌 값  OLLY-OLLY · 올리-올리 · 컬러칩-컬러칩 · M401EY(색상 없음)
+//   한 칸에 여러 값 T21AP0CC1-"TOT01V,TOT4,TOT3"
+const displaySkuExtra = {
+    'ACCESSORY': {
+        'FHXZ2407006': ['XX'],
+        'FHXZ2407007': ['XX'],
+        'FHXZ2407008': ['XX'],
+        'FHXZ2407009': ['XX'],
+        'FHXZ2407010': ['XX'],
+        'FHXZ2407011': ['XX'],
+        'FHXZ2407012': ['XX'],
+        'FHXZ2407013': ['XX'],
+        'FHXZ2407014': ['XX'],
+        'FHXZ2407015': ['XX'],
+        'FHXZ2503001': ['XX'],
+        'FHXZ904029': ['XX'],
+        'T00G1KG': ['BK65'],
+        'T209FL': ['WW'],
+        'T209FR': ['WW'],
+        'T509AL': ['WW'],
+        'T509AR': ['WW'],
+        'T50AL0VG': ['BK', 'WW'],
+        'T50AR0VG': ['WW'],
+        'T50D0VG': ['451M'],
+        'T50H1VG': ['BK'],
+        'T55AP0KG': ['BK'],
+        'TNE509': ['452M'],
+        'TNE509H': ['WW'],
+        'VTNB209H': ['WW'],
+    },
+    'BUTTON (버튼)': {
+        'MN801E': ['BK'],
+    },
+    'EGA (에가)': {
+        'M20SFU0KK': ['A490LW'],
+        'TN603FG': ['458D'],
+    },
+    'GC PRO': {
+        'G10HDAWJ2KK': ['A446BK'],
+        'G10HDAWJ3KK': ['A446BK'],
+    },
+    'LINIE (리니에)': {
+        'TXNA250F': ['457L'],
+    },
+    'RINGO (링고)': {
+        'S51D0VG': ['A441B'],
+        'VSNB509ACF': ['A447A'],
+    },
+    'RINGO 2세대 (링고)': {
+        'S51ACF1VG': ['A442BW', 'A443BW'],
+    },
+    'T20': {
+        'VTNB200HF': ['451A'],
+    },
+    'T50': {
+        'VTNF500HLDA': ['452MWW'],
+    },
+    'T50 2세대': {
+        'T51HLDA0KK': ['5F1BG'],
+    },
+    'T50 AIR': {
+        'VTXB520HLDA': ['2D1WW'],
+    },
+    'T60 AIR': {
+        'T61HLDAM0KK': ['5H1WW'],
+    },
+    'T80': {
+        'TN800HLDA': ['451AN'],
+    },
+    'T90': {
+        'T900HLDA': ['4B1MN1', '4B6BK'],
+        'T90HLDA0KK': ['4B6BKM'],
+        'T90HLDA2KK': ['L735LC', 'L738AC', 'L945AC'],
+    },
+};
+Object.entries(displaySkuExtra).forEach(([series, codes]) => {
+    const dest = displaySkuData[series] || (displaySkuData[series] = {});
+    Object.entries(codes).forEach(([code, cols]) => {
+        const cur = dest[code] || (dest[code] = []);
+        cols.forEach(c => { if (!cur.includes(c)) cur.push(c); });
+        cur.sort();
+    });
+});
+
 // ── T50/T60/GC PRO 스펙 그룹 데이터 ──
 const productSpecGroups = {
     molti: [
