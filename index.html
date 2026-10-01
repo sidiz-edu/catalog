@@ -16147,15 +16147,16 @@ function seRenderTable(storeId) {
     const isDemo = row => row.product_id === SE_DEMO_SERIES || SE_DEMO_RE.test(row.memo || '')
                         || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
     const kindOf = row => row.sold ? ({ '폐기': 'disposed', '연구소': 'research' }[row.exit_type] || 'sold')
-                        : isDemo(row) ? 'demo'
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
-    const kc = { display: 0, selling: 0, sold: 0, store: 0, demo: 0, disposed: 0, research: 0 };
+    const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0 };
+    const demoCount = seDisplayData.filter(r => !r.sold && isDemo(r)).length;
     const hasOpenIssue = row => (seIssues[(row.sku || '').toUpperCase()] || []).some(seIssueOpen);
     const asCount  = seDisplayData.filter(hasOpenIssue).length;
     const recCount = seDisplayData.filter(seNeedsRecovery).length;
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
     const kindAvail = k => k === 'as' ? asCount : k === 'needrec' ? recCount
+        : k === 'demo' ? demoCount
         : k === 'in' ? seDisplayData.filter(r => !r.sold).length
         : k === 'out' ? seDisplayData.filter(r =>  r.sold).length : kc[k];
     if (seKindFilter !== 'all' && !kindAvail(seKindFilter)) seKindFilter = 'all';
@@ -16186,34 +16187,53 @@ function seRenderTable(storeId) {
     }
     const bar = document.getElementById('seKindBar');
     if (bar) {
-        bar.innerHTML = [
-            ['all', `전체 (${seDisplayData.length})`, '#003EFF'],
-            ['in',  `매장 (${kc.display + kc.selling + kc.store + kc.demo})`, '#1d4ed8'],
-            ['display', `· 전시 (${kc.display})`, '#3b82f6'],
-            ['demo', `· 🧩 T50 전시분해 (${kc.demo})`, '#b45309'],
-            ['store', `· 창고 (${kc.store})`, '#475569'],
-            ['selling', `· 판매 중 (${kc.selling})`, '#ea580c'],
-            ['out', `매장 出 (${kc.sold + kc.disposed + kc.research})`, '#b91c1c'],
-            ['sold', `· 판매 完 (${kc.sold})`, '#16a34a'],
-            ['research', `· 연구소 반출 (${kc.research})`, '#6d28d9'],
-            ['disposed', `· 훼손 폐기 (${kc.disposed})`, '#7c2d12'],
-            ['as',   `⚠ A/S 조치 남음 (${asCount})`, '#b91c1c'],
-            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626'],
-        ].filter(([k]) => k === 'all'
-            || (k === 'as' ? asCount > 0 : k === 'needrec' ? recCount > 0
-              : k === 'in'  ? seDisplayData.some(r => !r.sold)
-              : k === 'out' ? seDisplayData.some(r =>  r.sold) : kc[k] > 0))
-         .map(([k, label, fg]) => {
+        const inN  = seDisplayData.filter(r => !r.sold).length;
+        const outN = seDisplayData.filter(r =>  r.sold).length;
+        // 분류 축 — 대분류는 굵게, 소분류는 들여쓰기
+        const 분류 = [
+            ['all', `전체 (${seDisplayData.length})`, '#003EFF', 1],
+            ['in',  `매장 (${inN})`,  '#1d4ed8', 1],
+            ['display', `전시 (${kc.display})`, '#3b82f6', 0],
+            ['store',   `창고 (${kc.store})`,   '#475569', 0],
+            ['selling', `판매 중 (${kc.selling})`, '#ea580c', 0],
+            ['out', `매장 出 (${outN})`, '#b91c1c', 1],
+            ['sold',     `판매 完 (${kc.sold})`,      '#16a34a', 0],
+            ['research', `연구소 반출 (${kc.research})`, '#6d28d9', 0],
+            ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12', 0],
+        ];
+        // 점검 축 — 분류와 다른 축이라 줄을 따로 쓴다
+        const 점검 = [
+            ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309', 0],
+            ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c', 0],
+            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626', 0],
+        ];
+        const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN
+            : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount : kc[k];
+        const btn = ([k, label, fg, major]) => {
             const on = k === seKindFilter;
             return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
-                style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?'#003EFF':'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?'#003EFF':'var(--se-border)'};">${label}</button>`;
-         }).join('');
+                style="padding:4px ${major ? 12 : 10}px;border-radius:6px;font-size:0.75rem;cursor:pointer;
+                       font-weight:${major ? 700 : 500};margin-left:${major ? 0 : 2}px;
+                       background:${on ? '#003EFF' : 'var(--se-surface)'};color:${on ? '#fff' : fg};
+                       border:1px solid ${on ? '#003EFF' : (major ? fg : 'var(--se-border)')};">${label}</button>`;
+        };
+        const row = (label, list) => {
+            const items = list.filter(x => avail(x[0]));
+            if (!items.length) return '';
+            return `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;letter-spacing:.04em;min-width:50px;">${label}</span>
+                ${items.map(btn).join('')}</div>`;
+        };
+        bar.style.flexDirection = 'column';
+        bar.style.alignItems = 'flex-start';
+        bar.innerHTML = row('분류', 분류) + row('따로 보기', 점검);
     }
 
     // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
     const kindPass = row => seKindFilter === 'all'
         || (seKindFilter === 'as' ? hasOpenIssue(row)
           : seKindFilter === 'needrec' ? seNeedsRecovery(row)
+          : seKindFilter === 'demo' ? (!row.sold && isDemo(row))
           : seKindFilter === 'in'  ? !row.sold
           : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
