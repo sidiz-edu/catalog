@@ -16072,7 +16072,8 @@ async function seRenderList(storeId) {
 let _seDragId = null;
 
 function seDragStart(e) {
-    const tr = e.currentTarget;
+    const tr = e.currentTarget.closest('tr');
+    if (!tr) return;
     _seDragId = tr.dataset.id;
     tr.style.opacity = '0.4';
     e.dataTransfer.effectAllowed = 'move';
@@ -16407,11 +16408,15 @@ function seRenderTable(storeId) {
                 ${row.sold_at ? `&nbsp;🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
               </div>` : '';
         const dragOn = !seSortCol;
-        const rowStyle = (needRec ? 'background:#fff5f5;box-shadow:inset 4px 0 0 #dc2626;' : '') + (dragOn ? 'cursor:grab;' : '');
-        return `<tr data-id="${row.id}" data-sold="${row.sold ? 1 : 0}" ${dragOn ? 'draggable="true"' : ''}
-                    ondragstart="seDragStart(event)" ondragover="seDragOver(event)" ondrop="seDrop(event)" ondragend="seDragEnd(event)"
+        const rowStyle = needRec ? 'background:#fff5f5;box-shadow:inset 4px 0 0 #dc2626;' : '';
+        return `<tr data-id="${row.id}" data-sold="${row.sold ? 1 : 0}"
+                    ondragover="seDragOver(event)" ondrop="seDrop(event)" ondragend="seDragEnd(event)"
                     ${rowStyle ? `style="${rowStyle}"` : ''}>
-            <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
+            <td style="white-space:nowrap;">
+                <input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}>
+                ${dragOn ? `<span draggable="true" ondragstart="seDragStart(event)" title="끌어서 순서 바꾸기"
+                    style="display:inline-block;cursor:grab;color:#cbd5e1;font-size:0.95rem;line-height:1;
+                           padding:0 2px;vertical-align:middle;user-select:none;">⠿</span>` : ''}</td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
             ${purposeCell}
             <td style="font-size:0.78rem;color:#475569;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
