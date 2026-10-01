@@ -4087,7 +4087,7 @@
         </div>
         <div class="promo-cards-wrap">
             <!-- GX 가-차 이벤트 -->
-            <div class="promo-card" style="--pc-accent:#7c3aed;">
+            <div class="promo-card" data-promo-end="2026-10-11" style="--pc-accent:#7c3aed;">
                 <span class="promo-card-icon">🎮</span>
                 <div class="promo-card-series">GX · 아시안게임 기념</div>
                 <div class="promo-card-name">GX 1만원 가-차 뽑기</div>
@@ -4103,7 +4103,7 @@
                 <div class="promo-card-footer">📅 9/4(금) ~ 10/11(일)</div>
             </div>
             <!-- GC PRO 퀘스트 -->
-            <div class="promo-card" style="--pc-accent:#0ea5e9;">
+            <div class="promo-card" data-promo-end="2026-10-11" style="--pc-accent:#0ea5e9;">
                 <span class="promo-card-icon">🏆</span>
                 <div class="promo-card-series">GC PRO · 리뉴얼 기념</div>
                 <div class="promo-card-name">GC PRO 퀘스트</div>
@@ -10295,15 +10295,37 @@ function toggleNavDropdown(toggleEl) {
 }
 
 // ── 이달의 행사 & 쿠폰 ──
-// 달 표기는 손으로 두면 넘어간 달이 그대로 남는다 (10월에 '9월 행사'가 떠 있었다)
-(() => {
-    const set = () => {
-        const el = document.getElementById('promoMonthChip');
-        if (el) el.textContent = (new Date().getMonth() + 1) + '월 행사';
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', set);
-    else set();
-})();
+// 달 표기와 종료된 행사를 손으로 지우게 두면 넘어간 것이 그대로 남는다
+// (10월에 '9월 행사'와 9/27 끝난 추석 프로모션이 떠 있었다).
+function applyPromoWindow() {
+    const chip = document.getElementById('promoMonthChip');
+    if (chip) chip.textContent = (new Date().getMonth() + 1) + '월 행사';
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let live = 0;
+    document.querySelectorAll('.promo-card[data-promo-end]').forEach(card => {
+        const end = new Date(card.dataset.promoEnd + 'T00:00:00');
+        const left = Math.round((end - today) / 86400000);
+        card.style.display = left < 0 ? 'none' : '';
+        if (left < 0) return;
+        live++;
+        const footer = card.querySelector('.promo-card-footer');
+        if (!footer) return;
+        let dday = footer.querySelector('.promo-dday');
+        if (left > 7) { if (dday) dday.remove(); return; }      // 아직 여유 있으면 굳이 재촉하지 않는다
+        if (!dday) {
+            dday = document.createElement('span');
+            dday.className = 'promo-dday';
+            footer.appendChild(dday);
+        }
+        dday.textContent = left === 0 ? '오늘 마감' : `D-${left}`;
+        dday.style.cssText = 'margin-left:6px;padding:1px 7px;border-radius:20px;font-size:0.68rem;font-weight:800;'
+            + (left <= 1 ? 'background:#fee2e2;color:#b91c1c;' : 'background:#fef3c7;color:#b45309;');
+    });
+    return live;
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyPromoWindow);
+else applyPromoWindow();
 const PROMO_DATA = {
     new: {
         t50:    { name: 'T50 2세대',     orig: 439000, final: 398050 },
