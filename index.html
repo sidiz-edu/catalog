@@ -13932,6 +13932,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
                     <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
+                <!-- 판매됐는데 회수 보고서가 아직 없는 건 — 놓치면 미수금으로 남는다 -->
+                <div id="seRecoveryAlert" style="display:none;margin-bottom:10px;"></div>
                 <div id="seKindBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
                 <!-- 매출외출고 요청서 연결 여부 -->
                 <div id="seLinkBar" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;"></div>
@@ -14697,7 +14699,8 @@ let seDisplayData = [];
 let seReqSkuSet = new Set();
 let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
 let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시품 현황에서 가져온다)
-let seIssueOrphans = [];       // 전시품 목록에 같은 SKU가 없는 기록 — 코드가 바뀌었을 수 있다
+let seRecoveredSku = new Set();   // 회수 보고서에 오른 (SKU) / (SKU|수주번호)
+let seRecoveredKey = new Set();
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
@@ -15988,14 +15991,15 @@ async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="13" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes] = await Promise.all([
+        const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
                .select('item_code,color_code,product_name,qty,memo,outgoing_requests(id,title,request_date,doc_no,ep_url,order_no,delivery_date)')
                .eq('store_id', storeId),
             _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId),
-            _sb.from('display_issues').select('*').eq('store_id', storeId)
+            _sb.from('display_issues').select('*').eq('store_id', storeId),
+            _sb.from('recovery_report_items').select('item_code,color_code,order_no').eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
@@ -16003,6 +16007,12 @@ async function seRenderList(storeId) {
         seReqItems = reqItemsRes.data || [];
         seGapNotes = {};
         (notesRes.data || []).forEach(n => { seGapNotes[(n.sku || '').toUpperCase()] = n; });
+        seRecoveredSku = new Set(); seRecoveredKey = new Set();
+        (recRes.data || []).forEach(r => {
+            const sku = (r.item_code + (r.color_code ? '-' + r.color_code : '')).toUpperCase();
+            seRecoveredSku.add(sku);
+            if (r.order_no) seRecoveredKey.add(sku + '|' + r.order_no);
+        });
         seIssues = {};
         (issuesRes.data || []).forEach(x => {
             const k = (x.sku || '').toUpperCase();
@@ -16112,10 +16122,32 @@ function seRenderTable(storeId) {
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
     const kc = { display: 0, selling: 0, sold: 0, store: 0, demo: 0 };
     const hasOpenIssue = row => (seIssues[(row.sku || '').toUpperCase()] || []).some(seIssueOpen);
-    const asCount = seDisplayData.filter(hasOpenIssue).length;
+    const asCount  = seDisplayData.filter(hasOpenIssue).length;
+    const recCount = seDisplayData.filter(seNeedsRecovery).length;
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
-    if (seKindFilter !== 'all' && (seKindFilter === 'as' ? !asCount : !kc[seKindFilter])) seKindFilter = 'all';
+    if (seKindFilter !== 'all' && (seKindFilter === 'as' ? !asCount
+        : seKindFilter === 'needrec' ? !recCount : !kc[seKindFilter])) seKindFilter = 'all';
+    const alertBox = document.getElementById('seRecoveryAlert');
+    if (alertBox) {
+        const need = seDisplayData.filter(seNeedsRecovery);
+        alertBox.style.display = need.length ? '' : 'none';
+        if (need.length) {
+            const list = need.slice(0, 6).map(r => r.sku).join(', ') + (need.length > 6 ? ` 외 ${need.length - 6}건` : '');
+            alertBox.innerHTML = `<div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
+                <span style="font-size:1.1rem;line-height:1.2;">🧾</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">회수대장 등록이 필요한 판매완료 ${need.length}건</div>
+                    <div style="font-size:0.76rem;color:#7f1d1d;margin-top:3px;line-height:1.6;">
+                        판매는 끝났는데 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
+                        <span style="font-family:monospace;font-size:0.73rem;">${list}</span>
+                    </div>
+                    <button onclick="seKindFilter='needrec';seRenderTable(seCurrentStore)"
+                        style="margin-top:8px;background:#dc2626;border:none;border-radius:7px;padding:5px 13px;color:#fff;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">해당 ${need.length}건만 보기</button>
+                </div>
+            </div>`;
+        }
+    }
     const bar = document.getElementById('seKindBar');
     if (bar) {
         bar.innerHTML = [
@@ -16126,7 +16158,8 @@ function seRenderTable(storeId) {
             ['selling', `🏷 판매중 (${kc.selling})`, '#ea580c'],
             ['store', `📦 창고 (${kc.store})`, '#475569'],
             ['as',   `⚠ A/S 조치 남음 (${asCount})`, '#b91c1c'],
-        ].filter(([k]) => k === 'all' || (k === 'as' ? asCount > 0 : kc[k] > 0))
+            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626'],
+        ].filter(([k]) => k === 'all' || (k === 'as' ? asCount > 0 : k === 'needrec' ? recCount > 0 : kc[k] > 0))
          .map(([k, label, fg]) => {
             const on = k === seKindFilter;
             return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
@@ -16136,7 +16169,9 @@ function seRenderTable(storeId) {
 
     // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
     const kindPass = row => seKindFilter === 'all'
-        || (seKindFilter === 'as' ? hasOpenIssue(row) : kindOf(row) === seKindFilter);
+        || (seKindFilter === 'as' ? hasOpenIssue(row)
+          : seKindFilter === 'needrec' ? seNeedsRecovery(row)
+          : kindOf(row) === seKindFilter);
     // 전시품 쪽 SKU별 합계 — 요청 수량과 견줘 '수량 다름'을 가른다
     const dispQty = {};
     seDisplayData.forEach(r => {
@@ -16247,8 +16282,12 @@ function seRenderTable(storeId) {
                     ${photos.length > 1 ? `<span style="position:absolute;right:-3px;bottom:-3px;background:#003EFF;color:#fff;font-size:0.6rem;font-weight:700;border-radius:8px;padding:1px 5px;">${photos.length}</span>` : ''}
                </div></td>`
             : `<td style="color:#94a3b8;">-</td>`;
+        const needRec = seNeedsRecovery(row);
         const purposeCell = row.purpose === '판매'
-            ? `<td><span class="se-tag" style="background:${row.sold ? '#16a34a' : '#ea580c'};color:#fff;">${row.sold ? '✅ 판매완료' : '판매중'}</span></td>`
+            ? `<td><span class="se-tag" style="background:${row.sold ? (needRec ? '#dc2626' : '#16a34a') : '#ea580c'};color:#fff;">${row.sold ? (needRec ? '✅ 판매완료' : '✅ 판매완료') : '판매중'}</span>${needRec ? `
+                <div style="margin-top:4px;display:inline-flex;align-items:center;gap:4px;background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:2px 7px;white-space:nowrap;">
+                  <span style="font-size:0.72rem;font-weight:800;color:#b91c1c;">🧾 회수대장 등록 필요</span>
+                </div>` : ''}</td>`
             : row.purpose === '창고'
             ? `<td><span class="se-tag" style="background:#475569;color:#fff;">창고보관</span></td>`
             : `<td><span class="se-tag" style="background:#3b82f6;color:#fff;">전시</span></td>`;
@@ -16259,9 +16298,10 @@ function seRenderTable(storeId) {
                 ${row.sold_at ? `&nbsp;🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
               </div>` : '';
         const dragOn = !seSortCol;
+        const rowStyle = (needRec ? 'background:#fff5f5;box-shadow:inset 4px 0 0 #dc2626;' : '') + (dragOn ? 'cursor:grab;' : '');
         return `<tr data-id="${row.id}" data-sold="${row.sold ? 1 : 0}" ${dragOn ? 'draggable="true"' : ''}
                     ondragstart="seDragStart(event)" ondragover="seDragOver(event)" ondrop="seDrop(event)" ondragend="seDragEnd(event)"
-                    ${dragOn ? 'style="cursor:grab;"' : ''}>
+                    ${rowStyle ? `style="${rowStyle}"` : ''}>
             <td><input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}></td>
             <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
             ${purposeCell}
@@ -16639,6 +16679,14 @@ function seEditPopulateColorCodes(productCode) {
     if (!productCode || !seriesName || !displaySkuData[seriesName]?.[productCode]) return;
     displaySkuData[seriesName][productCode].forEach(color => { const o = document.createElement('option'); o.value = color; cl.appendChild(o); });
 }
+// 판매완료인데 회수 보고서에 오르지 않은 행 — 회수대장 등록을 해야 하는 것
+function seNeedsRecovery(row) {
+    if (!row.sold || !row.sku) return false;
+    const sku = row.sku.toUpperCase();
+    if (row.sales_order_no && seRecoveredKey.has(sku + '|' + row.sales_order_no)) return false;
+    return !seRecoveredSku.has(sku);
+}
+
 // 품질·A/S 기록 — 조치가 남았는지로 색을 가른다
 const seIssueOpen = x => !x.as_status || /필요|신청/.test(x.as_status);
 function seIssueChip(sku) {
