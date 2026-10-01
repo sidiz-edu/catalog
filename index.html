@@ -16189,44 +16189,66 @@ function seRenderTable(storeId) {
     if (bar) {
         const inN  = seDisplayData.filter(r => !r.sold).length;
         const outN = seDisplayData.filter(r =>  r.sold).length;
-        // 분류 축 — 대분류는 굵게, 소분류는 들여쓰기
-        const 분류 = [
-            ['all', `전체 (${seDisplayData.length})`, '#003EFF', 1],
-            ['in',  `매장 (${inN})`,  '#1d4ed8', 1],
-            ['display', `전시 (${kc.display})`, '#3b82f6', 0],
-            ['store',   `창고 (${kc.store})`,   '#475569', 0],
-            ['selling', `판매 중 (${kc.selling})`, '#ea580c', 0],
-            ['out', `매장 出 (${outN})`, '#b91c1c', 1],
-            ['sold',     `판매 完 (${kc.sold})`,      '#16a34a', 0],
-            ['research', `연구소 반출 (${kc.research})`, '#6d28d9', 0],
-            ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12', 0],
-        ];
-        // 점검 축 — 분류와 다른 축이라 줄을 따로 쓴다
-        const 점검 = [
-            ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309', 0],
-            ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c', 0],
-            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626', 0],
-        ];
         const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN
             : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount : kc[k];
-        const btn = ([k, label, fg, major]) => {
+
+        // 대분류는 늘 색이 채워진 채로 둔다. 무엇을 고르든 소분류보다 무거워 보여야
+        // 위아래 관계가 눈에서 뒤집히지 않는다. 선택은 테두리 링으로 표시한다.
+        const major = (k, label, color) => {
             const on = k === seKindFilter;
             return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
-                style="padding:4px ${major ? 12 : 10}px;border-radius:6px;font-size:0.75rem;cursor:pointer;
-                       font-weight:${major ? 700 : 500};margin-left:${major ? 0 : 2}px;
-                       background:${on ? '#003EFF' : 'var(--se-surface)'};color:${on ? '#fff' : fg};
-                       border:1px solid ${on ? '#003EFF' : (major ? fg : 'var(--se-border)')};">${label}</button>`;
+                style="padding:5px 13px;border-radius:7px;border:none;cursor:pointer;
+                       font-size:0.78rem;font-weight:800;letter-spacing:.01em;
+                       background:${color};color:#fff;white-space:nowrap;
+                       box-shadow:${on ? '0 0 0 3px ' + color + '55' : 'none'};">${label}</button>`;
         };
-        const row = (label, list) => {
-            const items = list.filter(x => avail(x[0]));
-            if (!items.length) return '';
-            return `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
-                <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;letter-spacing:.04em;min-width:50px;">${label}</span>
-                ${items.map(btn).join('')}</div>`;
+        // 소분류는 흰 알약. 고르면 자기 색으로 찬다.
+        const minor = (k, label, color) => {
+            const on = k === seKindFilter;
+            return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
+                style="padding:3px 10px;border-radius:999px;cursor:pointer;font-size:0.72rem;font-weight:600;
+                       background:${on ? color : 'var(--se-surface)'};color:${on ? '#fff' : color};
+                       border:1px solid ${on ? color : 'var(--se-border)'};white-space:nowrap;">${label}</button>`;
         };
+        // 소분류를 대분류 박스 안에 담는다 — 포함 관계를 모양으로 보여준다
+        const group = (mk, mLabel, mColor, subs) => {
+            if (!avail(mk)) return '';
+            const kids = subs.filter(([k]) => avail(k));
+            return `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;
+                        background:${mColor}0f;border:1px solid ${mColor}33;border-radius:10px;padding:4px 6px;">
+                ${major(mk, mLabel, mColor)}
+                ${kids.length ? `<span style="color:${mColor}66;font-size:0.8rem;">│</span>` : ''}
+                ${kids.map(([k, l, c]) => minor(k, l, c)).join('')}
+            </div>`;
+        };
+
+        const plain = ([k, label, color]) => minor(k, label, color);
+        const extras = [
+            ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309'],
+            ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c'],
+            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626'],
+        ].filter(([k]) => avail(k));
+
         bar.style.flexDirection = 'column';
         bar.style.alignItems = 'flex-start';
-        bar.innerHTML = row('분류', 분류) + row('따로 보기', 점검);
+        bar.style.gap = '7px';
+        bar.innerHTML = `
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                ${major('all', `전체 (${seDisplayData.length})`, '#003EFF')}
+                ${group('in', `매장 (${inN})`, '#1d4ed8', [
+                    ['display', `전시 (${kc.display})`,   '#3b82f6'],
+                    ['store',   `창고 (${kc.store})`,     '#475569'],
+                    ['selling', `판매 중 (${kc.selling})`, '#ea580c'],
+                ])}
+                ${group('out', `매장 出 (${outN})`, '#b91c1c', [
+                    ['sold',     `판매 完 (${kc.sold})`,       '#16a34a'],
+                    ['research', `연구소 반출 (${kc.research})`, '#6d28d9'],
+                    ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12'],
+                ])}
+            </div>
+            ${extras.length ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">따로 보기</span>
+                ${extras.map(plain).join('')}</div>` : ''}`;
     }
 
     // 매출외출고 요청서 연결 여부 — 구분 필터를 적용한 결과 안에서 센다
