@@ -578,7 +578,8 @@
         .detail-price-active #detailColorPrice { display: flex !important; }
         #detailSkuDisplay { font-size:0.72rem; color:#9ca3af; font-family:'Outfit',monospace; letter-spacing:0.5px; }
         .detail-sku-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-        .sku-copy-btn { background:none; border:1px solid #d1d5db; border-radius:4px; padding:2px 7px; font-size:0.63rem; color:#6b7280; cursor:pointer; transition:all 0.15s; line-height:1.4; }
+        .sku-copy-group { display:inline-flex; align-items:center; gap:5px; flex-wrap:nowrap; }
+        .sku-copy-btn { background:none; border:1px solid #d1d5db; white-space:nowrap; border-radius:4px; padding:2px 7px; font-size:0.63rem; color:#6b7280; cursor:pointer; transition:all 0.15s; line-height:1.4; }
         .sku-copy-btn:hover { border-color:var(--sidiz-navy); color:var(--sidiz-navy); }
         .sku-copy-full { border-color:var(--sidiz-navy); color:var(--sidiz-navy); font-weight:700; }
         .sku-copy-full:hover { background:var(--sidiz-navy); color:#fff; }
@@ -10802,9 +10803,11 @@ function showDetail(productId) {
         <div class="detail-color-info">
             <div class="detail-sku-row">
                 <span id="detailSkuDisplay"></span>
-                <button class="sku-copy-btn sku-copy-full" onclick="copySku('full')" title="제품코드-색상코드를 한 번에 복사">📋 전체</button>
-                <button class="sku-copy-btn" onclick="copySku('base')">제품코드</button>
-                <button class="sku-copy-btn" onclick="copySku('color')">색상코드</button>
+                <span class="sku-copy-group">
+                    <button class="sku-copy-btn sku-copy-full" onclick="copySku('full')" title="제품코드-색상코드를 한 번에 복사">제품+색상코드</button>
+                    <button class="sku-copy-btn" onclick="copySku('base')">제품코드</button>
+                    <button class="sku-copy-btn" onclick="copySku('color')">색상코드</button>
+                </span>
                 <div class="old-code-row" id="detailOldCode"></div>
             </div>
             <span id="detailColorPrice"></span>
