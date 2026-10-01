@@ -13983,7 +13983,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
                                 <th>개수</th><th>사진</th><th>전시 시작일</th>
                                 <th onclick="seToggleSort('location')" style="cursor:pointer;user-select:none;white-space:nowrap;">위치<span id="seSortIcon_location" style="color:#94a3b8;"> ↕</span></th>
-                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고 링크</th>
+                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고</th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -16360,12 +16360,8 @@ function seRenderTable(storeId) {
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
-                <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
-                ${row.sku ? (() => {
-                    const linked = seReqSkuSet.has(row.sku.toUpperCase());
-                    return `<button class="se-del-btn" style="background:${linked ? '#16a34a' : '#94a3b8'};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="${linked ? '요청서 연결됨 — 클릭해서 보기' : '연결된 요청서 없음'}">📄</button>`;
-                })() : ''}
+                <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
 
@@ -16376,10 +16372,16 @@ function seRenderTable(storeId) {
                     ? `<div style="font-size:0.75rem;color:#1e40af;font-weight:600;">${row.sales_order_no}</div>`
                     : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
             </td>
-            <td style="text-align:center;min-width:80px;vertical-align:middle;">
-                ${row.sales_link
-                    ? `<a href="${row.sales_link}" target="_blank" style="font-size:0.78rem;color:#3b82f6;text-decoration:none;">🔗 링크</a>`
-                    : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
+            <td style="min-width:72px;vertical-align:middle;">
+                <div style="display:flex;gap:5px;align-items:center;justify-content:center;">
+                    ${row.sales_link
+                        ? `<a href="${row.sales_link}" target="_blank" title="매출외출고 문서 열기" style="font-size:0.95rem;text-decoration:none;display:inline-flex;align-items:center;height:22px;">🔗</a>`
+                        : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
+                    ${row.sku ? (() => {
+                        const linked = seReqSkuSet.has(row.sku.toUpperCase());
+                        return `<button class="se-del-btn" style="background:${linked ? '#16a34a' : '#94a3b8'};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="${linked ? '카탈로그에 쌓인 요청서 보기' : '연결된 요청서 없음'}">📄</button>`;
+                    })() : ''}
+                </div>
             </td>
         </tr>`;
     }).join('');
