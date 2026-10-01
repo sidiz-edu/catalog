@@ -13844,23 +13844,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <datalist id="seEditColorList"></datalist>
                         </div>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:4px;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);">구분</label>
-                        <select id="seEditPurpose" onchange="seEditToggleSaleFields()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                            <option value="전시">전시 중</option>
-                            <option value="창고">창고 보관</option>
-                            <option value="판매">전시품 판매 중</option>
-                        </select>
-                    </div>
-                    <!-- 반출 — 전시에서 빠진 사유. 사유가 무엇이든 회수 보고서가 필요하다 -->
-                    <div style="display:flex;flex-direction:column;gap:4px;">
-                        <label style="font-size:0.78rem;color:var(--se-muted);">반출</label>
-                        <select id="seEditExit" onchange="seEditToggleExit()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-                            <option value="">반출 안 함 (매장 보유)</option>
-                            <option value="판매">판매完</option>
-                            <option value="폐기">폐기</option>
-                            <option value="연구소">연구소 반출</option>
-                        </select>
+                    <!-- 대분류로 매장에 있나 없나를 먼저 고르고, 소분류는 그 안에서만 갈린다 -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">대분류</label>
+                            <select id="seEditMajor" onchange="seEditFillMinor()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                                <option value="in">매장</option>
+                                <option value="out">매장 出</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">소분류</label>
+                            <select id="seEditMinor" onchange="seEditToggleExit()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;"></select>
+                        </div>
                     </div>
                     <div id="seEditExitFields" style="display:none;flex-direction:column;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;">
                         <div style="font-size:0.74rem;color:#b45309;line-height:1.6;">🧾 <b>회수 및 처리결과 보고서</b>가 필요합니다. 등록될 때까지 목록에 빨갛게 표시됩니다.</div>
@@ -13978,12 +13974,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <tr>
                                 <th style="width:28px;"><input type="checkbox" id="seSelectAll" onchange="seToggleSelectAll(this.checked)" title="전체 선택"></th>
                                 <th onclick="seToggleSort('name')" style="cursor:pointer;user-select:none;white-space:nowrap;">제품명<span id="seSortIcon_name" style="color:#94a3b8;"> ↕</span></th>
-                                <th onclick="seToggleSort('purpose')" style="cursor:pointer;user-select:none;white-space:nowrap;">구분<span id="seSortIcon_purpose" style="color:#94a3b8;"> ↕</span></th>
+                                <th onclick="seToggleSort('major')" style="cursor:pointer;user-select:none;white-space:nowrap;">대분류<span id="seSortIcon_major" style="color:#94a3b8;"> ↕</span></th>
+                                <th onclick="seToggleSort('minor')" style="cursor:pointer;user-select:none;white-space:nowrap;">소분류<span id="seSortIcon_minor" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('sku')" style="cursor:pointer;user-select:none;white-space:nowrap;">단품코드<span id="seSortIcon_sku" style="color:#94a3b8;"> ↕</span></th>
                                 <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
                                 <th>개수</th><th>사진</th><th>전시 시작일</th>
                                 <th onclick="seToggleSort('location')" style="cursor:pointer;user-select:none;white-space:nowrap;">위치<span id="seSortIcon_location" style="color:#94a3b8;"> ↕</span></th>
-                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고</th><th>반출</th><th>회수보고서</th>
+                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고</th><th>회수보고서</th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -14641,9 +14638,9 @@ function seToggleRecoveryItems(id) {
                     <div class="se-add-grid">
                         <select id="seAddSeries" onchange="sePopulateSkuList(this.value)"><option value="">시리즈 선택</option></select>
                         <select id="seAddPurpose" onchange="seToggleSoldField()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:5px 8px;font-size:0.8rem;">
-                            <option value="전시">전시 중</option>
-                            <option value="창고">창고 보관</option>
-                            <option value="판매">전시품 판매 중</option>
+                            <option value="전시">전시</option>
+                            <option value="창고">창고</option>
+                            <option value="판매">판매 중</option>
                         </select>
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:3px;">
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -16158,8 +16155,10 @@ function seRenderTable(storeId) {
     const recCount = seDisplayData.filter(seNeedsRecovery).length;
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
-    if (seKindFilter !== 'all' && (seKindFilter === 'as' ? !asCount
-        : seKindFilter === 'needrec' ? !recCount : !kc[seKindFilter])) seKindFilter = 'all';
+    const kindAvail = k => k === 'as' ? asCount : k === 'needrec' ? recCount
+        : k === 'in' ? seDisplayData.filter(r => !r.sold).length
+        : k === 'out' ? seDisplayData.filter(r =>  r.sold).length : kc[k];
+    if (seKindFilter !== 'all' && !kindAvail(seKindFilter)) seKindFilter = 'all';
     seComputeNeedRecovery();
     const alertBox = document.getElementById('seRecoveryAlert');
     if (alertBox) {
@@ -16189,16 +16188,21 @@ function seRenderTable(storeId) {
     if (bar) {
         bar.innerHTML = [
             ['all', `전체 (${seDisplayData.length})`, '#003EFF'],
-            ['display', `전시 중 (${kc.display})`, '#3b82f6'],
-            ['demo', `🧩 T50 전시분해 (${kc.demo})`, '#b45309'],
-            ['sold', `판매完 (${kc.sold})`, '#16a34a'],
-            ['disposed', `폐기 (${kc.disposed})`, '#7c2d12'],
-            ['research', `연구소 반출 (${kc.research})`, '#6d28d9'],
-            ['selling', `전시품 판매 중 (${kc.selling})`, '#ea580c'],
-            ['store', `창고 보관 (${kc.store})`, '#475569'],
+            ['in',  `매장 (${kc.display + kc.selling + kc.store + kc.demo})`, '#1d4ed8'],
+            ['display', `· 전시 (${kc.display})`, '#3b82f6'],
+            ['demo', `· 🧩 T50 전시분해 (${kc.demo})`, '#b45309'],
+            ['store', `· 창고 (${kc.store})`, '#475569'],
+            ['selling', `· 판매 중 (${kc.selling})`, '#ea580c'],
+            ['out', `매장 出 (${kc.sold + kc.disposed + kc.research})`, '#b91c1c'],
+            ['sold', `· 판매 完 (${kc.sold})`, '#16a34a'],
+            ['research', `· 연구소 반출 (${kc.research})`, '#6d28d9'],
+            ['disposed', `· 훼손 폐기 (${kc.disposed})`, '#7c2d12'],
             ['as',   `⚠ A/S 조치 남음 (${asCount})`, '#b91c1c'],
             ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626'],
-        ].filter(([k]) => k === 'all' || (k === 'as' ? asCount > 0 : k === 'needrec' ? recCount > 0 : kc[k] > 0))
+        ].filter(([k]) => k === 'all'
+            || (k === 'as' ? asCount > 0 : k === 'needrec' ? recCount > 0
+              : k === 'in'  ? seDisplayData.some(r => !r.sold)
+              : k === 'out' ? seDisplayData.some(r =>  r.sold) : kc[k] > 0))
          .map(([k, label, fg]) => {
             const on = k === seKindFilter;
             return `<button onclick="seKindFilter='${k}';seRenderTable(seCurrentStore)"
@@ -16210,6 +16214,8 @@ function seRenderTable(storeId) {
     const kindPass = row => seKindFilter === 'all'
         || (seKindFilter === 'as' ? hasOpenIssue(row)
           : seKindFilter === 'needrec' ? seNeedsRecovery(row)
+          : seKindFilter === 'in'  ? !row.sold
+          : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
     // 전시품 쪽 SKU별 합계 — 요청 수량과 견줘 '수량 다름'을 가른다
     const dispQty = {};
@@ -16276,7 +16282,8 @@ function seRenderTable(storeId) {
     // 칼럼 정렬은 그 다음 기준이고, 정렬을 안 걸었으면 원래 순서를 유지한다.
     const getVal = (row, col) => {
         if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
-        if (col === 'purpose') return row.purpose || '';
+        if (col === 'major') return seMajorOf(row);
+        if (col === 'minor') return seMinorOf(row)[0];
         if (col === 'sku') return row.sku || '';
         if (col === 'color') return row.color_code || '';
         if (col === 'location') return row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'');
@@ -16322,13 +16329,11 @@ function seRenderTable(storeId) {
                </div></td>`
             : `<td style="color:#94a3b8;">-</td>`;
         const needRec = seNeedsRecovery(row);
-        // 구분은 지금 무엇을 하고 있나(purpose)만 말한다. 반출 결과는 별도 열이다.
-        const [pLabel, pBg] = SE_PURPOSE[row.purpose] || SE_PURPOSE['전시'];
-        const purposeCell = `<td><span class="se-tag" style="background:${pBg};color:#fff;white-space:nowrap;">${pLabel}</span></td>`;
-        const exit = seExitOf(row);
-        const exitCell = exit
-            ? `<td style="vertical-align:middle;"><span class="se-tag" style="background:${exit.bg};color:#fff;white-space:nowrap;">${seExitLabel(exit)}</span></td>`
-            : `<td style="text-align:center;vertical-align:middle;color:#cbd5e1;font-size:0.78rem;">-</td>`;
+        const [majLabel, majBg] = SE_MAJOR[seMajorOf(row)];
+        const [minLabel, minBg] = seMinorOf(row);
+        const purposeCell =
+            `<td><span class="se-tag" style="background:${majBg};color:#fff;white-space:nowrap;">${majLabel}</span></td>` +
+            `<td><span class="se-tag" style="background:${minBg};color:#fff;white-space:nowrap;">${minLabel}</span></td>`;
         const buyerInfo = row.sold && (row.buyer_name || row.buyer_phone)
             ? `<div style="font-size:0.72rem;color:#64748b;margin-top:3px;line-height:1.5;">
                 ${row.buyer_name ? `👤 ${row.buyer_name}씨` : ''}
@@ -16379,7 +16384,6 @@ function seRenderTable(storeId) {
                     })() : ''}
                 </div>
             </td>
-            ${exitCell}
             <td style="min-width:86px;vertical-align:middle;">${seRecoveryCell(row)}</td>
         </tr>`;
     }).join('');
@@ -16388,7 +16392,8 @@ function seRenderTable(storeId) {
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
             <td></td>
             <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
-            <td><span class="se-tag" style="opacity:0.5;">${(SE_PURPOSE[row.purpose] || SE_PURPOSE['전시'])[0]}</span></td>
+            <td><span class="se-tag" style="opacity:0.5;">${SE_MAJOR[seMajorOf(row)][0]}</span></td>
+            <td><span class="se-tag" style="opacity:0.5;">${seMinorOf(row)[0]}</span></td>
             <td style="font-size:0.78rem;color:#475569;text-decoration:line-through;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;text-decoration:line-through;">${row.color_code || '-'}</td>
             <td style="text-align:center;text-decoration:line-through;">${row.quantity ?? 1}</td>
@@ -16403,7 +16408,6 @@ function seRenderTable(storeId) {
             </td>
             <td>-</td>
             <td>-</td>
-            <td><span class="se-tag" style="opacity:0.5;">${row.sold ? seExitLabel(seExitOf(row)) : '-'}</span></td>
             <td>-</td>
         </tr>`;
     }).join('');
@@ -16624,7 +16628,8 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditSku').value = skuCode;
     seEditPopulateColorCodes(skuCode);
     document.getElementById('seEditColor').value = row.color_code || '';
-    document.getElementById('seEditPurpose').value = row.purpose || '전시';
+    document.getElementById('seEditMajor').value = row.sold ? 'out' : 'in';
+    seEditFillMinor(row.sold ? (row.exit_type || '판매') : (row.purpose || '전시'));
     document.getElementById('seEditQty').value = row.quantity ?? 1;
     const _dateUnknown = !row.display_since;
     document.getElementById('seEditDateUnknown').checked = _dateUnknown;
@@ -16637,7 +16642,6 @@ async function seOpenEditModal(id) {
     _seEditPhotos = [...(row.image_urls || [])];
     if (!_seEditPhotos.length && row.image_url) _seEditPhotos = [row.image_url];
     seRenderEditPhotoGrid();
-    document.getElementById('seEditExit').value = row.exit_type || (row.sold ? '판매' : '');
     document.getElementById('seEditExitNote').value = row.exit_note || '';
     const _at = row.sold_at ? new Date(row.sold_at) : new Date();
     document.getElementById('seEditExitAt').value =
@@ -16712,12 +16716,26 @@ function seHideLocList() {
     if (dd) dd.style.display = 'none';
     _seLocActiveInput = null;
 }
-// 반출 사유를 고르면 일시·사유를 받고, 판매일 때만 구매자 칸을 연다
+// 대분류에 맞는 소분류만 남긴다
+function seEditFillMinor(pick) {
+    const major = document.getElementById('seEditMajor').value;
+    const src = major === 'out'
+        ? Object.entries(SE_EXIT).map(([k, v]) => [k, v.label])
+        : Object.entries(SE_PURPOSE).map(([k, v]) => [k, v[0]]);
+    const sel = document.getElementById('seEditMinor');
+    sel.innerHTML = src.map(([k, label]) => `<option value="${k}">${label}</option>`).join('');
+    sel.value = src.some(([k]) => k === pick) ? pick : src[0][0];
+    seEditToggleExit();
+    seEditToggleSaleFields();
+}
+
+// 매장 出 이면 반출 일시·사유를 받고, 판매 完 일 때만 구매자 칸을 연다
 function seEditToggleExit() {
-    const kind = document.getElementById('seEditExit').value;
+    const out = document.getElementById('seEditMajor').value === 'out';
+    const kind = document.getElementById('seEditMinor').value;
     const box = document.getElementById('seEditExitFields');
-    box.style.display = kind ? 'flex' : 'none';
-    if (!kind) return;
+    box.style.display = out ? 'flex' : 'none';
+    if (!out) return;
     const buyer = !!SE_EXIT[kind]?.buyer;
     document.getElementById('seEditBuyerFields').style.display = buyer ? 'flex' : 'none';
     document.getElementById('seEditExitHint').textContent =
@@ -16729,7 +16747,8 @@ function seEditToggleExit() {
 }
 
 function seEditToggleSaleFields() {
-    const isSale = document.getElementById('seEditPurpose').value === '판매';
+    const isSale = document.getElementById('seEditMajor').value === 'in'
+                && document.getElementById('seEditMinor').value === '판매';
     document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
 }
 function seEditPopulateSkuList(seriesName) {
@@ -16749,17 +16768,26 @@ function seEditPopulateColorCodes(productCode) {
 // 전시품이 전시에서 빠지는 사유. sold 은 '빠졌다'는 사실, exit_type 은 그 사유다.
 // 사유가 무엇이든 회수 및 처리결과 보고서는 똑같이 필요하다 (금액은 전부 미회수로 잡힌다).
 const SE_EXIT = {
-    '판매':   { icon: '',  label: '판매完',  bg: '#16a34a', buyer: true  },
-    '폐기':   { icon: '', label: '폐기',        bg: '#7c2d12', buyer: false },
-    '연구소': { icon: '', label: '연구소 반출',   bg: '#6d28d9', buyer: false },
+    '판매':   { icon: '', label: '판매 完',    bg: '#16a34a', buyer: true  },
+    '연구소': { icon: '', label: '연구소 반출', bg: '#6d28d9', buyer: false },
+    '폐기':   { icon: '', label: '훼손 폐기',   bg: '#7c2d12', buyer: false },
 };
 const seExitOf = row => SE_EXIT[row.exit_type] || (row.sold ? SE_EXIT['판매'] : null);
-// 구분 — 전시품이 지금 맡고 있는 역할 [표시 이름, 색]
-const SE_PURPOSE = {
-    '전시': ['전시 중',       '#3b82f6'],
-    '창고': ['창고 보관',     '#475569'],
-    '판매': ['전시품 판매 중', '#ea580c'],
+// 대분류는 매장에 있나 없나, 소분류는 그 안에서 무엇인가.
+// 매장 出 의 소분류는 SE_EXIT 가 들고 있다 (반출 사유와 같은 값이다).
+const SE_MAJOR = {
+    'in':  ['매장',   '#1d4ed8'],
+    'out': ['매장 出', '#b91c1c'],
 };
+const SE_PURPOSE = {
+    '전시': ['전시',    '#3b82f6'],
+    '창고': ['창고',    '#475569'],
+    '판매': ['판매 중', '#ea580c'],
+};
+const seMajorOf = row => row.sold ? 'out' : 'in';
+const seMinorOf = row => row.sold
+    ? (() => { const e = seExitOf(row); return [seExitLabel(e), e.bg]; })()
+    : (SE_PURPOSE[row.purpose] || SE_PURPOSE['전시']);
 const seExitLabel = e => [e.icon, e.label].filter(Boolean).join(' ');
 
 // 반출했는데 회수 보고서에 오르지 않은 행 — 회수대장 등록을 해야 하는 것.
@@ -16881,7 +16909,11 @@ async function seSubmitEdit() {
     const seriesName = document.getElementById('seEditSeries').value;
     const productCode = document.getElementById('seEditSku').value.trim();
     const colorCode = document.getElementById('seEditColor').value.trim();
-    const purpose = document.getElementById('seEditPurpose').value;
+    const major = document.getElementById('seEditMajor').value;
+    const minor = document.getElementById('seEditMinor').value;
+    // 매장 出 이면 매장에 있던 역할(purpose)은 그대로 보존한다 — 어디 있던 물건인지가 남아야 한다
+    const cur0 = seDisplayData.find(r => r.id === id) || {};
+    const purpose = major === 'in' ? minor : (cur0.purpose || '전시');
     const updates = {
         product_id: seriesName || null,
         sku: productCode && colorCode ? `${productCode}-${colorCode}` : productCode || null,
@@ -16900,7 +16932,7 @@ async function seSubmitEdit() {
     } else {
         updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
     }
-    const exitKind = document.getElementById('seEditExit').value;
+    const exitKind = major === 'out' ? minor : '';
     if (exitKind) {
         const at = document.getElementById('seEditExitAt').value;
         const buyer = !!SE_EXIT[exitKind]?.buyer;
