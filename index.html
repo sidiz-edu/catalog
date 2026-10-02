@@ -14389,6 +14389,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
         </div>
 
+        <div class="se-sale-warn" style="margin-bottom:12px;">
+            <div class="se-sale-warn-h">시작 전에 — 매출외출고 문서가 연결돼 있어야 합니다</div>
+            <div style="font-size:0.82rem;color:#b45309;line-height:1.7;">
+                전시품 탭에서 그 제품의 <b>매출외출고</b> 칸에 🔗 가 있거나 <b>매출외수주번호</b>가 적혀 있어야 판매로 바꿀 수 있습니다.
+                둘 다 비어 있으면 소분류를 <b>판매 중</b>으로 고르는 순간
+                「매출외출고 문서가 연결되지 않아 판매를 할 수 없습니다.」가 뜨고 원래대로 되돌아갑니다.
+                저장할 때와 전시품을 새로 추가할 때도 똑같이 막힙니다.<br>
+                <b>나간 기록이 없는 물건은 매장 재고가 아니기 때문입니다.</b>
+                먼저 <b>매출외출고 요청서</b> 탭에서 문서를 등록하거나 본사에 연결을 요청하세요.
+            </div>
+        </div>
+
         <!-- 1. 제품 등급 설정 -->
         <div class="se-sale-sec">
             <h3 class="se-sale-h"><span class="se-sale-n">1</span>제품 등급 설정</h3>
@@ -14509,13 +14521,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
             </div>
             <div class="se-step"><span class="se-point-n n">2</span><div>소분류를 <b>판매 중</b>으로 바꿉니다. 그래야 등급·소비자가 칸이 열립니다.</div></div>
-            <div class="se-sale-warn" style="margin-top:9px;">
-                <div class="se-sale-warn-h">매출외출고 문서가 없으면 판매 중으로 못 바꿉니다</div>
-                <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
-                    「매출외출고 문서가 연결되지 않아 판매를 할 수 없습니다.」라고 뜨면, 그 제품은 아직 매출외출고 요청서에 연결되지 않은 것입니다.
-                    먼저 <b>매출외출고 요청서</b> 탭에서 해당 문서를 등록하거나 본사에 연결을 요청하세요.
-                </div>
-            </div>
+            <div class="se-sale-note" style="margin-top:7px;">여기서 「매출외출고 문서가 연결되지 않아 판매를 할 수 없습니다.」가 뜨면 맨 위 안내를 보세요.</div>
             <div class="se-step"><span class="se-point-n n">3</span><div><b>등급</b>과 <b>소비자가</b>를 넣습니다. 판매가는 등급에 따라 자동으로 계산됩니다 — 직접 적지 않습니다.</div></div>
             <div class="se-step"><span class="se-point-n n">4</span><div>소비자가를 적으면 <b>제품 설명</b> 칸이 열립니다. 적은 그대로 고객 화면에 뜨니 <b>오염·스크래치 위치를 솔직하게</b> 적고 저장합니다.</div></div>
 
@@ -14588,13 +14594,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-form">
                         <tr><th>성명</th><td class="blank">고객이 직접</td><th>구매 일자</th><td>2026. 10. 2.</td></tr>
                         <tr><th>연락처</th><td class="blank">고객이 직접</td><th>구매 매장</th><td>더 프로그레시브 성수</td></tr>
-                        <tr><th>구매 제품</th><td>RINGO (링고)</td><th>구매 색상</th><td>451NWW</td></tr>
+                        <tr><th>구매 제품</th><td>RINGO (링고) · VSNB509ACF</td><th>구매 색상</th><td>A441P</td></tr>
                     </table>
                 </div>
             </div>
             <div class="se-sale-note" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
                 <span style="flex:1;min-width:220px;">
-                    <b>구매 일자 · 구매 매장 · 구매 제품 · 구매 색상</b>은 카탈로그 값으로 채워집니다.
+                    <b>구매 일자 · 구매 매장 · 구매 제품(제품명 · 제품코드) · 구매 색상(색상코드)</b>은 카탈로그 값으로 채워집니다.
                     <b>성명과 연락처는 비워 둡니다</b> — 고객이 직접 쓰는 칸입니다.
                     제품을 정하기 전에 미리 뽑아 두려면 오른쪽 <b>빈 양식 인쇄</b>를 쓰세요. 빈 양식은 <b>칸을 눌러 바로 입력</b>할 수 있고, 손으로 쓸 거면 그냥 두고 인쇄하면 됩니다.
                 </span>
@@ -17573,7 +17579,7 @@ function sePrintConsent(id) {
         phone: '',
         date: row.sold_at ? new Date(row.sold_at).toLocaleDateString('ko-KR') : seTodayKo(),
         store: store ? store.name : row.store_id,
-        product: row.product_id || '',
+        product: [row.product_id, row.sku ? row.sku.split('-')[0] : ''].filter(Boolean).join(' · '),
         color: row.color_code || (row.sku && row.sku.includes('-') ? row.sku.split('-').slice(1).join('-') : ''),
     }));
 }
