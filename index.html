@@ -11060,7 +11060,7 @@ function fmt(n) { return n.toLocaleString('ko-KR') + '원'; }
 let couponApplied = false;
 let gcproQuestLevel = 0; // 0=미선택, 1=1개, 2=2개, 3=3개
 
-const GCPRO_QUEST_PAYBACK = [0, 10000, 40000, 70000];
+const GCPRO_QUEST_PAYBACK = [0, 10000, 50000, 100000];
 
 // 모든 프로모션 중 가장 유리한 할인 반환
 function getBestDiscount(cart) {
@@ -11341,7 +11341,7 @@ function renderCartItems() {
         <div style="margin-top:10px;padding:10px 12px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd;">
             <div style="font-size:0.78rem;font-weight:700;color:#0369a1;margin-bottom:7px;">🏆 GC PRO 퀘스트 페이백 적용</div>
             <div style="display:flex;gap:5px;margin-bottom:8px;">
-                ${[0,1,2,3].map(lv => `<button onclick="setGcproQuest(${lv})" style="flex:1;padding:5px 2px;border-radius:7px;border:1.5px solid ${gcproQuestLevel===lv?'#0ea5e9':'#cbd5e1'};background:${gcproQuestLevel===lv?'#0ea5e9':'#fff'};color:${gcproQuestLevel===lv?'#fff':'#64748b'};font-size:0.72rem;font-weight:600;cursor:pointer;">${lv===0?'선택 안함':lv+'개<br>−'+['','1만','4만','7만'][lv]}</button>`).join('')}
+                ${[0,1,2,3].map(lv => `<button onclick="setGcproQuest(${lv})" style="flex:1;padding:5px 2px;border-radius:7px;border:1.5px solid ${gcproQuestLevel===lv?'#0ea5e9':'#cbd5e1'};background:${gcproQuestLevel===lv?'#0ea5e9':'#fff'};color:${gcproQuestLevel===lv?'#fff':'#64748b'};font-size:0.72rem;font-weight:600;cursor:pointer;">${lv===0?'선택 안함':lv+'개<br>−'+['','1만','5만','10만'][lv]}</button>`).join('')}
             </div>
             ${gcproQuestLevel > 0 ? `
             <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#0369a1;margin-bottom:3px;">
@@ -14105,11 +14105,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
                 <div id="seDragHint" style="font-size:0.72rem;color:var(--se-muted);">행을 끌어 순서를 바꿀 수 있습니다</div>
-                    <button onclick="seOpenAddModal()" style="margin-left:auto;background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
+                    <button onclick="sePrintTagsVisible()" style="margin-left:auto;background:transparent;border:1.5px solid var(--se-border);border-radius:8px;padding:7px 13px;color:var(--se-muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" title="카탈로그에 게시 중인 전시품 가격택을 모두 인쇄합니다">🏷 게시중 가격택</button>
+                    <button onclick="seOpenAddModal()" style="background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
                 </div>
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
                     <span id="seSelCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
                     <button onclick="seOpenMoveModal()" style="padding:5px 14px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">선택 이동</button>
+                    <button onclick="sePrintTagsSelected()" style="padding:5px 14px;border-radius:6px;border:none;background:#0f172a;color:#fff;cursor:pointer;font-size:0.8rem;font-weight:600;">🏷 가격택 인쇄</button>
                     <button onclick="seClearSelection()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--se-border);background:transparent;color:var(--se-muted);cursor:pointer;font-size:0.8rem;">선택 해제</button>
                 </div>
                 <!-- 판매됐는데 회수 보고서가 아직 없는 건 — 놓치면 미수금으로 남는다 -->
@@ -14411,7 +14413,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <ul class="se-sale-ul">
                 <li><b>오염 제거</b></li>
                 <li><b>품질보증 불가 스티커</b>를 시리얼넘버 위에 붙입니다. (매장 보유분, 없으면 본사 요청)</li>
-                <li><b>가격택</b>을 겁니다 — 제품 정보 · 등급 · 가격. 비닐택에 지류는 매장 인쇄.</li>
+                <li><b>가격택</b>을 겁니다 — 제품 정보 · 등급 · 가격. 비닐택에 지류는 매장 인쇄.
+                    <div class="se-sale-note" style="margin-top:7px;">전시품 탭에서 제품을 체크하고 <b>🏷 가격택 인쇄</b>를 누르면 A4 한 장에 6개씩 나옵니다. 소비자가와 등급을 먼저 넣어야 합니다.</div>
+                </li>
                 <li><b>사진</b>을 찍습니다 — <b>정면 / 좌측면 / 후면 / 우측면 4장이 필수</b>입니다.
                     여기에 스크래치나 오염이 심한 부위를 1~2장 더하니 <b>최소 4장</b>이 필요합니다.
                     오염을 미리 보여주지 않으면 고객 방문 시 문제가 생길 수 있습니다.
@@ -14501,7 +14505,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <ol class="se-sale-ol">
                 <li>전화 문의를 받고 방문 일정을 잡습니다</li>
                 <li>방문하면 <b>제품 상태를 한 번 더 짚어 드립니다</b></li>
-                <li><b>구매 동의서에 서명</b>을 받습니다</li>
+                <li><b>구매 동의서에 서명</b>을 받습니다
+                    <div class="se-sale-note" style="margin-top:7px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <span>전시품 탭 행의 <b>동의서</b> 버튼을 누르면 매장·제품·색상·날짜가 채워져 나옵니다. 성명과 연락처는 고객이 직접 씁니다.</span>
+                        <button type="button" onclick="sePrintConsentBlank()" style="background:#1e293b;border:none;border-radius:7px;padding:6px 13px;color:#fff;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">빈 양식 인쇄</button>
+                    </div>
+                </li>
                 <li>매장에서 결제하고, 고객이 직접 가져갑니다</li>
             </ol>
             <div class="se-sale-warn">
@@ -16834,6 +16843,8 @@ function seRenderTable(storeId) {
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
+                ${row.purpose === '판매' || row.sold ? `
+                  <button class="se-del-btn" style="background:#1e293b;color:#fff;border:none;font-size:0.7rem;" onclick="sePrintConsent('${row.id}')" title="전시품 구매 동의서를 채워서 인쇄합니다">동의서</button>` : ''}
 
             </td>
             <!-- 매출외수주번호·링크는 요청서/회수 보고서에서 끌어온 값이므로 표시만 하고 수정 버튼은 두지 않는다 -->
@@ -17320,6 +17331,159 @@ function seComputeNeedRecovery() {
     });
 }
 const seNeedsRecovery = row => seNeedRecIds.has(row.id);
+
+// ── 매장에서 바로 뽑는 인쇄물 ────────────────────────────────────────
+// 카탈로그 CSS와 섞이지 않게 새 창에 통째로 써서 인쇄한다.
+function sePrintDoc(html) {
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { alert('팝업이 막혀 있습니다. 주소창 오른쪽에서 팝업을 허용해 주세요.'); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 400);
+}
+
+const SE_CONSENT_ITEMS = [
+    ['전시품 상태 안내', [
+        '본 제품은 매장 전시용으로 사용된 제품으로 스크래치·오염·사용감 등이 있을 수 있습니다.',
+        '고객이 직접 상태를 확인한 후 구매하는 것임을 확인합니다.']],
+    ['교환/환불 조건', [
+        '전시품 특성상 단순 변심으로 인한 교환·환불은 불가합니다.']],
+    ['보증(A/S) 안내', [
+        '전시품은 품질 보증을 위한 정품 등록이 불가능합니다.',
+        '컨택센터(1577-5674)를 통한 유상 A/S 접수는 가능합니다.']],
+    ['가격 및 구성품 확인', [
+        '전시품 판매 가격을 확인했습니다.',
+        '누락된 구성품이 있을 경우 이에 동의합니다.']],
+    ['제품 인수 확인', [
+        '전시품을 이상 없이 인수하였음을 확인합니다.']],
+];
+
+function seConsentHtml(f) {
+    const v = x => x ? String(x).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) : '';
+    const secs = SE_CONSENT_ITEMS.map(([h, lines], i) => `
+        <section>
+            <h2>${i + 1}. ${h}</h2>
+            ${lines.map(l => `<p>- ${l}</p>`).join('')}
+        </section>`).join('');
+    return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<title>전시품 구매 동의서</title>
+<style>
+    @page { size: A4; margin: 20mm 18mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Malgun Gothic', '맑은 고딕', Arial, sans-serif; color: #111; font-size: 10.5pt; line-height: 1.75; }
+    h1 { font-size: 17pt; font-weight: 800; text-align: center; margin: 0 0 14mm; letter-spacing: -0.02em; }
+    section { margin-bottom: 5mm; }
+    h2 { font-size: 11pt; font-weight: 700; margin: 0 0 1mm; }
+    p { margin: 0 0 0.5mm; padding-left: 2mm; }
+    table { width: 100%; border-collapse: collapse; margin-top: 2mm; }
+    th, td { border: 0.6pt solid #111; padding: 3mm 3mm; font-size: 10.5pt; height: 11mm; }
+    th { background: #f2f2f2; font-weight: 700; width: 22%; text-align: left; white-space: nowrap; }
+    td { width: 28%; }
+    .closing { margin-top: 12mm; text-align: center; line-height: 2; }
+    .sign { margin-top: 12mm; text-align: right; font-size: 11pt; }
+    .sign span { letter-spacing: 0.1em; }
+</style></head><body>
+    <h1>전시품 구매 동의서</h1>
+    ${secs}
+    <section>
+        <h2>6. 고객 및 구매 정보</h2>
+        <table>
+            <tr><th>성명</th><td>${v(f.name)}</td><th>구매 일자</th><td>${v(f.date)}</td></tr>
+            <tr><th>연락처</th><td>${v(f.phone)}</td><th>구매 매장</th><td>${v(f.store)}</td></tr>
+            <tr><th>구매 제품</th><td>${v(f.product)}</td><th>구매 색상</th><td>${v(f.color)}</td></tr>
+        </table>
+    </section>
+    <div class="closing">
+        본인은 전시품의 상태를 직접 확인하였으며,<br>
+        전시품 특성 및 교환/환불 조건을 충분히 이해하고 이에 동의합니다.
+    </div>
+    <div class="sign"><span>_____________________</span> (인)</div>
+</body></html>`;
+}
+
+function seTodayKo() {
+    const d = new Date();
+    return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate() + '.';
+}
+
+function sePrintConsent(id) {
+    const row = (seDisplayData || []).find(r => r.id === id);
+    if (!row) { alert('행을 찾지 못했습니다.'); return; }
+    const store = (typeof storeData !== 'undefined' ? storeData : []).find(s => s.id === row.store_id);
+    sePrintDoc(seConsentHtml({
+        name: '',                       // 고객이 직접 쓰는 칸
+        phone: '',
+        date: row.sold_at ? new Date(row.sold_at).toLocaleDateString('ko-KR') : seTodayKo(),
+        store: store ? store.name : row.store_id,
+        product: row.product_id || '',
+        color: row.color_code || (row.sku && row.sku.includes('-') ? row.sku.split('-').slice(1).join('-') : ''),
+    }));
+}
+
+function sePrintConsentBlank() {
+    sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', color: '' }));
+}
+
+// ── 가격택 — 원본 PPT와 같은 63 × 83.6mm, A4 한 장에 6개 ─────────────
+function seTagHtml(rows) {
+    const esc = x => String(x == null ? '' : x).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    const cards = rows.map(r => {
+        const rate = SE_GRADE_DISCOUNT[r.grade] ?? SE_GRADE_DISCOUNT.A;
+        const sale = Math.round(r.consumer_price * (1 - rate));
+        const nm = r.product_id || '';
+        const fs = nm.length > 10 ? 15 : nm.length > 7 ? 19 : nm.length > 4 ? 23 : 28;
+        return `<div class="tag">
+            <div class="nm" style="font-size:${fs}pt;">${esc(nm)}</div>
+            <div class="lb lb1">소비자가</div>
+            <div class="pr pr1">${r.consumer_price.toLocaleString()}원</div>
+            <div class="lb lb2">전시품 할인가</div>
+            <div class="pr pr2">${sale.toLocaleString()}원</div>
+            <div class="gr">${esc(r.grade)}급</div>
+        </div>`;
+    }).join('');
+    return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<title>전시품 판매 가격택</title>
+<style>
+    @page { size: A4; margin: 12mm 20mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Calibri, 'Malgun Gothic', Arial, sans-serif; color: #000; }
+    .sheet { display: grid; grid-template-columns: 63.33mm 63.33mm; gap: 6mm; justify-content: center; }
+    .tag { position: relative; width: 63.33mm; height: 83.61mm; border: 1pt solid #0C0C0C;
+           break-inside: avoid; page-break-inside: avoid; }
+    .tag > div { position: absolute; padding: 1.27mm 2.54mm; }
+    .nm { left: 7.10mm; top: 12.21mm; width: 50mm; font-family: Arial, sans-serif; font-weight: 700; color: #000; }
+    .lb { font-size: 8pt; line-height: 1.5; text-align: right; }
+    .pr { font-size: 16pt; font-weight: 700; line-height: 1.5; text-align: right; width: 34.82mm; left: 26.88mm; }
+    .lb1 { left: 43.79mm; top: 42.96mm; width: 17.92mm; color: #7F7F7F; }
+    .pr1 { top: 47.36mm; color: #7F7F7F; }
+    .lb2 { left: 36.49mm; top: 62.98mm; width: 25.22mm; color: #000; }
+    .pr2 { top: 67.13mm; color: #000; }
+    .gr { left: 4.34mm; top: 70.56mm; font-size: 12pt; font-weight: 700; }
+</style></head><body><div class="sheet">${cards}</div></body></html>`;
+}
+
+function sePrintTagsFor(rows, label) {
+    const ok = rows.filter(r => r.consumer_price && r.grade);
+    const skipped = rows.length - ok.length;
+    if (!ok.length) {
+        alert((label || '선택한 행') + ' 중 가격택을 뽑을 수 있는 제품이 없습니다.\n소비자가와 등급이 모두 있어야 합니다.');
+        return;
+    }
+    if (skipped) alert(skipped + '건은 소비자가나 등급이 없어 제외했습니다. ' + ok.length + '건을 인쇄합니다.');
+    sePrintDoc(seTagHtml(ok));
+}
+
+function sePrintTagsSelected() {
+    const rows = (seDisplayData || []).filter(r => seSelectedIds.has(r.id));
+    sePrintTagsFor(rows, '선택한 ' + rows.length + '건');
+}
+
+function sePrintTagsVisible() {
+    const rows = (seDisplayData || []).filter(r => r.catalog_visible && !r.sold);
+    if (!rows.length) { alert('카탈로그에 게시 중인 전시품이 없습니다.'); return; }
+    sePrintTagsFor(rows, '게시 중 ' + rows.length + '건');
+}
+
 
 // 회수보고서 칸 — 반출된 행만 상태를 말한다. 전시 중인 행에는 해당이 없다.
 function seRecoveryDocsFor(row) {
