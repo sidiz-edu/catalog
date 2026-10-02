@@ -8044,6 +8044,10 @@ const productAccessories = {
     atti:  ['pbag'],
 };
 
+// 전시품 판매 등급별 할인율 — 상태가 나은 A급이 덜 깎인다.
+// A = 소비자가의 60%, B = 50% (컨플루언스 「매장 전시품 판매 채널 기획안」)
+const SE_GRADE_DISCOUNT = { A: 0.4, B: 0.5 };
+
 // ── 색상별 제품 코드 (productColors 인덱스와 1:1 대응) ──
 const productSkus = {
     t50:    ['T50HLDA0VK-451MWW','T50HLDA0VK-457BWW','T50HLDA0VK-452MWW','T50HLDA0VK-458DWW','T50HLDA0VK-451MBK','T50HLDA0VK-456BK','T50HLDA0VK-457BBK'],
@@ -9972,8 +9976,8 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
             const store = storeData.find(s => s.id === item.store_id);
             const storeName = store ? store.name : item.store_id;
             const storePhone = store ? store.phone : '';
-            const discountRate = item.grade === 'B' ? 0.4 : 0.5;
-            const discountLabel = item.grade === 'B' ? '60% 할인' : '50% 할인';
+            const discountRate = SE_GRADE_DISCOUNT[item.grade] ?? SE_GRADE_DISCOUNT.A;
+            const discountLabel = Math.round(discountRate * 100) + '% 할인';
             const salePrice = item.consumer_price ? Math.round(item.consumer_price * (1 - discountRate)) : null;
             const thumbUrl = (item.image_urls && item.image_urls[0]) || item.image_url;
             const imgStyle = thumbUrl
@@ -14021,8 +14025,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <label style="font-size:0.78rem;color:var(--se-muted);">등급</label>
                                 <select id="seEditGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.82rem;">
                                     <option value="">등급 선택</option>
-                                    <option value="A">A등급 (50% 할인)</option>
-                                    <option value="B">B등급 (60% 할인)</option>
+                                    <option value="A">A등급 (40% 할인)</option>
+                                    <option value="B">B등급 (50% 할인)</option>
                                 </select>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;">
@@ -14899,8 +14903,8 @@ function seToggleRecoveryItems(id) {
                         </label>
                         <select id="seAddGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                             <option value="">등급 선택</option>
-                            <option value="A">A등급 (50% 할인)</option>
-                            <option value="B">B등급 (60% 할인)</option>
+                            <option value="A">A등급 (40% 할인)</option>
+                            <option value="B">B등급 (50% 할인)</option>
                         </select>
                         <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                     </div>
