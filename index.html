@@ -16225,9 +16225,9 @@ function seRenderTable(storeId) {
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
     const isDemo = row => row.product_id === SE_DEMO_SERIES || SE_DEMO_RE.test(row.memo || '')
                         || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
-    const kindOf = row => row.sold ? ({ '폐기': 'disposed', '연구소': 'research' }[row.exit_type] || 'sold')
+    const kindOf = row => row.sold ? ({ '폐기': 'disposed', '연구소': 'research', '증정': 'gift' }[row.exit_type] || 'sold')
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
-    const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0 };
+    const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0, gift: 0 };
     const demoCount = seDisplayData.filter(r => !r.sold && isDemo(r)).length;
     const hasOpenIssue = row => (seIssues[(row.sku || '').toUpperCase()] || []).some(seIssueOpen);
     const asCount  = seDisplayData.filter(hasOpenIssue).length;
@@ -16334,6 +16334,7 @@ function seRenderTable(storeId) {
                     ['sold',     `판매 完 (${kc.sold})`,       '#16a34a'],
                     ['research', `연구소 반출 (${kc.research})`, '#6d28d9'],
                     ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12'],
+                    ['gift',     `고객 증정 (${kc.gift})`,      '#0891b2'],
                 ])}
             </div>
             ${(srcN.store || srcN.hq) ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
@@ -16892,6 +16893,7 @@ function seEditToggleExit() {
     document.getElementById('seEditExitNote').placeholder =
           kind === '폐기'   ? '예: 등판·헤드 오염으로 폐기'
         : kind === '연구소' ? '예: 메쉬 내구성 분석용으로 연구소 반출'
+        : kind === '증정'   ? '예: 아시안게임 롤선수 친필사인 이벤트 경품으로 증정'
         :                     '예: 위탁매출거래처 변경 후 현장 판매';
 }
 
@@ -16920,6 +16922,7 @@ const SE_EXIT = {
     '판매':   { icon: '', label: '판매 完',    bg: '#16a34a', buyer: true  },
     '연구소': { icon: '', label: '연구소 반출', bg: '#6d28d9', buyer: false },
     '폐기':   { icon: '', label: '훼손 폐기',   bg: '#7c2d12', buyer: false },
+    '증정':   { icon: '', label: '고객 증정',   bg: '#0891b2', buyer: false },
 };
 const seExitOf = row => SE_EXIT[row.exit_type] || (row.sold ? SE_EXIT['판매'] : null);
 // 대분류는 매장에 있나 없나, 소분류는 그 안에서 무엇인가.
