@@ -14463,12 +14463,43 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div class="se-step"><span class="se-point-n n">1</span><div>대분류를 <b>매장 出</b>로 바꿉니다. 그러면 소분류가 반출 사유로 바뀝니다.</div></div>
             <div class="se-step"><span class="se-point-n n">2</span><div><b>판매 完</b>을 고릅니다. 고객 증정·연구소 반출·훼손 폐기도 여기서 고릅니다.</div></div>
             <div class="se-step"><span class="se-point-n n">3</span><div>구매자 칸은 <b>판매 完</b>일 때만 열립니다. <b>성과 전화 뒷 4자리만</b> 적습니다.</div></div>
-            <div class="se-sale-warn" style="background:#fef2f2;border-color:#fecaca;">
-                <div class="se-sale-warn-h" style="color:#b91c1c;">🧾 보고서를 빠뜨리면 미수금으로 남습니다</div>
-                <div style="font-size:0.82rem;color:#7f1d1d;line-height:1.65;">
-                    보고서가 등록될 때까지 그 행은 목록에 <b>빨갛게</b> 뜨고 '회수대장 등록 필요'가 붙습니다.
-                    판매뿐 아니라 고객 증정 · 연구소 반출 · 훼손 폐기도 똑같이 보고서가 필요합니다.
+            <p class="se-sale-p" style="margin-top:14px;">전시품을 판매 완료하면 상위에 이런 화면이 뜹니다.</p>
+
+            <div class="se-ui">
+                <div class="se-ui-bar">전시품 탭 맨 위</div>
+                <div class="se-ui-body">
+                    <div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
+                        <span style="font-size:1.1rem;line-height:1.2;">🧾</span>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">회수대장 등록이 필요한 반출 1건 <span style="font-weight:600;font-size:0.8rem;">· 판매 完 1</span></div>
+                            <div style="font-size:0.76rem;color:#7f1d1d;margin-top:3px;line-height:1.6;">
+                                전시에서 빠졌는데 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
+                                <span style="font-family:monospace;font-size:0.73rem;">S51ACF0VG</span>
+                            </div>
+                            <button type="button" style="margin-top:8px;background:#dc2626;border:none;border-radius:7px;padding:5px 13px;color:#fff;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">해당 1건만 보기</button>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <div class="se-ui">
+                <div class="se-ui-bar">그 제품 행의 회수보고서 칸</div>
+                <div class="se-ui-body">
+                    <table class="se-ui-tbl">
+                        <thead><tr><th>제품명</th><th>대분류</th><th>소분류</th><th>회수보고서</th></tr></thead>
+                        <tbody><tr>
+                            <td><span class="se-tag">RINGO (링고)</span></td>
+                            <td><span class="se-tag" style="background:#b91c1c;color:#fff;">매장 出</span></td>
+                            <td><span class="se-tag" style="background:#16a34a;color:#fff;">판매 完</span></td>
+                            <td><span style="background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:2px 7px;font-size:0.7rem;font-weight:800;color:#b91c1c;white-space:nowrap;">🧾 등록 필요</span></td>
+                        </tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="se-sale-note">
+                본사 담당자가 보고서를 올려 연결하면 이 경고가 사라지고 🔗 링크로 바뀝니다.
+                판매뿐 아니라 고객 증정 · 연구소 반출 · 훼손 폐기도 똑같이 보고서가 필요합니다.
             </div>
         </div>
     </div>
