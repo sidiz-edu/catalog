@@ -9920,6 +9920,7 @@ function showDisplaySaleDetail(itemId) {
           <h2 style="margin:0 0 4px;font-size:1.15rem;">${prodName}</h2>
           ${skuHtml ? `<div style="font-size:0.8rem;color:#64748b;margin-bottom:10px;">단품코드 ${skuHtml}</div>` : ''}
           ${prod.desc ? `<p style="font-size:0.85rem;color:#64748b;line-height:1.6;margin:0 0 14px;">${prod.desc}</p>` : ''}
+          ${item.sale_note ? `<div style="font-size:0.85rem;color:#1e293b;background:#f8fafc;border-left:3px solid #0f172a;border-radius:0 8px 8px 0;padding:11px 14px;margin:0 0 14px;line-height:1.65;white-space:pre-wrap;">${item.sale_note}</div>` : ''}
           ${salePrice ? `
             <div style="background:#eff6ff;border-radius:10px;padding:12px 16px;margin-bottom:14px;">
               <div style="font-size:0.78rem;color:#9ca3af;text-decoration:line-through;">${(item.consumer_price||0).toLocaleString()}원</div>
@@ -14056,8 +14057,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;">
                                 <label style="font-size:0.78rem;color:var(--se-muted);">소비자가 (원)</label>
-                                <input type="number" id="seEditConsumerPrice" placeholder="소비자가" min="0" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                                <input type="number" id="seEditConsumerPrice" placeholder="소비자가" min="0" oninput="seEditToggleSaleNote()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                             </div>
+                        </div>
+                        <div id="seEditSaleNoteWrap" style="display:none;flex-direction:column;gap:4px;">
+                            <label style="font-size:0.78rem;color:var(--se-muted);">제품 설명 <span style="color:#94a3b8;">· 고객에게 그대로 보입니다</span></label>
+                            <textarea id="seEditSaleNote" rows="3" maxlength="300" placeholder="예) 좌판 오른쪽에 미세한 스크래치가 있습니다. 기능은 이상 없습니다." style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;font-family:inherit;line-height:1.6;resize:vertical;"></textarea>
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;">
@@ -14421,10 +14426,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <span class="se-ui-fld">소분류<span class="se-ui-sel se-point">판매 중</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">2</span></span>
                     <span class="se-ui-fld">등급<span class="se-ui-sel se-point">A등급 (50% 할인)</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">3</span></span>
                     <span class="se-ui-fld">소비자가 (원)<span class="se-ui-sel se-point" style="min-width:96px;">910000</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">3</span></span>
+                    <div style="display:flex;flex-direction:column;gap:3px;font-size:0.7rem;color:var(--se-muted);margin-top:4px;">
+                        제품 설명 · 고객에게 그대로 보입니다
+                        <span class="se-point" style="display:block;max-width:420px;border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;background:var(--se-surface);color:var(--se-text);font-size:0.79rem;line-height:1.6;">좌판 오른쪽에 미세한 스크래치가 있습니다. 기능은 이상 없습니다.</span>
+                        <span class="se-point-n" style="align-self:flex-start;margin:2px 0 0;">4</span>
+                    </div>
                 </div>
             </div>
             <div class="se-step"><span class="se-point-n n">2</span><div>소분류를 <b>판매 중</b>으로 바꿉니다. 그래야 등급·소비자가 칸이 열립니다.</div></div>
-            <div class="se-step"><span class="se-point-n n">3</span><div><b>등급</b>과 <b>소비자가</b>를 넣고 저장합니다. 판매가는 등급에 따라 자동으로 계산됩니다 — 직접 적지 않습니다.</div></div>
+            <div class="se-step"><span class="se-point-n n">3</span><div><b>등급</b>과 <b>소비자가</b>를 넣습니다. 판매가는 등급에 따라 자동으로 계산됩니다 — 직접 적지 않습니다.</div></div>
+            <div class="se-step"><span class="se-point-n n">4</span><div>소비자가를 적으면 <b>제품 설명</b> 칸이 열립니다. 적은 그대로 고객 화면에 뜨니 <b>오염·스크래치 위치를 솔직하게</b> 적고 저장합니다.</div></div>
 
             <div class="se-ui">
                 <div class="se-ui-bar">저장하면 그 행에 버튼이 하나 더 생깁니다</div>
@@ -14438,22 +14449,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <button type="button" class="se-del-btn" style="background:#475569;color:#fff;border:none;">수정</button>
                                 <button type="button" class="se-del-btn" style="background:#0f766e;color:#fff;border:none;">복사</button>
                                 <button type="button" class="se-del-btn se-point" style="background:#ea580c;color:#fff;border:none;font-size:0.7rem;">카탈로그 게시</button>
-                                <span class="se-point-n">4</span>
+                                <span class="se-point-n">5</span>
                             </div></td>
                         </tr></tbody>
                     </table>
                 </div>
             </div>
-            <div class="se-step"><span class="se-point-n n">4</span><div><b>카탈로그 게시</b>를 누르면 고객이 보는 <b>전시품 판매</b> 화면에 사진·가격·매장 전화번호가 함께 뜹니다. 누르면 버튼이 <b>🏷️게시중</b>으로 바뀌고, 다시 누르면 내려갑니다.</div></div>
+            <div class="se-step"><span class="se-point-n n">5</span><div><b>카탈로그 게시</b>를 누르면 고객이 보는 <b>전시품 판매</b> 화면에 사진·가격·매장 전화번호가 함께 뜹니다. 누르면 버튼이 <b>🏷️게시중</b>으로 바뀌고, 다시 누르면 내려갑니다.</div></div>
 
             <div class="se-ui">
                 <div class="se-ui-bar">카탈로그 접속 시 상위 오른쪽 메뉴</div>
                 <div class="se-ui-body">
                     <span class="se-point" style="display:inline-block;padding:7px 14px;border-radius:7px;background:var(--se-raised,#f8fafc);font-size:0.82rem;color:var(--se-text);">🏷️ 전시품 판매</span>
-                    <span class="se-point-n">5</span>
+                    <span class="se-point-n">6</span>
                 </div>
             </div>
-            <div class="se-step"><span class="se-point-n n">5</span><div>올린 뒤에는 <b>카탈로그 전시품 판매 페이지를 직접 열어 제품이 제대로 올라갔는지 확인합니다.</b> 사진 · 등급 · 판매가 · 매장 전화번호가 다 떠 있는지 보고, 빠진 게 있으면 전시품 탭으로 돌아가 고칩니다.</div></div>
+            <div class="se-step"><span class="se-point-n n">6</span><div>올린 뒤에는 <b>카탈로그 전시품 판매 페이지를 직접 열어 제품이 제대로 올라갔는지 확인합니다.</b> 사진 · 등급 · 판매가 · 매장 전화번호가 다 떠 있는지 보고, 빠진 게 있으면 전시품 탭으로 돌아가 고칩니다.</div></div>
         </div>
 
         <!-- 4. 고객 응대 및 판매 -->
@@ -15037,7 +15048,8 @@ function seToggleRecoveryItems(id) {
                             <option value="A">A등급 (50% 할인)</option>
                             <option value="B">B등급 (60% 할인)</option>
                         </select>
-                        <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
+                        <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" oninput="seAddToggleSaleNote()" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
+                        <input type="text" id="seAddSaleNote" placeholder="제품 설명 (고객에게 보입니다)" maxlength="300" style="display:none;flex:1 1 280px;min-width:200px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                     </div>
                     <div class="se-add-grid" style="grid-template-columns: 1fr;">
                         <label style="font-size:0.78rem;color:var(--se-muted);display:flex;flex-direction:column;gap:4px;cursor:pointer;">
@@ -17081,6 +17093,7 @@ async function seOpenEditModal(id) {
     seEditToggleExit();
     document.getElementById('seEditGrade').value = row.grade || '';
     document.getElementById('seEditConsumerPrice').value = row.consumer_price || '';
+    document.getElementById('seEditSaleNote').value = row.sale_note || '';
     document.getElementById('seEditUpdater').value = '';
     seEditToggleSaleFields();
     document.getElementById('seEditModal').style.display = 'flex';
@@ -17181,6 +17194,19 @@ function seEditToggleSaleFields() {
     const isSale = document.getElementById('seEditMajor').value === 'in'
                 && document.getElementById('seEditMinor').value === '판매';
     document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
+    seEditToggleSaleNote();
+}
+// 설명 칸은 소비자가를 적은 뒤에 열린다 — 가격부터 정하게 하려는 것.
+function seEditToggleSaleNote() {
+    const wrap = document.getElementById('seEditSaleNoteWrap');
+    if (!wrap) return;
+    const priced = !!document.getElementById('seEditConsumerPrice').value.trim();
+    wrap.style.display = priced ? 'flex' : 'none';
+}
+function seAddToggleSaleNote() {
+    const el = document.getElementById('seAddSaleNote');
+    if (!el) return;
+    el.style.display = document.getElementById('seAddConsumerPrice').value.trim() ? '' : 'none';
 }
 function seEditPopulateSkuList(seriesName) {
     const dl = document.getElementById('seEditSkuList');
@@ -17374,8 +17400,9 @@ async function seSubmitEdit() {
     if (purpose === '판매') {
         updates.grade = document.getElementById('seEditGrade').value || null;
         updates.consumer_price = parseInt(document.getElementById('seEditConsumerPrice').value) || null;
+        updates.sale_note = document.getElementById('seEditSaleNote').value.trim() || null;
     } else {
-        updates.grade = null; updates.consumer_price = null; updates.catalog_visible = false;
+        updates.grade = null; updates.consumer_price = null; updates.sale_note = null; updates.catalog_visible = false;
     }
     const exitKind = major === 'out' ? minor : '';
     if (exitKind) {
@@ -17480,10 +17507,11 @@ async function seAddDisplay() {
         const sold          = document.getElementById('seAddSold').checked;
         const grade         = document.getElementById('seAddGrade').value || null;
         const consumerPrice = parseInt(document.getElementById('seAddConsumerPrice').value) || null;
+        const saleNote      = document.getElementById('seAddSaleNote').value.trim() || null;
         const record = { store_id: storeId, product_id: productId, display_since: date || null, memo,
               updated_by: updater, updated_at: new Date().toISOString(),
               sku, color_code: colorCode, quantity, location: location || null, purpose, sold,
-              grade, consumer_price: consumerPrice };
+              grade, consumer_price: consumerPrice, sale_note: saleNote };
         if (imageUrls.length) {
             record.image_url = imageUrls[0];
             record.image_urls = imageUrls;
@@ -17509,6 +17537,8 @@ async function seAddDisplay() {
         document.getElementById('seAddSold').checked = false;
         document.getElementById('seAddGrade').value = '';
         document.getElementById('seAddConsumerPrice').value = '';
+        document.getElementById('seAddSaleNote').value = '';
+        seAddToggleSaleNote();
         document.getElementById('seAddSoldRow').style.display = 'none';
         document.getElementById('seAddPhoto').value = '';
         _seAddPhotos = []; _seAddPhotoBlobs = [];
@@ -17623,6 +17653,7 @@ async function seToggleCatalogVisible(id, newVal) {
 function seToggleSoldField() {
     const isPurchase = document.getElementById('seAddPurpose').value === '판매';
     document.getElementById('seAddSoldRow').style.display = isPurchase ? 'flex' : 'none';
+    seAddToggleSaleNote();
     if (!isPurchase) document.getElementById('seAddSold').checked = false;
 }
 
