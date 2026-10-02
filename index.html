@@ -14115,7 +14115,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
                 <div id="seDragHint" style="font-size:0.72rem;color:var(--se-muted);">행을 끌어 순서를 바꿀 수 있습니다</div>
-                    <button onclick="sePrintTagsVisible()" style="margin-left:auto;background:transparent;border:1.5px solid var(--se-border);border-radius:8px;padding:7px 13px;color:var(--se-muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" title="카탈로그에 게시 중인 전시품 가격택을 모두 인쇄합니다">🏷 게시중 가격택</button>
+                    <button onclick="sePrintTagsOnSale()" style="margin-left:auto;background:transparent;border:1.5px solid var(--se-border);border-radius:8px;padding:7px 13px;color:var(--se-muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" title="소분류가 '판매 중'인 전시품 가격택을 모두 인쇄합니다">🏷 판매중 전시품 가격택 모두 인쇄</button>
                     <button onclick="seOpenAddModal()" style="background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
                 </div>
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
@@ -14452,7 +14452,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     </div>
                 </div>
             </div>
-            <div class="se-step"><span class="se-point-n n">1</span><div><b>🏷 가격택 인쇄</b>를 누르면 인쇄 창이 바로 뜹니다. 체크하지 않고 게시 중인 것을 전부 뽑으려면 목록 위 <b>🏷 게시중 가격택</b>을 누릅니다.</div></div>
+            <div class="se-step"><span class="se-point-n n">1</span><div><b>🏷 가격택 인쇄</b>를 누르면 인쇄 창이 바로 뜹니다. 체크하지 않고 전부 뽑으려면 목록 위 <b>🏷 판매중 전시품 가격택 모두 인쇄</b>를 누릅니다. 카탈로그 게시 여부와 상관없이 소분류가 <b>판매 중</b>인 것이 다 나옵니다.</div></div>
 
             <div class="se-ui">
                 <div class="se-ui-bar">A4 한 장에 2열 × 3행 = 6개 — 이렇게 나옵니다</div>
@@ -17627,10 +17627,11 @@ function sePrintTagsSelected() {
     sePrintTagsFor(rows, '선택한 ' + rows.length + '건');
 }
 
-function sePrintTagsVisible() {
-    const rows = (seDisplayData || []).filter(r => r.catalog_visible && !r.sold);
-    if (!rows.length) { alert('카탈로그에 게시 중인 전시품이 없습니다.'); return; }
-    sePrintTagsFor(rows, '게시 중 ' + rows.length + '건');
+// 카탈로그 게시 여부와 상관없이 '판매 중'이면 매장에 택이 걸려 있어야 한다.
+function sePrintTagsOnSale() {
+    const rows = (seDisplayData || []).filter(r => r.purpose === '판매' && !r.sold);
+    if (!rows.length) { alert('판매 중인 전시품이 없습니다.'); return; }
+    sePrintTagsFor(rows, '판매 중 ' + rows.length + '건');
 }
 
 
