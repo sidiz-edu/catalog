@@ -8045,8 +8045,9 @@ const productAccessories = {
 };
 
 // 전시품 판매 등급별 할인율 — 상태가 나은 A급이 덜 깎인다.
-// A = 소비자가의 60%, B = 50% (컨플루언스 「매장 전시품 판매 채널 기획안」)
-const SE_GRADE_DISCOUNT = { A: 0.4, B: 0.5 };
+// A 50% 할인(소비자가의 50%) · B 60% 할인(소비자가의 40%).
+// 컨플루언스 「매장 전시품 판매 채널 기획안」(25-11)은 3등급 시절 수치라 지금과 다르다.
+const SE_GRADE_DISCOUNT = { A: 0.5, B: 0.6 };
 
 // ── 색상별 제품 코드 (productColors 인덱스와 1:1 대응) ──
 const productSkus = {
@@ -14040,8 +14041,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <label style="font-size:0.78rem;color:var(--se-muted);">등급</label>
                                 <select id="seEditGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.82rem;">
                                     <option value="">등급 선택</option>
-                                    <option value="A">A등급 (40% 할인)</option>
-                                    <option value="B">B등급 (50% 할인)</option>
+                                    <option value="A">A등급 (50% 할인)</option>
+                                    <option value="B">B등급 (60% 할인)</option>
                                 </select>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;">
@@ -14325,14 +14326,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <td>거의 새 제품. 미세한 사용감은 있으나 눈에 띄는 흠집 없음</td>
                         <td>약한 먼지, 미세한 스크래치 1~2개 이하</td>
                         <td>"정상품과 비교하여 육안으로 식별되는 하자가 없는 제품입니다."</td>
-                        <td><b>소비자가의 60%</b><br><span class="se-sale-sub">40% 할인</span></td>
+                        <td><b>소비자가의 50%</b><br><span class="se-sale-sub">50% 할인</span></td>
                     </tr>
                     <tr>
                         <td><span class="se-grade se-grade-b">B</span></td>
                         <td>전시·사용감이 다소 있음. 눈에 띄는 흠집·얼룩이 일부 있으나 기능은 이상 없음</td>
                         <td>좌판·팔걸이 미세 오염, 도장·프레임 스크래치</td>
                         <td>"일부 사용감이 있으나 기능상 문제 없는 전시품입니다."</td>
-                        <td><b>소비자가의 50%</b><br><span class="se-sale-sub">50% 할인</span></td>
+                        <td><b>소비자가의 40%</b><br><span class="se-sale-sub">60% 할인</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -14383,7 +14384,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div class="se-ui-body">
                     <span class="se-ui-fld">대분류<span class="se-ui-sel">매장</span></span>
                     <span class="se-ui-fld">소분류<span class="se-ui-sel se-point">판매 중</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">2</span></span>
-                    <span class="se-ui-fld">등급<span class="se-ui-sel se-point">A등급 (40% 할인)</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">3</span></span>
+                    <span class="se-ui-fld">등급<span class="se-ui-sel se-point">A등급 (50% 할인)</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">3</span></span>
                     <span class="se-ui-fld">소비자가 (원)<span class="se-ui-sel se-point" style="min-width:96px;">910000</span><span class="se-point-n" style="margin:2px 0 0;align-self:flex-start;">3</span></span>
                 </div>
             </div>
@@ -14979,8 +14980,8 @@ function seToggleRecoveryItems(id) {
                         </label>
                         <select id="seAddGrade" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                             <option value="">등급 선택</option>
-                            <option value="A">A등급 (40% 할인)</option>
-                            <option value="B">B등급 (50% 할인)</option>
+                            <option value="A">A등급 (50% 할인)</option>
+                            <option value="B">B등급 (60% 할인)</option>
                         </select>
                         <input type="number" id="seAddConsumerPrice" placeholder="소비자가 (원)" min="0" style="width:140px;background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:4px;padding:4px 8px;font-size:0.8rem;">
                     </div>
