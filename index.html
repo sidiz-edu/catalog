@@ -14594,13 +14594,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <table class="se-form">
                         <tr><th>성명</th><td class="blank">고객이 직접</td><th>구매 일자</th><td>2026. 10. 2.</td></tr>
                         <tr><th>연락처</th><td class="blank">고객이 직접</td><th>구매 매장</th><td>더 프로그레시브 성수</td></tr>
-                        <tr><th>구매 제품</th><td>RINGO (링고) · VSNB509ACF</td><th>구매 색상</th><td>A441P</td></tr>
+                        <tr><th>제품명</th><td colspan="3">RINGO (링고)</td></tr>
+                        <tr><th>제품코드</th><td>VSNB509ACF</td><th>색상코드</th><td>A441P</td></tr>
                     </table>
                 </div>
             </div>
             <div class="se-sale-note" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
                 <span style="flex:1;min-width:220px;">
-                    <b>구매 일자 · 구매 매장 · 구매 제품(제품명 · 제품코드) · 구매 색상(색상코드)</b>은 카탈로그 값으로 채워집니다.
+                    <b>구매 일자 · 구매 매장 · 제품명 · 제품코드 · 색상코드</b>는 카탈로그 값으로 채워집니다.
                     <b>성명과 연락처는 비워 둡니다</b> — 고객이 직접 쓰는 칸입니다.
                     제품을 정하기 전에 미리 뽑아 두려면 오른쪽 <b>빈 양식 인쇄</b>를 쓰세요. 빈 양식은 <b>칸을 눌러 바로 입력</b>할 수 있고, 손으로 쓸 거면 그냥 두고 인쇄하면 됩니다.
                 </span>
@@ -17554,7 +17555,8 @@ function seConsentHtml(f) {
         <table>
             <tr><th>성명</th>${cell(f.name, '고객 성명')}<th>구매 일자</th>${cell(f.date, '날짜')}</tr>
             <tr><th>연락처</th>${cell(f.phone, '연락처')}<th>구매 매장</th>${cell(f.store, '매장명')}</tr>
-            <tr><th>구매 제품</th>${cell(f.product, '제품명')}<th>구매 색상</th>${cell(f.color, '색상코드')}</tr>
+            <tr><th>제품명</th><td contenteditable="true" spellcheck="false" colspan="3" data-ph="제품명">${v(f.product)}</td></tr>
+            <tr><th>제품코드</th>${cell(f.code, '제품코드')}<th>색상코드</th>${cell(f.color, '색상코드')}</tr>
         </table>
     </section>
     <div class="closing">
@@ -17579,13 +17581,14 @@ function sePrintConsent(id) {
         phone: '',
         date: row.sold_at ? new Date(row.sold_at).toLocaleDateString('ko-KR') : seTodayKo(),
         store: store ? store.name : row.store_id,
-        product: [row.product_id, row.sku ? row.sku.split('-')[0] : ''].filter(Boolean).join(' · '),
+        product: row.product_id || '',
+        code: row.sku ? row.sku.split('-')[0] : '',
         color: row.color_code || (row.sku && row.sku.includes('-') ? row.sku.split('-').slice(1).join('-') : ''),
     }));
 }
 
 function sePrintConsentBlank() {
-    sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', color: '' }), false);
+    sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', code: '', color: '' }), false);
 }
 
 // ── 가격택 — 쓰던 비닐택에 그대로 들어가게 63 × 83.6mm, A4 한 장에 6개 ──
