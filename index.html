@@ -13809,6 +13809,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 }
 .se-tab.active { color: #003EFF; border-top-color: #003EFF; font-weight: 700; }
 .se-tab:hover:not(.active) { color: var(--se-text); }
+.se-flow { display: flex; align-items: stretch; gap: 4px; background: var(--se-surface); border: 1px solid var(--se-border); border-radius: 11px; padding: 16px 14px; margin-bottom: 12px; }
+.se-flow-s { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 2px 6px; }
+.se-flow-n { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border-radius: 50%; background: #0f172a; color: #fff; font-size: 0.68rem; font-weight: 800; font-family: 'Outfit', sans-serif; }
+.se-flow-t { font-size: 0.84rem; font-weight: 800; color: var(--se-text); line-height: 1.35; }
+.se-flow-d { font-size: 0.72rem; color: var(--se-muted); line-height: 1.55; }
+.se-flow-a { align-self: center; color: #cbd5e1; font-size: 1.1rem; font-weight: 700; flex: 0 0 auto; }
+@media (max-width: 760px) {
+    .se-flow { flex-direction: column; gap: 2px; }
+    .se-flow-a { transform: rotate(90deg); margin: 1px 0; }
+}
 .se-sale-sec { background: var(--se-surface); border: 1px solid var(--se-border); border-radius: 11px; padding: 16px 20px; margin-bottom: 12px; }
 .se-sale-h { display: flex; align-items: center; gap: 9px; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800; margin: 0 0 7px; color: var(--se-text); }
 .se-sale-n { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: #0f172a; color: #fff; font-size: 0.78rem; font-weight: 800; flex-shrink: 0; }
@@ -14309,6 +14319,38 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 매장에서 전시하던 제품을 정가보다 저렴하게 판매하는 것입니다.<br>
                 <b>리퍼 제품이 아니라 '브랜드가 직접 관리한 전시품'</b>으로 안내합니다.<br>
                 구매 후 배송·설치는 불가하며 <b>매장에 와서 직접 가져가는 것만</b> 됩니다.
+            </div>
+        </div>
+
+        <div class="se-flow">
+            <div class="se-flow-s">
+                <span class="se-flow-n">1</span>
+                <div class="se-flow-t">등급을 매긴다</div>
+                <div class="se-flow-d">VP존은 A, 피팅존·컨설팅룸 샘플은 B</div>
+            </div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s">
+                <span class="se-flow-n">2</span>
+                <div class="se-flow-t">매장에서 준비한다</div>
+                <div class="se-flow-d">오염 제거 · 보증 불가 스티커 · 가격택 · 사진 4~5장</div>
+            </div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s">
+                <span class="se-flow-n">3</span>
+                <div class="se-flow-t">카탈로그에 올린다</div>
+                <div class="se-flow-d">판매 중으로 바꿔 게시하고, 잘 올라갔는지 확인</div>
+            </div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s">
+                <span class="se-flow-n">4</span>
+                <div class="se-flow-t">고객을 맞는다</div>
+                <div class="se-flow-d">전화 문의 → 방문 → 동의서 서명 → 매장 결제</div>
+            </div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s">
+                <span class="se-flow-n">5</span>
+                <div class="se-flow-t">팔린 뒤에 할 일</div>
+                <div class="se-flow-d">매장 出 · 판매 完로 바꾸고 회수 보고서까지</div>
             </div>
         </div>
 
