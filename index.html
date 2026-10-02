@@ -13874,19 +13874,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 /* 짚어주는 자리 — 초록 테두리와 번호표가 한 쌍으로 움직인다 */
 .se-point { position: relative; outline: 2px solid #0f172a; outline-offset: 2px; border-radius: 7px; }
 .se-point-n { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px; background: #0f172a; color: #fff; font-size: 0.66rem; font-weight: 800; font-family: 'Outfit', sans-serif; margin-left: 6px; vertical-align: middle; }
-.se-tagwrap { width: 39.3mm; height: 51.8mm; overflow: hidden; flex: 0 0 auto; }
-.se-tagmini { width: 63.33mm; height: 83.61mm; border: 1pt solid #0C0C0C; position: relative;
-              background: #fff; color: #000; font-family: Calibri, 'Malgun Gothic', Arial, sans-serif;
-              transform: scale(0.62); transform-origin: top left; }
-.se-tagmini > div { position: absolute; padding: 1.27mm 2.54mm; }
-.se-tagmini .nm { left: 7.10mm; top: 12.21mm; width: 50mm; font-family: Arial, sans-serif; font-weight: 700; font-size: 28pt; }
-.se-tagmini .lb { font-size: 8pt; line-height: 1.5; text-align: right; }
-.se-tagmini .pr { font-size: 16pt; font-weight: 700; line-height: 1.5; text-align: right; width: 34.82mm; left: 26.88mm; }
-.se-tagmini .lb1 { left: 43.79mm; top: 42.96mm; width: 17.92mm; color: #7F7F7F; }
-.se-tagmini .pr1 { top: 47.36mm; color: #7F7F7F; }
-.se-tagmini .lb2 { left: 36.49mm; top: 62.98mm; width: 25.22mm; }
-.se-tagmini .pr2 { top: 67.13mm; }
-.se-tagmini .gr { left: 4.34mm; top: 70.56mm; font-size: 12pt; font-weight: 700; }
+.se-tagwrap { width: 39.3mm; height: 51.9mm; overflow: hidden; flex: 0 0 auto; }
+/* 인쇄물과 같은 치수를 0.62배로 줄인 것 — 규칙은 SE_TAG_CSS에서 주입한다 */
+.se-tagwrap .tag { transform: scale(0.62); transform-origin: top left;
+                   font-family: 'Outfit', 'Noto Sans KR', sans-serif; color: #1a1a1a; }
 .se-form { border: 1px solid var(--se-border); border-collapse: collapse; font-size: 0.74rem; background: #fff; color: #111; }
 .se-form th, .se-form td { border: 1px solid #94a3b8; padding: 6px 9px; text-align: left; white-space: nowrap; }
 .se-form th { background: #f1f5f9; font-weight: 700; color: #334155; }
@@ -14466,20 +14457,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div class="se-ui">
                 <div class="se-ui-bar">A4 한 장에 2열 × 3행 = 6개 — 이렇게 나옵니다</div>
                 <div class="se-ui-body">
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                        <div class="se-tagwrap"><div class="se-tagmini">
-                            <div class="nm">T90</div>
-                            <div class="lb lb1">소비자가</div><div class="pr pr1">1,450,000원</div>
-                            <div class="lb lb2">전시품 할인가</div><div class="pr pr2">725,000원</div>
-                            <div class="gr">A급</div>
-                        </div></div>
-                        <div class="se-tagwrap"><div class="se-tagmini">
-                            <div class="nm">T50</div>
-                            <div class="lb lb1">소비자가</div><div class="pr pr1">439,000원</div>
-                            <div class="lb lb2">전시품 할인가</div><div class="pr pr2">175,600원</div>
-                            <div class="gr">B급</div>
-                        </div></div>
-                    </div>
+                    <div id="seTagPreview" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
                 </div>
             </div>
             <div class="se-sale-note">
@@ -15355,6 +15333,7 @@ function seSwitchTab(tab) {
     document.getElementById('seTabRequest').style.display   = tab === 'request'  ? '' : 'none';
     document.getElementById('seTabRecovery').style.display  = tab === 'recovery' ? '' : 'none';
     document.getElementById('seTabSale').style.display      = tab === 'sale'     ? '' : 'none';
+    if (tab === 'sale') seRenderTagPreview();
 
     if (tab === 'overview') seLoadOverview();
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
@@ -17435,14 +17414,26 @@ function seComputeNeedRecovery() {
 }
 const seNeedsRecovery = row => seNeedRecIds.has(row.id);
 
-// ── 매장에서 바로 뽑는 인쇄물 ────────────────────────────────────────
+// 인쇄물 공통 — 시디즈 심볼과 글꼴을 같이 쓴다.
+const SE_PRINT_FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">';
+const SE_PRINT_FACE = "'Outfit', 'Noto Sans KR', 'Malgun Gothic', sans-serif";
+const SE_SYMBOL = '<svg viewBox="0 2 14 20" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    + '<path fill="currentColor" d="M14 2L1.25142e-05 5.67894V10.8348C-0.000528809 10.8884 0.0165056 10.9406 0.0484266 10.9833C0.0803476 11.026 0.125337 11.0566 0.176296 11.0704L10.5867 13.807L1.25142e-05 16.5973V22L14 18.3211V13.1722C14.0005 13.1186 13.9835 13.0664 13.9516 13.0237C13.9197 12.9811 13.8747 12.9504 13.8237 12.9367L3.3841 10.193L14 7.40274V2Z"/></svg>';
+const SE_PRINT_NAVY = '#0026cc';
+
 // 카탈로그 CSS와 섞이지 않게 새 창에 통째로 써서 인쇄한다.
+// 글꼴이 내려온 뒤에 인쇄해야 모양이 깨지지 않는다.
 function sePrintDoc(html) {
     const w = window.open('', '_blank', 'width=900,height=1100');
     if (!w) { alert('팝업이 막혀 있습니다. 주소창 오른쪽에서 팝업을 허용해 주세요.'); return; }
     w.document.write(html);
     w.document.close();
-    setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 400);
+    let done = false;
+    const go = () => { if (done) return; done = true; try { w.focus(); w.print(); } catch (e) {} };
+    try { w.document.fonts.ready.then(() => setTimeout(go, 200)); } catch (e) {}
+    setTimeout(go, 2500);   // 글꼴이 안 내려와도 인쇄는 뜬다
 }
 
 const SE_CONSENT_ITEMS = [
@@ -17465,31 +17456,46 @@ function seConsentHtml(f) {
     const v = x => x ? String(x).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) : '';
     const secs = SE_CONSENT_ITEMS.map(([h, lines], i) => `
         <section>
-            <h2>${i + 1}. ${h}</h2>
-            ${lines.map(l => `<p>- ${l}</p>`).join('')}
+            <h2><i>${i + 1}</i>${h}</h2>
+            ${lines.map(l => `<p>${l}</p>`).join('')}
         </section>`).join('');
     return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
-<title>전시품 구매 동의서</title>
+<title>전시품 구매 동의서</title>${SE_PRINT_FONTS}
 <style>
-    @page { size: A4; margin: 20mm 18mm; }
+    @page { size: A4; margin: 18mm 17mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Malgun Gothic', '맑은 고딕', Arial, sans-serif; color: #111; font-size: 10.5pt; line-height: 1.75; }
-    h1 { font-size: 17pt; font-weight: 800; text-align: center; margin: 0 0 14mm; letter-spacing: -0.02em; }
-    section { margin-bottom: 5mm; }
-    h2 { font-size: 11pt; font-weight: 700; margin: 0 0 1mm; }
-    p { margin: 0 0 0.5mm; padding-left: 2mm; }
-    table { width: 100%; border-collapse: collapse; margin-top: 2mm; }
-    th, td { border: 0.6pt solid #111; padding: 3mm 3mm; font-size: 10.5pt; height: 11mm; }
-    th { background: #f2f2f2; font-weight: 700; width: 22%; text-align: left; white-space: nowrap; }
-    td { width: 28%; }
-    .closing { margin-top: 12mm; text-align: center; line-height: 2; }
-    .sign { margin-top: 12mm; text-align: right; font-size: 11pt; }
-    .sign span { letter-spacing: 0.1em; }
+    body { margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a;
+           font-size: 10pt; line-height: 1.8; -webkit-font-smoothing: antialiased; }
+    .head { display: flex; align-items: flex-end; justify-content: space-between;
+            border-bottom: 1.6pt solid ${SE_PRINT_NAVY}; padding-bottom: 4mm; margin-bottom: 9mm; }
+    h1 { font-size: 19pt; font-weight: 800; margin: 0; letter-spacing: -0.03em; }
+    .brand { display: flex; align-items: center; gap: 2.2mm; color: ${SE_PRINT_NAVY}; }
+    .brand svg { height: 5.4mm; width: auto; }
+    .brand b { font-size: 10.5pt; font-weight: 800; letter-spacing: 0.22em; }
+    section { margin-bottom: 5.5mm; }
+    h2 { font-size: 10.5pt; font-weight: 700; margin: 0 0 1.2mm; display: flex; align-items: center; gap: 2.4mm; }
+    h2 i { font-style: normal; display: inline-flex; align-items: center; justify-content: center;
+           width: 5mm; height: 5mm; border-radius: 50%; background: ${SE_PRINT_NAVY}; color: #fff;
+           font-size: 7.5pt; font-weight: 800; flex-shrink: 0; }
+    p { margin: 0 0 0.8mm; padding-left: 7.4mm; position: relative; color: #333; }
+    p::before { content: ''; position: absolute; left: 2.6mm; top: 2.2mm; width: 1.4mm; height: 1.4mm;
+                border-radius: 50%; background: #9aa3b2; }
+    table { width: 100%; border-collapse: collapse; margin-top: 2.5mm; }
+    th, td { border: 0.6pt solid #b9c0cc; padding: 3mm; font-size: 10pt; height: 11mm; }
+    th { background: #f4f6fa; font-weight: 700; width: 21%; text-align: left; white-space: nowrap; color: #475569; }
+    td { width: 29%; font-weight: 600; }
+    .closing { margin-top: 11mm; padding: 5mm 6mm; background: #f6f8fc; border-left: 1.6mm solid ${SE_PRINT_NAVY};
+               text-align: center; line-height: 2; font-size: 10pt; }
+    .sign { margin-top: 11mm; display: flex; justify-content: flex-end; align-items: baseline; gap: 2mm; font-size: 10.5pt; }
+    .sign u { display: inline-block; width: 52mm; border-bottom: 0.8pt solid #1a1a1a; text-decoration: none; }
 </style></head><body>
-    <h1>전시품 구매 동의서</h1>
+    <div class="head">
+        <h1>전시품 구매 동의서</h1>
+        <span class="brand">${SE_SYMBOL}<b>SIDIZ</b></span>
+    </div>
     ${secs}
     <section>
-        <h2>6. 고객 및 구매 정보</h2>
+        <h2><i>6</i>고객 및 구매 정보</h2>
         <table>
             <tr><th>성명</th><td>${v(f.name)}</td><th>구매 일자</th><td>${v(f.date)}</td></tr>
             <tr><th>연락처</th><td>${v(f.phone)}</td><th>구매 매장</th><td>${v(f.store)}</td></tr>
@@ -17500,7 +17506,7 @@ function seConsentHtml(f) {
         본인은 전시품의 상태를 직접 확인하였으며,<br>
         전시품 특성 및 교환/환불 조건을 충분히 이해하고 이에 동의합니다.
     </div>
-    <div class="sign"><span>_____________________</span> (인)</div>
+    <div class="sign"><u></u>(인)</div>
 </body></html>`;
 }
 
@@ -17527,43 +17533,63 @@ function sePrintConsentBlank() {
     sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', color: '' }));
 }
 
-// ── 가격택 — 원본 PPT와 같은 63 × 83.6mm, A4 한 장에 6개 ─────────────
+// ── 가격택 — 쓰던 비닐택에 그대로 들어가게 63 × 83.6mm, A4 한 장에 6개 ──
 function seTagHtml(rows) {
     const esc = x => String(x == null ? '' : x).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
     const cards = rows.map(r => {
         const rate = SE_GRADE_DISCOUNT[r.grade] ?? SE_GRADE_DISCOUNT.A;
         const sale = Math.round(r.consumer_price * (1 - rate));
         const nm = r.product_id || '';
-        const fs = nm.length > 10 ? 15 : nm.length > 7 ? 19 : nm.length > 4 ? 23 : 28;
+        const fs = nm.length > 11 ? 15 : nm.length > 8 ? 18 : nm.length > 5 ? 22 : 27;
         return `<div class="tag">
+            <div class="top">
+                <span class="brand">${SE_SYMBOL}<b>SIDIZ</b></span>
+                <span class="lv">${esc(r.grade)} LEVEL</span>
+            </div>
             <div class="nm" style="font-size:${fs}pt;">${esc(nm)}</div>
-            <div class="lb lb1">소비자가</div>
-            <div class="pr pr1">${r.consumer_price.toLocaleString()}원</div>
+            <div class="rule"></div>
+            <div class="gap"></div>
+            <div class="row"><span class="lb">소비자가</span><span class="was">${r.consumer_price.toLocaleString()}원</span></div>
+            <div class="offwrap"><span class="off">${Math.round(rate * 100)}% OFF</span></div>
             <div class="lb lb2">전시품 할인가</div>
-            <div class="pr pr2">${sale.toLocaleString()}원</div>
-            <div class="gr">${esc(r.grade)}급</div>
+            <div class="now">${sale.toLocaleString()}원</div>
         </div>`;
     }).join('');
     return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
-<title>전시품 판매 가격택</title>
+<title>전시품 판매 가격택</title>${SE_PRINT_FONTS}
 <style>
     @page { size: A4; margin: 12mm 20mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Calibri, 'Malgun Gothic', Arial, sans-serif; color: #000; }
+    body { margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
     .sheet { display: grid; grid-template-columns: 63.33mm 63.33mm; gap: 6mm; justify-content: center; }
-    .tag { position: relative; width: 63.33mm; height: 83.61mm; border: 1pt solid #0C0C0C;
-           break-inside: avoid; page-break-inside: avoid; }
-    .tag > div { position: absolute; padding: 1.27mm 2.54mm; }
-    .nm { left: 7.10mm; top: 12.21mm; width: 50mm; font-family: Arial, sans-serif; font-weight: 700; color: #000; }
-    .lb { font-size: 8pt; line-height: 1.5; text-align: right; }
-    .pr { font-size: 16pt; font-weight: 700; line-height: 1.5; text-align: right; width: 34.82mm; left: 26.88mm; }
-    .lb1 { left: 43.79mm; top: 42.96mm; width: 17.92mm; color: #7F7F7F; }
-    .pr1 { top: 47.36mm; color: #7F7F7F; }
-    .lb2 { left: 36.49mm; top: 62.98mm; width: 25.22mm; color: #000; }
-    .pr2 { top: 67.13mm; color: #000; }
-    .gr { left: 4.34mm; top: 70.56mm; font-size: 12pt; font-weight: 700; }
+    ${SE_TAG_CSS}
 </style></head><body><div class="sheet">${cards}</div></body></html>`;
 }
+
+// 화면 미리보기와 인쇄물이 어긋나지 않게 한 벌만 둔다.
+const SE_TAG_CSS = `
+    .tag { width: 63.33mm; height: 83.61mm; border: 0.8pt solid #1a1a1a; border-radius: 1.6mm;
+           padding: 5.4mm 5.4mm 6mm; display: flex; flex-direction: column; background: #fff;
+           break-inside: avoid; page-break-inside: avoid; }
+    .tag .top { display: flex; align-items: center; justify-content: space-between; }
+    .tag .brand { display: flex; align-items: center; gap: 1.4mm; color: #0026cc; }
+    .tag .brand svg { height: 3.6mm; width: auto; }
+    .tag .brand b { font-size: 7pt; font-weight: 800; letter-spacing: 0.2em; }
+    .tag .lv { font-size: 6.6pt; font-weight: 800; letter-spacing: 0.14em; color: #1a1a1a;
+               border: 0.6pt solid #1a1a1a; border-radius: 6mm; padding: 0.7mm 2.2mm; white-space: nowrap; }
+    .tag .nm { font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-top: 5mm; }
+    .tag .rule { width: 9mm; height: 0.9mm; background: #0026cc; margin-top: 3mm; border-radius: 1mm; }
+    .tag .gap { flex: 1; }
+    .tag .row { display: flex; align-items: baseline; justify-content: flex-end; gap: 2mm; }
+    .tag .lb { font-size: 7.4pt; font-weight: 600; color: #8a93a3; letter-spacing: 0.02em; }
+    .tag .lb2 { text-align: right; margin-top: 2.6mm; color: #475569; font-size: 7.8pt; }
+    .tag .was { font-size: 11.5pt; font-weight: 600; color: #8a93a3; text-decoration: line-through; }
+    .tag .offwrap { text-align: right; margin-top: 2.2mm; }
+    .tag .off { display: inline-block; background: #0026cc; color: #fff; font-size: 8.4pt; font-weight: 800;
+                letter-spacing: 0.04em; padding: 0.9mm 2.4mm; border-radius: 5mm; }
+    .tag .now { text-align: right; font-size: 23pt; font-weight: 900; color: #0026cc;
+                letter-spacing: -0.03em; line-height: 1.15; margin-top: 0.6mm; }
+`;
 
 function sePrintTagsFor(rows, label) {
     const ok = rows.filter(r => r.consumer_price && r.grade);
@@ -17574,6 +17600,26 @@ function sePrintTagsFor(rows, label) {
     }
     if (skipped) alert(skipped + '건은 소비자가나 등급이 없어 제외했습니다. ' + ok.length + '건을 인쇄합니다.');
     sePrintDoc(seTagHtml(ok));
+}
+
+// 탭의 미리보기는 인쇄용 마크업을 그대로 쓴다 — 설명과 결과물이 어긋날 일이 없다.
+function seRenderTagPreview() {
+    const box = document.getElementById('seTagPreview');
+    if (!box || box.dataset.done) return;
+    if (!document.getElementById('seTagCss')) {
+        const st = document.createElement('style');
+        st.id = 'seTagCss';
+        st.textContent = SE_TAG_CSS;
+        document.head.appendChild(st);
+    }
+    const sample = [
+        { product_id: 'T90', grade: 'A', consumer_price: 1450000 },
+        { product_id: 'T50', grade: 'B', consumer_price: 439000 },
+    ];
+    const doc = new DOMParser().parseFromString(seTagHtml(sample), 'text/html');
+    box.innerHTML = [...doc.querySelectorAll('.tag')]
+        .map(el => '<div class="se-tagwrap">' + el.outerHTML + '</div>').join('');
+    box.dataset.done = '1';
 }
 
 function sePrintTagsSelected() {
