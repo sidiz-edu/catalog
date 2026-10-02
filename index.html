@@ -14589,7 +14589,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <span style="flex:1;min-width:220px;">
                     <b>구매 일자 · 구매 매장 · 구매 제품 · 구매 색상</b>은 카탈로그 값으로 채워집니다.
                     <b>성명과 연락처는 비워 둡니다</b> — 고객이 직접 쓰는 칸입니다.
-                    제품을 정하기 전에 미리 뽑아 두려면 오른쪽 버튼을 쓰세요.
+                    제품을 정하기 전에 미리 뽑아 두려면 오른쪽 <b>빈 양식 인쇄</b>를 쓰세요. 빈 양식은 <b>칸을 눌러 바로 입력</b>할 수 있고, 손으로 쓸 거면 그냥 두고 인쇄하면 됩니다.
                 </span>
                 <button type="button" onclick="sePrintConsentBlank()" style="background:#1e293b;border:none;border-radius:7px;padding:7px 14px;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">빈 양식 인쇄</button>
             </div>
@@ -17425,11 +17425,12 @@ const SE_PRINT_NAVY = '#0026cc';
 
 // 카탈로그 CSS와 섞이지 않게 새 창에 통째로 써서 인쇄한다.
 // 글꼴이 내려온 뒤에 인쇄해야 모양이 깨지지 않는다.
-function sePrintDoc(html) {
+function sePrintDoc(html, autoPrint = true) {
     const w = window.open('', '_blank', 'width=900,height=1100');
     if (!w) { alert('팝업이 막혀 있습니다. 주소창 오른쪽에서 팝업을 허용해 주세요.'); return; }
     w.document.write(html);
     w.document.close();
+    if (!autoPrint) { try { w.focus(); } catch (e) {} return; }
     let done = false;
     const go = () => { if (done) return; done = true; try { w.focus(); w.print(); } catch (e) {} };
     try { w.document.fonts.ready.then(() => setTimeout(go, 200)); } catch (e) {}
@@ -17452,8 +17453,10 @@ const SE_CONSENT_ITEMS = [
         '전시품을 이상 없이 인수하였음을 확인합니다.']],
 ];
 
+// 빈 칸은 화면에서 눌러 바로 칠 수 있다 — 손으로 쓰고 싶으면 그냥 비워 두고 인쇄한다.
 function seConsentHtml(f) {
     const v = x => x ? String(x).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) : '';
+    const cell = (x, ph) => `<td contenteditable="true" spellcheck="false" data-ph="${ph}">${v(x)}</td>`;
     const secs = SE_CONSENT_ITEMS.map(([h, lines], i) => `
         <section>
             <h2><i>${i + 1}</i>${h}</h2>
@@ -17464,7 +17467,8 @@ function seConsentHtml(f) {
 <style>
     @page { size: A4; margin: 18mm 17mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a;
+    html { color-scheme: light; background: #fff; }
+    body { background: #fff; margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a;
            font-size: 10pt; line-height: 1.8; -webkit-font-smoothing: antialiased; }
     .head { display: flex; align-items: flex-end; justify-content: space-between;
             border-bottom: 1.6pt solid ${SE_PRINT_NAVY}; padding-bottom: 4mm; margin-bottom: 9mm; }
@@ -17480,6 +17484,21 @@ function seConsentHtml(f) {
     p { margin: 0 0 0.8mm; padding-left: 7.4mm; position: relative; color: #333; }
     p::before { content: ''; position: absolute; left: 2.6mm; top: 2.2mm; width: 1.4mm; height: 1.4mm;
                 border-radius: 50%; background: #9aa3b2; }
+    .bar { position: sticky; top: 0; z-index: 9; display: flex; align-items: center; gap: 12px;
+           background: #0f172a; color: #fff; padding: 11px 16px; border-radius: 10px; margin-bottom: 9mm;
+           font-size: 10pt; }
+    .bar b { font-weight: 700; }
+    .bar button { margin-left: auto; background: #fff; color: #0f172a; border: none; border-radius: 7px;
+                  padding: 7px 18px; font-size: 10pt; font-weight: 800; cursor: pointer;
+                  font-family: inherit; }
+    td[contenteditable] { background: #fffdf3; outline: none; cursor: text; }
+    td[contenteditable]:focus { background: #fff8db; box-shadow: inset 0 0 0 1.4pt ${SE_PRINT_NAVY}; }
+    td[contenteditable]:empty::before { content: attr(data-ph); color: #c3c9d4; font-weight: 400; }
+    @media print {
+        .bar { display: none; }
+        td[contenteditable] { background: transparent; box-shadow: none; }
+        td[contenteditable]:empty::before { content: ''; }
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 2.5mm; }
     th, td { border: 0.6pt solid #b9c0cc; padding: 3mm; font-size: 10pt; height: 11mm; }
     th { background: #f4f6fa; font-weight: 700; width: 21%; text-align: left; white-space: nowrap; color: #475569; }
@@ -17489,6 +17508,11 @@ function seConsentHtml(f) {
     .sign { margin-top: 11mm; display: flex; justify-content: flex-end; align-items: baseline; gap: 2mm; font-size: 10.5pt; }
     .sign u { display: inline-block; width: 52mm; border-bottom: 0.8pt solid #1a1a1a; text-decoration: none; }
 </style></head><body>
+    <div class="bar">
+        <b>빈 칸을 눌러 바로 입력할 수 있습니다.</b>
+        <span style="opacity:.75;">손으로 쓰실 거면 그냥 두고 인쇄하세요. 이 줄은 인쇄되지 않습니다.</span>
+        <button type="button" onclick="window.print()">인쇄</button>
+    </div>
     <div class="head">
         <h1>전시품 구매 동의서</h1>
         <span class="brand">${SE_SYMBOL}<b>SIDIZ</b></span>
@@ -17497,9 +17521,9 @@ function seConsentHtml(f) {
     <section>
         <h2><i>6</i>고객 및 구매 정보</h2>
         <table>
-            <tr><th>성명</th><td>${v(f.name)}</td><th>구매 일자</th><td>${v(f.date)}</td></tr>
-            <tr><th>연락처</th><td>${v(f.phone)}</td><th>구매 매장</th><td>${v(f.store)}</td></tr>
-            <tr><th>구매 제품</th><td>${v(f.product)}</td><th>구매 색상</th><td>${v(f.color)}</td></tr>
+            <tr><th>성명</th>${cell(f.name, '고객 성명')}<th>구매 일자</th>${cell(f.date, '날짜')}</tr>
+            <tr><th>연락처</th>${cell(f.phone, '연락처')}<th>구매 매장</th>${cell(f.store, '매장명')}</tr>
+            <tr><th>구매 제품</th>${cell(f.product, '제품명')}<th>구매 색상</th>${cell(f.color, '색상코드')}</tr>
         </table>
     </section>
     <div class="closing">
@@ -17530,7 +17554,7 @@ function sePrintConsent(id) {
 }
 
 function sePrintConsentBlank() {
-    sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', color: '' }));
+    sePrintDoc(seConsentHtml({ name: '', phone: '', date: '', store: '', product: '', color: '' }), false);
 }
 
 // ── 가격택 — 쓰던 비닐택에 그대로 들어가게 63 × 83.6mm, A4 한 장에 6개 ──
@@ -17560,7 +17584,8 @@ function seTagHtml(rows) {
 <style>
     @page { size: A4; margin: 12mm 20mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+    html { color-scheme: light; background: #fff; }
+    body { background: #fff; margin: 0; font-family: ${SE_PRINT_FACE}; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
     .sheet { display: grid; grid-template-columns: 63.33mm 63.33mm; gap: 6mm; justify-content: center; }
     ${SE_TAG_CSS}
 </style></head><body><div class="sheet">${cards}</div></body></html>`;
