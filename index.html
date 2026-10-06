@@ -15212,7 +15212,16 @@ function seToggleRecoveryItems(id) {
             <option value="">대상 매장 선택</option>
         </select>
         <input type="text" id="seMoveByName" placeholder="이동자 이름 *" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
-        <input type="text" id="seMoveReason" placeholder="이동 목적 (선택)" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+        <select id="seMoveReason" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+            <option value="">이동 사유 선택 *</option>
+            <option value="제품 배치">제품 배치 — 전시 구성을 바꿈</option>
+            <option value="전시품 판매">전시품 판매 — 판매를 위해 옮김</option>
+            <option value="매장 오픈">매장 오픈 — 새 매장 셋팅</option>
+            <option value="매장 철수">매장 철수 — 매장 정리로 넘김</option>
+            <option value="등록 오류 정정">등록 오류 정정 — 매장을 잘못 올림</option>
+            <option value="기타">기타</option>
+        </select>
+        <input type="text" id="seMoveReasonNote" placeholder="사유 상세 (선택)" style="background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:6px;padding:8px 10px;font-size:0.85rem;">
         <div id="seMoveModalMsg" style="font-size:0.78rem;min-height:18px;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
             <button onclick="seCloseMoveModal()" style="padding:8px 18px;border-radius:6px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.82rem;">취소</button>
@@ -15228,6 +15237,7 @@ let seDisplayData = [];
 let seReqSkuSet = new Set();
 let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
 let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시품 현황에서 가져온다)
+let seMoves     = {};          // display_id -> 매장 간 이동 이력 (오래된 것부터)
 let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정보 포함)
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
@@ -16535,6 +16545,14 @@ async function seRenderList(storeId) {
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
+        // 어느 매장에 있던 물건인지 — 회수 보고서를 쓸 때 출처를 따라가야 한다
+        seMoves = {};
+        if (seDisplayData.length) {
+            const { data: mv } = await _sb.from('display_moves')
+                .select('*').in('display_id', seDisplayData.map(r => r.id))
+                .order('moved_at', { ascending: true });
+            (mv || []).forEach(m => { (seMoves[m.display_id] = seMoves[m.display_id] || []).push(m); });
+        }
         seStoreZones = zonesRes.data || [];
         seReqItems = reqItemsRes.data || [];
         seGapNotes = {};
@@ -16931,7 +16949,7 @@ function seRenderTable(storeId) {
             <td style="color:#94a3b8;">${[seIssueChip(row.sku),
                  row.exit_note ? `<span style="color:#7c2d12;">${row.exit_note}</span>` : '',
                  row.memo || ''].filter(Boolean).join('<br>') || '-'}</td>
-            <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}</td>
+            <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}${seMoveChip(row)}</td>
             <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
@@ -17085,9 +17103,21 @@ function seClearSelection() {
     const all = document.getElementById('seSelectAll');
     if (all) all.checked = false;
 }
+// 나간 기록이 없으면 어느 문서로 회수 보고서를 쓸지 알 수 없다 — 그래서 옮기지 못한다.
+function seMoveBlocked(rows) {
+    const bad = rows.filter(r => !seHasOutgoingDoc(r));
+    if (!bad.length) return null;
+    const names = bad.slice(0, 5).map(r => [r.product_id, r.sku].filter(Boolean).join(' ')).join(', ');
+    return '매출외출고 문서가 연결되지 않아 이동할 수 없습니다.'
+         + String.fromCharCode(10) + `(${bad.length}건: ${names}${bad.length > 5 ? ' 외' : ''})`
+         + String.fromCharCode(10) + '매출외출고 요청서를 먼저 연결하세요.';
+}
+
 function seMoveRowToStore(idx) {
     const row = seDisplayData[idx];
     if (!row) return;
+    const blocked = seMoveBlocked([row]);
+    if (blocked) { alert(blocked); return; }
     _sePendingMoveIds = [row.id];
     seOpenMoveModal();
 }
@@ -17096,6 +17126,9 @@ function seOpenMoveModal() {
         _sePendingMoveIds = [...seSelectedIds];
     }
     if (!_sePendingMoveIds.length) return;
+    const picked = _sePendingMoveIds.map(id => seDisplayData.find(r => r.id === id)).filter(Boolean);
+    const blocked = seMoveBlocked(picked);
+    if (blocked) { alert(blocked); _sePendingMoveIds = []; return; }
     const modal = document.getElementById('seMoveModal');
     const sel = document.getElementById('seMoveTargetStore');
     sel.innerHTML = '<option value="">대상 매장 선택</option>';
@@ -17105,6 +17138,7 @@ function seOpenMoveModal() {
     });
     document.getElementById('seMoveByName').value = '';
     document.getElementById('seMoveReason').value = '';
+    document.getElementById('seMoveReasonNote').value = '';
     document.getElementById('seMoveModalMsg').textContent = '';
     document.getElementById('seMoveItemCount').textContent = `이동할 항목: ${_sePendingMoveIds.length}개`;
     modal.style.display = 'flex';
@@ -17130,24 +17164,32 @@ function seCloseAddModal() {
 async function seConfirmMove() {
     const targetId  = document.getElementById('seMoveTargetStore').value;
     const moverName = document.getElementById('seMoveByName').value.trim();
-    const reason    = document.getElementById('seMoveReason').value.trim();
+    const reason     = document.getElementById('seMoveReason').value;
+    const reasonNote = document.getElementById('seMoveReasonNote').value.trim();
     const msg       = document.getElementById('seMoveModalMsg');
     if (!targetId)   { msg.style.color='#f87171'; msg.textContent='대상 매장을 선택하세요.'; return; }
     if (!moverName)  { msg.style.color='#f87171'; msg.textContent='이동자 이름을 입력하세요.'; document.getElementById('seMoveByName').focus(); return; }
+    if (!reason)     { msg.style.color='#f87171'; msg.textContent='이동 사유를 선택하세요.'; return; }
     msg.style.color='var(--se-muted)'; msg.textContent='이동 중...';
     const targetStore = seStores().find(s => s.id === targetId);
     const targetName = targetStore ? targetStore.name : targetId;
     const ids = [..._sePendingMoveIds];
+    const rows = ids.map(id => seDisplayData.find(r => r.id === id)).filter(Boolean);
+    const blocked = seMoveBlocked(rows);
+    if (blocked) { msg.style.color='#f87171'; msg.textContent = blocked.split(String.fromCharCode(10))[0]; return; }
     try {
-        for (const id of ids) {
-            const row = seDisplayData.find(r => r.id === id);
-            if (!row) continue;
-            const { id: rid, store_id, updated_at, ...rest } = row;
-            const movedMemo = reason ? `[이동: ${reason}]${rest.memo ? ' ' + rest.memo : ''}` : rest.memo;
-            const { error: insErr } = await _sb.from('store_displays').insert({ ...rest, store_id: targetId, memo: movedMemo, updated_by: moverName, updated_at: new Date().toISOString() });
-            if (insErr) throw insErr;
-            const { error: delErr } = await _sb.from('store_displays').delete().eq('id', id);
-            if (delErr) throw delErr;
+        for (const row of rows) {
+            // 행을 그대로 두고 매장만 바꾼다 — id가 유지돼야 이동 이력이 이어진다
+            const { error: upErr } = await _sb.from('store_displays')
+                .update({ store_id: targetId, updated_by: moverName, updated_at: new Date().toISOString() })
+                .eq('id', row.id);
+            if (upErr) throw upErr;
+            const { error: mvErr } = await _sb.from('display_moves').insert({
+                display_id: row.id, from_store: row.store_id, to_store: targetId,
+                product_id: row.product_id, sku: row.sku, qty: row.quantity,
+                reason, reason_note: reasonNote || null, moved_by: moverName,
+            });
+            if (mvErr) throw mvErr;
         }
         seDisplayData = seDisplayData.filter(r => !ids.includes(r.id));
         seSelectedIds.clear();
@@ -17441,6 +17483,27 @@ function seComputeNeedRecovery() {
     });
 }
 const seNeedsRecovery = row => seNeedRecIds.has(row.id);
+
+// 옮겨온 물건이면 어디서 왔는지 한 줄 붙인다. 전체 경로는 마우스를 올리면 보인다.
+function seStoreNameOf(id) {
+    const s = (typeof seStores === 'function' ? seStores() : []).find(x => x.id === id);
+    return s ? s.name : id;
+}
+function seMoveChip(row) {
+    const list = seMoves[row.id];
+    if (!list || !list.length) return '';
+    const last = list[list.length - 1];
+    const chain = list.map(m => [
+        seStoreNameOf(m.from_store) + ' → ' + seStoreNameOf(m.to_store),
+        m.reason || '사유 없음',
+        m.reason_note || '',
+        new Date(m.moved_at).toLocaleDateString('ko-KR'),
+        m.moved_by || ''
+    ].filter(Boolean).join(' · ')).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
+    const more = list.length > 1 ? ` <span style="color:#94a3b8;">외 ${list.length - 1}회</span>` : '';
+    return `<div title="${chain}" style="font-size:0.72rem;color:#1d4ed8;margin-top:3px;white-space:nowrap;">
+        🔀 ${seStoreNameOf(last.from_store)}에서 옴${last.reason ? ' · ' + last.reason : ''}${more}</div>`;
+}
 
 // 매출외출고로 나간 기록이 없으면 매장 물건이 아니다 — 팔 수 없다.
 const SE_NO_DOC_MSG = '매출외출고 문서가 연결되지 않아 판매를 할 수 없습니다.';
