@@ -15846,7 +15846,7 @@ async function seLoadFlatRows() {
         return {
             it, r, sku, have, want, status, ds: ds || [],
             kind: seItemClass(it.item_code, it.product_name, it.memo),
-            hay: [r.title, r.order_no, it.product_name, it.item_code, it.color_code,
+            hay: [r.title, r.order_no, it.product_name, it.raw_product_name, it.item_code, it.color_code,
                   sku, it.store_name_raw, r.request_date, it.memo, r.doc_no]
                  .filter(Boolean).join(' ').toLowerCase(),
         };
@@ -16020,7 +16020,7 @@ async function seLoadRequestList() {
         _sb.from('outgoing_requests')
             .select('id,title,requester,delivery_date,order_no,doc_no,ep_url,sheet_url,request_date,created_at')
             .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
-        _sb.from('outgoing_request_items').select('request_id,product_name,item_code,color_code,store_name_raw,store_id,memo'),
+        _sb.from('outgoing_request_items').select('request_id,product_name,raw_product_name,item_code,color_code,store_name_raw,store_id,memo'),
         seEnsureRecIndex(),
     ]);
     if (error || !data || !data.length) {
@@ -16034,7 +16034,7 @@ async function seLoadRequestList() {
     const searchBag = {};
     (itemsRes.data || []).forEach(it => {
         const bag = searchBag[it.request_id] || (searchBag[it.request_id] = new Set());
-        [it.product_name, it.item_code, it.color_code, it.store_name_raw,
+        [it.product_name, it.raw_product_name, it.item_code, it.color_code, it.store_name_raw,
          `${it.item_code || ''}-${it.color_code || ''}`]
             .forEach(v => { if (v) bag.add(String(v).toLowerCase()); });
     });
