@@ -4103,7 +4103,7 @@
                         <span style="color:#9ca3af;">이지리페어 · 악세서리 · 리라이프 구매 고객 제외</span>
                     </span>
                 </div>
-                <div class="promo-card-footer">📅 10/2(금) ~ 10/11(일)</div>
+                <div class="promo-card-footer">📅 10/2(금) ~ 10/11(일) · 🛒 장바구니·견적서 자동 반영</div>
             </div>
             <!-- GX 가-차 이벤트 -->
             <div class="promo-card" data-promo-end="2026-10-11" style="--pc-accent:#7c3aed;">
@@ -7765,6 +7765,33 @@ const HUHAKGI_SETS = [
     { main: 't20',    pair: 'stepo' },
 ];
 
+// 아시안게임 금메달 기념 의자 전품목 10% 추가 할인 (2026-10-02 ~ 2026-10-11)
+// 시디즈닷컴 SPECIAL OFFERS 기준: 기준가는 온라인 행사가(=카탈로그 회원할인가), 타 혜택과 중복 불가.
+// 이지리페어·악세서리·리라이프 제외 → 의자 본품(워크·게이밍·스터디·라이트워크·리빙다이닝·그로잉)만 대상.
+const ASIAN_GAMES_PROMO = { start: '2026-10-02', end: '2026-10-11', rate: 0.10, label: '아시안게임 기념 의자 10%' };
+const _asianGamesActive = (() => {
+    const d = new Date();
+    const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return today >= ASIAN_GAMES_PROMO.start && today <= ASIAN_GAMES_PROMO.end;
+})();
+const ASIAN_GAMES_CHAIRS = new Set([
+    't20', 't50', 't50gen2', 't60', 't80', 't90',          // 워크
+    'gcpro', 'gx',                                          // 게이밍
+    'ible', 'ringo2', 'linie', 'trevo',                     // 스터디
+    'button', 'muuve', 'ega',                               // 라이트워크
+    'mane', 'plit', 'oui',                                  // 리빙다이닝
+    'molti', 'atti',                                        // 그로잉
+]);
+function asianGamesItemRate(item) {
+    return (_asianGamesActive && ASIAN_GAMES_CHAIRS.has(item.productId)) ? ASIAN_GAMES_PROMO.rate : 0;
+}
+// 제품당 할인액을 반올림한 뒤 수량을 곱한다 (T80 649,000 → 584,100 처럼 공식 페이지 숫자와 맞춘다)
+function asianGamesDiscount(cart) {
+    if (!_asianGamesActive) return null;
+    const amt = cart.reduce((s, i) => s + Math.round(i.price * asianGamesItemRate(i)) * i.qty, 0);
+    return amt > 0 ? { label: ASIAN_GAMES_PROMO.label, amt, type: 'asian' } : null;
+}
+
 // ── PRODUCT SPECS ──
 const productSpecs = {
     // ── WORK ──
@@ -11130,6 +11157,10 @@ function getBestDiscount(cart) {
         if (gcproAmt > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt, type: 'gcpro_coupon' });
     }
 
+    // 6) 아시안게임 금메달 기념 의자 10% (2026-10-02 ~ 10-11, 타 혜택과 중복 불가)
+    const asian = asianGamesDiscount(cart);
+    if (asian) candidates.push(asian);
+
     if (candidates.length === 0) return null;
     // 가장 할인 금액이 큰 것 선택
     return candidates.reduce((best, c) => c.amt > best.amt ? c : best);
@@ -11189,6 +11220,10 @@ function getAllDiscountCandidates(cart) {
         const gcproAmt2 = gcproEligible2.reduce((s, i) => s + 111000 * i.qty, 0);
         if (gcproAmt2 > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt2, type: 'gcpro_coupon' });
     }
+
+    // 6) 아시안게임 금메달 기념 의자 10%
+    const asian2 = asianGamesDiscount(cart);
+    if (asian2) candidates.push(asian2);
 
     if (candidates.length === 0) return { best: null, candidates: [] };
     const best = candidates.reduce((b, c) => c.amt > b.amt ? c : b);
@@ -11271,6 +11306,7 @@ function renderCartItems() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const best = getBestDiscount(cart);
     const tierRate = (best && best.type === 'tier') ? (DISCOUNT_TIERS.find(t => subtotal >= t.min)?.rate ?? null) : null;
+    const itemRate = item => tierRate ?? ((best && best.type === 'asian') ? (asianGamesItemRate(item) || null) : null);
 
     el.innerHTML = cart.map(item => `
         <div class="cart-item">
@@ -11280,7 +11316,7 @@ function renderCartItems() {
                 ${item.sku ? `<div style="font-size:0.7rem;color:#9ca3af;font-family:'Outfit',monospace;letter-spacing:0.3px;">${item.sku}</div>` : ''}
                 <div class="cart-item-price">${fmt(item.price * item.qty)}</div>
                 ${item.qty > 1 ? `<div style="font-size:0.75rem;color:#9ca3af;margin-top:1px;">(${fmt(item.price)}×${item.qty})</div>` : ''}
-                ${tierRate ? `<div style="font-size:0.78rem;color:#16a34a;margin-top:6px;font-weight:500;">추가 할인액 −${fmt(item.price * item.qty - Math.round(item.price * (1 - tierRate)) * item.qty)} <span style="font-size:0.72rem;opacity:0.8;">(${Math.round(tierRate * 100)}%)</span></div>${item.qty > 1 ? `<div style="font-size:0.75rem;color:#16a34a;margin-top:1px;">(−${fmt(item.price - Math.round(item.price * (1 - tierRate)))}×${item.qty})</div>` : ''}<div style="font-size:0.85rem;color:#0D3BFF;margin-top:4px;font-weight:600;">최종 할인가 ${fmt(Math.round(item.price * (1 - tierRate)) * item.qty)}</div>${item.qty > 1 ? `<div style="font-size:0.75rem;color:#0D3BFF;margin-top:1px;">(${fmt(Math.round(item.price * (1 - tierRate)))}×${item.qty})</div>` : ''}` : ''}
+                ${(r => r ? `<div style="font-size:0.78rem;color:#16a34a;margin-top:6px;font-weight:500;">추가 할인액 −${fmt(item.price * item.qty - Math.round(item.price * (1 - r)) * item.qty)} <span style="font-size:0.72rem;opacity:0.8;">(${Math.round(r * 100)}%)</span></div>${item.qty > 1 ? `<div style="font-size:0.75rem;color:#16a34a;margin-top:1px;">(−${fmt(item.price - Math.round(item.price * (1 - r)))}×${item.qty})</div>` : ''}<div style="font-size:0.85rem;color:#0D3BFF;margin-top:4px;font-weight:600;">최종 할인가 ${fmt(Math.round(item.price * (1 - r)) * item.qty)}</div>${item.qty > 1 ? `<div style="font-size:0.75rem;color:#0D3BFF;margin-top:1px;">(${fmt(Math.round(item.price * (1 - r)))}×${item.qty})</div>` : ''}` : '')(itemRate(item))}
             </div>
             <div class="cart-item-actions">
                 <button class="qty-btn" onclick="updateQty(${item.id}, -1)">−</button>
@@ -11330,7 +11366,7 @@ function renderCartItems() {
         <div class="cart-summary-row">
             <span>소계</span><span>${fmt(subtotal)}</span>
         </div>
-        ${best ? `<div class="cart-summary-row discount"${best.type === 'huhakgi' ? ' style="color:#f97316;"' : best.type === 'gcpro_coupon' ? ' style="color:#1e40af;"' : ''}>
+        ${best ? `<div class="cart-summary-row discount"${best.type === 'huhakgi' ? ' style="color:#f97316;"' : best.type === 'gcpro_coupon' ? ' style="color:#1e40af;"' : best.type === 'asian' ? ' style="color:#ca8a04;"' : ''}>
             <span>할인 (${best.label})</span>
             <span>−${fmt(discAmt)}</span>
         </div>` : ''}
@@ -11737,6 +11773,7 @@ async function _doPrintQuote(customerName, storeName, staffName, insertToDB = tr
 
     const compareTotalAmt = cart.reduce((s, i) => s + (i.comparePrice || i.price) * i.qty, 0);
     const tierRate = (best && best.type === 'tier') ? (DISCOUNT_TIERS.find(t => subtotal >= t.min)?.rate ?? null) : null;
+    const itemRate = item => tierRate ?? ((best && best.type === 'asian') ? (asianGamesItemRate(item) || null) : null);
     const rowsHtml = cart.map((item, idx) => `
         <tr>
             <td class="tc">${idx + 1}</td>
@@ -11745,7 +11782,7 @@ async function _doPrintQuote(customerName, storeName, staffName, insertToDB = tr
             <td class="tr">${f(item.price)}</td>
             <td class="tc">${item.qty}</td>
             <td class="tr">${f(item.price * item.qty)}</td>
-            <td class="tr bold">${tierRate ? `<span style="color:#0D3BFF;">${f(Math.round(item.price * (1 - tierRate)) * item.qty)}</span>${item.qty > 1 ? `<span style="color:#0D3BFF;font-size:9.5px;font-weight:400;display:block;margin-top:1px;opacity:0.8;">제품당 ${f(Math.round(item.price * (1 - tierRate)))}</span>` : ''}<span style="color:#16a34a;font-size:10px;display:block;margin-top:3px;">−${f(item.price * item.qty - Math.round(item.price * (1 - tierRate)) * item.qty)} 추가할인</span>${item.qty > 1 ? `<span style="color:#16a34a;font-size:9.5px;display:block;margin-top:1px;">제품당 −${f(item.price - Math.round(item.price * (1 - tierRate)))}</span>` : ''}` : f(item.price * item.qty)}</td>
+            <td class="tr bold">${(r => r ? `<span style="color:#0D3BFF;">${f(Math.round(item.price * (1 - r)) * item.qty)}</span>${item.qty > 1 ? `<span style="color:#0D3BFF;font-size:9.5px;font-weight:400;display:block;margin-top:1px;opacity:0.8;">제품당 ${f(Math.round(item.price * (1 - r)))}</span>` : ''}<span style="color:#16a34a;font-size:10px;display:block;margin-top:3px;">−${f(item.price * item.qty - Math.round(item.price * (1 - r)) * item.qty)} 추가할인</span>${item.qty > 1 ? `<span style="color:#16a34a;font-size:9.5px;display:block;margin-top:1px;">제품당 −${f(item.price - Math.round(item.price * (1 - r)))}</span>` : ''}` : f(item.price * item.qty))(itemRate(item))}</td>
         </tr>`).join('');
 
     // 메타 박스: 고객 / 매장 / 담당자 / 견적일
