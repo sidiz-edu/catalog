@@ -16371,11 +16371,11 @@ async function seUpdateRequest(id) {
     seLoadRequestList();
 }
 
-async function seShowReqForSku(sku, storeId) {
+async function seShowReqForSku(sku, storeId, orderNo) {
     const modal = document.getElementById('seReqLookupModal');
     const body  = document.getElementById('seReqLookupBody');
     document.getElementById('seReqLookupSku').textContent = sku;
-    _seReqLookupCtx = { sku, storeId };
+    _seReqLookupCtx = { sku, storeId, orderNo };
     body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
     modal.style.display = 'flex';
 
@@ -16384,17 +16384,30 @@ async function seShowReqForSku(sku, storeId) {
     const itemCode  = lastDash >= 0 ? sku.slice(0, lastDash) : sku;
     const colorCode = lastDash >= 0 ? sku.slice(lastDash + 1) : '';
 
-    const { data: items, error } = await _sb
-        .from('outgoing_request_items')
-        .select('*, outgoing_requests(id,title,requester,delivery_date,order_no,created_at,doc_no,ep_url)')
-        .eq('store_id', storeId)
-        .eq('item_code', itemCode)
-        .eq('color_code', colorCode);
+    const SEL = '*, outgoing_requests(id,title,requester,delivery_date,order_no,created_at,doc_no,ep_url)';
+    let { data: items, error } = await _sb
+        .from('outgoing_request_items').select(SEL)
+        .eq('store_id', storeId).eq('item_code', itemCode).eq('color_code', colorCode);
+
+    // 이 매장에 없으면 — 옮겨온 물건이다. 수주번호로 다른 매장 요청서를 찾는다.
+    let foundElsewhere = null;
+    if (!error && (!items || !items.length) && orderNo) {
+        const { data: wide } = await _sb
+            .from('outgoing_request_items').select(SEL)
+            .eq('item_code', itemCode).eq('color_code', colorCode);
+        const hit = (wide || []).filter(x => (x.outgoing_requests || {}).order_no === orderNo);
+        if (hit.length) { items = hit; foundElsewhere = hit[0].store_id; }
+    }
 
     if (error || !items || !items.length) {
         body.innerHTML = '<p style="color:#94a3b8;font-size:0.82rem;">연결된 매출외 요청서가 없습니다.</p>';
         return;
     }
+    const notice = foundElsewhere
+        ? `<div style="background:rgba(29,78,216,0.15);border:1px solid #1d4ed8;border-radius:9px;padding:9px 12px;margin-bottom:9px;font-size:0.76rem;color:#bfdbfe;line-height:1.6;">
+             🔀 이 매장 요청서에는 없습니다. 수주번호 <b style="font-family:monospace;">${orderNo}</b>로 찾은
+             <b>${seStoreNameOf(foundElsewhere)}</b> 매출외출고 건입니다.</div>`
+        : '';
 
     // 같은 요청서에 같은 품목이 여러 행으로 들어있는 경우가 많다 — 요청서 단위로 합친다
     const byReq = new Map();
@@ -16412,7 +16425,7 @@ async function seShowReqForSku(sku, storeId) {
         return;
     }
 
-    body.innerHTML = [...byReq.values()].map(g => {
+    body.innerHTML = notice + [...byReq.values()].map(g => {
         const r = g.r;
         const esc = s => (s || '').replace(/'/g, "\'");
         const price = g.prices.size === 1 ? [...g.prices][0].toLocaleString()
@@ -16497,7 +16510,7 @@ async function seReqLookupDetail(reqId) {
 
 function seReqLookupBack() {
     if (!_seReqLookupCtx) { document.getElementById('seReqLookupModal').style.display = 'none'; return; }
-    seShowReqForSku(_seReqLookupCtx.sku, _seReqLookupCtx.storeId);
+    seShowReqForSku(_seReqLookupCtx.sku, _seReqLookupCtx.storeId, _seReqLookupCtx.orderNo);
 }
 
 // 전시품에서 그 품목이 든 요청서 카드로 건너뛴다 — 목록을 눈으로 훑지 않아도 되게
@@ -16862,7 +16875,7 @@ function seRenderTable(storeId) {
     const LINK_DESC = {
         linked: '매출외출고 요청서(시디즈 본사 담당자 작성)에도 기록되어 있고 매장에서도 갖고 있는 제품',
         qty: '매출외출고 요청서에도 기록되어 있지만 <b>수량이 서로 다른</b> 제품',
-        moved: '다른 매장에서 옮겨온 제품 — 매출외출고 문서는 <b>출발 매장 앞으로</b> 나가 있습니다. 거래처 변경은 판매한 뒤에 하므로 이 상태가 정상입니다',
+        moved: '다른 매장에서 옮겨온 제품 — 매출외출고 문서는 <b>원래 매장 앞으로</b> 나가 있습니다. 🔀 버튼을 누르면 매출외수주번호로 그 요청서를 찾아 보여줍니다. 거래처 변경은 판매한 뒤에 하므로 이 상태가 정상입니다',
         unlinked: '매출외출고 요청서(시디즈 본사 담당자 작성)에는 기록되어 있지 않지만 매장에서 갖고 있는 제품',
     };
     const _lcShow = lc.unlinked || lc.qty || lc.moved;
@@ -17021,10 +17034,9 @@ function seRenderTable(storeId) {
                         const from = mv ? seStoreNameOf(seMoves[row.id][0].from_store) : '';
                         const bg  = linked ? '#16a34a' : mv ? '#1d4ed8' : '#94a3b8';
                         const tip = linked ? '카탈로그에 쌓인 요청서 보기'
-                                  : mv ? `${from}에서 옮겨온 제품 — 매출외출고 문서는 ${from} 앞으로 나가 있습니다`
+                                  : mv ? `${from}에서 옮겨온 제품 — 매출외수주번호로 원래 요청서를 찾습니다`
                                        : '연결된 요청서 없음';
-                        const src = mv ? seMoves[row.id][0].from_store : row.store_id;
-                        return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${src}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
+                        return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}','${row.sales_order_no || ''}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
                     })() : ''}
                 </div>
             </td>
