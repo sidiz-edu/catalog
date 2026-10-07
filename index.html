@@ -13884,6 +13884,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-sale-h { display: flex; align-items: center; gap: 9px; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 800; margin: 0 0 7px; color: var(--se-text); }
 .se-sale-n { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: #0f172a; color: #fff; font-size: 0.78rem; font-weight: 800; flex-shrink: 0; }
 .se-sale-sub-h { font-size: 0.88rem; font-weight: 800; color: var(--se-text); margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--se-border); }
+.se-owner { margin-left: auto; font-size: 0.7rem; font-weight: 700; color: #1d4ed8;
+             background: rgba(29,78,216,0.1); border: 1px solid rgba(29,78,216,0.25);
+             border-radius: 20px; padding: 2px 9px; white-space: nowrap; flex-shrink: 0; }
 .se-sale-p { font-size: 0.85rem; color: var(--se-text); line-height: 1.7; margin: 0 0 10px; }
 .se-sale-ul, .se-sale-ol { font-size: 0.85rem; color: var(--se-text); line-height: 1.8; margin: 0 0 4px; padding-left: 20px; }
 .se-sale-ul li, .se-sale-ol li { margin-bottom: 3px; }
@@ -14720,6 +14723,123 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
 </div>
 
+<div id="seTabRegister" style="display:none;">
+    <div style="max-width:860px;">
+
+        <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:18px 22px;color:#fff;margin-bottom:18px;">
+            <div style="font-size:1.2rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.75;">전시품 등록</div>
+            <div style="font-size:0.84rem;line-height:1.65;margin-top:8px;opacity:.95;">
+                전시품을 공식몰에 올려 쿠폰으로 파는 절차입니다.<br>
+                제품은 <b>비공개</b>로 만들고, <b>쿠폰 링크를 받은 사람만</b> 살 수 있게 합니다.<br>
+                대리점에서 수주하지 못하도록 <b>판매상태를 온라인 전용</b>으로 둡니다.
+            </div>
+        </div>
+
+        <div class="se-flow">
+            <div class="se-flow-s"><span class="se-flow-n">1</span><div class="se-flow-t">ERP 코드 확인</div></div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s"><span class="se-flow-n">2</span><div class="se-flow-t">OMS 등록</div></div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s"><span class="se-flow-n">3</span><div class="se-flow-t">쇼피파이 제품 생성</div></div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s"><span class="se-flow-n">4</span><div class="se-flow-t">판매가격 동기화</div></div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s"><span class="se-flow-n">5</span><div class="se-flow-t">할인쿠폰 발급</div></div>
+            <span class="se-flow-a">›</span>
+            <div class="se-flow-s"><span class="se-flow-n">6</span><div class="se-flow-t">링크 확인</div></div>
+        </div>
+
+        <!-- 1. ERP -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">1</span>ERP 단품마스터 — 코드 확인<span class="se-owner">제명</span></h3>
+            <ul class="se-sale-ul">
+                <li><b>공장도가 · 기준단가</b>가 들어가 있는지 확인합니다. 비어 있으면 <b>SCM팀에 입력 요청</b>.</li>
+                <li><b>판매상태를 「온라인 전용」</b>으로 둡니다.</li>
+            </ul>
+            <div class="se-sale-note">
+                온라인 전용으로 두면 <b>커넥트플러스에서 조회되지 않습니다.</b> 대리점이 이 코드로 수주하는 것을 막기 위한 설정입니다.
+            </div>
+        </div>
+
+        <!-- 2. OMS -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">2</span>OMS 등록<span class="se-owner">성호</span></h3>
+            <ol class="se-sale-ol">
+                <li><b>운영품목</b> 등록</li>
+                <li><b>쇼핑몰 상품 관리</b> 등록</li>
+            </ol>
+            <div class="se-sale-note">둘 다 해야 다음 단계에서 쇼피파이와 가격이 맞물립니다.</div>
+        </div>
+
+        <!-- 3. 쇼피파이 -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">3</span>쇼피파이 제품 생성</h3>
+            <ul class="se-sale-ul">
+                <li>기존 제품을 <b>복제</b>한 뒤 <b>비공개</b>로 설정합니다.</li>
+                <li><b>옵션</b>을 설정합니다.</li>
+                <li><b>SKU(재고관리코드)는 실제 제품코드-색상코드</b>로 넣습니다.</li>
+            </ul>
+            <div class="se-ui">
+                <div class="se-ui-bar">SKU 적는 법</div>
+                <div class="se-ui-body">
+                    <table class="se-ui-tbl">
+                        <thead><tr><th>제품코드</th><th>색상코드</th><th>SKU</th></tr></thead>
+                        <tbody>
+                            <tr><td>G10HDAWJ1KK</td><td>A441QW</td><td><b>G10HDAWJ1KK-A441QW</b></td></tr>
+                            <tr><td>S51ACF0VG</td><td>A441BW</td><td><b>S51ACF0VG-A441BW</b></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="se-sale-warn">
+                <div class="se-sale-warn-h">비공개 설정을 빠뜨리면 안 됩니다</div>
+                <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
+                    공개 상태로 두면 쿠폰 없이도 공식몰에서 그대로 노출·구매됩니다.
+                    <b>복제한 직후 바로 비공개로 바꾸세요.</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 동기화 -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">4</span>판매가격 동기화</h3>
+            <p class="se-sale-p"><b>쇼핑몰 상품관리</b>에서 동기화를 돌려 판매가격을 맞춥니다.</p>
+            <div class="se-sale-note">여기까지 끝나야 쿠폰을 걸었을 때 금액이 제대로 계산됩니다.</div>
+        </div>
+
+        <!-- 5. 쿠폰 -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">5</span>할인쿠폰 발급<span class="se-owner">성호</span></h3>
+            <p class="se-sale-p">성호님이 쿠폰을 만들어 <b>링크를 전달</b>합니다.</p>
+        </div>
+
+        <!-- 6. 링크 확인 -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">6</span>링크 확인</h3>
+            <div class="se-sale-warn" style="background:#fef2f2;border-color:#fecaca;margin-top:0;">
+                <div class="se-sale-warn-h" style="color:#b91c1c;">받은 링크를 반드시 직접 눌러 보세요</div>
+                <div style="font-size:0.82rem;color:#7f1d1d;line-height:1.7;">
+                    고객에게 보내기 전에 <b>본인이 먼저 끝까지 들어가 봐야</b> 합니다.
+                    비공개 제품이라 설정이 하나만 어긋나도 고객 화면에서는 열리지 않습니다.
+                </div>
+            </div>
+            <ul class="se-sale-ul" style="margin-top:12px;">
+                <li><b>링크가 열리는지</b> — 404나 빈 화면이 뜨지 않는지</li>
+                <li><b>로그아웃 상태에서도 열리는지</b> — 시크릿 창으로 한 번 더</li>
+                <li><b>장바구니에 담기는지</b> — 비공개 제품이 담기지 않는 경우가 있습니다</li>
+                <li><b>쿠폰이 적용되는지</b> — 최종 결제금액이 의도한 판매가와 맞는지</li>
+                <li><b>휴대폰에서도 되는지</b> — 고객은 대부분 폰으로 엽니다</li>
+            </ul>
+            <div class="se-sale-note">
+                하나라도 안 되면 고객에게 보내지 말고 <b>성호님께 먼저 알려주세요.</b>
+                링크가 안 열리는 채로 안내가 나가면 그 자리에서 판매가 끊깁니다.
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
     </div>
     <div class="se-tabs-bar">
         <div class="se-tabs">
@@ -14729,6 +14849,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외출고 요청서</button>
             <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">회수 보고서</button>
             <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">전시품 판매 프로세스</button>
+            <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">전시품 등록 프로세스</button>
         </div>
     </div>
 </div>
@@ -15394,6 +15515,7 @@ function seSwitchTab(tab) {
     document.getElementById('seTabRequest').style.display   = tab === 'request'  ? '' : 'none';
     document.getElementById('seTabRecovery').style.display  = tab === 'recovery' ? '' : 'none';
     document.getElementById('seTabSale').style.display      = tab === 'sale'     ? '' : 'none';
+    document.getElementById('seTabRegister').style.display  = tab === 'register' ? '' : 'none';
     if (tab === 'sale') seRenderTagPreview();
 
     if (tab === 'overview') seLoadOverview();
