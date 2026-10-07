@@ -16845,12 +16845,14 @@ function seRenderTable(storeId) {
         dispQty[k] = (dispQty[k] || 0) + (r.quantity || 0);
     });
     const linkOf = row => {
-        if (!row.sku) return 'unlinked';
+        if (!row.sku) return seMovedIn(row) ? 'moved' : 'unlinked';
         const k = row.sku.toUpperCase();
-        if (!seReqSkuSet.has(k)) return 'unlinked';
+        // 다른 매장에서 옮겨온 물건은 이 매장 요청서에 없는 게 당연하다.
+        // 문서는 출발 매장 앞으로 나가 있고, 거래처 변경은 판매한 뒤에 한다.
+        if (!seReqSkuSet.has(k)) return seMovedIn(row) ? 'moved' : 'unlinked';
         return (seReqQty[k] || 0) === (dispQty[k] || 0) ? 'linked' : 'qty';
     };
-    const lc = { linked: 0, qty: 0, unlinked: 0 };
+    const lc = { linked: 0, qty: 0, moved: 0, unlinked: 0 };
     seDisplayData.filter(kindPass).forEach(r => lc[linkOf(r)]++);
     // 구분을 바꿔 해당 연결 상태가 0건이 되면 빈 표에 갇히므로 푼다
     if (seLinkFilter !== 'all' && !lc[seLinkFilter]) seLinkFilter = 'all';
@@ -16860,25 +16862,29 @@ function seRenderTable(storeId) {
     const LINK_DESC = {
         linked: '매출외출고 요청서(시디즈 본사 담당자 작성)에도 기록되어 있고 매장에서도 갖고 있는 제품',
         qty: '매출외출고 요청서에도 기록되어 있지만 <b>수량이 서로 다른</b> 제품',
+        moved: '다른 매장에서 옮겨온 제품 — 매출외출고 문서는 <b>출발 매장 앞으로</b> 나가 있습니다. 거래처 변경은 판매한 뒤에 하므로 이 상태가 정상입니다',
         unlinked: '매출외출고 요청서(시디즈 본사 담당자 작성)에는 기록되어 있지 않지만 매장에서 갖고 있는 제품',
     };
+    const _lcShow = lc.unlinked || lc.qty || lc.moved;
     if (lbar) {
-        lbar.innerHTML = (lc.unlinked === 0 && lc.qty === 0) ? '' :
+        lbar.innerHTML = !_lcShow ? '' :
             `<span style="font-size:0.72rem;color:var(--se-muted);margin-right:2px;">매출외출고 연결</span>` + [
-            ['all', `전체 (${lc.linked + lc.qty + lc.unlinked})`, '#0f766e'],
+            ['all', `전체 (${lc.linked + lc.qty + lc.moved + lc.unlinked})`, '#0f766e'],
             ['linked', `📄 연결됨 (${lc.linked})`, '#16a34a'],
             ['qty', `⚠ 수량 다름 (${lc.qty})`, '#b45309'],
+            ['moved', `🔀 다른 매장 출고 건 (${lc.moved})`, '#1d4ed8'],
             ['unlinked', `❌ 연결X (${lc.unlinked})`, '#ef4444'],
-        ].map(([k, label, fg]) => {
+        ].filter(([k]) => k === 'all' || lc[k]).map(([k, label, fg]) => {
             const on = k === seLinkFilter;
             return `<button onclick="seLinkFilter='${k}';seRenderTable(seCurrentStore)"
                 style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?fg:'var(--se-border)'};">${label}</button>`;
         }).join('');
     }
     if (ldesc) {
-        const LINK_LABEL = { linked: ['연결됨', '#16a34a'], qty: ['수량 다름', '#b45309'], unlinked: ['연결X', '#ef4444'] };
+        const LINK_LABEL = { linked: ['연결됨', '#16a34a'], qty: ['수량 다름', '#b45309'],
+                             moved: ['다른 매장 출고 건', '#1d4ed8'], unlinked: ['연결X', '#ef4444'] };
         const line = k => `<div><b style="color:${LINK_LABEL[k][1]};font-weight:600;">${LINK_LABEL[k][0]}</b> — ${LINK_DESC[k]}</div>`;
-        ldesc.innerHTML = (lc.unlinked === 0 && lc.qty === 0) ? ''
+        ldesc.innerHTML = !_lcShow ? ''
             : (seLinkFilter === 'all'
                 ? Object.keys(LINK_LABEL).filter(k => lc[k]).map(line).join('')
                 : line(seLinkFilter));
@@ -17011,7 +17017,14 @@ function seRenderTable(storeId) {
                         : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
                     ${row.sku ? (() => {
                         const linked = seReqSkuSet.has(row.sku.toUpperCase());
-                        return `<button class="se-del-btn" style="background:${linked ? '#16a34a' : '#94a3b8'};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}')" title="${linked ? '카탈로그에 쌓인 요청서 보기' : '연결된 요청서 없음'}">📄</button>`;
+                        const mv = !linked && seMovedIn(row);
+                        const from = mv ? seStoreNameOf(seMoves[row.id][0].from_store) : '';
+                        const bg  = linked ? '#16a34a' : mv ? '#1d4ed8' : '#94a3b8';
+                        const tip = linked ? '카탈로그에 쌓인 요청서 보기'
+                                  : mv ? `${from}에서 옮겨온 제품 — 매출외출고 문서는 ${from} 앞으로 나가 있습니다`
+                                       : '연결된 요청서 없음';
+                        const src = mv ? seMoves[row.id][0].from_store : row.store_id;
+                        return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${src}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
                     })() : ''}
                 </div>
             </td>
@@ -17520,6 +17533,9 @@ function seComputeNeedRecovery() {
     });
 }
 const seNeedsRecovery = row => seNeedRecIds.has(row.id);
+
+// 다른 매장에서 옮겨온 물건인가 — 매출외출고 문서가 붙어 있어야 그렇게 본다.
+const seMovedIn = row => !!(seMoves[row.id] && seMoves[row.id].length && seHasOutgoingDoc(row));
 
 // 옮겨온 물건이면 어디서 왔는지 한 줄 붙인다. 전체 경로는 마우스를 올리면 보인다.
 function seStoreNameOf(id) {
