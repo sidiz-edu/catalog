@@ -15874,7 +15874,7 @@ const seFlatStatus = x =>
 const SE_STATUS_STYLE = {
     ok:        ['✔ 일치',        '#16a34a'],
     diff:      ['⚠ 수량 불일치',  '#f59e0b'],
-    none:      ['❌ 전시 없음',    '#ef4444'],
+    none:      ['❌ 매출외 출고에는 적혀있는데 매장에는 없음',    '#ef4444'],
     unmatched: ['⚪ 매장 미매칭',  '#94a3b8'],
 };
 let _seReqStatus = 'all';
@@ -15934,7 +15934,7 @@ function seRenderFlat() {
 
     const badge = x => {
         if (x.status === 'unmatched') return `<span style="color:#94a3b8;">⚪ 매장 미매칭</span>`;
-        if (x.status === 'none')      return `<span style="color:#ef4444;">❌ 전시 없음</span>`;
+        if (x.status === 'none')      return `<span style="color:#ef4444;">❌ 매출외 출고에는 적혀있는데 매장에는 없음</span>`;
         const loc = x.ds.map(seDisplayLoc).filter(Boolean).join(' / ');
         const head = x.have === x.want
             ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
@@ -16280,7 +16280,7 @@ async function seToggleReqItems(id) {
 
         const matchBadge = (matches, reqQty) => {
             if (!matches) return `<span style="color:#94a3b8;font-size:0.72rem;">⚪ 매장 미매칭</span>`;
-            if (!matches.length) return `<span style="color:#ef4444;font-size:0.72rem;">❌ 전시 없음</span>`;
+            if (!matches.length) return `<span style="color:#ef4444;font-size:0.72rem;">❌ 매출외 출고에는 적혀있는데 매장에는 없음</span>`;
             const have = displayQty(matches), req = reqQty || 0, diff = have - req;
             const head = diff === 0
                 ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
@@ -16298,7 +16298,7 @@ async function seToggleReqItems(id) {
         body.innerHTML = `
             <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
                 <button id="req-filter-all-${id}" onclick="seFilterItems('${id}','all',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #003EFF;background:#003EFF;color:#fff;font-size:0.75rem;cursor:pointer;">전체 (${items.length})</button>
-                <button id="req-filter-none-${id}" onclick="seFilterItems('${id}','none',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#ef4444;font-size:0.75rem;cursor:pointer;">❌ 전시 없음 (${noDisplayCount})</button>
+                <button id="req-filter-none-${id}" onclick="seFilterItems('${id}','none',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#ef4444;font-size:0.75rem;cursor:pointer;">❌ 매출외 출고에는 적혀있는데 매장에는 없음 (${noDisplayCount})</button>
                 <button id="req-filter-mismatch-${id}" onclick="seFilterItems('${id}','mismatch',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#f59e0b;font-size:0.75rem;cursor:pointer;">⚠ 수량 불일치 (${mismatchCount})</button>
             </div>
             <div style="overflow-x:auto;">
