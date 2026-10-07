@@ -17992,8 +17992,15 @@ async function seSubmitEdit() {
     const cur = seDisplayData.find(r => r.id === id) || {};
     const auto = seAutoLinkFor(updates.sku);
     if ((cur.sku || '') !== (updates.sku || '')) {
-        updates.sales_link     = auto?.ep_url   || null;
-        updates.sales_order_no = auto?.order_no || null;
+        if (auto) {
+            updates.sales_link     = auto.ep_url   || null;
+            updates.sales_order_no = auto.order_no || null;
+        } else if (!seMovedIn(cur)) {
+            updates.sales_link     = null;
+            updates.sales_order_no = null;
+        }
+        // 옮겨온 물건은 이 매장 요청서로 다시 잡을 수 없다.
+        // 지우면 복구가 안 되고 판매·이동까지 막히므로 그대로 둔다.
     } else if (auto) {
         if (!cur.sales_link && auto.ep_url)        updates.sales_link     = auto.ep_url;
         if (!cur.sales_order_no && auto.order_no)  updates.sales_order_no = auto.order_no;
