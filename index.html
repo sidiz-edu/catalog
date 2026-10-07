@@ -16716,8 +16716,10 @@ function seRenderTable(storeId) {
         return;
     }
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
-    const isDemo = row => row.product_id === SE_DEMO_SERIES || SE_DEMO_RE.test(row.memo || '')
-                        || (row.sku && seDemoSku.has(row.sku.toUpperCase()));
+    // 같은 품목코드라도 분해 전시용이 아닌 대가 섞여 있다. is_demo가 지정돼 있으면 그 값이 먼저다.
+    const isDemo = row => row.is_demo != null ? row.is_demo
+                        : (row.product_id === SE_DEMO_SERIES || SE_DEMO_RE.test(row.memo || '')
+                           || (row.sku && seDemoSku.has(row.sku.toUpperCase())));
     const kindOf = row => row.sold ? ({ '폐기': 'disposed', '연구소': 'research', '증정': 'gift' }[row.exit_type] || 'sold')
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
     const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0, gift: 0 };
