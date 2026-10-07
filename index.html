@@ -14724,7 +14724,24 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 </div>
 
 <div id="seTabRegister" style="display:none;">
-    <div style="max-width:860px;">
+    <!-- 관리자 비밀번호로 잠근다 — 어드민 모드면 그냥 열린다 -->
+    <div id="seRegLock" style="display:none;max-width:420px;margin:40px auto;text-align:center;
+         background:var(--se-surface);border:1px solid var(--se-border);border-radius:12px;padding:32px 28px;">
+        <div style="font-size:1.6rem;margin-bottom:10px;">🔒</div>
+        <div style="font-size:0.95rem;font-weight:800;color:var(--se-text);margin-bottom:5px;">관리자만 볼 수 있습니다</div>
+        <div style="font-size:0.8rem;color:var(--se-muted);line-height:1.6;margin-bottom:16px;">
+            카탈로그 관리자 비밀번호를 입력하세요.
+        </div>
+        <input type="password" id="seRegPw" maxlength="20" placeholder="비밀번호"
+               onkeydown="if(event.key==='Enter')seRegUnlock()"
+               style="width:170px;text-align:center;letter-spacing:0.3em;font-size:1rem;padding:9px 12px;
+                      border:1.5px solid var(--se-border);border-radius:8px;background:var(--se-surface);color:var(--se-text);">
+        <button onclick="seRegUnlock()" style="margin-left:7px;padding:10px 18px;border-radius:8px;border:none;
+                background:#0f172a;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">확인</button>
+        <div id="seRegMsg" style="font-size:0.78rem;color:#ef4444;min-height:18px;margin-top:11px;"></div>
+    </div>
+
+    <div id="seRegBody" style="display:none;max-width:860px;">
 
         <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:18px 22px;color:#fff;margin-bottom:18px;">
             <div style="font-size:1.2rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.75;">전시품 등록</div>
@@ -14849,7 +14866,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외출고 요청서</button>
             <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">회수 보고서</button>
             <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">전시품 판매 프로세스</button>
-            <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">전시품 등록 프로세스</button>
+            <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 전시품 등록 프로세스</button>
         </div>
     </div>
 </div>
@@ -15517,6 +15534,7 @@ function seSwitchTab(tab) {
     document.getElementById('seTabSale').style.display      = tab === 'sale'     ? '' : 'none';
     document.getElementById('seTabRegister').style.display  = tab === 'register' ? '' : 'none';
     if (tab === 'sale') seRenderTagPreview();
+    if (tab === 'register') seRegApply();
 
     if (tab === 'overview') seLoadOverview();
     if (isLayout) { seLayoutInit(); seLayoutSetMode('zone'); }
@@ -17911,6 +17929,33 @@ function sePrintTagsFor(rows, label) {
     }
     if (skipped) alert(skipped + '건은 소비자가나 등급이 없어 제외했습니다. ' + ok.length + '건을 인쇄합니다.');
     sePrintDoc(seTagHtml(ok));
+}
+
+// 전시품 등록 프로세스는 관리자만 본다. 비밀번호는 카탈로그 관리자 것과 같다.
+let _seRegUnlocked = false;
+function seRegApply() {
+    const ok = (typeof isAdminMode !== 'undefined' && isAdminMode) || _seRegUnlocked;
+    const lock = document.getElementById('seRegLock');
+    const body = document.getElementById('seRegBody');
+    if (!lock || !body) return;
+    lock.style.display = ok ? 'none' : '';
+    body.style.display = ok ? '' : 'none';
+    if (!ok) setTimeout(() => document.getElementById('seRegPw')?.focus(), 80);
+}
+async function seRegUnlock() {
+    const el  = document.getElementById('seRegPw');
+    const msg = document.getElementById('seRegMsg');
+    const h = await hashString(el.value);
+    if (h === ADMIN_PW_HASH) {
+        _seRegUnlocked = true;
+        msg.textContent = '';
+        el.value = '';
+        seRegApply();
+    } else {
+        msg.textContent = '비밀번호가 올바르지 않습니다.';
+        el.value = '';
+        el.focus();
+    }
 }
 
 // 탭의 미리보기는 인쇄용 마크업을 그대로 쓴다 — 설명과 결과물이 어긋날 일이 없다.
