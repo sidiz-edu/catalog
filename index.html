@@ -15956,7 +15956,7 @@ async function seLoadFlatRows() {
     const [itemsRes, dispRes] = await Promise.all([
         _sb.from('outgoing_request_items')
             .select('*, outgoing_requests(id,title,request_date,order_no,doc_no,ep_url)'),
-        _sb.from('store_displays').select('store_id,sku,quantity,purpose,sold,location,memo'),
+        _sb.from('store_displays').select('id,store_id,product_id,sku,quantity,purpose,sold,location,memo,sales_order_no'),
     ]);
     if (itemsRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${itemsRes.error.message}</p>`; return; }
 
@@ -15991,6 +15991,40 @@ async function seLoadFlatRows() {
                  .filter(Boolean).join(' ').toLowerCase(),
         };
     }).sort((a, b) => (b.r.request_date || '').localeCompare(a.r.request_date || ''));
+
+    // 반대쪽 — 매장에는 올라와 있는데 요청서에 없는 것.
+    // 옮겨온 물건은 수주번호로 원래 요청서에 걸려 있으므로 빼고 센다.
+    const reqSkuKeys = new Set(Object.keys(reqTot));
+    const orderSku = new Set();
+    (itemsRes.data || []).forEach(it => {
+        const o = (it.outgoing_requests || {}).order_no;
+        if (o && it.item_code) orderSku.add(n(o) + '|' + n(it.item_code) + '-' + n(it.color_code));
+    });
+    const orphans = (dispRes.data || []).filter(d => {
+        if (d.sold || !d.sku) return false;
+        const sku = n(d.sku);
+        if (reqSkuKeys.has(key(d.store_id, sku))) return false;
+        if (d.sales_order_no && orderSku.has(n(d.sales_order_no) + '|' + sku)) return false;
+        return true;
+    }).map(d => {
+        const sku = n(d.sku);
+        const cut = sku.lastIndexOf('-');
+        const itemCode = cut >= 0 ? sku.slice(0, cut) : sku;
+        const colorCode = cut >= 0 ? sku.slice(cut + 1) : '';
+        const it = {
+            store_id: d.store_id, store_name_raw: seStoreNameOf(d.store_id),
+            product_name: d.product_id || '-', item_code: itemCode, color_code: colorCode,
+            qty: d.quantity || 1, memo: null,
+        };
+        return {
+            it, r: {}, sku, have: d.quantity || 1, want: 0, status: 'orphan', ds: [d],
+            kind: seItemClass(itemCode, d.product_id, d.memo),
+            hay: [d.product_id, itemCode, colorCode, sku, d.store_id,
+                  seStoreNameOf(d.store_id), d.location, d.memo]
+                 .filter(Boolean).join(' ').toLowerCase(),
+        };
+    });
+    _seFlatRows = _seFlatRows.concat(orphans);
     seRenderFlat();
 }
 
@@ -16008,6 +16042,7 @@ function seDisplayLoc(d, opts) {
 // 전시 현황 분류 — 품목 전체보기의 '전시 현황' 칼럼과 같은 기준
 const seFlatStatus = x =>
       x.status === 'unmatched' ? 'unmatched'
+    : x.status === 'orphan'    ? 'orphan'
     : x.status === 'none'      ? 'none'
     : x.have === x.want        ? 'ok' : 'diff';
 
@@ -16015,6 +16050,7 @@ const SE_STATUS_STYLE = {
     ok:        ['✔ 일치',        '#16a34a'],
     diff:      ['⚠ 수량 불일치',  '#f59e0b'],
     none:      ['❌ 매출외 출고에는 적혀있는데 매장에는 없음',    '#ef4444'],
+    orphan:    ['🏠 매장에는 있는데 매출외 출고에 없음',          '#1d4ed8'],
     unmatched: ['⚪ 매장 미매칭',  '#94a3b8'],
 };
 let _seReqStatus = 'all';
@@ -16022,7 +16058,7 @@ let _seReqStatus = 'all';
 function seRenderStatusBar(base) {
     const bar = document.getElementById('seReqStatusBar');
     if (!bar) return;
-    const c = { ok: 0, diff: 0, none: 0, unmatched: 0 };
+    const c = { ok: 0, diff: 0, none: 0, orphan: 0, unmatched: 0 };
     base.forEach(x => c[seFlatStatus(x)]++);
     const entries = [['all', `전시 현황 전체 (${base.length})`, '#003EFF'],
         ...Object.keys(SE_STATUS_STYLE)
@@ -16075,6 +16111,11 @@ function seRenderFlat() {
     const badge = x => {
         if (x.status === 'unmatched') return `<span style="color:#94a3b8;">⚪ 매장 미매칭</span>`;
         if (x.status === 'none')      return `<span style="color:#ef4444;">❌ 매출외 출고에는 적혀있는데 매장에는 없음</span>`;
+        if (x.status === 'orphan') {
+            const loc = x.ds.map(seDisplayLoc).filter(Boolean).join(' / ');
+            return `<span style="color:#1d4ed8;font-weight:700;">🏠 매장 ${x.have}대 · 출고 0</span>`
+                 + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
+        }
         const loc = x.ds.map(seDisplayLoc).filter(Boolean).join(' / ');
         const head = x.have === x.want
             ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
@@ -16104,7 +16145,9 @@ function seRenderFlat() {
                 <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
                 <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
-                <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-')}</td>
+                <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.status === 'orphan'
+                    ? '<span style="color:#1d4ed8;">연결된 요청서 없음</span>'
+                    : (x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-'))}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
 }
