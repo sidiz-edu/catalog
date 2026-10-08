@@ -13949,6 +13949,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: rgba(0,62,255,0.1); color: #003EFF; }
 .se-del-btn { background: transparent; color: var(--se-danger); border: 1px solid rgba(220,38,38,0.25); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.72rem; transition: background 0.2s; font-family: 'Outfit', sans-serif; }
 .se-del-btn:hover { background: rgba(220,38,38,0.08); }
+.se-act { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; white-space: nowrap; }
+.se-act .se-del-btn { padding: 4px 8px; font-size: 0.7rem; white-space: nowrap; flex: 0 0 auto; }
 .se-add-box { background: #fff; border: 1.5px solid var(--se-border); border-radius: 14px; padding: 24px 26px; margin-top: 28px; }
 .se-add-box h4 { color: var(--se-text); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 18px; }
 .se-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
@@ -17390,7 +17392,7 @@ function seRenderTable(storeId) {
                  row.exit_note ? `<span style="color:#7c2d12;">${row.exit_note}</span>` : '',
                  row.memo || ''].filter(Boolean).join('<br>') || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}${seMoveChip(row)}</td>
-            <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+            <td style="vertical-align:middle;"><div class="se-act">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
@@ -17399,8 +17401,7 @@ function seRenderTable(storeId) {
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
                 ${row.purpose === '판매' || row.sold ? `
                   <button class="se-del-btn" style="background:#1e293b;color:#fff;border:none;font-size:0.7rem;" onclick="sePrintConsent('${row.id}')" title="전시품 구매 동의서를 채워서 인쇄합니다">동의서</button>` : ''}
-
-            </td>
+            </div></td>
             <!-- 매출외수주번호·링크는 요청서/회수 보고서에서 끌어온 값이므로 표시만 하고 수정 버튼은 두지 않는다 -->
             <td style="text-align:center;min-width:110px;vertical-align:middle;">
                 ${row.sales_order_no
@@ -17444,10 +17445,10 @@ function seRenderTable(storeId) {
             <td style="color:#94a3b8;text-decoration:line-through;">${row.location || '-'}</td>
             <td style="color:#94a3b8;text-decoration:line-through;">${row.memo || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;">삭제 대기</td>
-            <td style="display:flex;gap:4px;align-items:center;">
+            <td style="vertical-align:middle;"><div class="se-act">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seRestoreDelete(${j})">복구</button>
                 <button class="se-del-btn" style="background:#ef4444;color:#fff;border:none;" onclick="seHardDelete('${row.id}','${storeId}',${j})">완전삭제</button>
-            </td>
+            </div></td>
             <td>-</td>
             <td>-</td>
             <td>-</td>
