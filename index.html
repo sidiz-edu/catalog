@@ -14036,6 +14036,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <label style="font-size:0.78rem;color:var(--se-muted);">단품코드</label>
                             <input type="text" id="seEditSku" list="seEditSkuList" autocomplete="off" onchange="seEditPopulateColorCodes(this.value)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                             <datalist id="seEditSkuList"></datalist>
+                            <div id="seEditReqCodes" style="display:none;font-size:0.72rem;color:var(--se-muted);line-height:1.9;"></div>
                         </div>
                         <div style="display:flex;flex-direction:column;gap:4px;">
                             <label style="font-size:0.78rem;color:var(--se-muted);">색상코드</label>
@@ -14131,9 +14132,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             </div>
                             <div style="display:flex;flex-direction:column;gap:4px;">
                                 <label style="font-size:0.78rem;color:var(--se-muted);">소비자가 (원)</label>
-                                <input type="number" id="seEditConsumerPrice" placeholder="소비자가" min="0" oninput="seEditToggleSaleNote()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
+                                <input type="number" id="seEditConsumerPrice" placeholder="소비자가" min="0" oninput="seEditToggleSaleNote();seEditWarnPrice()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                             </div>
                         </div>
+                        <div id="seEditPriceWarn" style="display:none;font-size:0.76rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:7px 10px;line-height:1.6;"></div>
                         <div id="seEditSaleNoteWrap" style="display:none;flex-direction:column;gap:4px;">
                             <label style="font-size:0.78rem;color:var(--se-muted);">제품 설명 <span style="color:#94a3b8;">· 고객에게 그대로 보입니다</span></label>
                             <textarea id="seEditSaleNote" rows="3" maxlength="300" placeholder="예) 좌판 오른쪽에 미세한 스크래치가 있습니다. 기능은 이상 없습니다." style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;font-family:inherit;line-height:1.6;resize:vertical;"></textarea>
@@ -15533,6 +15535,7 @@ let seReqSkuSet = new Set();
 let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
 let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시품 현황에서 가져온다)
 let seMoves     = {};          // display_id -> 매장 간 이동 이력 (오래된 것부터)
+let sePriceBySku = {};         // sku -> [{price, store}] — 매장마다 소비자가가 갈리는지 보려고 전 매장을 본다
 let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정보 포함)
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
@@ -16899,6 +16902,16 @@ async function seRenderList(storeId) {
         ]);
         if (displaysRes.error) throw displaysRes.error;
         seDisplayData = displaysRes.data || [];
+        // 같은 코드인데 매장마다 값이 다른지 보려면 전 매장 가격이 필요하다 (값이 있는 행만)
+        const { data: _pr } = await sbAll(() => _sb.from('store_displays')
+            .select('store_id,sku,consumer_price').not('consumer_price', 'is', null).order('id'));
+        sePriceBySku = {};
+        (_pr || []).forEach(d => {
+            if (!d.sku) return;
+            const k = d.sku.toUpperCase();
+            (sePriceBySku[k] = sePriceBySku[k] || []).push({ price: d.consumer_price, store: d.store_id });
+        });
+
         // 어느 매장에 있던 물건인지 — 회수 보고서를 쓸 때 출처를 따라가야 한다
         seMoves = {};
         if (seDisplayData.length) {
@@ -17612,6 +17625,7 @@ async function seOpenEditModal(id) {
     seriesSel.value = row.product_id || '';
     const skuCode = row.sku ? row.sku.split('-')[0] : '';
     seEditPopulateSkuList(row.product_id || '');
+    seEditShowReqCodes();
     document.getElementById('seEditSku').value = skuCode;
     seEditPopulateColorCodes(skuCode);
     document.getElementById('seEditColor').value = row.color_code || '';
@@ -17755,6 +17769,26 @@ function seEditToggleSaleFields() {
     document.getElementById('seEditSaleFields').style.display = isSale ? 'flex' : 'none';
     seEditToggleSaleNote();
 }
+// 같은 제품인데 매장마다 소비자가가 다르면 고객이 비교했을 때 바로 보인다.
+function seEditWarnPrice() {
+    const box = document.getElementById('seEditPriceWarn');
+    if (!box) return;
+    const code  = document.getElementById('seEditSku').value.trim().toUpperCase();
+    const color = document.getElementById('seEditColor').value.trim().toUpperCase();
+    const price = parseInt(document.getElementById('seEditConsumerPrice').value) || 0;
+    const sku = color ? code + '-' + color : code;
+    if (!sku || !price) { box.style.display = 'none'; return; }
+    const others = (sePriceBySku[sku] || []).filter(x => x.price !== price);
+    if (!others.length) { box.style.display = 'none'; return; }
+    const seen = {};
+    others.forEach(x => { (seen[x.price] = seen[x.price] || []).push(x.store); });
+    box.style.display = '';
+    box.innerHTML = '⚠ 같은 코드인데 소비자가가 다릅니다 — ' +
+        Object.entries(seen).map(([p, st]) =>
+            `<b>${Number(p).toLocaleString()}원</b> (${[...new Set(st)].map(seStoreNameOf).join(', ')})`).join(' · ') +
+        '<br>어느 쪽이 맞는지 확인하세요. 고객이 두 매장을 비교하면 바로 보입니다.';
+}
+
 // 설명 칸은 소비자가를 적은 뒤에 열린다 — 가격부터 정하게 하려는 것.
 function seEditToggleSaleNote() {
     const wrap = document.getElementById('seEditSaleNoteWrap');
@@ -17771,8 +17805,47 @@ function seEditPopulateSkuList(seriesName) {
     const dl = document.getElementById('seEditSkuList');
     dl.innerHTML = '';
     document.getElementById('seEditSku').value = '';
+    seEditShowReqCodes();
     if (!seriesName || !displaySkuData[seriesName]) return;
     Object.keys(displaySkuData[seriesName]).forEach(sku => { const o = document.createElement('option'); o.value = sku; dl.appendChild(o); });
+}
+
+// 코드 오기는 매장이 홈페이지 '최신 코드'를 붙여넣어서 난다.
+// 요청서에 적힌 '출고 당시 코드'를 눌러 넣게 해서 손으로 칠 일을 없앤다.
+function seEditShowReqCodes() {
+    const box = document.getElementById('seEditReqCodes');
+    if (!box) return;
+    const pairs = {};
+    (seReqItems || []).forEach(it => {
+        if (!it.item_code) return;
+        pairs[it.item_code + '|' + (it.color_code || '')] =
+            { code: it.item_code, color: it.color_code || '', name: it.product_name || '' };
+    });
+    let list = Object.values(pairs).sort((a, b) =>
+        a.code.localeCompare(b.code) || a.color.localeCompare(b.color));
+    // 시리즈를 골랐으면 그 시리즈 코드만 남긴다 — 69개를 다 늘어놓으면 못 찾는다
+    const series = document.getElementById('seEditSeries').value;
+    const known = series && displaySkuData[series] ? new Set(Object.keys(displaySkuData[series])) : null;
+    const narrowed = known ? list.filter(x => known.has(x.code)) : [];
+    const all = !narrowed.length;
+    if (!all) list = narrowed;
+    if (!list.length) { box.style.display = 'none'; return; }
+    const MAX = 24, shown = list.slice(0, MAX);
+    box.style.display = '';
+    box.innerHTML = `<span style="color:#b45309;">이 매장 요청서에 있는 코드${all ? '' : ' (' + series + ')'} — 눌러서 넣기</span>`
+        + (list.length > MAX ? `<span style="color:#94a3b8;"> · ${MAX}개만 표시</span>` : '') + '<br>' +
+        shown.map(x => `<button type="button" onclick="seEditPickCode('${x.code}','${x.color}')"
+            title="${(x.name || '').replace(/"/g, '&quot;')}"
+            style="margin:2px 3px 0 0;padding:2px 7px;border-radius:5px;border:1px solid var(--se-border);
+                   background:var(--se-surface);color:var(--se-text);font-size:0.7rem;font-family:monospace;cursor:pointer;"
+            >${x.code}${x.color ? '-' + x.color : ''}</button>`).join('');
+    void shown;
+}
+function seEditPickCode(code, color) {
+    document.getElementById('seEditSku').value = code;
+    seEditPopulateColorCodes(code);
+    document.getElementById('seEditColor').value = color;
+    seEditWarnPrice();
 }
 function seEditPopulateColorCodes(productCode) {
     const cl = document.getElementById('seEditColorList');
@@ -18601,6 +18674,20 @@ async function seHandleAddPhotoAdd(input) {
 async function seToggleCatalogVisible(id, newVal) {
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx === -1) return;
+    // 올리기 전에 빠진 게 없는지 본다. 내릴 때는 안 본다.
+    if (newVal) {
+        const r = seDisplayData[idx];
+        const miss = [];
+        if (!r.grade)                                        miss.push('등급');
+        if (!r.consumer_price)                               miss.push('소비자가');
+        if (!((r.image_urls && r.image_urls.length) || r.image_url)) miss.push('사진');
+        if (!(r.sale_note || '').trim())                     miss.push('제품 설명');
+        if (miss.length) {
+            alert('고객에게 보이는 화면이라 ' + miss.join(' · ') + ' 없이는 올릴 수 없습니다.'
+                + String.fromCharCode(10) + '수정을 눌러 채운 뒤 다시 게시하세요.');
+            return;
+        }
+    }
     try {
         const { error } = await _sb.from('store_displays').update({ catalog_visible: newVal, updated_at: new Date().toISOString() }).eq('id', id);
         if (error) throw error;
