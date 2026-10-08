@@ -15302,7 +15302,7 @@ function seRenderUnmatchedRef() {
     const bag = {};
     seReqItems.forEach(it => {
         if (!it.item_code || !it.color_code) return;
-        if (seAccIsCode(it.item_code)) return;   // 악세서리는 전시품으로 등록하지 않는다
+        if (seAccSkipReq(seCurrentStore, it.item_code, it.color_code)) return;   // 악세서리는 전시품으로 등록하지 않는다
         const sku = `${it.item_code}-${it.color_code}`.toUpperCase();
         if (qtyMode ? (!have.has(sku) || (seReqQty[sku] || 0) === (dispQty[sku] || 0)) : have.has(sku)) return;
         const e = bag[sku] || (bag[sku] = { sku, name: it.product_name || '', qty: 0, reqs: [] });
@@ -18277,7 +18277,7 @@ const seAccSeries = row => SE_ACC_SERIES.has(row && row.product_id);
 // 제품군이 몇 행 잘못 박혀 있어도(성수 T21AP0CC1이 'T20 2세대'로) 품목코드 단위 다수결이면
 // 한쪽으로 몰린다. 코드를 무조건 빼버리면 센텀 T50(1행만 ACCESSORY)처럼 진짜 제품이
 // 통째로 사라지는데, 다수결은 그걸 막는다.
-let _seAccCode = null, _seAccCodeP = null;
+let _seAccCode = null, _seAccPer = null, _seAccCodeP = null;
 const seAccCodeOf = sku => seAuditNorm(sku).split('-')[0];
 function seAccIsCode(sku) {
     const c = seAccCodeOf(sku);
@@ -18286,19 +18286,31 @@ function seAccIsCode(sku) {
 const seIsAcc = row => !!row && (seAccSeries(row) || seAccIsCode(row.sku));
 
 function seAccBuild(all) {
-    const n = {};
+    const n = {}, per = {};
     (all || []).forEach(r => {
         if (!r.sku) return;
-        const c = seAccCodeOf(r.sku);
-        (n[c] = n[c] || [0, 0])[seAccSeries(r) ? 0 : 1]++;
+        const i = seAccSeries(r) ? 0 : 1;
+        const c = seAccCodeOf(r.sku), k = r.store_id + '|' + seAuditNorm(r.sku);
+        (n[c]   = n[c]   || [0, 0])[i]++;
+        (per[k] = per[k] || [0, 0])[i]++;
     });
     _seAccCode = new Set(Object.keys(n).filter(c => n[c][0] > n[c][1]));
+    _seAccPer = per;
     return _seAccCode;
+}
+
+// 요청서 품목을 뺄지 — 코드가 악세서리거나, 그 매장의 그 코드가 전부 악세서리 행이면 뺀다.
+// 센텀 '이지리페어존' T50(VTNF500HLDA-451M)처럼 다른 매장엔 진짜 T50이 있어도
+// 그 매장 기준으로는 부속이라 전 매장 다수결만으로는 안 걸린다.
+function seAccSkipReq(store, itemCode, colorCode) {
+    if (seAccIsCode(itemCode)) return true;
+    const k = store + '|' + seAuditNorm(itemCode + (colorCode ? '-' + colorCode : ''));
+    return !!(_seAccPer && _seAccPer[k] && _seAccPer[k][1] === 0);
 }
 // 화면마다 자기 매장만 불러오므로 다수결은 전 매장을 한 번 봐야 나온다 (한 번만 받아 둔다)
 function seAccEnsure(force) {
     if (!_seAccCodeP || force) _seAccCodeP = (async () => {
-        const { data } = await sbAll(() => _sb.from('store_displays').select('sku,product_id').order('id'));
+        const { data } = await sbAll(() => _sb.from('store_displays').select('store_id,sku,product_id').order('id'));
         seAccBuild(data);
     })();
     return _seAccCodeP;
@@ -18650,7 +18662,7 @@ async function seRunAudit(force) {
     // 악세서리는 세지 않는다. 요청서 쪽도 같이 빼야 "매장에 없음"이 쏟아지지 않는다.
     seAccBuild(dispRes.data);
     const disp  = (dispRes.data || []).filter(r => !seIsAcc(r));
-    const items = (itemRes.data || []).filter(it => !seAccIsCode(it.item_code));
+    const items = (itemRes.data || []).filter(it => !seAccSkipReq(it.store_id, it.item_code, it.color_code));
     const recs = recRes.data, tras = traRes.data;
     const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
