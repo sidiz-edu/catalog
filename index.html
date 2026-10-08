@@ -14402,10 +14402,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 </div>
             </div>
             <span id="seAuditWhen" style="margin-left:auto;font-size:0.74rem;color:var(--se-muted);"></span>
+            <button id="seDraftBtn" onclick="seOpenRecDraft()" style="display:none;padding:7px 15px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 회수보고서 초안</button>
             <button onclick="seRunAudit(true)" style="padding:7px 15px;border-radius:8px;border:none;background:#0f172a;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">다시 검사</button>
         </div>
         <div id="seAuditSummary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
         <div id="seAuditBody"><p style="color:var(--se-muted);font-size:0.83rem;">검사 중...</p></div>
+    </div>
+</div>
+
+<div id="seRecDraftModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:24px;">
+    <div style="background:var(--se-surface);border:1px solid var(--se-border);border-radius:12px;padding:22px;width:1000px;max-width:96vw;max-height:88vh;overflow:auto;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="font-size:0.98rem;font-weight:800;color:var(--se-text);">회수 및 처리결과 보고서 초안</div>
+            <span id="seRecDraftCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
+            <button onclick="seCopyRecDraft()" style="margin-left:auto;padding:7px 15px;border-radius:8px;border:none;background:#0f766e;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📋 표 복사</button>
+            <button onclick="document.getElementById('seRecDraftModal').style.display='none'" style="padding:7px 15px;border-radius:8px;border:1.5px solid var(--se-border);background:transparent;color:var(--se-muted);font-size:0.8rem;cursor:pointer;">닫기</button>
+        </div>
+        <div id="seRecDraftBody"></div>
     </div>
 </div>
 
@@ -18212,6 +18225,18 @@ function seOneCharApart(a, b) {
     return d === 1;
 }
 
+// 그 전시품이 나간 요청서 품목을 찾는다 — 수주번호가 맞는 것을 먼저 본다.
+function seFindReqItem(items, d) {
+    const s = seAuditNorm(d.sku || '');
+    const cand = items.filter(it => it.item_code &&
+        seAuditNorm(it.item_code) + '-' + seAuditNorm(it.color_code) === s);
+    if (!cand.length) return null;
+    const byOrder = d.sales_order_no
+        ? cand.find(it => seAuditNorm((it.outgoing_requests || {}).order_no) === seAuditNorm(d.sales_order_no))
+        : null;
+    return byOrder || cand.find(it => it.store_id === d.store_id) || cand[0];
+}
+
 async function seRunAudit(force) {
     const body = document.getElementById('seAuditBody');
     if (!body) return;
@@ -18222,7 +18247,7 @@ async function seRunAudit(force) {
     const [dispRes, itemRes, recRes, mvRes] = await Promise.all([
         sbAll(() => _sb.from('store_displays').select('*').order('id')),
         sbAll(() => _sb.from('outgoing_request_items')
-            .select('store_id,item_code,color_code,qty,product_name,outgoing_requests(doc_no,title,order_no,request_date)').order('id')),
+            .select('store_id,item_code,color_code,qty,unit_price,product_name,outgoing_requests(doc_no,title,order_no,request_date,delivery_date)').order('id')),
         sbAll(() => _sb.from('recovery_report_items')
             .select('store_id,item_code,color_code,order_no,qty').order('id')),
         sbAll(() => _sb.from('display_moves').select('display_id,from_store').order('moved_at')),
@@ -18235,7 +18260,7 @@ async function seRunAudit(force) {
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
     const key = (st, s) => st + '|' + s;
     const out = [];
-    const add = (kind, store, title, detail) => out.push({ kind, store, title, detail });
+    const add = (kind, store, title, detail, src) => out.push({ kind, store, title, detail, src });
 
     // 매장·SKU별 수량
     const reqQty = {}, dispQty = {}, reqMeta = {};
@@ -18296,7 +18321,8 @@ async function seRunAudit(force) {
             if (covered >= q) { covered -= q; return; }
             const days = d.sold_at ? Math.floor((Date.now() - new Date(d.sold_at)) / 86400000) : null;
             add('norec', st, `${d.product_id || ''} ${s}`,
-                `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''} — 거래처 변경·회수보고서 필요`);
+                `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''} — 거래처 변경·회수보고서 필요`,
+                { d, req: seFindReqItem(items, d) });
         });
     });
 
@@ -18340,6 +18366,90 @@ async function seRunAudit(force) {
     seRenderAudit();
 }
 
+// 회수보고서 초안 — 카탈로그가 아는 값만 채우고 모르는 칸은 비워 둔다.
+// 문서번호·작성일·창고는 지어내지 않는다.
+let _seRecDraft = null;
+function seOpenRecDraft() {
+    const scoped = seScopedStore();
+    const list = (_seAudit?.rows || [])
+        .filter(r => r.kind === 'norec' && (!scoped || r.store === scoped) && r.src);
+    if (!list.length) { alert('초안을 만들 건이 없습니다.'); return; }
+    const rows = list.map((r, i) => {
+        const d = r.src.d, it = r.src.req || {};
+        const q = d.quantity || 1;
+        const factory = it.unit_price || null;                  // 공장도가
+        const build = factory ? Math.round(factory * 1.03) : null; // 시공가
+        return {
+            seq: i + 1,
+            store: seStoreNameOf(d.store_id),
+            order_no: d.sales_order_no || '',
+            order_title: (it.outgoing_requests || {}).title || '',
+            due: (it.outgoing_requests || {}).delivery_date || '',
+            item_code: (d.sku || '').split('-')[0],
+            color_code: d.color_code || (d.sku || '').split('-').slice(1).join('-'),
+            qty: q,
+            factory, build,
+            amount: build ? build * q : null,
+            exit: d.exit_type || '반출',
+        };
+    });
+    _seRecDraft = rows;
+    const total = rows.reduce((s, r) => s + (r.amount || 0), 0);
+    const reasons = [...new Set(rows.map(r => SE_REC_REASON[r.exit] || ''))].filter(Boolean);
+    document.getElementById('seRecDraftCount').textContent =
+        `${rows.length}건 · 미회수 합계 ${total.toLocaleString()}원` + (scoped ? ` · ${seStoreNameOf(scoped)}` : ' · 전 매장');
+    document.getElementById('seRecDraftBody').innerHTML = `
+        <div class="se-sale-note" style="margin-bottom:10px;">
+            카탈로그가 아는 값만 채웠습니다. <b>문서번호 · 작성일 · 창고</b>는 비워 뒀습니다 — 지어내면 안 되는 값입니다.<br>
+            금액은 <b>시공가(공장도가 × 1.03) × 수량</b>으로 계산했습니다. 공장도가가 없는 품목은 빈칸입니다.
+            ${reasons.length ? `<br>사유 문구 — ${reasons.map(x => `「${x}」`).join(' · ')}` : ''}
+        </div>
+        <div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.75rem;white-space:nowrap;">
+            <thead><tr style="background:#e2e8f0;color:#475569;">
+                ${['No', '매장', '수주번호', '수주건명', '납기', '품목코드', '색상', '수량', '공장도가', '시공가', '미회수금액', '창고']
+                    .map(h => `<th style="padding:7px 9px;text-align:left;">${h}</th>`).join('')}
+            </tr></thead>
+            <tbody>${rows.map((r, i) => `
+                <tr style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                    <td style="padding:6px 9px;">${r.seq}</td>
+                    <td style="padding:6px 9px;">${r.store}</td>
+                    <td style="padding:6px 9px;font-family:monospace;">${r.order_no || '<span style="color:#ef4444;">없음</span>'}</td>
+                    <td style="padding:6px 9px;max-width:230px;overflow:hidden;text-overflow:ellipsis;">${r.order_title || '-'}</td>
+                    <td style="padding:6px 9px;">${r.due || '-'}</td>
+                    <td style="padding:6px 9px;font-family:monospace;">${r.item_code}</td>
+                    <td style="padding:6px 9px;font-family:monospace;">${r.color_code}</td>
+                    <td style="padding:6px 9px;text-align:right;">${r.qty}</td>
+                    <td style="padding:6px 9px;text-align:right;">${r.factory ? r.factory.toLocaleString() : '<span style="color:#b45309;">확인</span>'}</td>
+                    <td style="padding:6px 9px;text-align:right;">${r.build ? r.build.toLocaleString() : ''}</td>
+                    <td style="padding:6px 9px;text-align:right;font-weight:700;">${r.amount ? r.amount.toLocaleString() : ''}</td>
+                    <td style="padding:6px 9px;color:#b45309;">확인 필요</td>
+                </tr>`).join('')}
+                <tr style="border-top:2px solid var(--se-border);background:#f1f5f9;font-weight:800;">
+                    <td colspan="10" style="padding:7px 9px;text-align:right;">미회수 합계</td>
+                    <td style="padding:7px 9px;text-align:right;">${total.toLocaleString()}</td><td></td>
+                </tr></tbody>
+        </table></div>`;
+    document.getElementById('seRecDraftModal').style.display = 'flex';
+}
+
+// 반출 사유별 보고서 문구 — 기존 보고서에서 쓰던 말을 그대로 쓴다.
+// 선례가 없는 사유는 비워 두고 직접 적게 한다.
+const SE_REC_REASON = {
+    '판매': '위탁매출거래처로 거래처변경 후, 전시품 판매 완료',
+    '폐기': '전시품 사용으로 인한 제품 오염 및 훼손',
+};
+
+function seCopyRecDraft() {
+    if (!_seRecDraft) return;
+    const TAB = String.fromCharCode(9), NL = String.fromCharCode(10);
+    const head = ['No', '매장', '수주번호', '수주건명', '납기', '품목코드', '색상', '수량', '공장도가', '시공가', '미회수금액', '창고'];
+    const body = _seRecDraft.map(r => [r.seq, r.store, r.order_no, r.order_title, r.due,
+        r.item_code, r.color_code, r.qty, r.factory || '', r.build || '', r.amount || '', ''].join(TAB));
+    navigator.clipboard.writeText([head.join(TAB), ...body].join(NL))
+        .then(() => showToast('📋 회수보고서 초안 표 복사'));
+}
+
 let _seAuditKind = 'all';
 function seAuditFilter(k) { _seAuditKind = k; seRenderAudit(); }
 
@@ -18362,6 +18472,13 @@ function seRenderAudit() {
             const on = k === _seAuditKind;
             return `<button onclick="seAuditFilter('${k}')" style="padding:6px 12px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;background:${on ? fg : 'var(--se-surface)'};color:${on ? '#fff' : fg};border:1px solid ${on ? fg : 'var(--se-border)'};font-family:'Outfit',sans-serif;">${label}</button>`;
         }).join('');
+
+    const dbtn = document.getElementById('seDraftBtn');
+    if (dbtn) {
+        const n = all.filter(r => r.kind === 'norec').length;
+        dbtn.style.display = n ? '' : 'none';
+        dbtn.textContent = `📄 회수보고서 초안 ${n}건`;
+    }
 
     const rows = all.filter(r => _seAuditKind === 'all' || r.kind === _seAuditKind);
     if (!rows.length) {
