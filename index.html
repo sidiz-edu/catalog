@@ -14766,6 +14766,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <div class="se-flow-s"><span class="se-flow-n">6</span><div class="se-flow-t">링크 확인</div></div>
         </div>
 
+        <!-- 0. 매장 주소·담당자 -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">0</span>매장 주소 · 담당자</h3>
+            <p class="se-sale-p">매출외출고 요청서 품목 표의 <b>주소 · 우편번호 · 이름 · 연락처</b> 칸에 들어가는 값입니다.
+                <b>복사</b>를 누르면 그 네 칸이 탭으로 구분돼 복사되니 요청서에 그대로 붙여넣으면 됩니다.</p>
+            <div id="seContactBody"><p style="color:var(--se-muted);font-size:0.82rem;">불러오는 중...</p></div>
+        </div>
+
         <!-- 1. ERP -->
         <div class="se-sale-sec">
             <h3 class="se-sale-h"><span class="se-sale-n">1</span>ERP 단품마스터 — 코드 확인<span class="se-owner">제명</span></h3>
@@ -17989,6 +17997,88 @@ function sePrintTagsFor(rows, label) {
     sePrintDoc(seTagHtml(ok));
 }
 
+// 매장 주소·담당자 — 개인 연락처라 깃에 두지 않고 Supabase에만 둔다.
+let _seContacts = null;
+async function seLoadContacts() {
+    const box = document.getElementById('seContactBody');
+    if (!box || _seContacts) { if (_seContacts) seRenderContacts(); return; }
+    const { data, error } = await _sb.from('store_contacts').select('*');
+    if (error) { box.innerHTML = `<p style="color:#ef4444;font-size:0.82rem;">불러오기 실패: ${error.message}</p>`; return; }
+    _seContacts = data || [];
+    seRenderContacts();
+}
+
+function seRenderContacts() {
+    const box = document.getElementById('seContactBody');
+    if (!box) return;
+    if (!_seContacts.length) {
+        box.innerHTML = '<p style="color:var(--se-muted);font-size:0.82rem;">등록된 매장 정보가 없습니다.</p>';
+        return;
+    }
+    const ord = {};
+    (typeof seStores === 'function' ? seStores() : []).forEach((s, i) => { ord[s.id] = i; });
+    const rows = [..._seContacts].sort((a, b) => (ord[a.store_id] ?? 99) - (ord[b.store_id] ?? 99));
+    const src = rows.find(r => r.source)?.source;
+    const cell = (r, f, ph) =>
+        `<td contenteditable="true" spellcheck="false" data-id="${r.store_id}" data-f="${f}"
+             oninput="seContactDirty('${r.store_id}')"
+             style="padding:6px 9px;background:#fffdf3;outline:none;">${(r[f] || '')
+                .replace(/</g, '&lt;')}</td>`;
+    box.innerHTML = `
+    ${src ? `<div style="font-size:0.74rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:9px;line-height:1.6;">
+        출처 — ${src}. <b>담당자가 바뀌었을 수 있으니 보내기 전에 확인하세요.</b> 칸을 눌러 고친 뒤 저장하면 됩니다.</div>` : ''}
+    <div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.76rem;background:var(--se-surface);">
+        <thead><tr style="background:#e2e8f0;color:#475569;">
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:left;">주소</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">우편번호</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">담당자</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">연락처</th>
+            <th style="padding:7px 9px;text-align:center;white-space:nowrap;">복사</th>
+        </tr></thead>
+        <tbody>${rows.map((r, i) => `
+            <tr id="sc-row-${r.store_id}" style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 9px;white-space:nowrap;font-weight:700;">${r.store_name || r.store_id}</td>
+                ${cell(r, 'address')}${cell(r, 'postal_code')}${cell(r, 'manager')}${cell(r, 'phone')}
+                <td style="padding:6px 9px;text-align:center;white-space:nowrap;">
+                    <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyContact('${r.store_id}')">복사</button>
+                    <button class="se-del-btn" id="sc-save-${r.store_id}" style="background:#94a3b8;color:#fff;border:none;" onclick="seSaveContact('${r.store_id}')">저장</button>
+                </td>
+            </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function seContactRead(id) {
+    const out = {};
+    document.querySelectorAll(`#sc-row-${CSS.escape(id)} [data-f]`).forEach(td => {
+        out[td.dataset.f] = td.textContent.trim();
+    });
+    return out;
+}
+function seContactDirty(id) {
+    const b = document.getElementById('sc-save-' + id);
+    if (b) b.style.background = '#003EFF';
+}
+function seCopyContact(id) {
+    const v = seContactRead(id);
+    const line = [v.address, v.postal_code, v.manager, v.phone].join(String.fromCharCode(9));
+    navigator.clipboard.writeText(line)
+        .then(() => showToast('📋 주소·우편번호·담당자·연락처 복사'));
+}
+async function seSaveContact(id) {
+    const v = seContactRead(id);
+    const { error } = await _sb.from('store_contacts')
+        .update({ ...v, updated_at: new Date().toISOString() }).eq('store_id', id);
+    const b = document.getElementById('sc-save-' + id);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    const row = _seContacts.find(r => r.store_id === id);
+    if (row) Object.assign(row, v);
+    if (b) b.style.background = '#16a34a';
+    showToast('✓ 저장했습니다');
+    setTimeout(() => { if (b) b.style.background = '#94a3b8'; }, 1500);
+}
+
 // 전시품 등록 프로세스는 관리자만 본다. 비밀번호는 카탈로그 관리자 것과 같다.
 let _seRegUnlocked = false;
 function seRegApply() {
@@ -17998,6 +18088,7 @@ function seRegApply() {
     if (!lock || !body) return;
     lock.style.display = ok ? 'none' : '';
     body.style.display = ok ? '' : 'none';
+    if (ok) seLoadContacts();
     if (!ok) setTimeout(() => document.getElementById('seRegPw')?.focus(), 80);
 }
 async function seRegUnlock() {
