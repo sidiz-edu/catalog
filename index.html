@@ -15302,6 +15302,7 @@ function seRenderUnmatchedRef() {
     const bag = {};
     seReqItems.forEach(it => {
         if (!it.item_code || !it.color_code) return;
+        if (seAccIsCode(it.item_code)) return;   // 악세서리는 전시품으로 등록하지 않는다
         const sku = `${it.item_code}-${it.color_code}`.toUpperCase();
         if (qtyMode ? (!have.has(sku) || (seReqQty[sku] || 0) === (dispQty[sku] || 0)) : have.has(sku)) return;
         const e = bag[sku] || (bag[sku] = { sku, name: it.product_name || '', qty: 0, reqs: [] });
