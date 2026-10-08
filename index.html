@@ -14392,6 +14392,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
 </div>
 
+<div id="seTabTransfer" style="display:none;">
+    <div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <input id="traSearch" type="text" oninput="seRenderTransfer()"
+                placeholder="문서번호 · 품목코드 · 색상 · 매장 · 수주번호 · 건명 (공백으로 여러 조건)"
+                style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+            <span id="traSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+            <button id="traView-doc" onclick="seSetTraView('doc')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#1d4ed8;color:#fff;border:1px solid #1d4ed8;font-family:'Outfit',sans-serif;">📋 문서별</button>
+            <button id="traView-flat" onclick="seSetTraView('flat')" style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:#fff;color:#1d4ed8;border:1px solid var(--se-border);font-family:'Outfit',sans-serif;">📄 명세 전체보기</button>
+        </div>
+        <div id="traScopeNote" style="display:none;font-size:0.76rem;color:var(--se-muted);background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
+        <div id="traBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
+    </div>
+</div>
+
 <div id="seTabAudit" style="display:none;">
     <div style="max-width:980px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
@@ -15003,6 +15020,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
             <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외출고 요청서</button>
             <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">회수 보고서</button>
+            <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">거래처 변경</button>
             <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">점검</button>
             <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">매장 전시품 판매 프로세스</button>
             <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 본사 담당자 업무</button>
@@ -15656,6 +15674,7 @@ function seScopedStore() {
 function seOnStoreChange() {
     try { localStorage.setItem('seLastStore', seScopedStore()); } catch (e) {}
     if (document.querySelector('.se-tab.active')?.dataset.tab === 'audit' && _seAudit) seRenderAudit();
+    if (document.querySelector('.se-tab.active')?.dataset.tab === 'transfer' && _seTraDocs) seRenderTransfer();
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
@@ -15689,7 +15708,9 @@ function seSwitchTab(tab) {
     document.getElementById('seTabRecovery').style.display  = tab === 'recovery' ? '' : 'none';
     document.getElementById('seTabSale').style.display      = tab === 'sale'     ? '' : 'none';
     document.getElementById('seTabRegister').style.display  = tab === 'register' ? '' : 'none';
+    document.getElementById('seTabTransfer').style.display  = tab === 'transfer' ? '' : 'none';
     document.getElementById('seTabAudit').style.display     = tab === 'audit'    ? '' : 'none';
+    if (tab === 'transfer') seLoadTransfer();
     if (tab === 'audit') seRunAudit();
     if (tab === 'sale') seRenderTagPreview();
     if (tab === 'register') seRegApply();
@@ -18211,6 +18232,156 @@ function sePrintTagsFor(rows, label) {
     }
     if (skipped) alert(skipped + '건은 소비자가나 등급이 없어 제외했습니다. ' + ok.length + '건을 인쇄합니다.');
     sePrintDoc(seTagHtml(ok));
+}
+
+// ── 거래처 변경 협조전 ────────────────────────────────────────────────
+// 매출외출고(쌤플/의자생산팀)에서 판매처(매장)로 재산을 넘긴 기록.
+// 전시품을 팔려면 이게 먼저고, 그 다음이 회수 및 처리결과 보고서다.
+let _seTraDocs = null, _seTraView = 'doc';
+
+function seSetTraView(v) {
+    _seTraView = v;
+    ['doc', 'flat'].forEach(k => {
+        const b = document.getElementById('traView-' + k);
+        if (!b) return;
+        const on = k === v;
+        b.style.background = on ? '#1d4ed8' : '#fff';
+        b.style.color = on ? '#fff' : '#1d4ed8';
+        b.style.border = on ? '1px solid #1d4ed8' : '1px solid var(--se-border)';
+    });
+    seRenderTransfer();
+}
+
+async function seLoadTransfer(force) {
+    const body = document.getElementById('traBody');
+    if (!body) return;
+    if (_seTraDocs && !force) { seRenderTransfer(); return; }
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
+    const { data, error } = await sbAll(() => _sb.from('transfer_approvals')
+        .select('*, transfer_approval_items(*)').order('approval_date', { ascending: false }).order('id'));
+    if (error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${error.message}</p>`; return; }
+    _seTraDocs = (data || []).map(d => ({
+        ...d, items: (d.transfer_approval_items || []).sort((a, b) => (a.seq || 0) - (b.seq || 0)),
+    }));
+    seRenderTransfer();
+}
+
+const seTraHay = (doc, it) => [doc.doc_no, doc.title, doc.author, doc.approval_date,
+    doc.to_office, doc.to_dealer, doc.from_dealer,
+    it && it.item_code, it && it.color_code, it && it.order_no_before, it && it.order_no_after,
+    it && it.order_title, it && it.store_id, it && seStoreNameOf(it.store_id)]
+    .filter(Boolean).join(' ').toLowerCase();
+
+function seRenderTransfer() {
+    const body = document.getElementById('traBody');
+    const note = document.getElementById('traScopeNote');
+    if (!body || !_seTraDocs) return;
+    const scoped = seScopedStore();
+    const hit = seSearchMatcher(document.getElementById('traSearch')?.value);
+
+    // 매장을 좁히면 그 매장 품목만 남기고, 품목이 하나도 없는 문서는 뺀다
+    const docs = _seTraDocs.map(d => ({
+        ...d, items: d.items.filter(it => (!scoped || it.store_id === scoped) && hit(seTraHay(d, it))),
+    })).filter(d => d.items.length || (!scoped && hit(seTraHay(d, null))));
+
+    const nItem = docs.reduce((s, d) => s + d.items.length, 0);
+    const total = _seTraDocs.reduce((s, d) => s + d.items.length, 0);
+    const cnt = document.getElementById('traSearchCount');
+    if (cnt) cnt.textContent = `문서 ${docs.length}건 · 품목 ${nItem}개` + (nItem !== total ? ` / 전체 ${total}개` : '');
+    if (note) {
+        note.style.display = scoped ? '' : 'none';
+        note.innerHTML = scoped ? `<b>${seStoreNameOf(scoped)}</b> 기준으로 좁혀 보고 있습니다. 위 드롭다운에서 <b>전체 매장</b>을 고르면 모두 나옵니다.` : '';
+    }
+    if (!docs.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 협조전이 없습니다.</p>'; return; }
+
+    body.innerHTML = _seTraView === 'flat' ? seTraFlat(docs) : seTraByDoc(docs);
+}
+
+const seTraWon = v => (v == null ? '-' : Number(v).toLocaleString());
+
+function seTraByDoc(docs) {
+    return docs.map(d => {
+        const before = d.items.reduce((s, x) => s + (x.amount_before || 0), 0);
+        const after = d.items.reduce((s, x) => s + (x.amount_after || 0), 0);
+        const stores = [...new Set(d.items.map(x => x.store_id).filter(Boolean))];
+        return `<div style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:9px;background:var(--se-surface);overflow:hidden;">
+            <div style="padding:13px 15px;cursor:pointer;" onclick="seTraToggle('${d.id}')">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                    <span style="font-size:0.72rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;">${d.doc_no || '문서번호 없음'}</span>
+                    <b style="font-size:0.86rem;color:var(--se-text);">${d.title || ''}</b>
+                    <span style="margin-left:auto;font-size:0.76rem;color:var(--se-muted);white-space:nowrap;">${d.approval_date || '-'} · ${d.author || '-'}</span>
+                </div>
+                <div style="font-size:0.76rem;color:var(--se-muted);margin-top:5px;line-height:1.6;">
+                    ${d.from_office || ''} / <b>${d.from_dealer || ''}</b>${d.from_code ? ` (${d.from_code})` : ''}
+                    &nbsp;→&nbsp; ${d.to_office || ''} / <b style="color:#1d4ed8;">${d.to_dealer || ''}</b>${d.to_code ? ` (${d.to_code})` : ''}
+                </div>
+                <div style="font-size:0.76rem;color:var(--se-muted);margin-top:3px;">
+                    품목 <b>${d.items.length}건</b> · 수주금액 ${seTraWon(before)} → <b style="color:#1d4ed8;">${seTraWon(after)}</b>원
+                    ${stores.length ? ` · ${stores.map(seStoreNameOf).join(', ')}` : ''}
+                </div>
+            </div>
+            <div id="tra-items-${d.id}" style="display:none;border-top:1px solid var(--se-border);">
+                ${seTraTable(d.items, true)}
+                ${d.reason ? `<div style="padding:11px 15px;border-top:1px solid var(--se-border);font-size:0.78rem;color:#475569;white-space:pre-wrap;line-height:1.7;"><b>사유</b>\n${d.reason}</div>` : ''}
+                ${d.memo ? `<div style="padding:11px 15px;border-top:1px solid var(--se-border);font-size:0.75rem;color:#64748b;white-space:pre-wrap;line-height:1.7;background:var(--se-raised,#f8fafc);">${d.memo}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function seTraToggle(id) {
+    const el = document.getElementById('tra-items-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function seTraFlat(docs) {
+    const rows = [];
+    docs.forEach(d => d.items.forEach(it => rows.push({ d, it })));
+    return `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.75rem;background:var(--se-surface);white-space:nowrap;">
+        <thead><tr style="background:#e2e8f0;color:#475569;">
+            ${['협조전', '작성일', '매장', '품목코드', '색상', '수량', '기존 수주', '변경 수주', '기존금액', '변경금액']
+                .map(h => `<th style="padding:7px 9px;text-align:left;">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>${rows.map(({ d, it }, i) => `
+            <tr style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${seHyNo(d.doc_no) || d.doc_no || '-'}</td>
+                <td style="padding:6px 9px;">${d.approval_date || '-'}</td>
+                <td style="padding:6px 9px;">${seStoreNameOf(it.store_id)}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${it.item_code || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${it.color_code || '-'}</td>
+                <td style="padding:6px 9px;text-align:right;">${it.qty ?? '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;color:#64748b;" title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
+                <td style="padding:6px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
+                <td style="padding:6px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
+            </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function seTraTable(items, inner) {
+    return `<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.74rem;white-space:nowrap;">
+        <thead><tr style="background:var(--se-raised,#f8fafc);color:#475569;">
+            ${['매장', '품목코드', '색상', '수량', '기존 수주 / 건명', '기존금액', '변경 수주', '변경금액']
+                .map(h => `<th style="padding:6px 9px;text-align:left;">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>${items.map((it, i) => `
+            <tr style="border-top:1px solid var(--se-border);">
+                <td style="padding:5px 9px;">${seStoreNameOf(it.store_id)}</td>
+                <td style="padding:5px 9px;font-family:monospace;">${it.item_code || '-'}</td>
+                <td style="padding:5px 9px;font-family:monospace;">${it.color_code || '-'}</td>
+                <td style="padding:5px 9px;text-align:right;">${it.qty ?? '-'}</td>
+                <td style="padding:5px 9px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">
+                    <span style="font-family:monospace;color:#64748b;">${it.order_no_before || '-'}</span>
+                    ${it.order_title ? `<div style="font-size:0.68rem;color:#94a3b8;">${it.order_title}</div>` : ''}
+                    ${it.memo ? `<div style="font-size:0.68rem;color:#b45309;">${it.memo}</div>` : ''}
+                </td>
+                <td style="padding:5px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
+                <td style="padding:5px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
+                <td style="padding:5px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
+            </tr>`).join('')}</tbody>
+    </table></div>`;
 }
 
 // ── 전시품 점검 — 전 매장을 한 번에 훑어 어긋난 곳을 찾는다 ──────────
