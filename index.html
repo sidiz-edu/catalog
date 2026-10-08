@@ -14689,9 +14689,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
                         <span style="font-size:1.1rem;line-height:1.2;">🧾</span>
                         <div style="flex:1;min-width:0;">
-                            <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">회수대장 등록이 필요한 반출 1건 <span style="font-weight:600;font-size:0.8rem;">· 판매 完 1</span></div>
+                            <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">거래처 변경 협조전 및 회수보고서 등록이 필요한 반출 1건 <span style="font-weight:600;font-size:0.8rem;">· 판매 完 1</span></div>
                             <div style="font-size:0.76rem;color:#7f1d1d;margin-top:3px;line-height:1.6;">
-                                전시에서 빠졌는데 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
+                                전시에서 빠졌는데 거래처 변경 협조전과 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
                                 <span style="font-family:monospace;font-size:0.73rem;">S51ACF0VG</span>
                             </div>
                             <button type="button" style="margin-top:8px;background:#dc2626;border:none;border-radius:7px;padding:5px 13px;color:#fff;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">해당 1건만 보기</button>
@@ -16933,9 +16933,9 @@ function seRenderTable(storeId) {
             alertBox.innerHTML = `<div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
                 <span style="font-size:1.1rem;line-height:1.2;">🧾</span>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">회수대장 등록이 필요한 반출 ${need.length}건 <span style="font-weight:600;font-size:0.8rem;">· ${mix}</span></div>
+                    <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">거래처 변경 협조전 및 회수보고서 등록이 필요한 반출 ${need.length}건 <span style="font-weight:600;font-size:0.8rem;">· ${mix}</span></div>
                     <div style="font-size:0.76rem;color:#7f1d1d;margin-top:3px;line-height:1.6;">
-                        전시에서 빠졌는데 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
+                        전시에서 빠졌는데 거래처 변경 협조전과 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
                         <span style="font-family:monospace;font-size:0.73rem;">${list}</span>
                     </div>
                     <button onclick="seKindFilter='needrec';seRenderTable(seCurrentStore)"
@@ -16994,7 +16994,7 @@ function seRenderTable(storeId) {
         const extras = [
             ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309'],
             ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c'],
-            ['needrec', `🧾 회수대장 등록 필요 (${recCount})`, '#dc2626'],
+            ['needrec', `🧾 협조전·회수보고서 필요 (${recCount})`, '#dc2626'],
         ].filter(([k]) => avail(k));
 
         bar.style.flexDirection = 'column';
