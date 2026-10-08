@@ -14918,7 +14918,7 @@ let _seRecByMo = null;   // 매출외번호 → { n, amt, docs[] }
 
 async function seEnsureReqIndex() {
     if (_seReqByMo) return _seReqByMo;
-    const { data } = await _sb.from('outgoing_requests').select('id,doc_no,title,request_date');
+    const { data } = await sbAll(() => _sb.from('outgoing_requests').select('id,doc_no,title,request_date').order('id'));
     _seReqByMo = {};
     (data || []).forEach(r => { const mo = seMoNo(r.doc_no); if (mo) _seReqByMo[mo] = r; });
     return _seReqByMo;
@@ -14927,8 +14927,8 @@ async function seEnsureReqIndex() {
 async function seEnsureRecIndex() {
     if (_seRecByMo) return _seRecByMo;
     const [rr, ri] = await Promise.all([
-        _sb.from('recovery_reports').select('id,doc_no'),
-        _sb.from('recovery_report_items').select('report_id,order_title,unrecovered_amount'),
+        sbAll(() => _sb.from('recovery_reports').select('id,doc_no').order('id')),
+        sbAll(() => _sb.from('recovery_report_items').select('report_id,order_title,unrecovered_amount').order('id')),
     ]);
     const docOf = {};
     (rr.data || []).forEach(r => { docOf[r.id] = r.doc_no; });
@@ -14969,8 +14969,8 @@ let _recReports = null, _recItems = null;
 async function seLoadRecoveryReports() {
     const body = document.getElementById('recoveryBody');
     const [rRes, iRes] = await Promise.all([
-        _sb.from('recovery_reports').select('*').order('report_date', { ascending: false }),
-        _sb.from('recovery_report_items').select('*').order('seq'),
+        sbAll(() => _sb.from('recovery_reports').select('*').order('report_date', { ascending: false }).order('id')),
+        sbAll(() => _sb.from('recovery_report_items').select('*').order('seq').order('id')),
         seEnsureReqIndex(),
         seEnsureCodeNames(),
     ]);
@@ -15015,7 +15015,7 @@ function seSetRecView(v) {
 // 명세에는 제품명이 없다 — 요청서 품목에서 품목코드별 제품명을 끌어온다
 async function seEnsureCodeNames() {
     if (_recCodeName) return _recCodeName;
-    const { data } = await _sb.from('outgoing_request_items').select('item_code,product_name');
+    const { data } = await sbAll(() => _sb.from('outgoing_request_items').select('item_code,product_name').order('id'));
     const freq = {};
     (data || []).forEach(x => {
         const c = (x.item_code || '').toUpperCase().replace(/\s/g, '');
@@ -15407,6 +15407,19 @@ function seToggleRecoveryItems(id) {
 
 <script>
 const SE_PW = 'SDZ2026';
+
+// PostgREST는 범위를 안 주면 1000건에서 끊는다. 전 매장을 한 번에 보는 화면은
+// 거기서 잘려 "매장에 없음"이 거짓으로 뜬다. 끝까지 받아온다.
+// build()는 매번 새 쿼리를 만들어야 하고, 페이지가 섞이지 않게 정렬을 고정해 둔다.
+async function sbAll(build, page = 1000) {
+    const out = [];
+    for (let from = 0; ; from += page) {
+        const { data, error } = await build().range(from, from + page - 1);
+        if (error) return { data: out, error };
+        out.push(...(data || []));
+        if (!data || data.length < page) return { data: out, error: null };
+    }
+}
 let seCurrentStore = null;
 let seDisplayData = [];
 let seReqSkuSet = new Set();
@@ -15954,9 +15967,10 @@ async function seLoadFlatRows() {
     if (_seFlatRows) { seRenderFlat(); return; }
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [itemsRes, dispRes] = await Promise.all([
-        _sb.from('outgoing_request_items')
-            .select('*, outgoing_requests(id,title,request_date,order_no,doc_no,ep_url)'),
-        _sb.from('store_displays').select('id,store_id,product_id,sku,quantity,purpose,sold,location,memo,sales_order_no'),
+        sbAll(() => _sb.from('outgoing_request_items')
+            .select('*, outgoing_requests(id,title,request_date,order_no,doc_no,ep_url)').order('id')),
+        sbAll(() => _sb.from('store_displays')
+            .select('id,store_id,product_id,sku,quantity,purpose,sold,location,memo,sales_order_no').order('id')),
     ]);
     if (itemsRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${itemsRes.error.message}</p>`; return; }
 
@@ -16203,7 +16217,7 @@ async function seLoadRequestList() {
         _sb.from('outgoing_requests')
             .select('id,title,requester,delivery_date,order_no,doc_no,ep_url,sheet_url,request_date,created_at')
             .order('request_date', { ascending: false, nullsFirst: false }).order('order_no', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(500),
-        _sb.from('outgoing_request_items').select('request_id,product_name,raw_product_name,item_code,color_code,store_name_raw,store_id,memo'),
+        sbAll(() => _sb.from('outgoing_request_items').select('request_id,product_name,raw_product_name,item_code,color_code,store_name_raw,store_id,memo').order('id')),
         seEnsureRecIndex(),
     ]);
     if (error || !data || !data.length) {
@@ -16423,11 +16437,11 @@ async function seToggleReqItems(id) {
         let displays = [], allReqItems = [];
         if (storeIds.length) {
             const [dRes, aRes] = await Promise.all([
-                _sb.from('store_displays')
+                sbAll(() => _sb.from('store_displays')
                     .select('id,store_id,product_id,sku,color_code,purpose,sold,quantity,zone_id,location,memo')
-                    .in('store_id', storeIds),
-                _sb.from('outgoing_request_items')
-                    .select('store_id,item_code,color_code,qty').in('store_id', storeIds),
+                    .in('store_id', storeIds).order('id')),
+                sbAll(() => _sb.from('outgoing_request_items')
+                    .select('store_id,item_code,color_code,qty').in('store_id', storeIds).order('id')),
             ]);
             displays = dRes.data || [];
             allReqItems = aRes.data || [];
@@ -19672,7 +19686,7 @@ async function seLoadOverview() {
     const grid = document.getElementById('seOverviewGrid');
     grid.innerHTML = '<div style="color:#475569;">불러오는 중...</div>';
     try {
-        const { data, error } = await _sb.from('store_displays').select('*');
+        const { data, error } = await sbAll(() => _sb.from('store_displays').select('*').order('id'));
         if (error) throw error;
         _ovData = data || [];
         seRenderOverview();
