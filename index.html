@@ -14188,7 +14188,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                                 <th onclick="seToggleSort('color')" style="cursor:pointer;user-select:none;white-space:nowrap;">색상<span id="seSortIcon_color" style="color:#94a3b8;"> ↕</span></th>
                                 <th>개수</th><th>사진</th><th>전시 시작일</th>
                                 <th onclick="seToggleSort('location')" style="cursor:pointer;user-select:none;white-space:nowrap;">위치<span id="seSortIcon_location" style="color:#94a3b8;"> ↕</span></th>
-                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고</th><th>회수보고서</th>
+                                <th>메모</th><th>최종 수정</th><th>관리</th><th>매출외수주번호</th><th>매출외출고</th><th>거래처 변경</th><th>회수보고서</th>
                             </tr>
                         </thead>
                         <tbody id="seDisplayList"></tbody>
@@ -15568,6 +15568,7 @@ let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시
 let seMoves     = {};          // display_id -> 매장 간 이동 이력 (오래된 것부터)
 let sePriceBySku = {};         // sku -> [{price, store}] — 매장마다 소비자가가 갈리는지 보려고 전 매장을 본다
 let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정보 포함)
+let seTransferDocs = {};         // sku -> 거래처 변경 협조전 항목
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
@@ -16216,7 +16217,7 @@ let _seReqStatus = 'all';
 function seRenderStatusBar(base) {
     const bar = document.getElementById('seReqStatusBar');
     if (!bar) return;
-    const c = { ok: 0, diff: 0, none: 0, orphan: 0, unmatched: 0 };
+    const c = {}; Object.keys(SE_AUDIT_KIND).forEach(k => c[k] = 0);
     base.forEach(x => c[seFlatStatus(x)]++);
     const entries = [['all', `전시 현황 전체 (${base.length})`, '#003EFF'],
         ...Object.keys(SE_STATUS_STYLE)
@@ -16920,9 +16921,9 @@ let _seAddPhotoBlobs = [];
 let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all', seLinkFilter = 'all';
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
-    tbody.innerHTML = '<tr><td colspan="17" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="18" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes] = await Promise.all([
+        const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes, traRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
             _sb.from('outgoing_request_items')
@@ -16932,6 +16933,9 @@ async function seRenderList(storeId) {
             _sb.from('display_issues').select('*').eq('store_id', storeId),
             _sb.from('recovery_report_items')
                .select('item_code,color_code,order_no,qty,unrecovered_amount,recovery_reports(doc_no,title,report_date,ep_url,reason)')
+               .eq('store_id', storeId),
+            _sb.from('transfer_approval_items')
+               .select('item_code,color_code,qty,order_no_before,order_no_after,memo,transfer_approvals(doc_no,title,approval_date,to_office,to_dealer)')
                .eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
@@ -16963,6 +16967,12 @@ async function seRenderList(storeId) {
             const sku = (r.item_code + (r.color_code ? '-' + r.color_code : '')).toUpperCase();
             (seRecoveryDocs[sku] = seRecoveryDocs[sku] || []).push(r);
         });
+        // 거래처 변경 협조전 — 매출외출고와 회수보고서 사이 단계
+        seTransferDocs = {};
+        (traRes.data || []).forEach(x => {
+            const sku = (x.item_code + (x.color_code ? '-' + x.color_code : '')).toUpperCase();
+            (seTransferDocs[sku] = seTransferDocs[sku] || []).push(x);
+        });
         seIssues = {};
         (issuesRes.data || []).forEach(x => {
             const k = (x.sku || '').toUpperCase();
@@ -16984,7 +16994,7 @@ async function seRenderList(storeId) {
         sePendingDeletes = [];
         seRenderTable(storeId);
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="17" style="color:#f87171;">오류: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="18" style="color:#f87171;">오류: ${e.message}</td></tr>`;
     }
 }
 // ── 행 드래그로 순서 바꾸기 ──
@@ -17063,7 +17073,7 @@ function seToggleSort(col) {
 function seRenderTable(storeId) {
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
-        tbody.innerHTML = '<tr><td colspan="17" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="18" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
         return;
     }
     // 구분 필터 (전시 / 판매완료 / 창고) — 판매된 전시품을 현재 전시품과 섞이지 않게 한다
@@ -17393,6 +17403,7 @@ function seRenderTable(storeId) {
                     })() : ''}
                 </div>
             </td>
+            <td style="min-width:86px;vertical-align:middle;">${seTransferCell(row)}</td>
             <td style="min-width:86px;vertical-align:middle;">${seRecoveryCell(row)}</td>
         </tr>`;
     }).join('');
@@ -18205,7 +18216,8 @@ function sePrintTagsFor(rows, label) {
 // ── 전시품 점검 — 전 매장을 한 번에 훑어 어긋난 곳을 찾는다 ──────────
 // 화면을 열어야만 보이던 것들을 한 자리에 모은다. 읽기만 하고 아무것도 고치지 않는다.
 const SE_AUDIT_KIND = {
-    norec:   ['🔴', '반출했는데 회수보고서 없음',           '#dc2626'],
+    notrans: ['🔴', '반출했는데 거래처 변경 안 됨',          '#dc2626'],
+    norec:   ['🟠', '거래처 변경은 됐는데 회수보고서 없음',   '#ea580c'],
     qty:     ['🟠', '문서 수량과 전시 수량이 다름',          '#ea580c'],
     nodisp:  ['🟠', '매출외 출고에는 있는데 매장에 없음',     '#ea580c'],
     noreq:   ['🟠', '매장에는 있는데 매출외 출고에 없음',     '#ea580c'],
@@ -18244,18 +18256,20 @@ async function seRunAudit(force) {
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">검사 중...</p>';
     document.getElementById('seAuditSummary').innerHTML = '';
 
-    const [dispRes, itemRes, recRes, mvRes] = await Promise.all([
+    const [dispRes, itemRes, recRes, mvRes, traRes] = await Promise.all([
         sbAll(() => _sb.from('store_displays').select('*').order('id')),
         sbAll(() => _sb.from('outgoing_request_items')
             .select('store_id,item_code,color_code,qty,unit_price,product_name,outgoing_requests(doc_no,title,order_no,request_date,delivery_date)').order('id')),
         sbAll(() => _sb.from('recovery_report_items')
             .select('store_id,item_code,color_code,order_no,qty').order('id')),
         sbAll(() => _sb.from('display_moves').select('display_id,from_store').order('moved_at')),
+        sbAll(() => _sb.from('transfer_approval_items')
+            .select('store_id,item_code,color_code,qty,transfer_approvals(doc_no,approval_date)').order('id')),
     ]);
-    const err = [dispRes, itemRes, recRes, mvRes].find(x => x.error);
+    const err = [dispRes, itemRes, recRes, mvRes, traRes].find(x => x.error);
     if (err) { body.innerHTML = `<p style="color:#ef4444;">검사 실패: ${err.error.message}</p>`; return; }
 
-    const disp = dispRes.data, items = itemRes.data, recs = recRes.data;
+    const disp = dispRes.data, items = itemRes.data, recs = recRes.data, tras = traRes.data;
     const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
     const key = (st, s) => st + '|' + s;
@@ -18308,20 +18322,30 @@ async function seRunAudit(force) {
         const s = sku(r.item_code, r.color_code);
         recQty[key(r.store_id, s)] = (recQty[key(r.store_id, s)] || 0) + (r.qty || 1);
     });
+    const traQty = {};
+    tras.forEach(x => {
+        const s = sku(x.item_code, x.color_code);
+        traQty[key(x.store_id, s)] = (traQty[key(x.store_id, s)] || 0) + (x.qty || 1);
+    });
     const soldGroup = {};
     disp.filter(d => d.sold && d.sku).forEach(d => {
         const k = key(d.store_id, seAuditNorm(d.sku));
         (soldGroup[k] = soldGroup[k] || []).push(d);
     });
     Object.entries(soldGroup).forEach(([k, rows]) => {
-        let covered = recQty[k] || 0;
+        let covRec = recQty[k] || 0, covTra = traQty[k] || 0;
         const [st, s] = k.split('|');
         rows.sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || '')).forEach(d => {
             const q = d.quantity || 1;
-            if (covered >= q) { covered -= q; return; }
+            const hasTra = covTra >= q, hasRec = covRec >= q;
+            if (hasTra) covTra -= q;
+            if (hasRec) covRec -= q;
+            if (hasRec) return;                       // 보고서까지 끝났으면 볼 것 없다
             const days = d.sold_at ? Math.floor((Date.now() - new Date(d.sold_at)) / 86400000) : null;
-            add('norec', st, `${d.product_id || ''} ${s}`,
-                `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''} — 거래처 변경·회수보고서 필요`,
+            const head = `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''}`;
+            add(hasTra ? 'norec' : 'notrans', st, `${d.product_id || ''} ${s}`,
+                hasTra ? `${head} — 거래처 변경 완료 · 회수보고서만 쓰면 됩니다`
+                       : `${head} — 거래처 변경 협조전부터 올려야 합니다`,
                 { d, req: seFindReqItem(items, d) });
         });
     });
@@ -18475,7 +18499,7 @@ function seRenderAudit() {
 
     const dbtn = document.getElementById('seDraftBtn');
     if (dbtn) {
-        const n = all.filter(r => r.kind === 'norec').length;
+        const n = all.filter(r => r.kind === 'norec').length;   // 거변까지 끝난 건만
         dbtn.style.display = n ? '' : 'none';
         dbtn.textContent = `📄 회수보고서 초안 ${n}건`;
     }
@@ -18659,6 +18683,42 @@ function seRecoveryDocsFor(row) {
     }
     return list;
 }
+// 협조전 번호를 짧게 — 시디즈-협조26-01-00113 → 26-01-00113
+function seHyNo(s) {
+    const m = /협조(\d{2})-?(\d{2})-?(\d{5})/.exec(String(s || '').replace(/\s/g, ''));
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+
+// 거래처 변경 — 매출외출고(쌤플/의자생산팀)에서 판매처(매장)로 재산을 넘긴 기록.
+// 반출한 물건은 이게 있어야 회수보고서를 쓸 수 있다.
+function seTransferDocsFor(row) {
+    if (!row.sku) return [];
+    const list = seTransferDocs[row.sku.toUpperCase()] || [];
+    if (!list.length || !row.sales_order_no) return list;
+    const exact = list.filter(x => [x.order_no_before, x.order_no_after]
+        .some(o => (o || '').replace(/\s/g, '') === row.sales_order_no.replace(/\s/g, '')));
+    return exact.length ? exact : list;
+}
+function seTransferCell(row) {
+    const docs = seTransferDocsFor(row);
+    if (!docs.length) {
+        return row.sold
+            ? `<div style="display:flex;align-items:center;justify-content:center;">
+                 <span style="background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:2px 7px;
+                              font-size:0.7rem;font-weight:800;color:#b45309;white-space:nowrap;">🔁 거변 필요</span></div>`
+            : '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
+    }
+    const a = docs[0].transfer_approvals || {};
+    const tip = docs.map(x => {
+        const q = x.transfer_approvals || {};
+        return [q.doc_no, q.approval_date, q.to_dealer,
+                x.order_no_after ? '→ ' + x.order_no_after : ''].filter(Boolean).join(' · ');
+    }).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
+    return `<div title="${tip}" style="display:flex;align-items:center;justify-content:center;">
+        <span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 7px;
+                     font-size:0.7rem;font-weight:800;color:#1d4ed8;white-space:nowrap;">🔁 ${seHyNo(a.doc_no) || '거변'}</span></div>`;
+}
+
 function seRecoveryCell(row) {
     if (!row.sold) return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
     if (seNeedsRecovery(row)) {
