@@ -14744,120 +14744,218 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     <div id="seRegBody" style="display:none;max-width:860px;">
 
         <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:18px 22px;color:#fff;margin-bottom:18px;">
-            <div style="font-size:1.2rem;font-weight:700;letter-spacing:.08em;opacity:.75;">시디즈 닷컴 전시품 등록 절차</div>
+            <div style="font-size:1.2rem;font-weight:700;letter-spacing:.08em;opacity:.75;">전시품 관리 프로세스</div>
             <div style="font-size:0.84rem;line-height:1.65;margin-top:8px;opacity:.95;">
-                전시품을 공식몰에 올려 쿠폰으로 파는 절차입니다.<br>
-                제품은 <b>비공개</b>로 만들고, <b>쿠폰 링크를 받은 사람만</b> 살 수 있게 합니다.<br>
-                대리점에서 수주하지 못하도록 <b>판매상태를 온라인 전용</b>으로 둡니다.
+                본사 담당자가 하는 일을 <b>등록 · 관리 · 판매</b> 세 단계로 나눠 적었습니다.<br>
+                등록은 <b>투자형 매장</b>과 <b>일반대리점</b>이 갈라지고, 판매는 문서 세 개가 순서대로 붙습니다.
             </div>
         </div>
 
         <div class="se-flow">
-            <div class="se-flow-s"><span class="se-flow-n">1</span><div class="se-flow-t">ERP 코드 확인</div></div>
+            <div class="se-flow-s"><span class="se-flow-n">1</span><div class="se-flow-t">등록</div></div>
             <span class="se-flow-a">›</span>
-            <div class="se-flow-s"><span class="se-flow-n">2</span><div class="se-flow-t">OMS 등록</div></div>
+            <div class="se-flow-s"><span class="se-flow-n">2</span><div class="se-flow-t">관리</div></div>
             <span class="se-flow-a">›</span>
-            <div class="se-flow-s"><span class="se-flow-n">3</span><div class="se-flow-t">쇼피파이 제품 생성</div></div>
-            <span class="se-flow-a">›</span>
-            <div class="se-flow-s"><span class="se-flow-n">4</span><div class="se-flow-t">판매가격 동기화</div></div>
-            <span class="se-flow-a">›</span>
-            <div class="se-flow-s"><span class="se-flow-n">5</span><div class="se-flow-t">할인쿠폰 발급</div></div>
-            <span class="se-flow-a">›</span>
-            <div class="se-flow-s"><span class="se-flow-n">6</span><div class="se-flow-t">링크 확인</div></div>
+            <div class="se-flow-s"><span class="se-flow-n">3</span><div class="se-flow-t">판매</div></div>
         </div>
 
-        <!-- 0. 매장 주소·담당자 -->
+        <!-- 참고 자료 — 매장 주소·담당자 -->
         <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">0</span>매장 주소 · 담당자</h3>
+            <h3 class="se-sale-h"><span class="se-sale-n">※</span>매장 주소 · 담당자</h3>
             <p class="se-sale-p">매출외출고 요청서 품목 표의 <b>주소 · 우편번호 · 이름 · 연락처</b> 칸에 들어가는 값입니다.
                 <b>복사</b>를 누르면 그 네 칸이 탭으로 구분돼 복사되니 요청서에 그대로 붙여넣으면 됩니다.</p>
             <div id="seContactBody"><p style="color:var(--se-muted);font-size:0.82rem;">불러오는 중...</p></div>
         </div>
 
-        <!-- 1. ERP -->
+        <!-- ───────────────────── 1. 등록 ───────────────────── -->
         <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">1</span>ERP 단품마스터 — 코드 확인<span class="se-owner">제명</span></h3>
-            <ul class="se-sale-ul">
-                <li><b>공장도가 · 기준단가</b>가 들어가 있는지 확인합니다. 비어 있으면 <b>SCM팀에 입력 요청</b>.</li>
-                <li><b>판매상태를 「온라인 전용」</b>으로 둡니다.</li>
-            </ul>
-            <div class="se-sale-note">
-                온라인 전용으로 두면 <b>커넥트플러스에서 조회되지 않습니다.</b> 대리점이 이 코드로 수주하는 것을 막기 위한 설정입니다.
-            </div>
-        </div>
+            <h3 class="se-sale-h"><span class="se-sale-n">1</span>등록</h3>
+            <p class="se-sale-p"><b>투자형 매장</b>과 <b>일반대리점</b>을 나눠서 관리합니다. 수요조사까지는 같고, 그 뒤가 갈립니다.</p>
 
-        <!-- 2. OMS -->
-        <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">2</span>OMS 등록<span class="se-owner">성호</span></h3>
-            <ol class="se-sale-ol">
-                <li><b>운영품목</b> 등록</li>
-                <li><b>쇼핑몰 상품 관리</b> 등록</li>
-            </ol>
-            <div class="se-sale-note">둘 다 해야 다음 단계에서 쇼피파이와 가격이 맞물립니다.</div>
-        </div>
-
-        <!-- 3. 쇼피파이 -->
-        <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">3</span>쇼피파이 제품 생성</h3>
-            <ul class="se-sale-ul">
-                <li>기존 제품을 <b>복제</b>한 뒤 <b>비공개</b>로 설정합니다.</li>
-                <li><b>옵션</b>을 설정합니다.</li>
-                <li><b>SKU(재고관리코드)는 실제 제품코드-색상코드</b>로 넣습니다.</li>
-            </ul>
             <div class="se-ui">
-                <div class="se-ui-bar">SKU 적는 법</div>
+                <div class="se-ui-bar">갈라지는 지점</div>
+                <div class="se-ui-body">
+                    <div style="font-size:0.82rem;line-height:1.9;color:var(--se-text);">
+                        <b>투자형 매장 · 일반대리점</b> &nbsp;→&nbsp; <b style="color:#0f172a;">수요조사</b>
+                        <span style="color:var(--se-muted);">(에브리싯 활용 · 필요한 것: 제품 소개)</span>
+                        <div style="margin-top:9px;padding-left:12px;border-left:2px solid var(--se-border);">
+                            <div><span class="se-tag" style="background:#0f172a;color:#fff;">투자형 매장</span>
+                                &nbsp;→&nbsp; <b>매출외출고 문서</b>를 작성합니다</div>
+                            <div style="margin-top:5px;"><span class="se-tag" style="background:#0f766e;color:#fff;">일반대리점</span>
+                                &nbsp;→&nbsp; <b>주문 페이지를 공유</b>합니다 (쿠폰 QR 코드 링크 함께 · 에브리싯 활용)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="se-sale-sub-h">1-A. 투자형 매장 — 매출외출고 문서</h4>
+            <p class="se-sale-p">문서에 들어가야 하는 값입니다.</p>
+            <div class="se-ui">
+                <div class="se-ui-bar">매출외출고 문서에 필요한 내용</div>
                 <div class="se-ui-body">
                     <table class="se-ui-tbl">
-                        <thead><tr><th>제품코드</th><th>색상코드</th><th>SKU</th></tr></thead>
-                        <tbody>
-                            <tr><td>G10HDAWJ1KK</td><td>A441QW</td><td><b>G10HDAWJ1KK-A441QW</b></td></tr>
-                            <tr><td>S51ACF0VG</td><td>A441BW</td><td><b>S51ACF0VG-A441BW</b></td></tr>
-                        </tbody>
+                        <thead><tr><th>제품</th><th>금액</th><th>매장</th></tr></thead>
+                        <tbody><tr>
+                            <td>제품 코드<br>색상 코드<br>개수</td>
+                            <td>공장도가<br>시공가</td>
+                            <td>매장 주소<br>담당자명<br>연락처</td>
+                        </tr></tbody>
                     </table>
                 </div>
             </div>
-            <div class="se-sale-warn">
-                <div class="se-sale-warn-h">비공개 설정을 빠뜨리면 안 됩니다</div>
-                <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
-                    공개 상태로 두면 쿠폰 없이도 공식몰에서 그대로 노출·구매됩니다.
-                    <b>복제한 직후 바로 비공개로 바꾸세요.</b>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. 동기화 -->
-        <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">4</span>판매가격 동기화</h3>
-            <p class="se-sale-p"><b>쇼핑몰 상품관리</b>에서 동기화를 돌려 판매가격을 맞춥니다.</p>
-            <div class="se-sale-note">여기까지 끝나야 쿠폰을 걸었을 때 금액이 제대로 계산됩니다.</div>
-        </div>
-
-        <!-- 5. 쿠폰 -->
-        <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">5</span>할인쿠폰 발급<span class="se-owner">성호</span></h3>
-            <p class="se-sale-p">성호님이 쿠폰을 만들어 <b>링크를 전달</b>합니다.</p>
-        </div>
-
-        <!-- 6. 링크 확인 -->
-        <div class="se-sale-sec">
-            <h3 class="se-sale-h"><span class="se-sale-n">6</span>링크 확인</h3>
-            <div class="se-sale-warn" style="background:#fef2f2;border-color:#fecaca;margin-top:0;">
-                <div class="se-sale-warn-h" style="color:#b91c1c;">받은 링크를 반드시 직접 눌러 보세요</div>
-                <div style="font-size:0.82rem;color:#7f1d1d;line-height:1.7;">
-                    고객에게 보내기 전에 <b>본인이 먼저 끝까지 들어가 봐야</b> 합니다.
-                    비공개 제품이라 설정이 하나만 어긋나도 고객 화면에서는 열리지 않습니다.
-                </div>
-            </div>
-            <ul class="se-sale-ul" style="margin-top:12px;">
-                <li><b>링크가 열리는지</b> — 404나 빈 화면이 뜨지 않는지</li>
-                <li><b>로그아웃 상태에서도 열리는지</b> — 시크릿 창으로 한 번 더</li>
-                <li><b>장바구니에 담기는지</b> — 비공개 제품이 담기지 않는 경우가 있습니다</li>
-                <li><b>쿠폰이 적용되는지</b> — 최종 결제금액이 의도한 판매가와 맞는지</li>
-                <li><b>휴대폰에서도 되는지</b> — 고객은 대부분 폰으로 엽니다</li>
-            </ul>
             <div class="se-sale-note">
-                하나라도 안 되면 고객에게 보내지 말고 <b>성호님께 먼저 알려주세요.</b>
-                링크가 안 열리는 채로 안내가 나가면 그 자리에서 판매가 끊깁니다.
+                시공가는 <b>사별단품마스터</b>에서 확인합니다. 매장 주소·담당자·연락처는 위 <b>※ 매장 주소 · 담당자</b> 표에서 복사하면 됩니다.
+            </div>
+            <div class="se-sale-warn">
+                <div class="se-sale-warn-h">1천만원 이상이면 임원 결재</div>
+                <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
+                    금액이 <b>1천만원을 넘는 건</b>은 임원 결재를 받아야 합니다. 상신 전에 합계를 먼저 확인하세요.
+                </div>
+            </div>
+            <div class="se-sale-note" style="margin-top:9px;">
+                결재가 끝나면 <b>CS사업팀 신정아님</b>이 수주를 등록합니다.
+            </div>
+
+            <h4 class="se-sale-sub-h">1-B. 일반대리점 — 주문 페이지 공유</h4>
+            <p class="se-sale-p">에브리싯으로 <b>주문 페이지와 쿠폰 QR 코드 링크</b>를 함께 보냅니다.
+                그 페이지를 만드는 절차가 아래 여섯 단계입니다.</p>
+
+            <div class="se-ui">
+                <div class="se-ui-bar">시디즈 닷컴 등록 절차</div>
+                <div class="se-ui-body">
+                    <div style="font-size:0.8rem;line-height:1.8;color:var(--se-text);">
+                        ① ERP 코드 확인 <span style="color:var(--se-muted);">› </span>
+                        ② OMS 등록 <span style="color:var(--se-muted);">› </span>
+                        ③ 쇼피파이 제품 생성 <span style="color:var(--se-muted);">› </span>
+                        ④ 판매가격 동기화 <span style="color:var(--se-muted);">› </span>
+                        ⑤ 할인쿠폰 발급 <span style="color:var(--se-muted);">› </span>
+                        ⑥ 링크 확인
+                    </div>
+                </div>
+            </div>
+
+            <ol class="se-sale-ol" style="margin-top:11px;">
+                <li><b>ERP 단품마스터 — 코드 확인</b> <span class="se-owner">제명</span>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        공장도가·기준단가가 들어가 있는지 확인하고, 비어 있으면 <b>SCM팀에 입력 요청</b>.<br>
+                        판매상태를 <b>「온라인 전용」</b>으로 둡니다 — 커넥트플러스에서 조회되지 않아야 대리점 수주를 막을 수 있습니다.
+                    </div>
+                </li>
+                <li><b>OMS 등록</b> <span class="se-owner">성호</span>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        ① 운영품목 등록 ② 쇼핑몰 상품 관리 등록. 둘 다 해야 ④에서 가격이 맞물립니다.
+                    </div>
+                </li>
+                <li><b>쇼피파이 제품 생성</b>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        기존 제품을 <b>복제</b>한 뒤 <b>비공개</b>로 설정 · 옵션 설정 ·
+                        <b>SKU(재고관리코드)는 실제 제품코드-색상코드</b> (예: <code style="font-family:monospace;">G10HDAWJ1KK-A441QW</code>)
+                    </div>
+                    <div class="se-sale-warn" style="margin-top:7px;">
+                        <div class="se-sale-warn-h">비공개 설정을 빠뜨리면 안 됩니다</div>
+                        <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
+                            공개 상태로 두면 쿠폰 없이도 공식몰에서 그대로 노출·구매됩니다. <b>복제한 직후 바로 비공개로 바꾸세요.</b>
+                        </div>
+                    </div>
+                </li>
+                <li><b>판매가격 동기화</b>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        쇼핑몰 상품관리에서 동기화를 돌립니다. 여기까지 끝나야 쿠폰을 걸었을 때 금액이 맞게 계산됩니다.
+                    </div>
+                </li>
+                <li><b>할인쿠폰 발급</b> <span class="se-owner">성호</span>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        쿠폰을 만들어 링크를 전달합니다. 대리점에는 <b>QR 코드</b>로 함께 보냅니다.
+                    </div>
+                </li>
+                <li><b>링크 확인</b>
+                    <div class="se-sale-warn" style="background:#fef2f2;border-color:#fecaca;margin-top:7px;">
+                        <div class="se-sale-warn-h" style="color:#b91c1c;">보내기 전에 반드시 직접 눌러 보세요</div>
+                        <div style="font-size:0.82rem;color:#7f1d1d;line-height:1.7;">
+                            비공개 제품이라 설정이 하나만 어긋나도 상대 화면에서는 열리지 않습니다.
+                        </div>
+                    </div>
+                    <ul class="se-sale-ul" style="margin-top:9px;">
+                        <li><b>링크가 열리는지</b> — 404나 빈 화면이 뜨지 않는지</li>
+                        <li><b>로그아웃 상태에서도 열리는지</b> — 시크릿 창으로 한 번 더</li>
+                        <li><b>장바구니에 담기는지</b> — 비공개 제품이 담기지 않는 경우가 있습니다</li>
+                        <li><b>쿠폰이 적용되는지</b> — 최종 결제금액이 의도한 금액과 맞는지</li>
+                        <li><b>휴대폰에서도 되는지</b> — QR로 받으면 대부분 폰으로 엽니다</li>
+                    </ul>
+                    <div class="se-sale-note">하나라도 안 되면 보내지 말고 <b>성호님께 먼저 알려주세요.</b></div>
+                </li>
+            </ol>
+        </div>
+
+        <!-- ───────────────────── 2. 관리 ───────────────────── -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">2</span>관리</h3>
+            <ul class="se-sale-ul">
+                <li><b>등록된 매출외출고 건을 기준으로 관리합니다.</b>
+                    문서에 적힌 품목·수량이 매장에 실제로 있는지가 기준입니다.
+                    <div class="se-sale-note" style="margin-top:7px;">
+                        <b>매출외출고 요청서</b> 탭 → <b>품목 전체보기</b>에서 매장별로 맞는지 한 번에 볼 수 있습니다.
+                        어긋나면 <b>⚠ 수량 불일치</b> · <b>❌ 매출외 출고에는 적혀있는데 매장에는 없음</b> ·
+                        <b>🏠 매장에는 있는데 매출외 출고에 없음</b>으로 갈라집니다.
+                    </div>
+                </li>
+                <li><b>제품 등록·관리는 카탈로그에서 합니다.</b>
+                    <b>전시품</b> 탭에서 코드·색상·수량·사진·위치를 넣고 고칩니다.
+                    <div class="se-sale-warn" style="margin-top:7px;">
+                        <div class="se-sale-warn-h">제품 등록은 매장의 권한입니다</div>
+                        <div style="font-size:0.82rem;color:#b45309;line-height:1.65;">
+                            본사가 대신 넣지 않습니다. 매장이 직접 등록하고, 본사는 문서와 맞는지 확인합니다.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ───────────────────── 3. 판매 ───────────────────── -->
+        <div class="se-sale-sec">
+            <h3 class="se-sale-h"><span class="se-sale-n">3</span>판매</h3>
+            <p class="se-sale-p">전시품으로 등록하고 쓰다가 <b>남은 제품을 파는 단계</b>입니다. 문서 세 개가 순서대로 붙습니다.</p>
+
+            <ol class="se-sale-ol">
+                <li><b>시공요청서</b>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        제품을 <b>판매할 수 있는 곳으로 옮기는</b> 문서입니다.
+                        팔 수 없는 매장에 있으면 먼저 옮겨야 합니다.
+                    </div>
+                </li>
+                <li><b>거래처 변경 요청서</b> (협조전)
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        재산을 <b>의자연구소에서 판매처(매장)로</b> 옮깁니다.
+                    </div>
+                    <div class="se-sale-note" style="margin-top:7px;">
+                        전산 처리는 두 가지입니다.<br>
+                        ① <b>거래처 정보 변경</b> : 쌤플/의자생산팀 → 00권역/00점<br>
+                        ② <b>수주 정보 변경</b> : 최초 출고 수주 정보 → 변경된 수주 정보 (납기, 수주금액)
+                    </div>
+                </li>
+                <li><b>회수 및 처리결과 보고서</b>
+                    <div style="font-size:0.82rem;color:var(--se-muted);line-height:1.7;margin-top:3px;">
+                        ②와 같은 기준입니다. <b>판매처를 기준으로</b> 적습니다.
+                    </div>
+                </li>
+            </ol>
+
+            <div class="se-sale-warn" style="background:#fef2f2;border-color:#fecaca;">
+                <div class="se-sale-warn-h" style="color:#b91c1c;">출고한 매장과 판매한 매장이 다를 수 있습니다</div>
+                <div style="font-size:0.82rem;color:#7f1d1d;line-height:1.8;">
+                    매출외출고 요청서에는 <b>고양</b>으로 되어 있는데, 거래처 변경 요청서와 회수보고서에는 <b>합정</b>으로
+                    적히는 경우가 있습니다. 중간에 제품을 옮겨서 팔았기 때문입니다.
+                    <b>수원도 평택으로 옮겨서 팔아야 하는 상황</b>입니다.<br><br>
+                    <b>기준은 이렇습니다.</b><br>
+                    · 매출외출고 요청서 — <b>처음 나간 매장</b><br>
+                    · 거래처 변경 요청서 · 회수보고서 — <b>실제로 판 매장</b><br><br>
+                    그래서 세 문서의 매장이 다른 게 <b>틀린 게 아닙니다.</b> 대조할 때는 매장이 아니라
+                    <b>품목코드·색상코드·수주번호</b>로 맞춰야 합니다.
+                </div>
+            </div>
+            <div class="se-sale-note">
+                카탈로그에서는 옮긴 전시품에 <b>🔀 다른 매장 출고 건</b>이 붙고, 🔀 버튼을 누르면
+                매출외수주번호로 원래 매장 요청서를 찾아 보여줍니다.
             </div>
         </div>
 
