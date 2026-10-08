@@ -14416,6 +14416,27 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
 </div>
 
+<div id="seTabAcc" style="display:none;">
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:13px 16px;margin-bottom:13px;">
+        <div style="font-size:0.95rem;font-weight:800;color:#b45309;margin-bottom:4px;">관리 필요 없음</div>
+        <div style="font-size:0.8rem;color:#92400e;line-height:1.75;">
+            팔걸이 · 머리받침대 · 캐스터 · 글라이드 · 암패드 · 커버 같은 부속과 <b>OLLY</b>, <b>T50 전시분해</b>입니다.
+            <b>전시품 · 공간 · 전체 현황 · 점검에서 모두 빠져 있습니다.</b>
+            수량을 맞추거나 거래처 변경 · 회수보고서를 쓸 일이 없습니다.<br>
+            <b style="color:#b91c1c;">⚠️ 제품군 섞임</b> 이 붙은 코드는 같은 코드가 진짜 제품군에도 들어가 있다는 뜻입니다 —
+            잘못 들어온 행은 <b>되돌리기</b>로 관리 목록에 되돌릴 수 있습니다.
+        </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+        <input id="accSearch" type="text" oninput="seRenderAcc()"
+            placeholder="품목코드 · 색상 · 품목명 · 매장 · 위치 · 메모 (공백으로 여러 조건)"
+            style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
+        <span id="accSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
+    </div>
+    <div id="accScopeNote" style="display:none;font-size:0.76rem;color:var(--se-muted);background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
+    <div id="accBody"><p style="color:#94a3b8;font-size:0.83rem;">불러오는 중...</p></div>
+</div>
+
 <div id="seTabAudit" style="display:none;">
     <div style="max-width:980px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
@@ -15030,6 +15051,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">거래처 변경</button>
             <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">점검</button>
             <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">매장 전시품 판매 프로세스</button>
+            <button class="se-tab" data-tab="acc" onclick="seSwitchTab('acc')">악세서리 (관리 필요 없음)</button>
             <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 본사 담당자 업무</button>
         </div>
     </div>
@@ -15683,6 +15705,7 @@ function seOnStoreChange() {
     if (document.querySelector('.se-tab.active')?.dataset.tab === 'audit' && _seAudit) seRenderAudit();
     if (document.querySelector('.se-tab.active')?.dataset.tab === 'transfer' && _seTraDocs) seRenderTransfer();
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
+    if (tab === 'acc') { seRenderAcc(); return; }
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
     else if (tab === 'request')  { seSetReqView(_seReqView); seRenderScopeNote(); }
@@ -15717,6 +15740,8 @@ function seSwitchTab(tab) {
     document.getElementById('seTabRegister').style.display  = tab === 'register' ? '' : 'none';
     document.getElementById('seTabTransfer').style.display  = tab === 'transfer' ? '' : 'none';
     document.getElementById('seTabAudit').style.display     = tab === 'audit'    ? '' : 'none';
+    document.getElementById('seTabAcc').style.display       = tab === 'acc'      ? '' : 'none';
+    if (tab === 'acc') seLoadAcc();
     if (tab === 'transfer') seLoadTransfer();
     if (tab === 'audit') seRunAudit();
     if (tab === 'sale') seRenderTagPreview();
@@ -16951,6 +16976,7 @@ async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="18" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
+        await seAccEnsure();
         const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes, traRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
@@ -16967,7 +16993,8 @@ async function seRenderList(storeId) {
                .eq('store_id', storeId)
         ]);
         if (displaysRes.error) throw displaysRes.error;
-        seDisplayData = displaysRes.data || [];
+        // 악세서리·전시분해는 전시품 목록에서 관리하지 않는다 — 악세서리 탭에서만 본다
+        seDisplayData = (displaysRes.data || []).filter(r => !seIsAcc(r));
         // 같은 코드인데 매장마다 값이 다른지 보려면 전 매장 가격이 필요하다 (값이 있는 행만)
         const { data: _pr } = await sbAll(() => _sb.from('store_displays')
             .select('store_id,sku,consumer_price').not('consumer_price', 'is', null).order('id'));
@@ -18240,6 +18267,179 @@ function sePrintTagsFor(rows, label) {
     sePrintDoc(seTagHtml(ok));
 }
 
+// ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
+// 팔걸이·머리받침대·캐스터·커버 같은 부속과 OLLY, 전시분해용 T50은 전시품처럼 세지 않는다.
+// 전시품·공간·전체 현황·점검에서 빼고 이 탭에서만 본다.
+const SE_ACC_SERIES = new Set(['ACCESSORY', 'OLLY (올리)', 'LOLLY', 'T50 전시분해']);
+const seAccSeries = row => SE_ACC_SERIES.has(row && row.product_id);
+
+// 제품군이 몇 행 잘못 박혀 있어도(성수 T21AP0CC1이 'T20 2세대'로) 품목코드 단위 다수결이면
+// 한쪽으로 몰린다. 코드를 무조건 빼버리면 센텀 T50(1행만 ACCESSORY)처럼 진짜 제품이
+// 통째로 사라지는데, 다수결은 그걸 막는다.
+let _seAccCode = null, _seAccCodeP = null;
+const seAccCodeOf = sku => seAuditNorm(sku).split('-')[0];
+function seAccIsCode(sku) {
+    const c = seAccCodeOf(sku);
+    return !!(_seAccCode && c && _seAccCode.has(c));
+}
+const seIsAcc = row => !!row && (seAccSeries(row) || seAccIsCode(row.sku));
+
+function seAccBuild(all) {
+    const n = {};
+    (all || []).forEach(r => {
+        if (!r.sku) return;
+        const c = seAccCodeOf(r.sku);
+        (n[c] = n[c] || [0, 0])[seAccSeries(r) ? 0 : 1]++;
+    });
+    _seAccCode = new Set(Object.keys(n).filter(c => n[c][0] > n[c][1]));
+    return _seAccCode;
+}
+// 화면마다 자기 매장만 불러오므로 다수결은 전 매장을 한 번 봐야 나온다 (한 번만 받아 둔다)
+function seAccEnsure(force) {
+    if (!_seAccCodeP || force) _seAccCodeP = (async () => {
+        const { data } = await sbAll(() => _sb.from('store_displays').select('sku,product_id').order('id'));
+        seAccBuild(data);
+    })();
+    return _seAccCodeP;
+}
+
+let _seAccRows = null, _seAccName = {}, _seAccSeriesList = [], _seAccReal = {}, _seAccOpen = new Set();
+
+async function seLoadAcc(force) {
+    const body = document.getElementById('accBody');
+    if (!body) return;
+    if (_seAccRows && !force) { seRenderAcc(); return; }
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
+    const [dRes, iRes] = await Promise.all([
+        sbAll(() => _sb.from('store_displays').select('*').order('id')),
+        sbAll(() => _sb.from('outgoing_request_items')
+            .select('item_code,color_code,product_name,raw_product_name').order('id')),
+    ]);
+    if (dRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${dRes.error.message}</p>`; return; }
+    const all = dRes.data || [];
+    seAccBuild(all);
+    _seAccRows = all.filter(seIsAcc);
+    // 같은 코드가 진짜 제품군에도 들어가 있으면 그게 원래 자리 후보다
+    _seAccReal = {};
+    all.forEach(r => {
+        if (!r.sku || seAccSeries(r)) return;
+        const k = r.sku.toUpperCase();
+        (_seAccReal[k] = _seAccReal[k] || []).push(r.product_id);
+    });
+    Object.keys(_seAccReal).forEach(k => { _seAccReal[k] = [...new Set(_seAccReal[k])]; });
+    _seAccSeriesList = [...new Set(all.filter(r => !seAccSeries(r)).map(r => r.product_id).filter(Boolean))].sort();
+    _seAccName = {};
+    (iRes.data || []).forEach(it => {
+        const k = ((it.item_code || '') + (it.color_code ? '-' + it.color_code : '')).toUpperCase();
+        const nm = it.raw_product_name || it.product_name;
+        if (nm && !_seAccName[k]) _seAccName[k] = nm;
+    });
+    seRenderAcc();
+}
+
+const seAccHay = r => [r.sku, r.color_code, r.product_id, r.store_id, seStoreNameOf(r.store_id),
+    r.location, r.memo, _seAccName[(r.sku || '').toUpperCase()]].filter(Boolean).join(' ').toLowerCase();
+
+function seRenderAcc() {
+    const body = document.getElementById('accBody');
+    const note = document.getElementById('accScopeNote');
+    if (!body || !_seAccRows) return;
+    const scoped = seScopedStore();
+    const hit = seSearchMatcher(document.getElementById('accSearch')?.value);
+    const rows = _seAccRows.filter(r => (!scoped || r.store_id === scoped) && hit(seAccHay(r)));
+
+    const cnt = document.getElementById('accSearchCount');
+    const qty = rows.reduce((s, r) => s + (r.quantity || 1), 0);
+    if (cnt) cnt.textContent = `${rows.length}행 · ${qty}개`
+        + (rows.length !== _seAccRows.length ? ` / 전체 ${_seAccRows.length}행` : '');
+    if (note) {
+        note.style.display = scoped ? '' : 'none';
+        note.innerHTML = scoped ? `<b>${seStoreNameOf(scoped)}</b> 기준으로 좁혀 보고 있습니다. 위 드롭다운에서 <b>전체 매장</b>을 고르면 모두 나옵니다.` : '';
+    }
+    if (!rows.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 악세서리가 없습니다.</p>'; return; }
+
+    const g = {};
+    rows.forEach(r => { const k = (r.sku || '(코드 없음)').toUpperCase(); (g[k] = g[k] || []).push(r); });
+    body.innerHTML = Object.keys(g).sort().map(k => seAccCard(k, g[k])).join('');
+}
+
+function seAccCard(code, list) {
+    const nm = _seAccName[code] || '';
+    const stores = [...new Set(list.map(r => r.store_id))];
+    const qty = list.reduce((s, r) => s + (r.quantity || 1), 0);
+    const real = _seAccReal[code] || [];
+    const open = _seAccOpen.has(code);
+    const series = [...new Set(list.map(r => r.product_id))];
+    const tip = seAccIsCode(code)
+        ? `같은 코드가 ${real.join(', ')} 로 박힌 행도 있습니다 — 악세서리 쪽이 더 많아 여기로 묶었습니다`
+        : `이 코드는 ${real.join(', ')} 쪽이 더 많습니다 — 제품군만 악세서리로 박혀 있습니다`;
+    return `<div style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:7px;background:var(--se-surface);overflow:hidden;">
+        <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:9px;flex-wrap:wrap;" onclick="seAccToggle('${code}')">
+            <span style="font-size:0.72rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#f1f5f9;color:#475569;white-space:nowrap;">${code}</span>
+            ${nm ? `<b style="font-size:0.85rem;color:var(--se-text);">${nm}</b>` : ''}
+            ${series.map(s => `<span style="font-size:0.68rem;padding:1px 6px;border-radius:4px;background:${SE_ACC_SERIES.has(s) ? '#fffbeb' : '#fef2f2'};color:${SE_ACC_SERIES.has(s) ? '#b45309' : '#b91c1c'};border:1px solid ${SE_ACC_SERIES.has(s) ? '#fde68a' : '#fecaca'};white-space:nowrap;">${s}</span>`).join('')}
+            ${real.length ? `<span title="${tip}" style="font-size:0.68rem;font-weight:800;padding:1px 6px;border-radius:4px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;white-space:nowrap;">⚠️ 제품군 섞임 · ${real.join(', ')}</span>` : ''}
+            <span style="margin-left:auto;font-size:0.76rem;color:var(--se-muted);white-space:nowrap;">${qty}개 · ${stores.length}개 매장 ${open ? '▴' : '▾'}</span>
+        </div>
+        <div id="acc-${code}" style="display:${open ? '' : 'none'};border-top:1px solid var(--se-border);overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.75rem;white-space:nowrap;">
+                <thead><tr style="background:var(--se-raised,#f8fafc);color:#475569;">
+                    ${['매장', '제품군', '수량', '위치', '메모', '최종 수정', '관리 목록으로 되돌리기']
+                        .map(h => `<th style="padding:6px 9px;text-align:left;font-weight:700;">${h}</th>`).join('')}
+                </tr></thead>
+                <tbody>${list.map(r => seAccRow(r, code)).join('')}</tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
+function seAccRow(r, code) {
+    // 같은 코드가 들어가 있는 진짜 제품군이 있으면 그게 원래 자리다 — 맨 앞에 두고 ✓ 를 붙인다
+    const sug = _seAccReal[code] || [];
+    const opts = [...sug, ..._seAccSeriesList.filter(s => !sug.includes(s))];
+    const odd = !seAccSeries(r);
+    return `<tr style="border-top:1px solid var(--se-border);">
+        <td style="padding:5px 9px;">${seStoreNameOf(r.store_id)}</td>
+        <td style="padding:5px 9px;color:${odd ? '#b91c1c' : '#b45309'};${odd ? 'font-weight:700;' : ''}">${r.product_id || '-'}</td>
+        <td style="padding:5px 9px;text-align:right;">${r.quantity ?? 1}</td>
+        <td style="padding:5px 9px;color:#64748b;">${r.location || '-'}</td>
+        <td style="padding:5px 9px;color:#94a3b8;max-width:260px;overflow:hidden;text-overflow:ellipsis;">${r.memo || '-'}</td>
+        <td style="padding:5px 9px;color:#94a3b8;font-size:0.72rem;">${r.updated_by || '-'} · ${(r.updated_at || '').slice(0, 10)}</td>
+        <td style="padding:5px 9px;"><div class="se-act">
+            <select id="accSel-${r.id}" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:3px 6px;font-size:0.72rem;max-width:150px;font-family:'Outfit',sans-serif;">
+                <option value="">제품군 선택</option>
+                ${opts.map((s, i) => `<option value="${s}"${sug.length === 1 && i === 0 ? ' selected' : ''}>${s}${sug.includes(s) ? ' ✓' : ''}</option>`).join('')}
+            </select>
+            <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seAccRestore('${r.id}','${code}')">되돌리기</button>
+        </div></td>
+    </tr>`;
+}
+
+function seAccToggle(code) {
+    if (_seAccOpen.has(code)) _seAccOpen.delete(code); else _seAccOpen.add(code);
+    seRenderAcc();
+}
+
+async function seAccRestore(id, code) {
+    const sel = document.getElementById('accSel-' + id);
+    const series = sel && sel.value;
+    if (!series) { alert('되돌릴 제품군을 고르세요.'); return; }
+    const row = _seAccRows.find(r => r.id === id);
+    if (!row) return;
+    // 코드 다수결이 악세서리 쪽이면 제품군만 바꿔도 여전히 악세서리로 묶인다 — 먼저 알려준다
+    const stuck = seAccIsCode(code);
+    if (!confirm(`${seStoreNameOf(row.store_id)} · ${code}\n제품군을 「${series}」로 바꿉니다.\n\n`
+        + (stuck ? '※ 이 코드는 악세서리 행이 더 많아 목록에는 그대로 남습니다.\n   다른 매장 행까지 바꿔야 전시품 목록으로 올라갑니다.'
+                 : '전시품 목록과 점검에 다시 들어갑니다.'))) return;
+    const { error } = await _sb.from('store_displays')
+        .update({ product_id: series, updated_by: '제품군 정정' }).eq('id', id);
+    if (error) { alert('되돌리기 실패: ' + error.message); return; }
+    _seAudit = null;                       // 점검 캐시를 비워야 다음에 다시 센다
+    _seAccCodeP = null;                    // 다수결도 다시 센다
+    if (typeof showToast === 'function') showToast(`↩️ ${series} 로 되돌렸습니다`);
+    await seLoadAcc(true);
+}
+
 // ── 거래처 변경 협조전 ────────────────────────────────────────────────
 // 매출외출고(쌤플/의자생산팀)에서 판매처(매장)로 재산을 넘긴 기록.
 // 전시품을 팔려면 이게 먼저고, 그 다음이 회수 및 처리결과 보고서다.
@@ -18446,7 +18646,11 @@ async function seRunAudit(force) {
     const err = [dispRes, itemRes, recRes, mvRes, traRes].find(x => x.error);
     if (err) { body.innerHTML = `<p style="color:#ef4444;">검사 실패: ${err.error.message}</p>`; return; }
 
-    const disp = dispRes.data, items = itemRes.data, recs = recRes.data, tras = traRes.data;
+    // 악세서리는 세지 않는다. 요청서 쪽도 같이 빼야 "매장에 없음"이 쏟아지지 않는다.
+    seAccBuild(dispRes.data);
+    const disp  = (dispRes.data || []).filter(r => !seIsAcc(r));
+    const items = (itemRes.data || []).filter(it => !seAccIsCode(it.item_code));
+    const recs = recRes.data, tras = traRes.data;
     const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
     const key = (st, s) => st + '|' + s;
@@ -20181,6 +20385,7 @@ async function seLayoutLoadStore() {
     _layoutDisplays = []; _lPanX = 0; _lPanY = 0; _lScale = 1;
     seRenderAssignPanel(null);
 
+    await seAccEnsure();
     // 구역 + 전시품 동시 로드
     const [zonesRes, displaysRes] = await Promise.all([
         _sb.from('store_zones').select('*').eq('store_id', storeId),
@@ -20188,7 +20393,7 @@ async function seLayoutLoadStore() {
     ]);
     if (displaysRes.data) {
         _layoutDisplays = [];
-        displaysRes.data.forEach(d => {
+        displaysRes.data.filter(d => !seIsAcc(d)).forEach(d => {
             const qty = d.quantity || 1;
             if (qty <= 1) {
                 _layoutDisplays.push({...d, _vid: d.id, _idx: 0});
@@ -20540,7 +20745,8 @@ async function seLoadOverview() {
     try {
         const { data, error } = await sbAll(() => _sb.from('store_displays').select('*').order('id'));
         if (error) throw error;
-        _ovData = data || [];
+        seAccBuild(data);
+        _ovData = (data || []).filter(r => !seIsAcc(r));
         seRenderOverview();
     } catch(e) { grid.innerHTML=`<div style="color:#f87171;">오류: ${e.message}</div>`; }
 }
