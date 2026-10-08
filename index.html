@@ -14392,6 +14392,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
 </div>
 
+<div id="seTabAudit" style="display:none;">
+    <div style="max-width:980px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <div>
+                <div style="font-size:0.95rem;font-weight:800;color:var(--se-text);">전시품 점검</div>
+                <div style="font-size:0.78rem;color:var(--se-muted);margin-top:2px;">
+                    전 매장을 한 번에 훑어 문서와 실물이 어긋난 곳을 찾습니다.
+                </div>
+            </div>
+            <span id="seAuditWhen" style="margin-left:auto;font-size:0.74rem;color:var(--se-muted);"></span>
+            <button onclick="seRunAudit(true)" style="padding:7px 15px;border-radius:8px;border:none;background:#0f172a;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">다시 검사</button>
+        </div>
+        <div id="seAuditSummary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div id="seAuditBody"><p style="color:var(--se-muted);font-size:0.83rem;">검사 중...</p></div>
+    </div>
+</div>
+
 <div id="seTabSale" style="display:none;">
     <div style="max-width:860px;">
 
@@ -14973,6 +14990,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
             <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외출고 요청서</button>
             <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">회수 보고서</button>
+            <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">점검</button>
             <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">매장 전시품 판매 프로세스</button>
             <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 본사 담당자 업무</button>
         </div>
@@ -15623,6 +15641,7 @@ function seScopedStore() {
 }
 function seOnStoreChange() {
     try { localStorage.setItem('seLastStore', seScopedStore()); } catch (e) {}
+    if (document.querySelector('.se-tab.active')?.dataset.tab === 'audit' && _seAudit) seRenderAudit();
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
@@ -15656,6 +15675,8 @@ function seSwitchTab(tab) {
     document.getElementById('seTabRecovery').style.display  = tab === 'recovery' ? '' : 'none';
     document.getElementById('seTabSale').style.display      = tab === 'sale'     ? '' : 'none';
     document.getElementById('seTabRegister').style.display  = tab === 'register' ? '' : 'none';
+    document.getElementById('seTabAudit').style.display     = tab === 'audit'    ? '' : 'none';
+    if (tab === 'audit') seRunAudit();
     if (tab === 'sale') seRenderTagPreview();
     if (tab === 'register') seRegApply();
 
@@ -18166,6 +18187,206 @@ function sePrintTagsFor(rows, label) {
     }
     if (skipped) alert(skipped + '건은 소비자가나 등급이 없어 제외했습니다. ' + ok.length + '건을 인쇄합니다.');
     sePrintDoc(seTagHtml(ok));
+}
+
+// ── 전시품 점검 — 전 매장을 한 번에 훑어 어긋난 곳을 찾는다 ──────────
+// 화면을 열어야만 보이던 것들을 한 자리에 모은다. 읽기만 하고 아무것도 고치지 않는다.
+const SE_AUDIT_KIND = {
+    norec:   ['🔴', '반출했는데 회수보고서 없음',           '#dc2626'],
+    qty:     ['🟠', '문서 수량과 전시 수량이 다름',          '#ea580c'],
+    nodisp:  ['🟠', '매출외 출고에는 있는데 매장에 없음',     '#ea580c'],
+    noreq:   ['🟠', '매장에는 있는데 매출외 출고에 없음',     '#ea580c'],
+    price:   ['🟡', '같은 코드인데 소비자가가 다름',          '#b45309'],
+    publish: ['🟡', '게시 중인데 빠진 항목이 있음',          '#b45309'],
+    typo:    ['💡', '품목코드가 한 글자 다름 — 오타 의심',    '#1d4ed8'],
+};
+let _seAudit = null;
+
+function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
+
+// 길이가 같고 한 글자만 다른가 — 0↔O, 1↔I 같은 오타를 잡으려는 것
+function seOneCharApart(a, b) {
+    if (a.length !== b.length || a === b) return false;
+    let d = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i] && ++d > 1) return false;
+    return d === 1;
+}
+
+async function seRunAudit(force) {
+    const body = document.getElementById('seAuditBody');
+    if (!body) return;
+    if (_seAudit && !force) { seRenderAudit(); return; }
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">검사 중...</p>';
+    document.getElementById('seAuditSummary').innerHTML = '';
+
+    const [dispRes, itemRes, recRes, mvRes] = await Promise.all([
+        sbAll(() => _sb.from('store_displays').select('*').order('id')),
+        sbAll(() => _sb.from('outgoing_request_items')
+            .select('store_id,item_code,color_code,qty,product_name,outgoing_requests(doc_no,title,order_no,request_date)').order('id')),
+        sbAll(() => _sb.from('recovery_report_items')
+            .select('store_id,item_code,color_code,order_no,qty').order('id')),
+        sbAll(() => _sb.from('display_moves').select('display_id,from_store').order('moved_at')),
+    ]);
+    const err = [dispRes, itemRes, recRes, mvRes].find(x => x.error);
+    if (err) { body.innerHTML = `<p style="color:#ef4444;">검사 실패: ${err.error.message}</p>`; return; }
+
+    const disp = dispRes.data, items = itemRes.data, recs = recRes.data;
+    const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
+    const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
+    const key = (st, s) => st + '|' + s;
+    const out = [];
+    const add = (kind, store, title, detail) => out.push({ kind, store, title, detail });
+
+    // 매장·SKU별 수량
+    const reqQty = {}, dispQty = {}, reqMeta = {};
+    items.forEach(it => {
+        if (!it.store_id || !it.item_code) return;
+        const k = key(it.store_id, sku(it.item_code, it.color_code));
+        reqQty[k] = (reqQty[k] || 0) + (it.qty || 0);
+        reqMeta[k] = it;
+    });
+    disp.forEach(d => {
+        if (!d.sku || d.sold) return;
+        dispQty[key(d.store_id, seAuditNorm(d.sku))] = (dispQty[key(d.store_id, seAuditNorm(d.sku))] || 0) + (d.quantity || 1);
+    });
+
+    // 1) 수량 불일치 · 2) 출고엔 있는데 매장에 없음
+    Object.keys(reqQty).forEach(k => {
+        const [st, s] = k.split('|');
+        const want = reqQty[k], have = dispQty[k] || 0;
+        if (have === want) return;
+        const it = reqMeta[k] || {};
+        const nm = it.product_name || '';
+        if (!have) add('nodisp', st, `${nm} ${s}`, `출고 ${want}대 · 매장 0대 — ${(it.outgoing_requests || {}).doc_no || '문서 미상'}`);
+        else       add('qty',    st, `${nm} ${s}`, `출고 ${want}대 · 매장 ${have}대 (${have > want ? '+' : ''}${have - want})`);
+    });
+
+    // 3) 매장엔 있는데 출고에 없음 — 옮겨온 물건은 뺀다
+    const orderSku = new Set();
+    items.forEach(it => {
+        const o = (it.outgoing_requests || {}).order_no;
+        if (o && it.item_code) orderSku.add(seAuditNorm(o) + '|' + sku(it.item_code, it.color_code));
+    });
+    disp.forEach(d => {
+        if (d.sold || !d.sku) return;
+        const s = seAuditNorm(d.sku);
+        if (reqQty[key(d.store_id, s)]) return;
+        if (d.sales_order_no && orderSku.has(seAuditNorm(d.sales_order_no) + '|' + s)) return;
+        if (movedIds.has(d.id)) return;
+        add('noreq', d.store_id, `${d.product_id || ''} ${s}`,
+            `매장 ${d.quantity || 1}대 · 출고 문서 없음${d.location ? ' · 📍 ' + d.location : ''}`);
+    });
+
+    // 4) 반출했는데 회수보고서 없음
+    const recQty = {};
+    recs.forEach(r => {
+        const s = sku(r.item_code, r.color_code);
+        recQty[key(r.store_id, s)] = (recQty[key(r.store_id, s)] || 0) + (r.qty || 1);
+    });
+    const soldGroup = {};
+    disp.filter(d => d.sold && d.sku).forEach(d => {
+        const k = key(d.store_id, seAuditNorm(d.sku));
+        (soldGroup[k] = soldGroup[k] || []).push(d);
+    });
+    Object.entries(soldGroup).forEach(([k, rows]) => {
+        let covered = recQty[k] || 0;
+        const [st, s] = k.split('|');
+        rows.sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || '')).forEach(d => {
+            const q = d.quantity || 1;
+            if (covered >= q) { covered -= q; return; }
+            const days = d.sold_at ? Math.floor((Date.now() - new Date(d.sold_at)) / 86400000) : null;
+            add('norec', st, `${d.product_id || ''} ${s}`,
+                `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''} — 거래처 변경·회수보고서 필요`);
+        });
+    });
+
+    // 5) 같은 코드 소비자가 불일치
+    const priceBy = {};
+    disp.forEach(d => {
+        if (!d.sku || !d.consumer_price) return;
+        const s = seAuditNorm(d.sku);
+        (priceBy[s] = priceBy[s] || []).push(d);
+    });
+    Object.entries(priceBy).forEach(([s, rows]) => {
+        const set = [...new Set(rows.map(r => r.consumer_price))];
+        if (set.length < 2) return;
+        add('price', '', s, set.sort((a, b) => a - b).map(p =>
+            `${p.toLocaleString()}원 (${rows.filter(r => r.consumer_price === p).map(r => seStoreNameOf(r.store_id)).join(', ')})`).join(' · '));
+    });
+
+    // 6) 게시 중인데 빠진 항목
+    disp.filter(d => d.catalog_visible && !d.sold).forEach(d => {
+        const miss = [];
+        if (!d.grade) miss.push('등급');
+        if (!d.consumer_price) miss.push('소비자가');
+        if (!((d.image_urls && d.image_urls.length) || d.image_url)) miss.push('사진');
+        if (!(d.sale_note || '').trim()) miss.push('제품 설명');
+        if (miss.length) add('publish', d.store_id, `${d.product_id || ''} ${seAuditNorm(d.sku)}`, miss.join(' · ') + ' 없음');
+    });
+
+    // 7) 품목코드 한 글자 차이 — 매장별로 '매장에만 있는 코드'와 '출고에만 있는 코드'를 맞춰본다
+    const byStore = {};
+    Object.keys(reqQty).forEach(k => { const [st, s] = k.split('|'); (byStore[st] = byStore[st] || { req: [], dis: [] }).req.push(s); });
+    Object.keys(dispQty).forEach(k => { const [st, s] = k.split('|'); (byStore[st] = byStore[st] || { req: [], dis: [] }).dis.push(s); });
+    Object.entries(byStore).forEach(([st, g]) => {
+        const reqOnly = g.req.filter(s => !dispQty[key(st, s)]);
+        const disOnly = g.dis.filter(s => !reqQty[key(st, s)]);
+        disOnly.forEach(a => reqOnly.forEach(b => {
+            if (seOneCharApart(a, b)) add('typo', st, `${a} ↔ ${b}`, '한 글자만 다릅니다 — 전시품 코드를 요청서 코드로 맞출지 확인하세요');
+        }));
+    });
+
+    _seAudit = { at: new Date(), rows: out };
+    seRenderAudit();
+}
+
+let _seAuditKind = 'all';
+function seAuditFilter(k) { _seAuditKind = k; seRenderAudit(); }
+
+function seRenderAudit() {
+    const body = document.getElementById('seAuditBody');
+    const sum  = document.getElementById('seAuditSummary');
+    const when = document.getElementById('seAuditWhen');
+    if (!body || !_seAudit) return;
+    const scoped = seScopedStore();
+    const all = _seAudit.rows.filter(r => !scoped || !r.store || r.store === scoped);
+    if (when) when.textContent = _seAudit.at.toLocaleString('ko-KR') + ' 기준'
+        + (scoped ? ` · ${seStoreNameOf(scoped)}만` : ' · 전 매장');
+
+    const c = {};
+    Object.keys(SE_AUDIT_KIND).forEach(k => c[k] = all.filter(r => r.kind === k).length);
+    sum.innerHTML = [['all', `전체 ${all.length}`, '#0f172a'],
+        ...Object.keys(SE_AUDIT_KIND).filter(k => c[k])
+            .map(k => [k, `${SE_AUDIT_KIND[k][0]} ${SE_AUDIT_KIND[k][1]} ${c[k]}`, SE_AUDIT_KIND[k][2]])]
+        .map(([k, label, fg]) => {
+            const on = k === _seAuditKind;
+            return `<button onclick="seAuditFilter('${k}')" style="padding:6px 12px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;background:${on ? fg : 'var(--se-surface)'};color:${on ? '#fff' : fg};border:1px solid ${on ? fg : 'var(--se-border)'};font-family:'Outfit',sans-serif;">${label}</button>`;
+        }).join('');
+
+    const rows = all.filter(r => _seAuditKind === 'all' || r.kind === _seAuditKind);
+    if (!rows.length) {
+        body.innerHTML = `<div style="border:1px solid #86efac;background:#f0fdf4;border-radius:10px;padding:18px;color:#15803d;font-size:0.85rem;font-weight:700;">✔ 어긋난 곳이 없습니다.</div>`;
+        return;
+    }
+    const order = Object.keys(SE_AUDIT_KIND);
+    rows.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind)
+        || (a.store || '').localeCompare(b.store || '') || a.title.localeCompare(b.title));
+    body.innerHTML = `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.77rem;background:var(--se-surface);">
+        <thead><tr style="background:#e2e8f0;color:#475569;">
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">유형</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:left;">품목</th>
+            <th style="padding:7px 9px;text-align:left;">내용</th>
+        </tr></thead>
+        <tbody>${rows.map((r, i) => `
+            <tr style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 9px;white-space:nowrap;color:${SE_AUDIT_KIND[r.kind][2]};font-weight:700;">${SE_AUDIT_KIND[r.kind][0]} ${SE_AUDIT_KIND[r.kind][1]}</td>
+                <td style="padding:6px 9px;white-space:nowrap;">${r.store ? seStoreNameOf(r.store) : '—'}</td>
+                <td style="padding:6px 9px;font-family:monospace;">${r.title}</td>
+                <td style="padding:6px 9px;color:#475569;">${r.detail}</td>
+            </tr>`).join('')}</tbody>
+    </table></div>`;
 }
 
 // 매장 주소·담당자 — 개인 연락처라 깃에 두지 않고 Supabase에만 둔다.
