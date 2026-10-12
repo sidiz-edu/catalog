@@ -15331,8 +15331,46 @@ function seRenderRecoveryFlat() {
 
 // '요청서 없음' 전시품을 볼 때, 반대편(요청서엔 있는데 전시품이 없는 품목)을 아래에 붙인다.
 // 둘은 같은 실물이 코드 오타로 갈라진 경우가 많아 나란히 봐야 짝이 보인다.
-let _seUnmOpen = false;
+let _seUnmOpen = false, _seUnmRows = [];
 function seToggleUnmatched() { _seUnmOpen = !_seUnmOpen; seRenderUnmatchedRef(); }
+
+// 요청서 한 줄을 그대로 전시품으로 만든다. 요청서가 기준이므로 코드·색상·수량을
+// 손으로 다시 치지 않는 게 맞다 — 그래야 오타가 안 생긴다.
+async function seRegisterFromReq(i, btn) {
+    const x = _seUnmRows[i];
+    if (!x) return;
+    const [code, ...rest] = x.sku.split('-');
+    const color = rest.join('-');
+    const series = seSeriesOfCode(code);
+    if (!series) {
+        alert(`${code} 의 제품군을 찾지 못했습니다.\n\n위 「+ 전시 제품 추가」에서 시리즈를 직접 골라 등록해주세요.`);
+        return;
+    }
+    // 요청서가 한 건이면 그 건으로 바로 잇고, 여러 건이면 기존 자동연결 규칙을 따른다
+    const one = x.reqs.length === 1 ? x.reqs[0] : null;
+    const auto = one || seAutoLinkFor(x.sku);
+    const since = x.reqs.map(r => r.request_date).filter(Boolean).sort().pop() || null;
+    if (!confirm(`${seStoreNameOf(seCurrentStore)}\n`
+        + `${series} · ${code}${color ? ' · ' + color : ''} · ${x.qty}대\n`
+        + `전시 시작일 ${since || '미정'}\n`
+        + (auto ? `매출외출고 ${auto.doc_no || auto.title || ''} 에 연결\n` : '매출외출고 연결 없음\n')
+        + `\n전시품으로 등록합니다.`)) return;
+
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = '등록 중...';
+    const rec = {
+        store_id: seCurrentStore, product_id: series, sku: x.sku, color_code: color || null,
+        quantity: x.qty || 1, purpose: '전시', sold: false, display_since: since,
+        memo: '요청서에서 등록', updated_by: '요청서에서 등록', updated_at: new Date().toISOString(),
+    };
+    if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = auto.order_no || null; }
+    const { error } = await _sb.from('store_displays').insert(rec);
+    if (error) { btn.disabled = false; btn.textContent = label; alert('등록 실패: ' + error.message); return; }
+    if (typeof showToast === 'function')
+        showToast(`✓ ${x.sku} 등록${auto ? ' · ' + (auto.doc_no || '매출외출고') + ' 연결' : ''}`);
+    _seAudit = null;
+    await seRenderList(seCurrentStore);
+}
 
 function seRenderUnmatchedRef() {
     const box = document.getElementById('seUnmatchedRef');
@@ -15356,6 +15394,7 @@ function seRenderUnmatchedRef() {
     });
     const rows = Object.values(bag).sort((a, b) =>
         (b.reqs[0]?.request_date || '').localeCompare(a.reqs[0]?.request_date || '') || a.sku.localeCompare(b.sku));
+    _seUnmRows = rows;
 
     box.style.display = '';
     if (!rows.length) {
@@ -15389,6 +15428,7 @@ function seRenderUnmatchedRef() {
                 <th style="padding:7px 10px;text-align:center;white-space:nowrap;">문서 상 수량</th>
                 ${qtyMode ? '<th style="padding:7px 10px;text-align:center;">전시수량</th>' : ''}
                 <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
+                ${qtyMode ? '' : '<th style="padding:7px 10px;text-align:center;white-space:nowrap;">등록</th>'}
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품 향방에 대한 매장 설명</th>
             </tr></thead>
             <tbody>${rows.map((x, i) => {
@@ -15405,6 +15445,11 @@ function seRenderUnmatchedRef() {
                             <span style="font-family:monospace;color:#94a3b8;">${r.request_date || ''}</span>
                             ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${r.title || '-'}</a>` : (r.title || '-')}
                          </div>`).join('') || '-'}</td>
+                    ${qtyMode ? '' : `<td style="padding:4px 10px;text-align:center;white-space:nowrap;">
+                        <button onclick="seRegisterFromReq(${i}, this)"
+                          title="요청서에 적힌 코드·색상·수량 그대로 전시품으로 만듭니다"
+                          style="padding:4px 11px;border-radius:6px;border:none;background:#003EFF;color:#fff;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">+ 매장에 등록</button>
+                    </td>`}
                     <td style="padding:4px 10px;">
                         <input id="gap-in-${i}" data-sku="${x.sku}" value="${(seGapNotes[x.sku]?.note || '').replace(/"/g,'&quot;')}"
                           placeholder="예: 판매됨 / 창고 보관 / 타 매장 이동"
@@ -18381,8 +18426,38 @@ function seAccIsCode(sku) {
 }
 const seIsAcc = row => !!row && (seAccSeries(row) || seAccIsCode(row.sku));
 
+// 품목코드로 제품군을 되찾는다 — 요청서에는 시리즈가 없어서 전시품을 만들 때 필요하다.
+// 다른 매장이 이미 쓰고 있는 제품군이 가장 믿을 만하고, 없으면 드롭다운 데이터에서 찾는다.
+let _seSeriesByCode = {}, _seSeriesFromData = null;
+function seSeriesOfCode(code) {
+    const c = seAccCodeOf(code);
+    if (!c) return null;
+    if (_seSeriesByCode[c]) return _seSeriesByCode[c];
+    if (!_seSeriesFromData) {
+        _seSeriesFromData = {};
+        [typeof displaySkuData !== 'undefined' ? displaySkuData : null,
+         typeof displaySkuExtra !== 'undefined' ? displaySkuExtra : null].forEach(src =>
+            Object.entries(src || {}).forEach(([series, codes]) =>
+                Object.keys(codes || {}).forEach(k => {
+                    const u = k.toUpperCase();
+                    if (!_seSeriesFromData[u]) _seSeriesFromData[u] = series;
+                })));
+    }
+    return _seSeriesFromData[c] || null;
+}
+
 function seAccBuild(all) {
     const n = {}, per = {};
+    const sf = {};
+    (all || []).forEach(r => {
+        if (!r.sku || seAccSeries(r) || !r.product_id) return;
+        const c = seAccCodeOf(r.sku);
+        (sf[c] = sf[c] || {})[r.product_id] = (sf[c][r.product_id] || 0) + 1;
+    });
+    _seSeriesByCode = {};
+    Object.entries(sf).forEach(([c, m]) => {
+        _seSeriesByCode[c] = Object.entries(m).sort((a, b) => b[1] - a[1])[0][0];
+    });
     (all || []).forEach(r => {
         if (!r.sku) return;
         const i = seAccSeries(r) ? 0 : 1;
