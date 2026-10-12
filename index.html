@@ -15212,6 +15212,17 @@ async function seLoadRecoveryReports() {
 // ── 명세 전체보기 ──────────────────────────────────
 // 보고서 8건의 명세를 한 표로 펼쳐 제품·매장·창고로 걸러 본다
 let _recView = 'report', _recCodeName = null;
+// 매장을 좁혀 놓고도 이 보고서만 전 매장으로 펼쳐 보는 문서 id
+let _seRecAll = new Set(), _seRecScoped = '';
+
+function seRecToggleAll(id) {
+    if (_seRecAll.has(id)) _seRecAll.delete(id); else _seRecAll.add(id);
+    seRenderRecovery();
+    const el = document.getElementById('rec-items-' + id);   // 펼친 상태를 그대로 둔다
+    if (el) el.style.display = '';
+    const btn = document.getElementById('rec-btn-' + id);
+    if (btn) btn.textContent = btn.textContent.replace('▼', '▲').replace('보기', '접기');
+}
 
 function seSetRecView(v) {
     _recView = v;
@@ -15437,26 +15448,33 @@ function seRenderRecovery() {
     const raw = document.getElementById('recSearch')?.value || '';
     const hit = seSearchMatcher(raw);
     const searching = raw.trim() !== '';
+    const scoped = seScopedStore();
+    _seRecScoped = scoped;
+    // 회수보고서는 출고 매장 이름으로 올라간다 — 짝 매장도 내 것으로 본다
+    const isMine = x => !scoped || seStoreGroup(scoped).includes(x.store_id);
 
     // 문서 자체가 걸리면 전체 명세를, 아니면 걸린 명세만 보여준다
     const view = _recReports.map(r => {
-        const all = _recItems.filter(x => x.report_id === r.id);
+        const inDoc = _recItems.filter(x => x.report_id === r.id);
         const headHay = [r.doc_no, r.title, r.author, r.dept, r.lead_order_no, r.reason, r.account]
             .filter(Boolean).join(' ').toLowerCase();
         const headHit = hit(headHay);
-        const matched = all.filter(x => hit(x._hay));
-        return { r, all, its: (!searching || headHit) ? all : matched, matched, headHit };
-    }).filter(v => !searching || v.headHit || v.matched.length);
+        const all = (!searching || headHit) ? inDoc : inDoc.filter(x => hit(x._hay));
+        const mine = all.filter(isMine);
+        const matched = inDoc.filter(x => hit(x._hay)).filter(isMine);
+        return { r, all, its: _seRecAll.has(r.id) ? all : mine,
+                 matched, headHit, _mine: mine.length, _other: all.length - mine.length };
+    }).filter(v => (!searching || v.headHit || v.matched.length) && (!scoped || v._mine));
 
     const cnt = document.getElementById('recSearchCount');
     // 문서 자체가 걸린 보고서는 명세 전체를 보여주므로 matched가 아니라 실제 표시 건수로 센다
-    if (cnt) cnt.textContent = searching
-        ? `${view.reduce((s, v) => s + v.its.length, 0)}건 / 보고서 ${view.length}개`
+    if (cnt) cnt.textContent = (searching || scoped)
+        ? `${view.reduce((s, v) => s + v._mine, 0)}건 / 보고서 ${view.length}개`
         : `보고서 ${_recReports.length}개 · 명세 ${_recItems.length}건`;
 
     if (!view.length) { body.innerHTML = '<p style="color:#94a3b8;font-size:0.83rem;padding:12px 0;">검색 결과가 없습니다.</p>'; return; }
 
-    body.innerHTML = view.map(({ r, its, matched, headHit }) => {
+    body.innerHTML = view.map(({ r, its, matched, headHit, _other }) => {
         const appr = (r.approvals || []).map(a =>
             `<span style="display:inline-block;background:#f1f5f9;border-radius:6px;padding:3px 9px;margin:0 4px 4px 0;font-size:0.72rem;">
                <b style="color:#0f766e;">${a['단계']}</b> ${a['이름']} <span style="color:#94a3b8;">${a['일자']}</span></span>`).join('');
@@ -15479,10 +15497,14 @@ function seRenderRecovery() {
                 <button onclick="seToggleRecoveryItems('${r.id}')" id="rec-btn-${r.id}"
                     style="padding:6px 14px;border-radius:7px;border:1px solid var(--se-border);background:transparent;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;">
                     ${matched.length && !headHit ? '▲' : '▼'} 명세 ${its.length}건${matched.length && !headHit ? ` 접기 (검색 일치)` : ' 보기'}</button>
+                ${_seRecScoped && (_other || _seRecAll.has(r.id)) ? `<div style="margin-top:9px;padding:7px 13px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                    <span style="font-size:0.76rem;color:#475569;">이 보고서에는 다른 매장 명세도 <b>${_other}건</b> 있습니다.</span>
+                    <button onclick="seRecToggleAll('${r.id}')" style="padding:3px 10px;border-radius:6px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;background:${_seRecAll.has(r.id) ? '#0f766e' : 'var(--se-surface)'};color:${_seRecAll.has(r.id) ? '#fff' : '#0f766e'};border:1px solid ${_seRecAll.has(r.id) ? '#0f766e' : 'var(--se-border)'};">${_seRecAll.has(r.id) ? '내 매장만 보기' : '보고서 전체 보기'}</button>
+                </div>` : ''}
                 <div id="rec-items-${r.id}" style="display:${matched.length && !headHit ? '' : 'none'};margin-top:10px;overflow-x:auto;">
                     <table style="width:100%;border-collapse:collapse;font-size:0.73rem;">
                         <thead><tr style="background:#e2e8f0;color:#475569;">
-                            <th style="padding:6px 8px;">#</th><th style="padding:6px 8px;text-align:left;">수주번호</th>
+                            <th style="padding:6px 8px;">#</th><th style="padding:6px 8px;text-align:left;">매장</th><th style="padding:6px 8px;text-align:left;">수주번호</th>
                             <th style="padding:6px 8px;text-align:left;">수주건명</th><th style="padding:6px 8px;text-align:left;">단품코드</th>
                             <th style="padding:6px 8px;text-align:left;">색상</th><th style="padding:6px 8px;text-align:center;">수량</th>
                             <th style="padding:6px 8px;text-align:right;">미회수금액</th><th style="padding:6px 8px;text-align:left;">창고</th>
@@ -15494,9 +15516,11 @@ function seRenderRecovery() {
                             // 품의 원문의 오기를 요청서 기준으로 정정한 행은 원문 값을 함께 보여준다
                             const raw = (was, now) => (was && was !== now)
                                 ? `<div style="font-size:0.66rem;color:#b45309;margin-top:1px;" title="${(x.correction_note||'').replace(/"/g,'&quot;')}">원문 ${was}</div>` : '';
+                            const mine = !_seRecScoped || seStoreGroup(_seRecScoped).includes(x.store_id);
                             return `
-                            <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
+                            <tr style="background:${mine ? (i%2?'#f8fafc':'transparent') : '#f8fafc'};${mine ? '' : 'color:#94a3b8;'}border-top:1px solid var(--se-border);">
                                 <td style="padding:5px 8px;text-align:center;color:#94a3b8;">${x.seq}</td>
+                                <td style="padding:5px 8px;white-space:nowrap;${mine ? '' : 'color:#94a3b8;'}">${String(seStoreNameOf(x.store_id)).replace(/^시디즈\s*/, '')}</td>
                                 <td style="padding:5px 8px;font-family:monospace;white-space:nowrap;">${x.order_no || '-'}</td>
                                 <td style="padding:5px 8px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.order_title||'').replace(/"/g,'&quot;')}">${x.order_title || '-'}</td>
                                 <td style="padding:5px 8px;font-family:monospace;">${x.item_code || '-'}${raw(x.raw_item_code, x.item_code)}</td>
@@ -18631,7 +18655,7 @@ function seTraByDoc(docs) {
                 </div>
             </div>
             <div id="tra-items-${d.id}" style="display:none;border-top:1px solid var(--se-border);">
-                ${d._other || _seTraAll.has(d.id) ? `<div style="padding:7px 15px;background:#f1f5f9;border-bottom:1px solid var(--se-border);display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                ${_seTraScoped && (d._other || _seTraAll.has(d.id)) ? `<div style="padding:7px 15px;background:#f1f5f9;border-bottom:1px solid var(--se-border);display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
                     <span style="font-size:0.76rem;color:#475569;">이 협조전에는 다른 매장 품목도 <b>${d._other}건</b> 있습니다.</span>
                     <button onclick="seTraToggleAll('${d.id}')" style="padding:3px 10px;border-radius:6px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;background:${_seTraAll.has(d.id) ? '#1d4ed8' : 'var(--se-surface)'};color:${_seTraAll.has(d.id) ? '#fff' : '#1d4ed8'};border:1px solid ${_seTraAll.has(d.id) ? '#1d4ed8' : 'var(--se-border)'};">${_seTraAll.has(d.id) ? '내 매장만 보기' : '문서 전체 보기'}</button>
                 </div>` : ''}
