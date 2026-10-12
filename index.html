@@ -18276,7 +18276,28 @@ function sePrintTagsFor(rows, label) {
 // 그래서 전시품 매장으로 거변을 찾을 때는 짝 매장까지 봐야 한다. 한 방향만이다 —
 // 합정 전시품이 고양 문서를 집으면 남의 건을 끌어온다.
 const SE_STORE_PAIR = { goyang: 'hapjeong', suwon: 'pyeongtaek', cheongju: 'daejeon' };
-const seStoreGroup = id => [id, SE_STORE_PAIR[id]].filter(Boolean);
+// 문서는 양쪽 이름으로 흩어져 있다 — 거변은 판매 매장, 회수보고서는 출고 매장.
+// 전시품을 판매 매장으로 넘기면 회수보고서가 반대편에 남으므로 불러올 때는 양방향이다.
+// 끌어온 문서가 정말 그 행 것인지는 seDocOk 가 한 줄씩 가린다.
+const SE_PAIR_BOTH = (() => {
+    const m = {};
+    Object.entries(SE_STORE_PAIR).forEach(([a, b]) => {
+        (m[a] = m[a] || []).push(b);
+        (m[b] = m[b] || []).push(a);
+    });
+    return m;
+})();
+const seStoreGroup = id => [id, ...(SE_PAIR_BOTH[id] || [])].filter(Boolean);
+
+// 다른 매장 이름으로 올라간 문서는 수주번호가 맞거나, 그 매장에서 옮겨온 행일 때만 내 것이다.
+// 이게 없으면 합정 전시품이 같은 코드라는 이유로 고양 문서를 집는다.
+function seDocOk(row, x) {
+    if (!x.store_id || x.store_id === row.store_id) return true;
+    if ((seMoves[row.id] || []).some(m => m.from_store === x.store_id)) return true;
+    const o = (row.sales_order_no || '').replace(/\s/g, '');
+    return !!o && [x.order_no, x.order_no_before, x.order_no_after]
+        .some(y => (y || '').replace(/\s/g, '') === o);
+}
 
 // ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
 // 팔걸이·머리받침대·캐스터·커버 같은 부속과 OLLY, 전시분해용 T50은 전시품처럼 세지 않는다.
@@ -18679,6 +18700,10 @@ async function seRunAudit(force) {
     const items = (itemRes.data || []).filter(it => !seAccSkipReq(it.store_id, it.item_code, it.color_code));
     const recs = recRes.data, tras = traRes.data;
     const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
+    // 옮겨온 행은 회수보고서가 출고 매장 이름으로 남아 있다 — 이동 기록에 적힌 매장만 본다.
+    // 매장 쌍으로 뭉뚱그리면 수원 건이 평택 몫을 먹는다.
+    const movedFrom = {};
+    (mvRes.data || []).forEach(m => { (movedFrom[m.display_id] = movedFrom[m.display_id] || []).push(m.from_store); });
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
     const key = (st, s) => st + '|' + s;
     const out = [];
@@ -18725,38 +18750,56 @@ async function seRunAudit(force) {
     });
 
     // 4) 반출했는데 회수보고서 없음
-    const recQty = {};
-    recs.forEach(r => {
-        const s = sku(r.item_code, r.color_code);
-        recQty[key(r.store_id, s)] = (recQty[key(r.store_id, s)] || 0) + (r.qty || 1);
-    });
-    const traQty = {};
-    tras.forEach(x => {
-        const s = sku(x.item_code, x.color_code);
-        traQty[key(x.store_id, s)] = (traQty[key(x.store_id, s)] || 0) + (x.qty || 1);
-    });
-    const soldGroup = {};
-    disp.filter(d => d.sold && d.sku).forEach(d => {
-        const k = key(d.store_id, seAuditNorm(d.sku));
-        (soldGroup[k] = soldGroup[k] || []).push(d);
-    });
-    Object.entries(soldGroup).forEach(([k, rows]) => {
-        let covRec = recQty[k] || 0, covTra = traQty[k] || 0;
-        const [st, s] = k.split('|');
-        rows.sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || '')).forEach(d => {
-            const q = d.quantity || 1;
-            const hasTra = covTra >= q, hasRec = covRec >= q;
-            if (hasTra) covTra -= q;
-            if (hasRec) covRec -= q;
-            if (hasRec) return;                       // 보고서까지 끝났으면 볼 것 없다
+    // 문서 품목을 하나씩 꺼내 쓴다. 같은 품목이 수주번호 색인과 매장 색인에 둘 다 걸려 있어도
+    // 실체는 하나라서 한 번 꺼내면 양쪽에서 같이 줄어든다.
+    const poolOf = (list, orders) => {
+        const byOrder = {}, byStore = {};
+        list.forEach(it => {
+            const s = sku(it.item_code, it.color_code), cell = { store: it.store_id, left: it.qty || 1 };
+            (byStore[key(it.store_id, s)] = byStore[key(it.store_id, s)] || []).push(cell);
+            orders(it).forEach(o => { if (o) {
+                const k = seAuditNorm(o) + '|' + s;
+                (byOrder[k] = byOrder[k] || []).push(cell);
+            }});
+        });
+        return { byOrder, byStore };
+    };
+    // 수주번호가 맞으면 그게 1:1 짝이다 — 매장보다 먼저 본다.
+    // 합정에 제 건과 고양에서 옮겨온 건이 같은 코드로 나란히 있으면 매장만으로는 서로 몫을 뺏는다.
+    // 2대짜리 행은 1대짜리 문서 두 장으로 덮이므로 여러 장에서 모아 쓴다. 모자라면 아무것도 안 쓴다.
+    const take = (pool, d, s, q) => {
+        const seen = new Set(), cells = [];
+        const push = l => (l || []).forEach(c => { if (!seen.has(c)) { seen.add(c); cells.push(c); } });
+        if (d.sales_order_no) push(pool.byOrder[seAuditNorm(d.sales_order_no) + '|' + s]);
+        [d.store_id, ...(movedFrom[d.id] || [])].forEach(g => push(pool.byStore[key(g, s)]));
+        if (cells.reduce((a, c) => a + c.left, 0) < q) return null;
+        let need = q, at = null;
+        for (const c of cells) {
+            if (need <= 0) break;
+            if (!c.left) continue;
+            const t = Math.min(c.left, need);
+            c.left -= t; need -= t;
+            at = at || c.store;
+        }
+        return at;
+    };
+    const recQty = poolOf(recs, r => [r.order_no]);
+    const traQty = poolOf(tras, x => [x.order_no_before, x.order_no_after]);
+    disp.filter(d => d.sold && d.sku)
+        .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''))
+        .forEach(d => {
+            const st = d.store_id, s = seAuditNorm(d.sku), q = d.quantity || 1;
+            const traAt = take(traQty, d, s, q);
+            const recAt = take(recQty, d, s, q);
+            if (recAt) return;                        // 보고서까지 끝났으면 볼 것 없다
             const days = d.sold_at ? Math.floor((Date.now() - new Date(d.sold_at)) / 86400000) : null;
             const head = `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''}`;
-            add(hasTra ? 'norec' : 'notrans', st, `${d.product_id || ''} ${s}`,
-                hasTra ? `${head} — 거래처 변경 완료 · 회수보고서만 쓰면 됩니다`
-                       : `${head} — 거래처 변경 협조전부터 올려야 합니다`,
+            const at = traAt && traAt !== st ? ` · ${seStoreNameOf(traAt)} 이름으로 거변됨` : '';
+            add(traAt ? 'norec' : 'notrans', st, `${d.product_id || ''} ${s}`,
+                traAt ? `${head} — 거래처 변경 완료${at} · 회수보고서만 쓰면 됩니다`
+                      : `${head} — 거래처 변경 협조전부터 올려야 합니다`,
                 { d, req: seFindReqItem(items, d) });
         });
-    });
 
     // 5) 같은 코드 소비자가 불일치
     const priceBy = {};
@@ -19084,7 +19127,7 @@ function sePrintTagsOnSale() {
 // 회수보고서 칸 — 반출된 행만 상태를 말한다. 전시 중인 행에는 해당이 없다.
 function seRecoveryDocsFor(row) {
     const sku = (row.sku || '').toUpperCase();
-    const list = seRecoveryDocs[sku] || [];
+    const list = (seRecoveryDocs[sku] || []).filter(x => seDocOk(row, x));
     if (row.sales_order_no) {
         const exact = list.filter(x => x.order_no === row.sales_order_no);
         if (exact.length) return exact;
@@ -19101,7 +19144,7 @@ function seHyNo(s) {
 // 반출한 물건은 이게 있어야 회수보고서를 쓸 수 있다.
 function seTransferDocsFor(row) {
     if (!row.sku) return [];
-    const list = seTransferDocs[row.sku.toUpperCase()] || [];
+    const list = (seTransferDocs[row.sku.toUpperCase()] || []).filter(x => seDocOk(row, x));
     if (!list.length || !row.sales_order_no) return list;
     const exact = list.filter(x => [x.order_no_before, x.order_no_after]
         .some(o => (o || '').replace(/\s/g, '') === row.sales_order_no.replace(/\s/g, '')));
