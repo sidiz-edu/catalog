@@ -14029,10 +14029,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <option value="">-- 전체 매장 --</option>
         </select>
     </div>
-    <div style="padding:13px 32px;border-bottom:1px solid var(--se-border);background:#fffbeb;flex-shrink:0;
-                display:flex;align-items:center;gap:10px;font-family:'Outfit',sans-serif;">
-        <span style="font-size:1.25rem;line-height:1;">⚠️</span>
-        <span style="font-size:1.05rem;font-weight:800;color:#b45309;letter-spacing:-0.01em;">악세사리는 전시품 목록에서 관리하지 않습니다.</span>
+    <div style="padding:6px 32px;border-bottom:1px solid var(--se-border);background:#fffbeb;flex-shrink:0;
+                display:flex;align-items:center;gap:9px;font-family:'Outfit',sans-serif;">
+        <span style="font-size:1.05rem;line-height:1;">⚠️</span>
+        <span style="font-size:1.02rem;font-weight:800;color:#b45309;letter-spacing:-0.01em;line-height:1.35;">악세사리는 전시품 목록에서 관리하지 않습니다.</span>
     </div>
     <div class="se-panel-body">
         <div id="seTabStore">
@@ -14187,11 +14187,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <div id="seRecoveryAlert" style="display:none;margin-bottom:10px;"></div>
                 <div id="seKindBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;"></div>
                 <!-- 매출외출고 요청서 연결 여부 -->
-                <div id="seLinkBar" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;"></div>
-                <div id="seLinkDesc" style="margin-bottom:9px;font-size:0.72rem;line-height:1.65;color:var(--se-muted);"></div>
-                <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
-                    oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
-                    style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.85rem;background:var(--se-raised);color:var(--se-text);margin-bottom:10px;font-family:'Outfit',sans-serif;">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+                    <div id="seLinkBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
+                    <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
+                        oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
+                        style="flex:1;min-width:220px;box-sizing:border-box;padding:6px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.82rem;background:var(--se-raised);color:var(--se-text);font-family:'Outfit',sans-serif;">
+                </div>
+                <div id="seLinkDesc" style="display:none;margin-bottom:8px;font-size:0.72rem;line-height:1.6;color:var(--se-muted);"></div>
                 <div class="se-table-wrap">
                     <table class="se-table">
                         <thead>
@@ -17194,17 +17196,18 @@ function seRenderTable(storeId) {
                 const e = seExitOf(r); const k = e ? seExitLabel(e) : '반출';
                 a[k] = (a[k] || 0) + 1; return a;
             }, {})).map(([k, n]) => `${k} ${n}`).join(' · ');
-            alertBox.innerHTML = `<div style="display:flex;gap:11px;align-items:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:12px 15px;">
-                <span style="font-size:1.1rem;line-height:1.2;">🧾</span>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-weight:800;color:#b91c1c;font-size:0.9rem;">거래처 변경 협조전 및 회수보고서 등록이 필요한 반출 ${need.length}건 <span style="font-weight:600;font-size:0.8rem;">· ${mix}</span></div>
-                    <div style="font-size:0.76rem;color:#7f1d1d;margin-top:3px;line-height:1.6;">
-                        전시에서 빠졌는데 거래처 변경 협조전과 회수 및 처리결과 보고서가 아직 올라오지 않았습니다. 등록하지 않으면 미수금(매출외)으로 남습니다.<br>
-                        <span style="font-family:monospace;font-size:0.73rem;">${list}</span>
-                    </div>
-                    <button onclick="seKindFilter='needrec';seRenderTable(seCurrentStore)"
-                        style="margin-top:8px;background:#dc2626;border:none;border-radius:7px;padding:5px 13px;color:#fff;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">해당 ${need.length}건만 보기</button>
-                </div>
+            // 표를 한 줄이라도 더 보여주려고 한 줄로 접었다 — 자세한 건 마우스를 올리면 뜬다
+            const tip = ('전시에서 빠졌는데 거래처 변경 협조전과 회수 및 처리결과 보고서가 아직 올라오지 않았습니다.'
+                + String.fromCharCode(10) + '등록하지 않으면 미수금(매출외)으로 남습니다.'
+                + String.fromCharCode(10) + String.fromCharCode(10)
+                + need.map(r => r.sku).join(String.fromCharCode(10))).replace(/"/g, '&quot;');
+            alertBox.innerHTML = `<div title="${tip}" style="display:flex;gap:8px;align-items:center;background:#fef2f2;border:1px solid #fca5a5;border-left:5px solid #dc2626;border-radius:9px;padding:6px 13px;">
+                <span style="font-size:0.95rem;line-height:1;flex-shrink:0;">🧾</span>
+                <b style="color:#b91c1c;font-size:0.82rem;white-space:nowrap;flex-shrink:0;">거래처 변경·회수보고서 필요 ${need.length}건</b>
+                <span style="color:#7f1d1d;font-size:0.74rem;white-space:nowrap;flex-shrink:0;">· ${mix}</span>
+                <span style="font-family:monospace;font-size:0.71rem;color:#b91c1c;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${list}</span>
+                <button onclick="seKindFilter='needrec';seRenderTable(seCurrentStore)"
+                    style="flex-shrink:0;background:#dc2626;border:none;border-radius:6px;padding:3px 11px;color:#fff;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">해당 ${need.length}건만 보기</button>
             </div>`;
         }
     }
@@ -17338,18 +17341,20 @@ function seRenderTable(storeId) {
             ['unlinked', `❌ 연결X (${lc.unlinked})`, '#ef4444'],
         ].filter(([k]) => k === 'all' || lc[k]).map(([k, label, fg]) => {
             const on = k === seLinkFilter;
-            return `<button onclick="seLinkFilter='${k}';seRenderTable(seCurrentStore)"
+            // 설명은 줄로 깔면 두 줄을 먹는다 — 칩에 달아 둔다
+            const tip = (LINK_DESC[k] || '').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;');
+            return `<button title="${tip}" onclick="seLinkFilter='${k}';seRenderTable(seCurrentStore)"
                 style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'var(--se-surface)'};color:${on?'#fff':fg};border:1px solid ${on?fg:'var(--se-border)'};">${label}</button>`;
         }).join('');
     }
+    // 한 가지로 좁혀 놓았을 때만 그 뜻을 한 줄로 알려준다. 전체일 때는 칩 툴팁으로 충분하다.
     if (ldesc) {
         const LINK_LABEL = { linked: ['연결됨', '#16a34a'], qty: ['수량 다름', '#b45309'],
                              moved: ['다른 매장 출고 건', '#1d4ed8'], unlinked: ['연결X', '#ef4444'] };
-        const line = k => `<div><b style="color:${LINK_LABEL[k][1]};font-weight:600;">${LINK_LABEL[k][0]}</b> — ${LINK_DESC[k]}</div>`;
-        ldesc.innerHTML = !_lcShow ? ''
-            : (seLinkFilter === 'all'
-                ? Object.keys(LINK_LABEL).filter(k => lc[k]).map(line).join('')
-                : line(seLinkFilter));
+        const on = _lcShow && seLinkFilter !== 'all' && LINK_LABEL[seLinkFilter];
+        ldesc.style.display = on ? '' : 'none';
+        ldesc.innerHTML = !on ? ''
+            : `<b style="color:${LINK_LABEL[seLinkFilter][1]};font-weight:600;">${LINK_LABEL[seLinkFilter][0]}</b> — ${LINK_DESC[seLinkFilter]}`;
     }
 
     // 검색 필터
