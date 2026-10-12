@@ -15724,6 +15724,41 @@ let seMoves     = {};          // display_id -> 매장 간 이동 이력 (오래
 let sePriceBySku = {};         // sku -> [{price, store}] — 매장마다 소비자가가 갈리는지 보려고 전 매장을 본다
 let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정보 포함)
 let seTransferDocs = {};         // sku -> 거래처 변경 협조전 항목
+let _seTraAssign = {}, _seRecAssign = {};   // 전시품 id -> 그 행 몫의 문서 한 장
+
+// 같은 매장에 같은 코드가 여러 대면 문서도 여러 장이다. 그냥 목록의 첫 장을 보여주면
+// 두 행에 같은 장이 겹쳐 붙는다. 수주번호가 똑같은 짝을 먼저 묶고, 남은 행에 남은 장을
+// 차례로 이어서 한 장이 한 번만 쓰이게 한다.
+function seAssignDocs(rows, docsOf, orderKeys) {
+    const norm = s => (s || '').replace(/\s/g, '');
+    const used = new Set(), out = {};
+    // 거변·회수는 판매된 건에 하는 문서다. 같은 수주번호로 보유 1대 + 판매 1대가 있으면
+    // 문서는 판매 쪽 몫이므로 판매 행부터, 먼저 반출된 순서로 집어 간다.
+    const list = rows.filter(r => r.sku).sort((a, b) =>
+        (a.sold ? 0 : 1) - (b.sold ? 0 : 1)
+        || String(a.sold_at || '').localeCompare(String(b.sold_at || ''))
+        || String(a.id).localeCompare(String(b.id)));
+    list.forEach(r => {
+        if (!r.sales_order_no) return;
+        const d = docsOf(r).find(x => !used.has(x) &&
+            orderKeys(x).some(o => o && norm(o) === norm(r.sales_order_no)));
+        if (d) { used.add(d); out[r.id] = d; }
+    });
+    list.forEach(r => {
+        if (out[r.id]) return;
+        const d = docsOf(r).find(x => !used.has(x));
+        if (d) { used.add(d); out[r.id] = d; }
+    });
+    return out;
+}
+function seBuildDocAssign() {
+    _seTraAssign = seAssignDocs(seDisplayData,
+        r => (seTransferDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x)),
+        x => [x.order_no_before, x.order_no_after]);
+    _seRecAssign = seAssignDocs(seDisplayData,
+        r => (seRecoveryDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x)),
+        x => [x.order_no]);
+}
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
 let seReqQty = {};     // sku -> 요청서 수량 합계
 let seReqItems = [];        // 현재 매장의 매출외출고 요청 품목 (참고 목록용)
@@ -17141,6 +17176,7 @@ async function seRenderList(storeId) {
             const k = (x.sku || '').toUpperCase();
             (seIssues[k] = seIssues[k] || []).push(x);
         });
+        seBuildDocAssign();
         seReqSkuSet = new Set((reqItemsRes.data || [])
             .map(it => (it.item_code && it.color_code) ? `${it.item_code}-${it.color_code}`.toUpperCase() : null)
             .filter(Boolean));
@@ -19294,13 +19330,9 @@ function sePrintTagsOnSale() {
 
 // 회수보고서 칸 — 반출된 행만 상태를 말한다. 전시 중인 행에는 해당이 없다.
 function seRecoveryDocsFor(row) {
-    const sku = (row.sku || '').toUpperCase();
-    const list = (seRecoveryDocs[sku] || []).filter(x => seDocOk(row, x));
-    if (row.sales_order_no) {
-        const exact = list.filter(x => x.order_no === row.sales_order_no);
-        if (exact.length) return exact;
-    }
-    return list;
+    if (!row.sku) return [];
+    const mine = _seRecAssign[row.id];
+    return mine ? [mine] : [];
 }
 // 협조전 번호를 짧게 — 시디즈-협조26-01-00113 → 26-01-00113
 function seHyNo(s) {
@@ -19312,11 +19344,8 @@ function seHyNo(s) {
 // 반출한 물건은 이게 있어야 회수보고서를 쓸 수 있다.
 function seTransferDocsFor(row) {
     if (!row.sku) return [];
-    const list = (seTransferDocs[row.sku.toUpperCase()] || []).filter(x => seDocOk(row, x));
-    if (!list.length || !row.sales_order_no) return list;
-    const exact = list.filter(x => [x.order_no_before, x.order_no_after]
-        .some(o => (o || '').replace(/\s/g, '') === row.sales_order_no.replace(/\s/g, '')));
-    return exact.length ? exact : list;
+    const mine = _seTraAssign[row.id];
+    return mine ? [mine] : [];
 }
 function seTransferCell(row) {
     const docs = seTransferDocsFor(row);
