@@ -13942,8 +13942,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-table-wrap { position: sticky; top: 0; z-index: 2; background: var(--se-bg);
                  overflow: auto; max-height: calc(100vh - 300px); min-height: 240px;
                  border-radius: 12px; border: 1px solid var(--se-border); }
-/* 표가 붙어 있으니 아래 목록은 그 위로 덮으며 올라와야 가려지지 않는다 */
-#seUnmatchedRef { position: relative; z-index: 3; background: var(--se-bg); }
 .se-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; color: var(--se-text); }
 .se-table th {
     background: var(--se-surface); color: var(--se-muted);
@@ -14194,6 +14192,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         style="flex:1;min-width:220px;box-sizing:border-box;padding:6px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.82rem;background:var(--se-raised);color:var(--se-text);font-family:'Outfit',sans-serif;">
                 </div>
                 <div id="seLinkDesc" style="display:none;margin-bottom:8px;font-size:0.72rem;line-height:1.6;color:var(--se-muted);"></div>
+                <!-- 표가 상단 고정이라 아래에 두면 스크롤할 때 표 위를 지나가며 행을 잘라 보인다 -->
+                <div id="seUnmatchedRef" style="display:none;margin-bottom:8px;"></div>
                 <div class="se-table-wrap">
                     <table class="se-table">
                         <thead>
@@ -14213,8 +14213,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <tbody id="seDisplayList"></tbody>
                     </table>
                 </div>
-                <!-- '요청서 없음'을 볼 때 짝이 될 만한 반대편 목록을 붙인다 -->
-                <div id="seUnmatchedRef" style="display:none;margin-top:18px;"></div>
             </div>
             <div id="seStorePlaceholder" style="color:#475569; font-size:0.85rem; padding:40px 0 0;">
                 매장을 선택하면 전시 현황이 표시됩니다.
@@ -15322,6 +15320,9 @@ function seRenderRecoveryFlat() {
 
 // '요청서 없음' 전시품을 볼 때, 반대편(요청서엔 있는데 전시품이 없는 품목)을 아래에 붙인다.
 // 둘은 같은 실물이 코드 오타로 갈라진 경우가 많아 나란히 봐야 짝이 보인다.
+let _seUnmOpen = false;
+function seToggleUnmatched() { _seUnmOpen = !_seUnmOpen; seRenderUnmatchedRef(); }
+
 function seRenderUnmatchedRef() {
     const box = document.getElementById('seUnmatchedRef');
     if (!box) return;
@@ -15347,23 +15348,28 @@ function seRenderUnmatchedRef() {
 
     box.style.display = '';
     if (!rows.length) {
-        box.innerHTML = `<div style="border:1px dashed var(--se-border);border-radius:10px;padding:16px;color:#94a3b8;font-size:0.82rem;">
+        box.innerHTML = `<div style="border:1px dashed var(--se-border);border-radius:10px;padding:5px 13px;color:#94a3b8;font-size:0.78rem;">
             ${qtyMode ? '수량이 다른 품목이 없습니다.' : '이 매장은 매출외출고 요청서의 품목이 전시품에 모두 등록돼 있습니다.'}</div>`;
         return;
     }
+    const head = qtyMode
+        ? `⚠ 문서 상 수량과 전시 수량이 다른 품목 ${rows.length}건`
+        : `📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건`;
+    const desc = qtyMode
+        ? '매출외출고 요청서에 적힌 대수와 지금 등록된 대수가 다릅니다. 나머지가 어디 있는지 적어주세요.'
+        : seLinkFilter === 'unlinked'
+        ? '아래 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.'
+        : '요청서에는 적혀 있는데 전시품으로 등록되지 않은 품목입니다. 아래 목록에 품목코드가 한 글자 다른 행이 있으면 오타일 가능성이 큽니다.';
     box.innerHTML = `
     <div style="border:1px solid #fcd34d;border-radius:10px;overflow:hidden;background:var(--se-surface);">
-        <div style="background:#fffbeb;padding:11px 15px;border-bottom:1px solid #fcd34d;">
-            <div style="font-size:0.85rem;font-weight:700;color:#b45309;">${qtyMode
-                ? `⚠ 문서 상 수량과 전시 수량이 다른 품목 ${rows.length}건`
-                : `📄 요청서엔 있는데 전시품이 없는 품목 ${rows.length}건`}</div>
-            <div style="font-size:0.76rem;color:#92400e;margin-top:3px;">${qtyMode
-                ? '매출외출고 요청서에 적힌 대수와 지금 등록된 대수가 다릅니다. 나머지가 어디 있는지 적어주세요.'
-                : seLinkFilter === 'unlinked'
-                ? '위 <b>연결X</b> 목록과 짝이 될 수 있습니다. 품목코드가 한 글자 다르면 오타일 가능성이 큽니다.'
-                : '요청서에는 적혀 있는데 전시품으로 등록되지 않은 품목입니다. 위 목록에 품목코드가 한 글자 다른 행이 있으면 오타일 가능성이 큽니다.'}</div>
+        <div onclick="seToggleUnmatched()" title="${desc.replace(/<[^>]+>/g, '').replace(/"/g, '&quot;')}"
+             style="background:#fffbeb;padding:6px 13px;cursor:pointer;display:flex;align-items:center;gap:9px;
+                    ${_seUnmOpen ? 'border-bottom:1px solid #fcd34d;' : ''}">
+            <b style="font-size:0.82rem;color:#b45309;white-space:nowrap;">${head}</b>
+            <span style="flex:1;min-width:0;font-size:0.74rem;color:#92400e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${desc}</span>
+            <span style="font-size:0.74rem;color:#b45309;font-weight:700;white-space:nowrap;">${_seUnmOpen ? '접기 ▴' : '펼치기 ▾'}</span>
         </div>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto;display:${_seUnmOpen ? '' : 'none'};">
         <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
             <thead><tr style="background:#f1f5f9;color:#475569;">
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품명</th>
