@@ -17999,28 +17999,28 @@ const seExitLabel = e => [e.icon, e.label].filter(Boolean).join(' ');
 let seNeedRecIds = new Set();
 function seComputeNeedRecovery() {
     seNeedRecIds = new Set();
-    const recQty = {};
+    // 보고서 1대를 수주번호 칸과 코드 칸에 같이 넣으면 그 1대가 2행을 덮어버린다.
+    // 수량은 한 번만 쓰도록 수주번호가 맞는 행부터 덜어내고, 남은 몫으로 나머지를 덮는다.
+    const byOrder = {}, left = {};
     Object.entries(seRecoveryDocs).forEach(([sku, items]) => {
         items.forEach(x => {
             const q = x.qty || 1;
-            recQty[sku] = (recQty[sku] || 0) + q;
-            if (x.order_no) recQty[sku + '|' + x.order_no] = (recQty[sku + '|' + x.order_no] || 0) + q;
+            left[sku] = (left[sku] || 0) + q;
+            if (x.order_no) byOrder[sku + '|' + x.order_no] = (byOrder[sku + '|' + x.order_no] || 0) + q;
         });
     });
-    const groups = {};
-    seDisplayData.filter(r => r.sold && r.sku).forEach(r => {
-        const sku = r.sku.toUpperCase();
-        const key = r.sales_order_no && recQty[sku + '|' + r.sales_order_no] != null
-            ? sku + '|' + r.sales_order_no : sku;
-        (groups[key] = groups[key] || []).push(r);
+    const sold = seDisplayData.filter(r => r.sold && r.sku)
+        .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''));
+    const rest = [];
+    sold.forEach(r => {
+        const sku = r.sku.toUpperCase(), k = sku + '|' + r.sales_order_no, q = r.quantity || 1;
+        if (r.sales_order_no && byOrder[k] >= q) { byOrder[k] -= q; left[sku] -= q; }
+        else rest.push(r);
     });
-    Object.entries(groups).forEach(([key, rows]) => {
-        let covered = recQty[key] || 0;
-        rows.sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''))
-            .forEach(r => {
-                const q = r.quantity || 1;
-                if (covered >= q) covered -= q; else seNeedRecIds.add(r.id);
-            });
+    // 먼저 반출된 것부터 남은 보고서 몫으로 덮는다
+    rest.forEach(r => {
+        const sku = r.sku.toUpperCase(), q = r.quantity || 1;
+        if ((left[sku] || 0) >= q) left[sku] -= q; else seNeedRecIds.add(r.id);
     });
 }
 const seNeedsRecovery = row => seNeedRecIds.has(row.id);
