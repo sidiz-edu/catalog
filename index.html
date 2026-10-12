@@ -18395,7 +18395,8 @@ async function seLoadAcc(force) {
     _seAccName = {};
     (iRes.data || []).forEach(it => {
         const k = ((it.item_code || '') + (it.color_code ? '-' + it.color_code : '')).toUpperCase();
-        const nm = it.raw_product_name || it.product_name;
+        // 원문은 'TREVO'처럼 부품인지 본체인지 안 적혀 있는 게 섞여 있다 — 정리된 이름을 먼저 쓴다
+        const nm = it.product_name || it.raw_product_name;
         if (nm && !_seAccName[k]) _seAccName[k] = nm;
     });
     seRenderAcc();
