@@ -18538,6 +18538,8 @@ async function seAccRestore(id, code) {
 // 매출외출고(쌤플/의자생산팀)에서 판매처(매장)로 재산을 넘긴 기록.
 // 전시품을 팔려면 이게 먼저고, 그 다음이 회수 및 처리결과 보고서다.
 let _seTraDocs = null, _seTraView = 'doc';
+// 매장을 좁혀 놓고도 이 문서만 전 매장으로 펼쳐 보는 문서 id
+let _seTraAll = new Set(), _seTraScoped = '';
 
 function seSetTraView(v) {
     _seTraView = v;
@@ -18577,15 +18579,19 @@ function seRenderTransfer() {
     const note = document.getElementById('traScopeNote');
     if (!body || !_seTraDocs) return;
     const scoped = seScopedStore();
+    _seTraScoped = scoped;
     const hit = seSearchMatcher(document.getElementById('traSearch')?.value);
 
-    // 매장을 좁히면 그 매장 품목만 남기고, 품목이 하나도 없는 문서는 뺀다
-    const docs = _seTraDocs.map(d => ({
-        ...d, items: d.items.filter(it =>
-            (!scoped || seStoreGroup(scoped).includes(it.store_id)) && hit(seTraHay(d, it))),
-    })).filter(d => d.items.length || (!scoped && hit(seTraHay(d, null))));
+    // 매장을 좁히면 그 매장 품목만 남기고, 품목이 하나도 없는 문서는 뺀다.
+    // 한 문서 안의 다른 매장 품목은 카드에서 따로 펼쳐 볼 수 있다 — 협조전은
+    // 여러 매장을 한 장에 묶어 올리므로 옆 매장이 뭘 넘겼는지 같이 봐야 할 때가 있다.
+    const docs = _seTraDocs.map(d => {
+        const all = d.items.filter(it => hit(seTraHay(d, it)));
+        const mine = scoped ? all.filter(it => seStoreGroup(scoped).includes(it.store_id)) : all;
+        return { ...d, items: _seTraAll.has(d.id) ? all : mine, _mine: mine.length, _other: all.length - mine.length };
+    }).filter(d => d._mine || (!scoped && hit(seTraHay(d, null))));
 
-    const nItem = docs.reduce((s, d) => s + d.items.length, 0);
+    const nItem = docs.reduce((s, d) => s + d._mine, 0);
     const total = _seTraDocs.reduce((s, d) => s + d.items.length, 0);
     const cnt = document.getElementById('traSearchCount');
     if (cnt) cnt.textContent = `문서 ${docs.length}건 · 품목 ${nItem}개` + (nItem !== total ? ` / 전체 ${total}개` : '');
@@ -18625,6 +18631,10 @@ function seTraByDoc(docs) {
                 </div>
             </div>
             <div id="tra-items-${d.id}" style="display:none;border-top:1px solid var(--se-border);">
+                ${d._other || _seTraAll.has(d.id) ? `<div style="padding:7px 15px;background:#f1f5f9;border-bottom:1px solid var(--se-border);display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                    <span style="font-size:0.76rem;color:#475569;">이 협조전에는 다른 매장 품목도 <b>${d._other}건</b> 있습니다.</span>
+                    <button onclick="seTraToggleAll('${d.id}')" style="padding:3px 10px;border-radius:6px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;background:${_seTraAll.has(d.id) ? '#1d4ed8' : 'var(--se-surface)'};color:${_seTraAll.has(d.id) ? '#fff' : '#1d4ed8'};border:1px solid ${_seTraAll.has(d.id) ? '#1d4ed8' : 'var(--se-border)'};">${_seTraAll.has(d.id) ? '내 매장만 보기' : '문서 전체 보기'}</button>
+                </div>` : ''}
                 ${seTraTable(d.items, true)}
                 ${d.reason ? `<div style="padding:11px 15px;border-top:1px solid var(--se-border);font-size:0.78rem;color:#475569;white-space:pre-wrap;line-height:1.7;"><b>사유</b>\n${d.reason}</div>` : ''}
                 ${d.memo ? `<div style="padding:11px 15px;border-top:1px solid var(--se-border);font-size:0.75rem;color:#64748b;white-space:pre-wrap;line-height:1.7;background:var(--se-raised,#f8fafc);">${d.memo}</div>` : ''}
@@ -18636,6 +18646,13 @@ function seTraByDoc(docs) {
 function seTraToggle(id) {
     const el = document.getElementById('tra-items-' + id);
     if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function seTraToggleAll(id) {
+    if (_seTraAll.has(id)) _seTraAll.delete(id); else _seTraAll.add(id);
+    seRenderTransfer();
+    const el = document.getElementById('tra-items-' + id);   // 펼친 상태를 그대로 둔다
+    if (el) el.style.display = '';
 }
 
 function seTraFlat(docs) {
@@ -18670,9 +18687,11 @@ function seTraTable(items, inner) {
             ${['매장', '품목코드', '색상', '수량', '기존 수주 / 건명', '기존금액', '변경 수주', '변경금액']
                 .map(h => `<th style="padding:6px 9px;text-align:left;">${h}</th>`).join('')}
         </tr></thead>
-        <tbody>${items.map((it, i) => `
-            <tr style="border-top:1px solid var(--se-border);">
-                <td style="padding:5px 9px;">${seStoreNameOf(it.store_id)}</td>
+        <tbody>${items.map((it, i) => {
+            const mine = !_seTraScoped || seStoreGroup(_seTraScoped).includes(it.store_id);
+            return `
+            <tr style="border-top:1px solid var(--se-border);${mine ? '' : 'background:#f8fafc;color:#94a3b8;'}">
+                <td style="padding:5px 9px;${mine ? '' : 'color:#64748b;'}">${seStoreNameOf(it.store_id)}</td>
                 <td style="padding:5px 9px;font-family:monospace;">${it.item_code || '-'}</td>
                 <td style="padding:5px 9px;font-family:monospace;">${it.color_code || '-'}</td>
                 <td style="padding:5px 9px;text-align:right;">${it.qty ?? '-'}</td>
@@ -18684,7 +18703,7 @@ function seTraTable(items, inner) {
                 <td style="padding:5px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
                 <td style="padding:5px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
                 <td style="padding:5px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
-            </tr>`).join('')}</tbody>
+            </tr>`; }).join('')}</tbody>
     </table></div>`;
 }
 
