@@ -13935,15 +13935,25 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     font-family: 'Outfit', sans-serif;
 }
 .se-store-row select:focus { outline: none; border-color: #003EFF; }
-.se-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--se-border); }
-.se-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--se-text); }
+/* 머리글을 늘 보이게 하려면 두 겹이 필요하다.
+   ① 표 상자가 세로 스크롤을 가져가고 머리글이 그 안에서 sticky.
+   ② 상자 자체도 sticky — 위쪽 필터·검색이 길어서 패널이 스크롤되는데,
+      그때 상자가 같이 올라가 버리면 ①이 아무 소용이 없다. */
+.se-table-wrap { position: sticky; top: 0; z-index: 2; background: var(--se-bg);
+                 overflow: auto; max-height: calc(100vh - 300px); min-height: 240px;
+                 border-radius: 12px; border: 1px solid var(--se-border); }
+/* 표가 붙어 있으니 아래 목록은 그 위로 덮으며 올라와야 가려지지 않는다 */
+#seUnmatchedRef { position: relative; z-index: 3; background: var(--se-bg); }
+.se-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; color: var(--se-text); }
 .se-table th {
     background: var(--se-surface); color: var(--se-muted);
     font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
     padding: 12px 16px; text-align: left; white-space: nowrap;
-    border-bottom: 1px solid var(--se-border);
+    position: sticky; top: 0; z-index: 3;
+    /* collapse 를 풀었으니 경계선은 그림자로 — 테두리는 스크롤하면 떨어져 나간다 */
+    box-shadow: inset 0 -1px 0 var(--se-border);
 }
-.se-table td { padding: 14px 16px; border-bottom: 1px solid var(--se-border); vertical-align: middle; }
+.se-table td { padding: 14px 16px; border-bottom: 1px solid var(--se-border); vertical-align: middle; background: var(--se-bg); }
 .se-table tr:last-child td { border-bottom: none; }
 .se-table tr:hover td { background: rgba(0,62,255,0.03); }
 .se-tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: rgba(0,62,255,0.1); color: #003EFF; }
