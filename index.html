@@ -16987,11 +16987,11 @@ async function seRenderList(storeId) {
             _sb.from('display_gap_notes').select('sku,note,updated_by').eq('store_id', storeId),
             _sb.from('display_issues').select('*').eq('store_id', storeId),
             _sb.from('recovery_report_items')
-               .select('item_code,color_code,order_no,qty,unrecovered_amount,recovery_reports(doc_no,title,report_date,ep_url,reason)')
-               .eq('store_id', storeId),
+               .select('store_id,item_code,color_code,order_no,qty,unrecovered_amount,recovery_reports(doc_no,title,report_date,ep_url,reason)')
+               .in('store_id', seStoreGroup(storeId)),
             _sb.from('transfer_approval_items')
-               .select('item_code,color_code,qty,order_no_before,order_no_after,memo,transfer_approvals(doc_no,title,approval_date,to_office,to_dealer)')
-               .eq('store_id', storeId)
+               .select('store_id,item_code,color_code,qty,order_no_before,order_no_after,memo,transfer_approvals(doc_no,title,approval_date,to_office,to_dealer)')
+               .in('store_id', seStoreGroup(storeId))
         ]);
         if (displaysRes.error) throw displaysRes.error;
         // 악세서리·전시분해는 전시품 목록에서 관리하지 않는다 — 악세서리 탭에서만 본다
@@ -18268,6 +18268,16 @@ function sePrintTagsFor(rows, label) {
     sePrintDoc(seTagHtml(ok));
 }
 
+// ── 옮겨서 파는 매장 쌍 ──────────────────────────────────────────────
+// 고양 전시품을 합정으로 옮겨서 판다. 그러다 보니 문서 매장이 갈린다.
+//   매출외출고 요청서 : 고양 (출고 매장)
+//   거래처 변경 협조전 : 합정 (판매 매장 — 변경 후 거래처)
+//   회수 및 처리결과   : 고양 (문서에 매장 칸이 없어 수주건명에서 잡는데 출고 당시 건명이다)
+// 그래서 전시품 매장으로 거변을 찾을 때는 짝 매장까지 봐야 한다. 한 방향만이다 —
+// 합정 전시품이 고양 문서를 집으면 남의 건을 끌어온다.
+const SE_STORE_PAIR = { goyang: 'hapjeong', suwon: 'pyeongtaek', cheongju: 'daejeon' };
+const seStoreGroup = id => [id, SE_STORE_PAIR[id]].filter(Boolean);
+
 // ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
 // 팔걸이·머리받침대·캐스터·커버 같은 부속과 OLLY, 전시분해용 T50은 전시품처럼 세지 않는다.
 // 전시품·공간·전체 현황·점검에서 빼고 이 탭에서만 본다.
@@ -18500,7 +18510,8 @@ function seRenderTransfer() {
 
     // 매장을 좁히면 그 매장 품목만 남기고, 품목이 하나도 없는 문서는 뺀다
     const docs = _seTraDocs.map(d => ({
-        ...d, items: d.items.filter(it => (!scoped || it.store_id === scoped) && hit(seTraHay(d, it))),
+        ...d, items: d.items.filter(it =>
+            (!scoped || seStoreGroup(scoped).includes(it.store_id)) && hit(seTraHay(d, it))),
     })).filter(d => d.items.length || (!scoped && hit(seTraHay(d, null))));
 
     const nItem = docs.reduce((s, d) => s + d.items.length, 0);
@@ -18509,7 +18520,10 @@ function seRenderTransfer() {
     if (cnt) cnt.textContent = `문서 ${docs.length}건 · 품목 ${nItem}개` + (nItem !== total ? ` / 전체 ${total}개` : '');
     if (note) {
         note.style.display = scoped ? '' : 'none';
-        note.innerHTML = scoped ? `<b>${seStoreNameOf(scoped)}</b> 기준으로 좁혀 보고 있습니다. 위 드롭다운에서 <b>전체 매장</b>을 고르면 모두 나옵니다.` : '';
+        const mate = SE_STORE_PAIR[scoped];
+        note.innerHTML = scoped ? `<b>${seStoreNameOf(scoped)}</b> 기준으로 좁혀 보고 있습니다.`
+            + (mate ? ` 옮겨서 판 건은 <b>${seStoreNameOf(mate)}</b> 이름으로 거변되므로 같이 보여줍니다.` : '')
+            + ` 위 드롭다운에서 <b>전체 매장</b>을 고르면 모두 나옵니다.` : '';
     }
     if (!docs.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 협조전이 없습니다.</p>'; return; }
 
@@ -19096,21 +19110,24 @@ function seTransferDocsFor(row) {
 function seTransferCell(row) {
     const docs = seTransferDocsFor(row);
     if (!docs.length) {
-        return row.sold
+        // 회수보고서까지 올라갔으면 끝난 건이다. 폐기는 거변 자체가 필요 없다.
+        return row.sold && !seRecoveryDocsFor(row).length
             ? `<div style="display:flex;align-items:center;justify-content:center;">
                  <span style="background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:2px 7px;
                               font-size:0.7rem;font-weight:800;color:#b45309;white-space:nowrap;">🔁 거변 필요</span></div>`
             : '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
     }
     const a = docs[0].transfer_approvals || {};
+    const other = docs.find(x => x.store_id && x.store_id !== row.store_id);
     const tip = docs.map(x => {
         const q = x.transfer_approvals || {};
         return [q.doc_no, q.approval_date, q.to_dealer,
+                x.store_id && x.store_id !== row.store_id ? `(${seStoreNameOf(x.store_id)} 이름으로 올라감)` : '',
                 x.order_no_after ? '→ ' + x.order_no_after : ''].filter(Boolean).join(' · ');
     }).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
     return `<div title="${tip}" style="display:flex;align-items:center;justify-content:center;">
         <span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 7px;
-                     font-size:0.7rem;font-weight:800;color:#1d4ed8;white-space:nowrap;">🔁 ${seHyNo(a.doc_no) || '거변'}</span></div>`;
+                     font-size:0.7rem;font-weight:800;color:#1d4ed8;white-space:nowrap;">🔁 ${seHyNo(a.doc_no) || '거변'}${other ? ' ↗' + String(seStoreNameOf(other.store_id)).split(' ').pop() : ''}</span></div>`;
 }
 
 function seRecoveryCell(row) {
