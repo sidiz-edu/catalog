@@ -16406,10 +16406,9 @@ async function seLoadFlatRows() {
             });
             assigned.set(it, got);
         };
-        its.forEach(it => give(it, d => {
-            const o = (it.outgoing_requests || {}).order_no;
-            return !!o && n(d.sales_order_no) === n(o);
-        }));
+        // 번호가 꼭 맞는 짝부터, 그다음 꼬리·날짜만 맞는 짝까지 넓힌다
+        [1, 2, 3].forEach(rk => its.forEach(it => give(it, d =>
+            seOrdRank(d.sales_order_no, (it.outgoing_requests || {}).order_no) === rk)));
         its.forEach(it => give(it, () => true));
     });
 
@@ -16425,7 +16424,8 @@ async function seLoadFlatRows() {
         return {
             it, r, sku, have, want, status, ds: ds || [],
             kind: seItemClass(it.item_code, it.product_name, it.memo),
-            hay: [r.title, r.order_no, it.product_name, it.raw_product_name, it.item_code, it.color_code,
+            hay: [r.title, r.order_no, ...(ds || []).map(d => d.sales_order_no),
+                  it.product_name, it.raw_product_name, it.item_code, it.color_code,
                   sku, it.store_name_raw, r.request_date, it.memo, r.doc_no]
                  .filter(Boolean).join(' ').toLowerCase(),
         };
@@ -16458,7 +16458,7 @@ async function seLoadFlatRows() {
         return {
             it, r: {}, sku, have: d.quantity || 1, want: 0, status: 'orphan', ds: [d],
             kind: seItemClass(itemCode, d.product_id, d.memo),
-            hay: [d.product_id, itemCode, colorCode, sku, d.store_id,
+            hay: [d.product_id, itemCode, colorCode, sku, d.store_id, d.sales_order_no,
                   seStoreNameOf(d.store_id), d.location, d.memo]
                  .filter(Boolean).join(' ').toLowerCase(),
         };
@@ -16584,13 +16584,29 @@ function seRenderFlat() {
                 <td style="padding:6px 9px;font-family:monospace;">${x.it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
-                <td style="padding:6px 9px;font-family:monospace;font-size:0.72rem;white-space:nowrap;color:#1d4ed8;">${x.r.order_no || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;font-size:0.72rem;white-space:nowrap;">${seFlatOrdCell(x)}</td>
                 <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
                 <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.status === 'orphan'
                     ? '<span style="color:#1d4ed8;">연결된 요청서 없음</span>'
                     : (x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-'))}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
+}
+
+// 수주번호는 전시품 목록이 기준이다. 요청서 테이블에는 문서당 대표 번호 하나뿐이라
+// 매장별 제 번호가 담기지 않는다 — 25-06-00006 한 장이 매장 10곳에 번호가 10개다.
+// 전시품이 붙어 있으면 그 번호를, 없으면 요청서 대표 번호를 흐리게 보여준다.
+function seFlatOrdCell(x) {
+    const mine = [...new Set((x.ds || []).map(d => d.sales_order_no).filter(Boolean))];
+    const rep = x.r && x.r.order_no;
+    const tip = s => (s || '').replace(/"/g, '&quot;');
+    if (mine.length) {
+        const same = !rep || mine.every(o => seOrdRank(o, rep) === 1);
+        return `<span style="color:#1d4ed8;" title="${tip(same ? '' : '요청서 대표번호: ' + rep)}"
+            >${mine.join(', ')}${same ? '' : ' <span style="color:#b45309;font-weight:700;">*</span>'}</span>`;
+    }
+    if (!rep) return '<span style="color:#cbd5e1;">-</span>';
+    return `<span style="color:#94a3b8;" title="전시품에 번호가 없어 요청서 대표번호를 보여줍니다">${rep}</span>`;
 }
 
 function seFilterRequests(kind) {
