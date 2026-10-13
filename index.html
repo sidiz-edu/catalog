@@ -19395,7 +19395,7 @@ async function seRunAudit(force) {
     const add = (kind, store, title, detail, src) => out.push({ kind, store, title, detail, src });
 
     // 매장·SKU별 수량
-    const reqQty = {}, dispQty = {}, reqMeta = {};
+    const reqQty = {}, dispQty = {}, soldQty = {}, reqMeta = {};
     items.forEach(it => {
         if (!it.store_id || !it.item_code) return;
         const k = key(it.store_id, sku(it.item_code, it.color_code));
@@ -19403,22 +19403,30 @@ async function seRunAudit(force) {
         reqMeta[k] = it;
     });
     disp.forEach(d => {
-        if (!d.sku || d.sold) return;
+        if (!d.sku) return;
         // 옮겨온 물건은 원래 매장 요청서 몫이고, 대리점 구매는 요청서가 없는 물건이다
         if (movedIds.has(d.id) && (d.sales_order_no || d.sales_link)) return;
         if (seIsDirectBuy(d)) return;
-        dispQty[key(d.store_id, seAuditNorm(d.sku))] = (dispQty[key(d.store_id, seAuditNorm(d.sku))] || 0) + (d.quantity || 1);
+        const k = key(d.store_id, seAuditNorm(d.sku));
+        // 팔린 몫은 요청서 쪽에서도 빼야 한다. 전시 수량에서만 빼면 멀쩡히 판 건이
+        // 「출고 2대 · 매장 1대」처럼 모자란 것으로 뜬다 — 논현 링고가 그랬다.
+        // 요청서 2건 중 하나는 팔려 거변까지 끝났고 남은 하나가 매장에 있는, 맞는 상태였다.
+        if (d.sold) soldQty[k] = (soldQty[k] || 0) + (d.quantity || 1);
+        else        dispQty[k] = (dispQty[k] || 0) + (d.quantity || 1);
     });
 
     // 1) 수량 불일치 · 2) 출고엔 있는데 매장에 없음
     Object.keys(reqQty).forEach(k => {
         const [st, s] = k.split('|');
-        const want = reqQty[k], have = dispQty[k] || 0;
+        const base = reqQty[k], sold = soldQty[k] || 0;
+        const want = base - sold, have = dispQty[k] || 0;
         if (have === want) return;
+        if (want <= 0 && !have) return;        // 다 팔려서 남은 게 없으면 어긋난 게 아니다
         const it = reqMeta[k] || {};
         const nm = it.product_name || '';
-        if (!have) add('nodisp', st, `${nm} ${s}`, `출고 ${want}대 · 매장 0대 — ${(it.outgoing_requests || {}).doc_no || '문서 미상'}`);
-        else       add('qty',    st, `${nm} ${s}`, `출고 ${want}대 · 매장 ${have}대 (${have > want ? '+' : ''}${have - want})`);
+        const outTxt = `출고 ${base}대${sold ? ` (판매 ${sold}대 뺀 ${want}대)` : ''}`;
+        if (!have) add('nodisp', st, `${nm} ${s}`, `${outTxt} · 매장 0대 — ${(it.outgoing_requests || {}).doc_no || '문서 미상'}`);
+        else       add('qty',    st, `${nm} ${s}`, `${outTxt} · 매장 ${have}대 (${have > want ? '+' : ''}${have - want})`);
     });
 
     // 3) 매장엔 있는데 출고에 없음 — 옮겨온 물건은 뺀다
