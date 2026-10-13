@@ -15390,7 +15390,7 @@ async function seRegisterFromReq(i, btn) {
     if (error) { btn.disabled = false; btn.textContent = label; alert('등록 실패: ' + error.message); return; }
     if (typeof showToast === 'function')
         showToast(`✓ ${x.sku} 등록${auto ? ' · ' + (auto.doc_no || '매출외출고') + ' 연결' : ''}`);
-    _seAudit = null;
+    seInvalidate();
     await seRenderList(seCurrentStore);
 }
 
@@ -17192,7 +17192,7 @@ async function seUnlinkReqFromRow() {
         .update({ sales_order_no: null, sales_link: null, updated_by: '연결 해제' }).eq('id', id);
     if (error) { alert('해제 실패: ' + error.message); return; }
     document.getElementById('seReqLookupModal').style.display = 'none';
-    _seAudit = null;
+    seInvalidate();
     if (typeof showToast === 'function') showToast('🔗 연결을 뗐습니다');
     await seRenderList(seCurrentStore);
 }
@@ -17220,7 +17220,7 @@ async function seLinkReqToRow(orderNo, epUrl, docNo) {
         .eq('id', id);
     if (error) { alert('연결 실패: ' + error.message); return; }
     document.getElementById('seReqLookupModal').style.display = 'none';
-    _seAudit = null;
+    seInvalidate();
     if (typeof showToast === 'function') showToast(`🔗 ${no || docNo || ''} 연결`);
     await seRenderList(seCurrentStore);
 }
@@ -17266,7 +17266,7 @@ async function seLinkReqItemToRow(i) {
     }).eq('id', id);
     if (error) { alert('연결 실패: ' + error.message); return; }
     document.getElementById('seReqLookupModal').style.display = 'none';
-    _seAudit = null; _seFlatRows = null;
+    seInvalidate();
     if (typeof showToast === 'function') showToast(`🔗 ${newSku} · ${no || r.doc_no || ''}`);
     await seRenderList(seCurrentStore);
 }
@@ -17996,6 +17996,7 @@ async function seSetSalesOrderNo(id) {
     const { error } = await _sb.from('store_displays').update({ sales_order_no: no || null }).eq('id', id);
     if (error) { alert('저장 실패: ' + error.message); return; }
     if (row) row.sales_order_no = no || null;
+    seInvalidate();
     seRenderTable(seCurrentStore);
 }
 
@@ -18010,6 +18011,7 @@ async function seSetSalesLink(id) {
     const { error } = await _sb.from('store_displays').update({ sales_link: link || null }).eq('id', id);
     if (error) { alert('저장 실패: ' + error.message); return; }
     if (row) row.sales_link = link || null;
+    seInvalidate();
     seRenderTable(seCurrentStore);
 }
 
@@ -19018,7 +19020,7 @@ async function seAccRestore(id, code) {
     const { error } = await _sb.from('store_displays')
         .update({ product_id: series, updated_by: '제품군 정정' }).eq('id', id);
     if (error) { alert('되돌리기 실패: ' + error.message); return; }
-    _seAudit = null;                       // 점검 캐시를 비워야 다음에 다시 센다
+    seInvalidate();                       // 점검 캐시를 비워야 다음에 다시 센다
     _seAccCodeP = null;                    // 다수결도 다시 센다
     if (typeof showToast === 'function') showToast(`↩️ ${series} 로 되돌렸습니다`);
     await seLoadAcc(true);
@@ -19219,6 +19221,10 @@ const SE_AUDIT_KIND = {
     typo:    ['💡', '품목코드가 한 글자 다름 — 오타 의심',    '#1d4ed8'],
 };
 let _seAudit = null;
+// 전시품이 바뀌면 그걸 재료로 쓰는 화면의 캐시를 버린다.
+// 요청서 「품목 전체보기」는 수주번호와 전시 현황을 전시품에서 가져오므로
+// 비우지 않으면 전시품 쪽에서 번호를 고쳐도 옛 값이 그대로 남는다.
+function seInvalidate() { _seAudit = null; _seFlatRows = null; }
 
 function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
 // 수주번호는 문서마다 P20250707-0315-00 / P20250707031500 처럼 표기가 갈린다.
@@ -20051,6 +20057,7 @@ async function seSubmitEdit() {
         const { data, error: insErr } = await _sb.from('store_displays').insert(record).select().single();
         if (insErr) { msg.style.color = '#ef4444'; msg.textContent = '복사 실패: ' + insErr.message; return; }
         seDisplayData.push(data);
+        seInvalidate();
         _seCopyMode = false;
         seCloseEditModal();
         seRenderTable(seCurrentStore);
@@ -20081,6 +20088,7 @@ async function seSubmitEdit() {
     }
     const idx = seDisplayData.findIndex(r => r.id === id);
     if (idx !== -1) seDisplayData[idx] = { ...seDisplayData[idx], ...updates };
+    seInvalidate();
     seCloseEditModal();
     seRenderTable(seCurrentStore);
 }
@@ -20134,6 +20142,7 @@ async function seAddDisplay() {
         }
         const { error } = await _sb.from('store_displays').insert(record);
         if (error) throw error;
+        seInvalidate();
         msg.className='se-msg ok';
         msg.textContent = auto ? `✓ 저장 · ${auto.doc_no || auto.title} 에 연결` : '✓ 저장되었습니다.';
         document.getElementById('seAddSeries').value = '';
@@ -20176,6 +20185,7 @@ async function seHardDelete(id, storeId, j) {
     try {
         const { error } = await _sb.from('store_displays').delete().eq('id', id);
         if (error) throw error;
+        seInvalidate();
         sePendingDeletes.splice(j, 1);
         seRenderTable(storeId);
     } catch(e) { alert('삭제 오류: '+e.message); }
@@ -21444,6 +21454,7 @@ async function seCleanupDuplicates() {
     if (!toDelete.length) { alert('중복된 항목이 없습니다 ✅'); return; }
     if (!confirm(`같은 공간에 중복된 제품 행 ${toDelete.length}개를 삭제할까요?`)) return;
     for (const id of toDelete) await _sb.from('store_displays').delete().eq('id', id);
+    seInvalidate();
     alert(`${toDelete.length}개 삭제 완료. 다시 로드합니다.`);
     seLayoutLoadStore();
 }
