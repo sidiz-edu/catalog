@@ -17378,7 +17378,7 @@ async function seRenderList(storeId) {
             const { data: mv } = await _sb.from('display_moves')
                 .select('*').in('display_id', seDisplayData.map(r => r.id))
                 .order('moved_at', { ascending: true });
-            (mv || []).forEach(m => { (seMoves[m.display_id] = seMoves[m.display_id] || []).push(m); });
+            seDropReversedMoves(mv).forEach(m => { (seMoves[m.display_id] = seMoves[m.display_id] || []).push(m); });
         }
         seStoreZones = zonesRes.data || [];
         seReqItems = reqItemsRes.data || [];
@@ -19137,6 +19137,21 @@ function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
 // 같은 번호이므로 글자와 숫자만 남겨 견준다. 품목코드에는 쓰지 말 것 —
 // 거기서는 하이픈이 코드와 색상을 가르는 구분자다.
 function seOrdKey(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+// 같은 행에 방향만 반대인 이동 기록이 둘 다 있으면 나중에 넣은 쪽만 쓴다.
+// 2026-10-06 에 대전↔청주 3건을 거꾸로 넣었다가 다음 날 바르게 다시 넣어 양쪽이
+// 남았는데 지울 권한이 없다. 거꾸로 된 쪽을 그냥 두면 그 행이 어디서 왔는지가
+// 뒤집혀 회수보고서 몫을 엉뚱한 매장에서 찾는다.
+// A→B→C 처럼 정말 여러 번 옮긴 기록은 방향이 반대가 아니라서 건드리지 않는다.
+function seDropReversedMoves(list) {
+    const newer = (a, b) => (String(a.moved_at || '') !== String(b.moved_at || ''))
+        ? String(a.moved_at || '') > String(b.moved_at || '')
+        : String(a.id || '') > String(b.id || '');
+    return (list || []).filter(m => !list.some(x => x !== m
+        && x.display_id === m.display_id
+        && x.from_store === m.to_store && x.to_store === m.from_store
+        && newer(x, m)));
+}
 // 요청서 테이블은 문서 한 장에 대표 수주번호 하나뿐인데, 실제 번호는 매장·분할 건마다
 // 꼬리 두 자리와 중간 번호가 갈린다 — 청주 요청서 P20250612-0719-00 이 대전으로 넘어간
 // 전시품에는 -0719-01 로, 고양 요청서 -0425-0257 이 센텀에는 -0259 로 적혀 있다.
@@ -19193,7 +19208,7 @@ async function seRunAudit(force) {
             .select('store_id,item_code,color_code,qty,unit_price,product_name,outgoing_requests(doc_no,title,order_no,request_date,delivery_date)').order('id')),
         sbAll(() => _sb.from('recovery_report_items')
             .select('store_id,item_code,color_code,order_no,qty').order('id')),
-        sbAll(() => _sb.from('display_moves').select('display_id,from_store').order('moved_at')),
+        sbAll(() => _sb.from('display_moves').select('id,display_id,from_store,to_store,moved_at').order('moved_at')),
         sbAll(() => _sb.from('transfer_approval_items')
             .select('store_id,item_code,color_code,qty,order_no_before,order_no_after,transfer_approvals(doc_no,approval_date,from_code,from_dealer)').order('id')),
     ]);
@@ -19205,11 +19220,12 @@ async function seRunAudit(force) {
     const disp  = (dispRes.data || []).filter(r => !seIsAcc(r));
     const items = (itemRes.data || []).filter(it => !seAccSkipReq(it.store_id, it));
     const recs = recRes.data, tras = traRes.data;
-    const movedIds = new Set((mvRes.data || []).map(m => m.display_id));
+    const moves = seDropReversedMoves(mvRes.data);
+    const movedIds = new Set(moves.map(m => m.display_id));
     // 옮겨온 행은 회수보고서가 출고 매장 이름으로 남아 있다 — 이동 기록에 적힌 매장만 본다.
     // 매장 쌍으로 뭉뚱그리면 수원 건이 평택 몫을 먹는다.
     const movedFrom = {};
-    (mvRes.data || []).forEach(m => { (movedFrom[m.display_id] = movedFrom[m.display_id] || []).push(m.from_store); });
+    moves.forEach(m => { (movedFrom[m.display_id] = movedFrom[m.display_id] || []).push(m.from_store); });
     const sku = (c, k) => seAuditNorm(c) + '-' + seAuditNorm(k);
     const key = (st, s) => st + '|' + s;
     const out = [];
