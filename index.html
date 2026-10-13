@@ -14127,6 +14127,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <label style="font-size:0.78rem;color:var(--se-muted);">메모</label>
                         <input type="text" id="seEditMemo" placeholder="메모 (선택)" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                     </div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 11px;border:1px solid var(--se-border);border-radius:8px;background:#f0fdfa;">
+                        <input type="checkbox" id="seEditDirect" style="width:16px;height:16px;cursor:pointer;">
+                        <span style="font-size:0.84rem;font-weight:700;color:#0f766e;">대리점 구매</span>
+                        <span style="font-size:0.74rem;color:#475569;">매출외출고가 아니라 매장이 직접 산 제품 — 연결될 요청서가 없는 게 정상입니다</span>
+                    </label>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">📷 사진 (최대 5장)</label>
                         <div id="seEditPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
@@ -15396,7 +15401,7 @@ function seRenderUnmatchedRef() {
     const qtyMode = seLinkFilter === 'qty';
 
     const dispQty = {};
-    seDisplayData.forEach(d => { if (d.sku) { const k = d.sku.toUpperCase(); dispQty[k] = (dispQty[k] || 0) + (d.quantity || 0); } });
+    seDisplayData.forEach(d => { if (d.sku && !seIsDirectBuy(d)) { const k = d.sku.toUpperCase(); dispQty[k] = (dispQty[k] || 0) + (d.quantity || 0); } });
     const have = new Set(Object.keys(dispQty));
     const bag = {};
     seReqItems.forEach(it => {
@@ -17643,6 +17648,7 @@ function seRenderTable(storeId) {
         });
     }
     const linkOf = row => {
+        if (seIsDirectBuy(row)) return 'direct';     // 매출외출고가 없는 게 정상
         if (!row.sku) return seMovedIn(row) ? 'moved' : 'unlinked';
         const k = row.sku.toUpperCase();
         // 다른 매장에서 옮겨온 물건은 이 매장 요청서에 없는 게 당연하다.
@@ -17650,7 +17656,7 @@ function seRenderTable(storeId) {
         if (!seReqSkuSet.has(k)) return seMovedIn(row) ? 'moved' : 'unlinked';
         return (gotQty[row.id] || 0) >= (row.quantity || 1) ? 'linked' : 'qty';
     };
-    const lc = { linked: 0, qty: 0, moved: 0, unlinked: 0 };
+    const lc = { linked: 0, qty: 0, moved: 0, direct: 0, unlinked: 0 };
     seDisplayData.filter(kindPass).forEach(r => lc[linkOf(r)]++);
     // 구분을 바꿔 해당 연결 상태가 0건이 되면 빈 표에 갇히므로 푼다
     if (seLinkFilter !== 'all' && !lc[seLinkFilter]) seLinkFilter = 'all';
@@ -17660,17 +17666,19 @@ function seRenderTable(storeId) {
     const LINK_DESC = {
         linked: '매출외출고 요청서(시디즈 본사 담당자 작성)에도 기록되어 있고 매장에서도 갖고 있는 제품',
         qty: '매출외출고 요청서에도 기록되어 있지만 <b>수량이 서로 다른</b> 제품',
+        direct: '대리점이 직접 산 제품 — 매출외출고 문서가 없는 게 정상입니다. 수정 창의 <b>대리점 구매</b> 를 체크하면 이쪽으로 옵니다',
         moved: '다른 매장에서 옮겨온 제품 — 매출외출고 문서는 <b>원래 매장 앞으로</b> 나가 있습니다. 🔀 버튼을 누르면 매출외수주번호로 그 요청서를 찾아 보여줍니다. 거래처 변경은 판매한 뒤에 하므로 이 상태가 정상입니다',
         unlinked: '매출외출고 요청서(시디즈 본사 담당자 작성)에는 기록되어 있지 않지만 매장에서 갖고 있는 제품',
     };
-    const _lcShow = lc.unlinked || lc.qty || lc.moved;
+    const _lcShow = lc.unlinked || lc.qty || lc.moved || lc.direct;
     if (lbar) {
         lbar.innerHTML = !_lcShow ? '' :
             `<span style="font-size:0.72rem;color:var(--se-muted);margin-right:2px;">매출외출고 연결</span>` + [
-            ['all', `전체 (${lc.linked + lc.qty + lc.moved + lc.unlinked})`, '#0f766e'],
+            ['all', `전체 (${lc.linked + lc.qty + lc.moved + lc.direct + lc.unlinked})`, '#0f766e'],
             ['linked', `📄 연결됨 (${lc.linked})`, '#16a34a'],
             ['qty', `⚠ 수량 다름 (${lc.qty})`, '#b45309'],
             ['moved', `🔀 다른 매장 출고 건 (${lc.moved})`, '#1d4ed8'],
+            ['direct', `🏪 대리점 구매 (${lc.direct})`, '#0f766e'],
             ['unlinked', `❌ 연결X (${lc.unlinked})`, '#ef4444'],
         ].filter(([k]) => k === 'all' || lc[k]).map(([k, label, fg]) => {
             const on = k === seLinkFilter;
@@ -17683,7 +17691,8 @@ function seRenderTable(storeId) {
     // 한 가지로 좁혀 놓았을 때만 그 뜻을 한 줄로 알려준다. 전체일 때는 칩 툴팁으로 충분하다.
     if (ldesc) {
         const LINK_LABEL = { linked: ['연결됨', '#16a34a'], qty: ['수량 다름', '#b45309'],
-                             moved: ['다른 매장 출고 건', '#1d4ed8'], unlinked: ['연결X', '#ef4444'] };
+                             moved: ['다른 매장 출고 건', '#1d4ed8'], direct: ['대리점 구매', '#0f766e'],
+                             unlinked: ['연결X', '#ef4444'] };
         const on = _lcShow && seLinkFilter !== 'all' && LINK_LABEL[seLinkFilter];
         ldesc.style.display = on ? '' : 'none';
         ldesc.innerHTML = !on ? ''
@@ -18106,7 +18115,8 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditDate').disabled = _dateUnknown;
     document.getElementById('seEditDate').style.opacity = _dateUnknown ? '0.4' : '1';
     document.getElementById('seEditLocation').value = row.location || '';
-    document.getElementById('seEditMemo').value = row.memo || '';
+    document.getElementById('seEditMemo').value = (row.memo || '').replace(SE_DIRECT_RE, '').replace(/^[\s·,]+|[\s·,]+$/g, '');
+    document.getElementById('seEditDirect').checked = seIsDirectBuy(row);
     document.getElementById('seEditPhoto').value = '';
     _seEditPhotos = [...(row.image_urls || [])];
     if (!_seEditPhotos.length && row.image_url) _seEditPhotos = [row.image_url];
@@ -18342,16 +18352,21 @@ const SE_PURPOSE = {
     '창고': ['창고',    '#475569'],
     '판매': ['판매 중', '#ea580c'],
 };
-// 조달 경로 — 매장이 직접 산 것과 본사가 매출외출고로 보낸 것.
-// 두 매장만 매장 자체 구매가 섞여 있어 그 매장에서만 쓴다.
+// 조달 경로 — 대리점이 직접 산 것과 본사가 매출외출고로 보낸 것.
+// 대리점 구매는 매출외출고 문서가 없는 게 정상이라 '연결X'로 몰면 안 된다.
+// 표시는 메모의 태그로 남긴다 (칼럼을 새로 만들지 않고 기존 표기와도 이어진다).
+const SE_DIRECT_TAG = '[대리점 구매]';
+const SE_DIRECT_RE = /\[?\s*(?:대리점|매장)\s*(?:직접\s*)?구매\s*\]?/;
+const seIsDirectBuy = row => SE_DIRECT_RE.test((row && row.memo) || '');
+// 옛 표기가 섞여 있던 두 매장은 문서가 없으면 대리점 구매로 본다
 const SE_DIRECT_STORES = new Set(['kimpo', 'livingpower']);
 const SE_SOURCE = {
-    store: ['매장구매', '#0f766e'],
+    store: ['대리점구매', '#0f766e'],
     hq:    ['본사구매', '#1d4ed8'],
 };
 function seSourceOf(row) {
+    if (seIsDirectBuy(row)) return 'store';              // 메모 태그가 가장 분명한 근거
     if (!SE_DIRECT_STORES.has(row.store_id)) return null;
-    if (/매장\s*직접\s*구매/.test(row.memo || '')) return 'store';   // 메모가 가장 분명한 근거
     return (row.sales_order_no || row.sales_link) ? 'hq' : 'store';
 }
 
@@ -19180,6 +19195,7 @@ async function seRunAudit(force) {
     });
     disp.forEach(d => {
         if (d.sold || !d.sku) return;
+        if (seIsDirectBuy(d)) return;             // 대리점이 직접 산 물건은 출고 문서가 없는 게 맞다
         const s = seAuditNorm(d.sku);
         if (reqQty[key(d.store_id, s)]) return;
         if (d.sales_order_no && orderSku.has(seOrdKey(d.sales_order_no) + '|' + s)) return;
@@ -19699,7 +19715,11 @@ async function seSubmitEdit() {
         quantity: parseInt(document.getElementById('seEditQty').value) || 1,
         display_since: document.getElementById('seEditDate').value || null,
         location: document.getElementById('seEditLocation').value.trim() || null,
-        memo: document.getElementById('seEditMemo').value.trim() || null,
+        memo: (() => {
+            const m = document.getElementById('seEditMemo').value.trim().replace(SE_DIRECT_RE, '').trim();
+            const on = document.getElementById('seEditDirect').checked;
+            return [on ? SE_DIRECT_TAG : '', m].filter(Boolean).join(' ') || null;
+        })(),
         updated_by: updater,
         updated_at: new Date().toISOString(),
     };
