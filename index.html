@@ -15772,7 +15772,6 @@ const seTraIsSale = x => seTraFromSample(x && x.transfer_approvals);
 // 두 행에 같은 장이 겹쳐 붙는다. 수주번호가 똑같은 짝을 먼저 묶고, 남은 행에 남은 장을
 // 차례로 이어서 한 장이 한 번만 쓰이게 한다.
 function seAssignDocs(rows, docsOf, orderKeys) {
-    const norm = seOrdKey;
     const used = new Set(), out = {};
     // 거변·회수는 판매된 건에 하는 문서다. 같은 수주번호로 보유 1대 + 판매 1대가 있으면
     // 문서는 판매 쪽 몫이므로 판매 행부터, 먼저 반출된 순서로 집어 간다.
@@ -15780,12 +15779,16 @@ function seAssignDocs(rows, docsOf, orderKeys) {
         (a.sold ? 0 : 1) - (b.sold ? 0 : 1)
         || String(a.sold_at || '').localeCompare(String(b.sold_at || ''))
         || String(a.id).localeCompare(String(b.id)));
-    list.forEach(r => {
-        if (!r.sales_order_no) return;
-        const d = docsOf(r).find(x => !used.has(x) &&
-            orderKeys(x).some(o => o && norm(o) === norm(r.sales_order_no)));
-        if (d) { used.add(d); out[r.id] = d; }
-    });
+    // 완전일치 짝을 전부 묶고 나서 꼬리, 그다음 같은 날짜 순으로 넓힌다.
+    // 단계를 섞으면 날짜만 맞는 행이 완전일치 행의 문서를 먼저 집어 간다.
+    for (let rank = 1; rank <= 3; rank++) {
+        list.forEach(r => {
+            if (out[r.id] || !r.sales_order_no) return;
+            const d = docsOf(r).find(x => !used.has(x) &&
+                orderKeys(x).some(o => seOrdRank(o, r.sales_order_no) === rank));
+            if (d) { used.add(d); out[r.id] = d; }
+        });
+    }
     list.forEach(r => {
         if (out[r.id]) return;
         const d = docsOf(r).find(x => !used.has(x));
@@ -17028,7 +17031,18 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     const rawWanted = String(orderNo || '').split('|').filter(Boolean);
     const wanted = rawWanted.map(_ordN).filter(Boolean);
     const reqNo = x => _ordN((x.outgoing_requests || {}).order_no);
-    const matched = () => items && items.some(x => wanted.includes(reqNo(x)));
+    // 요청서에는 문서 한 장당 대표 번호 하나뿐이라 매장·분할 건의 번호와는 꼬리나
+    // 중간 자리가 갈린다. 완전일치가 없으면 꼬리를, 그래도 없으면 같은 날짜까지 본다.
+    const rankOf = x => {
+        let best = 0;
+        rawWanted.forEach(o => {
+            const r = seOrdRank(o, (x.outgoing_requests || {}).order_no);
+            if (r && (!best || r < best)) best = r;
+        });
+        return best;
+    };
+    const matched = () => items && items.some(x => rankOf(x) === 1);
+    let ordRank = 0;
     // 거변을 거치면 수주번호가 새로 생긴다. 요청서에는 거변 前 번호가 적혀 있으므로
     // 맞는 게 없으면 협조전을 거꾸로 짚어 원래 번호까지 따라간다 (거변-거변도 있어서 몇 번).
     for (let hop = 0; hop < 3 && rawWanted.length; hop++) {
@@ -17040,15 +17054,17 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
         if (!add.length) break;
         [...new Set(add)].forEach(o => { rawWanted.push(o); wanted.push(_ordN(o)); });
     }
-    if (!error && items && items.length && wanted.length) {
-        const exact = items.filter(x => wanted.includes(reqNo(x)));
-        if (exact.length) items = exact;
+    if (!error && items && items.length && rawWanted.length) {
+        for (let rk = 1; rk <= 3 && !ordRank; rk++) {
+            const hit = items.filter(x => rankOf(x) === rk);
+            if (hit.length) { items = hit; ordRank = rk; }
+        }
     }
 
     // 요청서 테이블에는 매장별 수주번호가 없다 — 문서 한 장에 대표 번호 하나뿐이라
     // 센텀 -0259, 대구 -0261 같은 제 번호로는 안 맞는다. 그럴 때는 회수보고서·거변의
     // 수주건명이 가리키는 매출외 문서번호로 가린다.
-    if (!error && items && items.length > 1 && rawWanted.length && !matched()) {
+    if (!error && items && items.length > 1 && rawWanted.length && ordRank !== 1) {
         const [rc, t1, t2] = await Promise.all([
             _sb.from('recovery_report_items').select('order_title').in('order_no', rawWanted),
             _sb.from('transfer_approval_items').select('order_title').in('order_no_before', rawWanted),
@@ -17064,12 +17080,14 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
 
     // 이 매장에 없으면 — 옮겨온 물건이다. 수주번호로 다른 매장 요청서를 찾는다.
     let foundElsewhere = null;
-    if (!error && (!items || !items.length) && wanted.length) {
+    if (!error && (!items || !items.length) && rawWanted.length) {
         const { data: wide } = await _sb
             .from('outgoing_request_items').select(SEL)
             .eq('item_code', itemCode).eq('color_code', colorCode);
-        const hit = (wide || []).filter(x => wanted.includes(_ordN((x.outgoing_requests || {}).order_no)));
-        if (hit.length) { items = hit; foundElsewhere = hit[0].store_id; }
+        for (let rk = 1; rk <= 3 && !foundElsewhere; rk++) {
+            const hit = (wide || []).filter(x => rankOf(x) === rk);
+            if (hit.length) { items = hit; ordRank = rk; foundElsewhere = hit[0].store_id; }
+        }
     }
 
     if (error || !items || !items.length) {
@@ -17078,8 +17096,16 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     }
     const notice = foundElsewhere
         ? `<div style="background:rgba(29,78,216,0.15);border:1px solid #1d4ed8;border-radius:9px;padding:9px 12px;margin-bottom:9px;font-size:0.76rem;color:#bfdbfe;line-height:1.6;">
-             🔀 이 매장 요청서에는 없습니다. 수주번호 <b style="font-family:monospace;">${wanted.join(', ')}</b>로 찾은
+             🔀 이 매장 요청서에는 없습니다. 수주번호 <b style="font-family:monospace;">${rawWanted.join(', ')}</b>로 찾은
              <b>${seStoreNameOf(foundElsewhere)}</b> 매출외출고 건입니다.</div>`
+        : '';
+    // 2·3단계로 찾은 건은 번호가 정확히 같지 않다 — 눈으로 보고 연결하도록 밝혀 둔다
+    const SE_ORD_NOTE = { 2: '꼬리 두 자리가 다릅니다', 3: '번호는 다르고 수주 날짜가 같습니다' };
+    const approxNote = ordRank > 1
+        ? `<div style="background:rgba(180,83,9,0.18);border:1px solid #b45309;border-radius:9px;padding:9px 12px;margin-bottom:9px;font-size:0.76rem;color:#fcd34d;line-height:1.6;">
+             ⚠ 수주번호가 꼭 같지는 않습니다 — ${SE_ORD_NOTE[ordRank]}.
+             요청서에는 문서 한 장당 대표 번호 하나만 적혀 있어 매장·분할 건마다 번호가 갈립니다.
+             맞는 건인지 확인하고 연결해 주세요.</div>`
         : '';
 
     // 같은 요청서에 같은 품목이 여러 행으로 들어있는 경우가 많다 — 요청서 단위로 합친다
@@ -17107,7 +17133,7 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
              <button onclick="seUnlinkReqFromRow()" style="margin-left:auto;background:#b91c1c;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">🔓 연결 해제</button>
            </div>`
         : '';
-    body.innerHTML = notice + unlinkBar + [...byReq.values()].map(g => {
+    body.innerHTML = notice + approxNote + unlinkBar + [...byReq.values()].map(g => {
         const r = g.r;
         const esc = s => (s || '').replace(/'/g, "\'");
         const price = g.prices.size === 1 ? [...g.prices][0].toLocaleString()
@@ -17646,10 +17672,9 @@ function seRenderTable(storeId) {
                     need -= take;
                 });
             });
-            give((d, it) => {
-                const o = (it.outgoing_requests || {}).order_no;
-                return !!o && seOrdKey(d.sales_order_no) === seOrdKey(o);
-            });
+            // 번호가 꼭 맞는 짝부터 주고, 남으면 꼬리·날짜만 맞는 짝까지 넓힌다
+            [1, 2, 3].forEach(rk => give((d, it) =>
+                seOrdRank(d.sales_order_no, (it.outgoing_requests || {}).order_no) === rk));
             give(() => true);
         });
     }
@@ -18683,9 +18708,8 @@ const seStoreGroup = id => [id, ...(SE_PAIR_BOTH[id] || [])].filter(Boolean);
 function seDocOk(row, x) {
     if (!x.store_id || x.store_id === row.store_id) return true;
     if ((seMoves[row.id] || []).some(m => m.from_store === x.store_id)) return true;
-    const o = seOrdKey(row.sales_order_no);
-    return !!o && [x.order_no, x.order_no_before, x.order_no_after]
-        .some(y => seOrdKey(y) === o);
+    return [x.order_no, x.order_no_before, x.order_no_after]
+        .some(y => seOrdSame(y, row.sales_order_no));
 }
 
 // ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
@@ -19113,6 +19137,26 @@ function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
 // 같은 번호이므로 글자와 숫자만 남겨 견준다. 품목코드에는 쓰지 말 것 —
 // 거기서는 하이픈이 코드와 색상을 가르는 구분자다.
 function seOrdKey(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+// 요청서 테이블은 문서 한 장에 대표 수주번호 하나뿐인데, 실제 번호는 매장·분할 건마다
+// 꼬리 두 자리와 중간 번호가 갈린다 — 청주 요청서 P20250612-0719-00 이 대전으로 넘어간
+// 전시품에는 -0719-01 로, 고양 요청서 -0425-0257 이 센텀에는 -0259 로 적혀 있다.
+// 그래서 완전일치 → 꼬리 무시 → 같은 날짜 순으로 넓혀 가며 본다. 같은 날짜 + 같은
+// 품목코드가 요청서 두 장에 걸리는 경우는 전수 확인 결과 한 건도 없어 짝이 흔들리지 않는다.
+const SE_ORD_RE = /^([A-Z]*)(\d{8})(\d{4})(\d{2})$/;
+function seOrdKeys(s) {
+    const k = seOrdKey(s);
+    if (!k) return [];
+    const m = SE_ORD_RE.exec(k);
+    return m ? [k, m[1] + m[2] + m[3], m[1] + m[2]] : [k];
+}
+// 0 = 다른 건 · 1 = 완전일치 · 2 = 꼬리만 다름 · 3 = 같은 날짜
+function seOrdRank(a, b) {
+    const ka = seOrdKeys(a), kb = seOrdKeys(b);
+    const n = Math.min(ka.length, kb.length);
+    for (let i = 0; i < n; i++) if (ka[i] === kb[i]) return i + 1;
+    return 0;
+}
+const seOrdSame = (a, b) => seOrdRank(a, b) > 0;
 
 // 길이가 같고 한 글자만 다른가 — 0↔O, 1↔I 같은 오타를 잡으려는 것
 function seOneCharApart(a, b) {
@@ -19128,9 +19172,11 @@ function seFindReqItem(items, d) {
     const cand = items.filter(it => it.item_code &&
         seAuditNorm(it.item_code) + '-' + seAuditNorm(it.color_code) === s);
     if (!cand.length) return null;
-    const byOrder = d.sales_order_no
-        ? cand.find(it => seOrdKey((it.outgoing_requests || {}).order_no) === seOrdKey(d.sales_order_no))
-        : null;
+    let byOrder = null, best = 0;
+    if (d.sales_order_no) cand.forEach(it => {
+        const r = seOrdRank((it.outgoing_requests || {}).order_no, d.sales_order_no);
+        if (r && (!best || r < best)) { best = r; byOrder = it; }
+    });
     return byOrder || cand.find(it => it.store_id === d.store_id) || cand[0];
 }
 
@@ -19200,14 +19246,14 @@ async function seRunAudit(force) {
     const orderSku = new Set();
     items.forEach(it => {
         const o = (it.outgoing_requests || {}).order_no;
-        if (o && it.item_code) orderSku.add(seOrdKey(o) + '|' + sku(it.item_code, it.color_code));
+        if (o && it.item_code) seOrdKeys(o).forEach(k => orderSku.add(k + '|' + sku(it.item_code, it.color_code)));
     });
     disp.forEach(d => {
         if (d.sold || !d.sku) return;
         if (seIsDirectBuy(d)) return;             // 대리점이 직접 산 물건은 출고 문서가 없는 게 맞다
         const s = seAuditNorm(d.sku);
         if (reqQty[key(d.store_id, s)]) return;
-        if (d.sales_order_no && orderSku.has(seOrdKey(d.sales_order_no) + '|' + s)) return;
+        if (d.sales_order_no && seOrdKeys(d.sales_order_no).some(k => orderSku.has(k + '|' + s))) return;
         if (movedIds.has(d.id)) return;
         add('noreq', d.store_id, `${d.product_id || ''} ${s}`,
             `매장 ${d.quantity || 1}대 · 출고 문서 없음${d.location ? ' · 📍 ' + d.location : ''}`);
@@ -19221,10 +19267,9 @@ async function seRunAudit(force) {
         list.forEach(it => {
             const s = sku(it.item_code, it.color_code), cell = { store: it.store_id, left: it.qty || 1 };
             (byStore[key(it.store_id, s)] = byStore[key(it.store_id, s)] || []).push(cell);
-            orders(it).forEach(o => { if (o) {
-                const k = seOrdKey(o) + '|' + s;
-                (byOrder[k] = byOrder[k] || []).push(cell);
-            }});
+            orders(it).forEach(o => seOrdKeys(o).forEach(k => {
+                (byOrder[k + '|' + s] = byOrder[k + '|' + s] || []).push(cell);
+            }));
         });
         return { byOrder, byStore };
     };
@@ -19234,7 +19279,7 @@ async function seRunAudit(force) {
     const take = (pool, d, s, q) => {
         const seen = new Set(), cells = [];
         const push = l => (l || []).forEach(c => { if (!seen.has(c)) { seen.add(c); cells.push(c); } });
-        if (d.sales_order_no) push(pool.byOrder[seOrdKey(d.sales_order_no) + '|' + s]);
+        if (d.sales_order_no) seOrdKeys(d.sales_order_no).forEach(k => push(pool.byOrder[k + '|' + s]));
         [d.store_id, ...(movedFrom[d.id] || [])].forEach(g => push(pool.byStore[key(g, s)]));
         if (cells.reduce((a, c) => a + c.left, 0) < q) return null;
         let need = q, at = null;
