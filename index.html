@@ -17713,7 +17713,12 @@ function seRenderTable(storeId) {
             (byKey[k] = byKey[k] || []).push(it);
         });
         Object.entries(byKey).forEach(([k, its]) => {
-            const rows = seDisplayData.filter(d => (d.sku || '').toUpperCase() === k);
+            // 옮겨온 물건은 출발 매장 요청서 몫이고, 대리점 구매는 요청서가 없는 물건이다.
+            // 이 매장 몫을 가져가 버리면 정작 제 물건이 '수량 다름'으로 남는다 — 평택
+            // S40DNE0KK-DSP 가 그랬다. 요청서 1대를 수원에서 옮겨온 행이 번호가 꼭
+            // 맞는다는 이유로 집어가고, 평택 제 행(-1323)은 빈손이 됐다.
+            const rows = seDisplayData.filter(d => (d.sku || '').toUpperCase() === k
+                && !seMovedIn(d) && !seIsDirectBuy(d));
             const left = new Map(rows.map(d => [d.id, d.quantity || 1]));
             const used = new Map();
             const give = pred => its.forEach(it => {
@@ -17737,10 +17742,12 @@ function seRenderTable(storeId) {
     const linkOf = row => {
         if (seIsDirectBuy(row)) return 'direct';     // 매출외출고가 없는 게 정상
         if (!row.sku) return seMovedIn(row) ? 'moved' : 'unlinked';
+        // 다른 매장에서 옮겨온 물건은 이 매장 요청서 몫이 아니다 — 같은 코드가
+        // 이 매장 요청서에도 있든 없든 마찬가지다. 문서는 출발 매장 앞으로 나가
+        // 있고, 거래처 변경은 판매한 뒤에 한다.
+        if (seMovedIn(row)) return 'moved';
         const k = row.sku.toUpperCase();
-        // 다른 매장에서 옮겨온 물건은 이 매장 요청서에 없는 게 당연하다.
-        // 문서는 출발 매장 앞으로 나가 있고, 거래처 변경은 판매한 뒤에 한다.
-        if (!seReqSkuSet.has(k)) return seMovedIn(row) ? 'moved' : 'unlinked';
+        if (!seReqSkuSet.has(k)) return 'unlinked';
         return (gotQty[row.id] || 0) >= (row.quantity || 1) ? 'linked' : 'qty';
     };
     const lc = { linked: 0, qty: 0, moved: 0, direct: 0, unlinked: 0 };
