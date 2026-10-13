@@ -15360,6 +15360,21 @@ async function seRegisterFromReq(i, btn) {
 
     const label = btn.textContent;
     btn.disabled = true; btn.textContent = '등록 중...';
+    // 표가 다시 그려지기 전에 또 누르면 같은 품목이 여러 행으로 들어간다.
+    // 평택 FHXZ2407009 가 5행까지 불어난 적이 있다 — 서버 기준으로 한 번 더 센다.
+    {
+        const { data: now } = await _sb.from('store_displays')
+            .select('quantity').eq('store_id', seCurrentStore).eq('sku', x.sku);
+        const have = (now || []).reduce((s, d) => s + (d.quantity || 1), 0);
+        const want = (x.reqs || []).length ? x.qty : need;
+        if (have >= want) {
+            btn.disabled = false; btn.textContent = label;
+            alert(`이미 ${have}대가 등록돼 있습니다 (요청서 ${want}대).
+목록을 새로 고칩니다.`);
+            await seRenderList(seCurrentStore);
+            return;
+        }
+    }
     const rec = {
         store_id: seCurrentStore, product_id: series, sku: x.sku, color_code: color || null,
         quantity: need || 1, purpose: '전시', sold: false, display_since: since,
