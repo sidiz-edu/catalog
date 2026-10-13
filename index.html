@@ -16348,13 +16348,50 @@ async function seLoadFlatRows() {
         reqTot[k] = (reqTot[k] || 0) + (it.qty || 0);
     });
 
+    // 같은 코드가 요청서 여러 건으로 나간 매장이 있다(고양 링고 — 25-04-00052 와
+    // 24-12-00039). 코드로 묶어서 세면 두 행 모두 1/2 로 보여 어느 건이 비었는지
+    // 알 수 없다. 전시품을 요청서 행에 1:1 로 나눠 준다 — 수주번호가 맞는 짝을
+    // 먼저 묶고, 남은 행에 남은 대수를 요청서 순서대로 준다.
+    const reqByKey = {};
+    (itemsRes.data || []).forEach(it => {
+        if (!it.store_id || !it.item_code) return;
+        const k = key(it.store_id, n(it.item_code) + '-' + n(it.color_code));
+        (reqByKey[k] || (reqByKey[k] = [])).push(it);
+    });
+    // 전시품 한 행이 2대짜리면 요청서 두 행에 1대씩 나눠 줄 수 있어야 한다.
+    // 행 단위로 통째로 주면 한쪽이 2/1, 다른 쪽이 0/1 로 어긋난다.
+    const assigned = new Map();
+    Object.entries(reqByKey).forEach(([k, its]) => {
+        const pool = dispMap[k] || [];
+        const left = new Map(pool.map(d => [d, d.quantity || 1]));
+        const give = (it, pred) => {
+            const got = assigned.get(it) || { ds: [], have: 0 };
+            let need = (it.qty || 0) - got.have;
+            pool.forEach(d => {
+                const avail = left.get(d) || 0;
+                if (need <= 0 || avail <= 0 || !pred(d, it)) return;
+                const take = Math.min(avail, need);
+                left.set(d, avail - take);
+                if (!got.ds.includes(d)) got.ds.push(d);
+                got.have += take; need -= take;
+            });
+            assigned.set(it, got);
+        };
+        its.forEach(it => give(it, d => {
+            const o = (it.outgoing_requests || {}).order_no;
+            return !!o && n(d.sales_order_no) === n(o);
+        }));
+        its.forEach(it => give(it, () => true));
+    });
+
     _seFlatRows = (itemsRes.data || []).map(it => {
         const r = it.outgoing_requests || {};
         const sku = n(it.item_code) + '-' + n(it.color_code);
         const k = key(it.store_id, sku);
-        const ds = it.store_id ? (dispMap[k] || []) : null;
-        const have = (ds || []).reduce((s, d) => s + (d.quantity || 1), 0);
-        const want = reqTot[k] || 0;
+        const got = assigned.get(it) || { ds: [], have: 0 };
+        const ds = it.store_id ? got.ds : null;
+        const have = it.store_id ? got.have : 0;
+        const want = it.qty || 0;
         const status = !it.store_id ? 'unmatched' : !ds.length ? 'none' : have === want ? 'exists' : 'mismatch';
         return {
             it, r, sku, have, want, status, ds: ds || [],
