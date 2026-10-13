@@ -17197,6 +17197,52 @@ async function seLinkReqToRow(orderNo, epUrl, docNo) {
 }
 
 let _seReqLookupCtx = null;   // 상세에서 목록으로 되돌아가기 위한 진입 정보
+let _seDetailRows = [], _seDetailReq = null;   // 펼쳐 둔 요청서 품목 (버튼이 인덱스로 집는다)
+
+// 품목코드가 어느 시리즈 것인지 — 코드를 바꾸면 제품 구분도 같이 맞춰야 한다
+function seSeriesOfCode(code) {
+    const c = (code || '').toUpperCase();
+    for (const s of Object.keys(displaySkuData || {}))
+        if (Object.keys(displaySkuData[s]).some(k => k.toUpperCase() === c)) return s;
+    return null;
+}
+
+// 요청서 한 장이 여러 매장으로 나가고 전시품 코드가 요청서와 다를 때가 있다.
+// 어느 품목이 이 전시품인지 눈으로 골라 코드까지 요청서에 맞춘다 — 요청서가 기준이다.
+async function seLinkReqItemToRow(i) {
+    const it = _seDetailRows[i], r = _seDetailReq;
+    const id = (_seReqLookupCtx || {}).rowId;
+    if (!it || !r || !id) return;
+    const row = (seDisplayData || []).find(x => x.id === id);
+    if (!row) { alert('전시품 행을 찾지 못했습니다.'); return; }
+    const newSku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
+    if (!newSku) { alert('이 품목에는 품목코드가 없습니다.'); return; }
+    const series = seSeriesOfCode(it.item_code) || row.product_id;
+    const msg = [
+        `전시품  ${row.sku || '(코드 없음)'}${row.product_id ? ' · ' + row.product_id : ''}`,
+        `요청서  ${newSku}${it.product_name ? ' · ' + it.product_name : ''} (${it.store_name_raw || it.store_id || '매장 미상'})`,
+        '',
+        (row.sku || '').toUpperCase() === newSku
+            ? '· 품목코드는 그대로입니다.'
+            : `· 품목코드를 ${row.sku || '(없음)'} → ${newSku} 로 바꿉니다.`,
+        series !== row.product_id ? `· 제품 구분을 ${row.product_id || '(없음)'} → ${series || '(없음)'} 로 바꿉니다.` : '',
+        `· 매출외수주번호를 ${r.order_no || '(번호 없음)'} 로 잡습니다.`,
+        r.doc_no ? `· ${r.doc_no}` : '',
+    ].filter(Boolean).join('\n');
+    if (!confirm(msg)) return;
+    const { error } = await _sb.from('store_displays').update({
+        sku: newSku,
+        product_id: series || null,
+        sales_order_no: r.order_no || null,
+        sales_link: r.ep_url || null,
+        updated_by: '요청서 품목 연결',
+    }).eq('id', id);
+    if (error) { alert('연결 실패: ' + error.message); return; }
+    document.getElementById('seReqLookupModal').style.display = 'none';
+    _seAudit = null; _seFlatRows = null;
+    if (typeof showToast === 'function') showToast(`🔗 ${newSku} · ${r.doc_no || r.order_no || ''}`);
+    await seRenderList(seCurrentStore);
+}
 
 // 거변·회수의 수주건명에는 「매출외25-04-00052(스타필드고양-홍승연- 링고…)」처럼
 // 출고 문서가 적혀 있다. 그걸 눌러 요청서 내용을 그 자리에서 펼쳐 본다.
@@ -17223,13 +17269,15 @@ async function seReqLookupDetail(reqId) {
     const rows = itemRes.data || [];
     if (!r) { body.innerHTML = '<p style="color:#f87171;">요청서를 불러오지 못했습니다.</p>'; return; }
 
+    _seDetailRows = rows; _seDetailReq = r;
+    const pick = !!(_seReqLookupCtx || {}).rowId;
     const cur = (_seReqLookupCtx?.sku || '').toUpperCase();
     const curStore = _seReqLookupCtx?.storeId || '';
     const totQty = rows.reduce((s, it) => s + (it.qty || 0), 0);
     const totAmt = rows.reduce((s, it) => s + (it.amount || 0), 0);
     const esc = s => (s || '').replace(/'/g, "\'");
 
-    const trs = rows.map(it => {
+    const trs = rows.map((it, i) => {
         const sku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
         const mine = sku === cur && (!curStore || it.store_id === curStore);
         return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">
@@ -17239,6 +17287,9 @@ async function seReqLookupDetail(reqId) {
             <td style="padding:5px 8px;text-align:right;color:#e2e8f0;">${it.qty ?? '-'}</td>
             <td style="padding:5px 8px;text-align:right;color:#94a3b8;">${it.unit_price != null ? it.unit_price.toLocaleString() : '-'}</td>
             <td style="padding:5px 8px;color:#94a3b8;white-space:nowrap;">${it.store_name_raw || it.store_id || '-'}</td>
+            ${pick ? `<td style="padding:5px 8px;text-align:right;white-space:nowrap;">${mine
+                ? '<span style="color:#60a5fa;font-size:0.7rem;font-weight:700;">현재</span>'
+                : `<button onclick="seLinkReqItemToRow(${i})" style="background:rgba(0,62,255,0.22);border:1px solid #003EFF;border-radius:6px;padding:3px 9px;color:#bfdbfe;font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">이 품목으로</button>`}</td>` : ''}
         </tr>`;
     }).join('');
 
@@ -17260,9 +17311,10 @@ async function seReqLookupDetail(reqId) {
                     <th style="padding:5px 8px;font-weight:600;">제품명</th>
                     <th style="padding:5px 8px;font-weight:600;">품목코드</th>
                     <th style="padding:5px 8px;font-weight:600;">색상</th>
-                    <th style="padding:5px 8px;font-weight:600;text-align:right;">수량</th>
-                    <th style="padding:5px 8px;font-weight:600;text-align:right;">단가</th>
+                    <th style="padding:5px 8px;font-weight:600;text-align:right;white-space:nowrap;">수량</th>
+                    <th style="padding:5px 8px;font-weight:600;text-align:right;white-space:nowrap;">단가</th>
                     <th style="padding:5px 8px;font-weight:600;">매장</th>
+                    ${pick ? '<th style="padding:5px 8px;font-weight:600;"></th>' : ''}
                 </tr></thead>
                 <tbody>${trs}</tbody>
             </table>
