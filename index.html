@@ -17075,7 +17075,13 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     const _ctxRow = (seDisplayData || []).find(x => x.id === (_seReqLookupCtx || {}).rowId);
     const pickable = !!_ctxRow;
     const linked = r => _ctxRow && _ordN(_ctxRow.sales_order_no) && _ordN(r.order_no) === _ordN(_ctxRow.sales_order_no);
-    body.innerHTML = notice + [...byReq.values()].map(g => {
+    const unlinkBar = (_ctxRow && (_ctxRow.sales_order_no || _ctxRow.sales_link))
+        ? `<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:rgba(239,68,68,0.12);border:1px solid #7f1d1d;border-radius:9px;padding:8px 12px;margin-bottom:9px;">
+             <span style="font-size:0.76rem;color:#fca5a5;">지금 <b style="font-family:monospace;">${_ctxRow.sales_order_no || '(번호 없음)'}</b> 에 연결돼 있습니다.</span>
+             <button onclick="seUnlinkReqFromRow()" style="margin-left:auto;background:#b91c1c;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">🔓 연결 해제</button>
+           </div>`
+        : '';
+    body.innerHTML = notice + unlinkBar + [...byReq.values()].map(g => {
         const r = g.r;
         const esc = s => (s || '').replace(/'/g, "\'");
         const price = g.prices.size === 1 ? [...g.prices][0].toLocaleString()
@@ -17098,6 +17104,27 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
             </div>
         </div>`;
     }).join('');
+}
+
+// 잘못 붙은 연결을 떼어낸다. 비워 두면 다음에 다시 고를 수 있다.
+async function seUnlinkReqFromRow() {
+    const id = (_seReqLookupCtx || {}).rowId;
+    if (!id) return;
+    const row = (seDisplayData || []).find(r => r.id === id);
+    const cur = (row && row.sales_order_no) || '(번호 없음)';
+    if (!confirm(`${(row && row.sku) || ''}
+
+매출외출고 연결을 뗍니다.
+지금 ${cur}
+
+수주번호와 링크가 비워집니다.`)) return;
+    const { error } = await _sb.from('store_displays')
+        .update({ sales_order_no: null, sales_link: null, updated_by: '연결 해제' }).eq('id', id);
+    if (error) { alert('해제 실패: ' + error.message); return; }
+    document.getElementById('seReqLookupModal').style.display = 'none';
+    _seAudit = null;
+    if (typeof showToast === 'function') showToast('🔗 연결을 뗐습니다');
+    await seRenderList(seCurrentStore);
 }
 
 // 후보가 여럿이면 기계가 고를 수 없다 — 보고 고르게 한다.
@@ -17558,20 +17585,55 @@ function seRenderTable(storeId) {
           : seKindFilter === 'in'  ? !row.sold
           : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
-    // 전시품 쪽 SKU별 합계 — 요청 수량과 견줘 '수량 다름'을 가른다
+    // 전시품 쪽 SKU별 합계 — 아래 '요청서엔 있는데 전시품이 없는 품목'에서 쓴다
     const dispQty = {};
     seDisplayData.forEach(r => {
         if (!r.sku) return;
         const k = r.sku.toUpperCase();
         dispQty[k] = (dispQty[k] || 0) + (r.quantity || 0);
     });
+    // 요청서 몫을 전시품 행에 1:1 로 나눠 준다. 코드로 묶어 세면 같은 코드가 요청서
+    // 여러 건으로 나간 매장에서 멀쩡한 행까지 '수량 다름'으로 뜬다 — 요청서 2대 중
+    // 1대만 들어와 있으면 그 1대는 제대로 연결된 것이고, 모자란 1대는 아래 목록이
+    // 따로 알려준다. 수주번호가 맞는 짝을 먼저 묶고 남은 몫을 차례로 준다.
+    const gotQty = {};
+    {
+        const byKey = {};
+        (seReqItems || []).forEach(it => {
+            if (!it.item_code || !it.color_code) return;
+            const k = `${it.item_code}-${it.color_code}`.toUpperCase();
+            (byKey[k] = byKey[k] || []).push(it);
+        });
+        Object.entries(byKey).forEach(([k, its]) => {
+            const rows = seDisplayData.filter(d => (d.sku || '').toUpperCase() === k);
+            const left = new Map(rows.map(d => [d.id, d.quantity || 1]));
+            const used = new Map();
+            const give = pred => its.forEach(it => {
+                let need = (it.qty || 0) - (used.get(it) || 0);
+                rows.forEach(d => {
+                    const avail = left.get(d.id) || 0;
+                    if (need <= 0 || avail <= 0 || !pred(d, it)) return;
+                    const take = Math.min(avail, need);
+                    left.set(d.id, avail - take);
+                    gotQty[d.id] = (gotQty[d.id] || 0) + take;
+                    used.set(it, (used.get(it) || 0) + take);
+                    need -= take;
+                });
+            });
+            give((d, it) => {
+                const o = (it.outgoing_requests || {}).order_no;
+                return !!o && seAuditNorm(d.sales_order_no) === seAuditNorm(o);
+            });
+            give(() => true);
+        });
+    }
     const linkOf = row => {
         if (!row.sku) return seMovedIn(row) ? 'moved' : 'unlinked';
         const k = row.sku.toUpperCase();
         // 다른 매장에서 옮겨온 물건은 이 매장 요청서에 없는 게 당연하다.
         // 문서는 출발 매장 앞으로 나가 있고, 거래처 변경은 판매한 뒤에 한다.
         if (!seReqSkuSet.has(k)) return seMovedIn(row) ? 'moved' : 'unlinked';
-        return (seReqQty[k] || 0) === (dispQty[k] || 0) ? 'linked' : 'qty';
+        return (gotQty[row.id] || 0) >= (row.quantity || 1) ? 'linked' : 'qty';
     };
     const lc = { linked: 0, qty: 0, moved: 0, unlinked: 0 };
     seDisplayData.filter(kindPass).forEach(r => lc[linkOf(r)]++);
