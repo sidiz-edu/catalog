@@ -17182,19 +17182,30 @@ async function seUnlinkReqFromRow() {
 }
 
 // 후보가 여럿이면 기계가 고를 수 없다 — 보고 고르게 한다.
+// 요청서 한 장에 매장별 수주번호가 따로 있는데 테이블에는 대표 번호 하나뿐이다
+// (25-06-00006 은 매장 10곳에 번호가 10개다). 그대로 넣으면 남의 매장 번호가
+// 박히므로, 넣기 전에 보여 주고 고칠 수 있게 한다. 빈칸으로 두면 번호 없이 간다.
+function seAskOrderNo(head, defNo, lines) {
+    const msg = [head, '', ...(lines || []).filter(Boolean), '',
+                 '매출외수주번호가 맞습니까? 틀리면 고쳐서 확인을 누르세요.'].join('\n');
+    const ans = prompt(msg, defNo || '');
+    return ans === null ? null : ans.trim();
+}
+
 async function seLinkReqToRow(orderNo, epUrl, docNo) {
     const id = (_seReqLookupCtx || {}).rowId;
     if (!id) return;
     const row = (seDisplayData || []).find(r => r.id === id);
     const sku = (row && row.sku) || (_seReqLookupCtx || {}).sku || '';
-    if (!confirm(`${sku}\n\n매출외수주번호를 ${orderNo || '(번호 없음)'} 로 잡습니다.\n${docNo || ''}`)) return;
+    const no = seAskOrderNo(sku, orderNo, [docNo]);
+    if (no === null) return;
     const { error } = await _sb.from('store_displays')
-        .update({ sales_order_no: orderNo || null, sales_link: epUrl || null, updated_by: '요청서 연결' })
+        .update({ sales_order_no: no || null, sales_link: epUrl || null, updated_by: '요청서 연결' })
         .eq('id', id);
     if (error) { alert('연결 실패: ' + error.message); return; }
     document.getElementById('seReqLookupModal').style.display = 'none';
     _seAudit = null;
-    if (typeof showToast === 'function') showToast(`🔗 ${orderNo || docNo} 연결`);
+    if (typeof showToast === 'function') showToast(`🔗 ${no || docNo || ''} 연결`);
     await seRenderList(seCurrentStore);
 }
 
@@ -17220,29 +17231,27 @@ async function seLinkReqItemToRow(i) {
     const newSku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
     if (!newSku) { alert('이 품목에는 품목코드가 없습니다.'); return; }
     const series = seSeriesOfCode(it.item_code) || row.product_id;
-    const msg = [
+    const no = seAskOrderNo(
         `전시품  ${row.sku || '(코드 없음)'}${row.product_id ? ' · ' + row.product_id : ''}`,
-        `요청서  ${newSku}${it.product_name ? ' · ' + it.product_name : ''} (${it.store_name_raw || it.store_id || '매장 미상'})`,
-        '',
-        (row.sku || '').toUpperCase() === newSku
+        r.order_no,
+        [`요청서  ${newSku}${it.product_name ? ' · ' + it.product_name : ''} (${it.store_name_raw || it.store_id || '매장 미상'})`,
+         r.doc_no ? `· ${r.doc_no}` : '',
+         (row.sku || '').toUpperCase() === newSku
             ? '· 품목코드는 그대로입니다.'
             : `· 품목코드를 ${row.sku || '(없음)'} → ${newSku} 로 바꿉니다.`,
-        series !== row.product_id ? `· 제품 구분을 ${row.product_id || '(없음)'} → ${series || '(없음)'} 로 바꿉니다.` : '',
-        `· 매출외수주번호를 ${r.order_no || '(번호 없음)'} 로 잡습니다.`,
-        r.doc_no ? `· ${r.doc_no}` : '',
-    ].filter(Boolean).join('\n');
-    if (!confirm(msg)) return;
+         series !== row.product_id ? `· 제품 구분을 ${row.product_id || '(없음)'} → ${series || '(없음)'} 로 바꿉니다.` : '']);
+    if (no === null) return;
     const { error } = await _sb.from('store_displays').update({
         sku: newSku,
         product_id: series || null,
-        sales_order_no: r.order_no || null,
+        sales_order_no: no || null,
         sales_link: r.ep_url || null,
         updated_by: '요청서 품목 연결',
     }).eq('id', id);
     if (error) { alert('연결 실패: ' + error.message); return; }
     document.getElementById('seReqLookupModal').style.display = 'none';
     _seAudit = null; _seFlatRows = null;
-    if (typeof showToast === 'function') showToast(`🔗 ${newSku} · ${r.doc_no || r.order_no || ''}`);
+    if (typeof showToast === 'function') showToast(`🔗 ${newSku} · ${no || r.doc_no || ''}`);
     await seRenderList(seCurrentStore);
 }
 
