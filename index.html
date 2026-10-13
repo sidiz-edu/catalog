@@ -18876,6 +18876,9 @@ function seAccSkipReq(store, it) {
     const code = it && it.item_code;
     if (seAccIsCode(code)) return true;
     if (SE_PART_RE.test((it && (it.product_name || it.raw_product_name)) || '')) return true;
+    // 분해도 전시용(「*분해도 전시용 / 현장 조립 X」)은 의자 한 대로 세지 않는다.
+    // 전시품 쪽에서 'T50 전시분해' 로 빼 둔 것과 같은 물건이다.
+    if (SE_DEMO_RE.test((it && it.memo) || '')) return true;
     const k = store + '|' + seAuditNorm(code + (it && it.color_code ? '-' + it.color_code : ''));
     return !!(_seAccPer && _seAccPer[k] && _seAccPer[k][1] === 0);
 }
