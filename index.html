@@ -19643,9 +19643,18 @@ function seRenderContacts() {
     box.innerHTML = `
     ${src ? `<div style="font-size:0.74rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:9px;line-height:1.6;">
         출처 — ${src}. <b>담당자가 바뀌었을 수 있으니 보내기 전에 확인하세요.</b> 칸을 눌러 고친 뒤 저장하면 됩니다.</div>` : ''}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <button id="scCopySel" onclick="seCopyContactSel()" disabled
+            style="background:#0f766e;border:none;border-radius:7px;padding:6px 13px;color:#fff;font-size:0.76rem;font-weight:700;font-family:'Outfit',sans-serif;opacity:0.45;">
+            📋 선택한 매장 복사 (<span id="scSelN">0</span>)</button>
+        <span style="font-size:0.72rem;color:var(--se-muted);">매장명 · 주소 · 우편번호 · 담당자 · 연락처 순으로 한 줄씩 복사됩니다 — 엑셀에 그대로 붙여넣을 수 있습니다.</span>
+    </div>
     <div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
     <table style="width:100%;border-collapse:collapse;font-size:0.76rem;background:var(--se-surface);">
         <thead><tr style="background:#e2e8f0;color:#475569;">
+            <th style="padding:7px 6px;text-align:center;width:28px;">
+                <input type="checkbox" id="scAll" onchange="seContactToggleAll(this.checked)"
+                       title="전체 선택" style="width:15px;height:15px;cursor:pointer;vertical-align:middle;"></th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
             <th style="padding:7px 9px;text-align:left;">주소</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">우편번호</th>
@@ -19655,6 +19664,9 @@ function seRenderContacts() {
         </tr></thead>
         <tbody>${rows.map((r, i) => `
             <tr id="sc-row-${r.store_id}" style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                <td style="padding:6px 6px;text-align:center;">
+                    <input type="checkbox" class="sc-chk" value="${r.store_id}" onchange="seContactSelCount()"
+                           style="width:15px;height:15px;cursor:pointer;vertical-align:middle;"></td>
                 <td style="padding:6px 9px;white-space:nowrap;font-weight:700;">${r.store_name || r.store_id}</td>
                 ${cell(r, 'address')}${cell(r, 'postal_code')}${cell(r, 'manager')}${cell(r, 'phone')}
                 <td style="padding:6px 9px;text-align:center;white-space:nowrap;">
@@ -19663,6 +19675,36 @@ function seRenderContacts() {
                 </td>
             </tr>`).join('')}</tbody>
     </table></div>`;
+}
+
+// 여러 매장을 한꺼번에 — 매출외출고 요청서에 매장 줄을 붙여넣을 때 한 줄씩 긁지 않아도 되게.
+// 고쳐 둔 값이 저장 전이라도 화면에 보이는 그대로 복사한다 (seContactRead 가 칸을 읽는다).
+function seContactToggleAll(on) {
+    document.querySelectorAll('.sc-chk').forEach(c => { c.checked = on; });
+    seContactSelCount();
+}
+function seContactSelCount() {
+    const all = document.querySelectorAll('.sc-chk');
+    const n = document.querySelectorAll('.sc-chk:checked').length;
+    const el = document.getElementById('scSelN');
+    if (el) el.textContent = n;
+    const b = document.getElementById('scCopySel');
+    if (b) { b.disabled = !n; b.style.opacity = n ? '1' : '0.45'; b.style.cursor = n ? 'pointer' : 'default'; }
+    const head = document.getElementById('scAll');
+    if (head) { head.checked = n > 0 && n === all.length; head.indeterminate = n > 0 && n < all.length; }
+}
+function seCopyContactSel() {
+    const ids = [...document.querySelectorAll('.sc-chk:checked')].map(c => c.value);
+    if (!ids.length) return;
+    const TAB = String.fromCharCode(9), NL = String.fromCharCode(10);
+    const txt = ids.map(id => {
+        const r = (_seContacts || []).find(x => x.store_id === id) || {};
+        const v = seContactRead(id);
+        return [r.store_name || id, v.address, v.postal_code, v.manager, v.phone].join(TAB);
+    }).join(NL);
+    navigator.clipboard.writeText(txt)
+        .then(() => showToast('📋 ' + ids.length + '개 매장 복사'))
+        .catch(() => alert('복사하지 못했습니다.'));
 }
 
 function seContactRead(id) {
