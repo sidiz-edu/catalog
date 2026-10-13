@@ -16943,22 +16943,41 @@ async function seShowReqForSku(sku, storeId, orderNo) {
     // 나간 경우가 많은데(링고 25-04-00052 / 24-12-00039) 다 늘어놓으면 어느 쪽이
     // 내 건인지 알 수 없다. orderNo 는 전시품·거변·회수에서 모은 번호들이다.
     const _ordN = s => (s || '').replace(/\s/g, '');
-    const wanted = String(orderNo || '').split('|').map(_ordN).filter(Boolean);
+    const rawWanted = String(orderNo || '').split('|').filter(Boolean);
+    const wanted = rawWanted.map(_ordN).filter(Boolean);
     const reqNo = x => _ordN((x.outgoing_requests || {}).order_no);
+    const matched = () => items && items.some(x => wanted.includes(reqNo(x)));
     // 거변을 거치면 수주번호가 새로 생긴다. 요청서에는 거변 前 번호가 적혀 있으므로
     // 맞는 게 없으면 협조전을 거꾸로 짚어 원래 번호까지 따라간다 (거변-거변도 있어서 몇 번).
-    for (let hop = 0; hop < 3 && wanted.length; hop++) {
-        if (items && items.some(x => wanted.includes(reqNo(x)))) break;
+    for (let hop = 0; hop < 3 && rawWanted.length; hop++) {
+        if (matched()) break;
         const { data: back } = await _sb.from('transfer_approval_items')
-            .select('order_no_before,order_no_after').in('order_no_after', wanted);
-        const add = (back || []).map(x => _ordN(x.order_no_before))
-            .filter(o => o && !wanted.includes(o));
+            .select('order_no_before,order_no_after').in('order_no_after', rawWanted);
+        const add = (back || []).map(x => x.order_no_before)
+            .filter(o => o && !wanted.includes(_ordN(o)));
         if (!add.length) break;
-        wanted.push(...new Set(add));
+        [...new Set(add)].forEach(o => { rawWanted.push(o); wanted.push(_ordN(o)); });
     }
     if (!error && items && items.length && wanted.length) {
         const exact = items.filter(x => wanted.includes(reqNo(x)));
         if (exact.length) items = exact;
+    }
+
+    // 요청서 테이블에는 매장별 수주번호가 없다 — 문서 한 장에 대표 번호 하나뿐이라
+    // 센텀 -0259, 대구 -0261 같은 제 번호로는 안 맞는다. 그럴 때는 회수보고서·거변의
+    // 수주건명이 가리키는 매출외 문서번호로 가린다.
+    if (!error && items && items.length > 1 && rawWanted.length && !matched()) {
+        const [rc, t1, t2] = await Promise.all([
+            _sb.from('recovery_report_items').select('order_title').in('order_no', rawWanted),
+            _sb.from('transfer_approval_items').select('order_title').in('order_no_before', rawWanted),
+            _sb.from('transfer_approval_items').select('order_title').in('order_no_after', rawWanted),
+        ]);
+        const mos = [...new Set([...(rc.data || []), ...(t1.data || []), ...(t2.data || [])]
+            .map(x => seMoNo(x.order_title)).filter(Boolean))];
+        if (mos.length) {
+            const hit = items.filter(x => mos.some(m => ((x.outgoing_requests || {}).doc_no || '').includes(m)));
+            if (hit.length) items = hit;
+        }
     }
 
     // 이 매장에 없으면 — 옮겨온 물건이다. 수주번호로 다른 매장 요청서를 찾는다.
