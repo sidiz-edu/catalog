@@ -15347,11 +15347,13 @@ async function seRegisterFromReq(i, btn) {
         return;
     }
     // 요청서가 한 건이면 그 건으로 바로 잇고, 여러 건이면 기존 자동연결 규칙을 따른다
+    const need = x._need != null ? x._need : x.qty;
+    if (need <= 0) { alert('이 품목은 전시 수량이 문서보다 많습니다. 등록할 게 없습니다.'); return; }
     const one = x.reqs.length === 1 ? x.reqs[0] : null;
     const auto = one || seAutoLinkFor(x.sku);
     const since = x.reqs.map(r => r.request_date).filter(Boolean).sort().pop() || null;
     if (!confirm(`${seStoreNameOf(seCurrentStore)}\n`
-        + `${series} · ${code}${color ? ' · ' + color : ''} · ${x.qty}대\n`
+        + `${series} · ${code}${color ? ' · ' + color : ''} · ${need}대\n`
         + `전시 시작일 ${since || '미정'}\n`
         + (auto ? `매출외출고 ${auto.doc_no || auto.title || ''} 에 연결\n` : '매출외출고 연결 없음\n')
         + `\n전시품으로 등록합니다.`)) return;
@@ -15360,7 +15362,7 @@ async function seRegisterFromReq(i, btn) {
     btn.disabled = true; btn.textContent = '등록 중...';
     const rec = {
         store_id: seCurrentStore, product_id: series, sku: x.sku, color_code: color || null,
-        quantity: x.qty || 1, purpose: '전시', sold: false, display_since: since,
+        quantity: need || 1, purpose: '전시', sold: false, display_since: since,
         memo: '요청서에서 등록', updated_by: '요청서에서 등록', updated_at: new Date().toISOString(),
     };
     if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = auto.order_no || null; }
@@ -15394,6 +15396,8 @@ function seRenderUnmatchedRef() {
     });
     const rows = Object.values(bag).sort((a, b) =>
         (b.reqs[0]?.request_date || '').localeCompare(a.reqs[0]?.request_date || '') || a.sku.localeCompare(b.sku));
+    // 수량 다름 화면에서는 모자란 대수만 등록한다. 전시가 더 많으면 등록할 게 없다.
+    rows.forEach(x => { x._need = qtyMode ? x.qty - (dispQty[x.sku] || 0) : x.qty; });
     _seUnmRows = rows;
 
     box.style.display = '';
@@ -15428,7 +15432,7 @@ function seRenderUnmatchedRef() {
                 <th style="padding:7px 10px;text-align:center;white-space:nowrap;">문서 상 수량</th>
                 ${qtyMode ? '<th style="padding:7px 10px;text-align:center;">전시수량</th>' : ''}
                 <th style="padding:7px 10px;text-align:left;">매출외출고 요청서</th>
-                ${qtyMode ? '' : '<th style="padding:7px 10px;text-align:center;white-space:nowrap;">등록</th>'}
+                <th style="padding:7px 10px;text-align:center;white-space:nowrap;">등록</th>
                 <th style="padding:7px 10px;text-align:left;white-space:nowrap;">제품 향방에 대한 매장 설명</th>
             </tr></thead>
             <tbody>${rows.map((x, i) => {
@@ -15445,11 +15449,12 @@ function seRenderUnmatchedRef() {
                             <span style="font-family:monospace;color:#94a3b8;">${r.request_date || ''}</span>
                             ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${r.title || '-'}</a>` : (r.title || '-')}
                          </div>`).join('') || '-'}</td>
-                    ${qtyMode ? '' : `<td style="padding:4px 10px;text-align:center;white-space:nowrap;">
-                        <button onclick="seRegisterFromReq(${i}, this)"
-                          title="요청서에 적힌 코드·색상·수량 그대로 전시품으로 만듭니다"
-                          style="padding:4px 11px;border-radius:6px;border:none;background:#003EFF;color:#fff;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">+ 매장에 등록</button>
-                    </td>`}
+                    <td style="padding:4px 10px;text-align:center;white-space:nowrap;">${x._need > 0
+                        ? `<button onclick="seRegisterFromReq(${i}, this)"
+                            title="요청서에 적힌 코드·색상 그대로 ${x._need}대를 전시품으로 만듭니다"
+                            style="padding:4px 11px;border-radius:6px;border:none;background:#003EFF;color:#fff;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">+ 매장에 등록${qtyMode ? ` ${x._need}대` : ''}</button>`
+                        : `<span style="color:#cbd5e1;font-size:0.73rem;">전시가 ${-x._need}대 많음</span>`}
+                    </td>
                     <td style="padding:4px 10px;">
                         <input id="gap-in-${i}" data-sku="${x.sku}" value="${(seGapNotes[x.sku]?.note || '').replace(/"/g,'&quot;')}"
                           placeholder="예: 판매됨 / 창고 보관 / 타 매장 이동"
