@@ -16933,11 +16933,11 @@ function seRowOrderNos(row) {
     return [...new Set(out.filter(Boolean))];
 }
 
-async function seShowReqForSku(sku, storeId, orderNo) {
+async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     const modal = document.getElementById('seReqLookupModal');
     const body  = document.getElementById('seReqLookupBody');
     document.getElementById('seReqLookupSku').textContent = sku;
-    _seReqLookupCtx = { sku, storeId, orderNo };
+    _seReqLookupCtx = { sku, storeId, orderNo, rowId: rowId || (_seReqLookupCtx || {}).rowId };
     body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
     modal.style.display = 'flex';
 
@@ -17028,6 +17028,9 @@ async function seShowReqForSku(sku, storeId, orderNo) {
         return;
     }
 
+    const _ctxRow = (seDisplayData || []).find(x => x.id === (_seReqLookupCtx || {}).rowId);
+    const pickable = !!_ctxRow;
+    const linked = r => _ctxRow && _ordN(_ctxRow.sales_order_no) && _ordN(r.order_no) === _ordN(_ctxRow.sales_order_no);
     body.innerHTML = notice + [...byReq.values()].map(g => {
         const r = g.r;
         const esc = s => (s || '').replace(/'/g, "\'");
@@ -17045,9 +17048,29 @@ async function seShowReqForSku(sku, storeId, orderNo) {
                     style="background:#003EFF;border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📋 요청서 전체 보기</button>
                 ${r.ep_url ? `<a href="${r.ep_url}" target="_blank"
                     style="background:rgba(255,255,255,0.1);border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;text-decoration:none;">🔗 EP 원문</a>` : ''}
+                ${pickable ? `<button onclick="seLinkReqToRow('${esc(r.order_no)}','${esc(r.ep_url)}','${esc(r.doc_no)}')"
+                    title="이 전시품의 매출외수주번호를 이 요청서로 잡습니다"
+                    style="margin-left:auto;background:${linked(r) ? '#334155' : '#0f766e'};border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">${linked(r) ? '✓ 연결됨' : '🔗 이 건으로 연결'}</button>` : ''}
             </div>
         </div>`;
     }).join('');
+}
+
+// 후보가 여럿이면 기계가 고를 수 없다 — 보고 고르게 한다.
+async function seLinkReqToRow(orderNo, epUrl, docNo) {
+    const id = (_seReqLookupCtx || {}).rowId;
+    if (!id) return;
+    const row = (seDisplayData || []).find(r => r.id === id);
+    const sku = (row && row.sku) || (_seReqLookupCtx || {}).sku || '';
+    if (!confirm(`${sku}\n\n매출외수주번호를 ${orderNo || '(번호 없음)'} 로 잡습니다.\n${docNo || ''}`)) return;
+    const { error } = await _sb.from('store_displays')
+        .update({ sales_order_no: orderNo || null, sales_link: epUrl || null, updated_by: '요청서 연결' })
+        .eq('id', id);
+    if (error) { alert('연결 실패: ' + error.message); return; }
+    document.getElementById('seReqLookupModal').style.display = 'none';
+    _seAudit = null;
+    if (typeof showToast === 'function') showToast(`🔗 ${orderNo || docNo} 연결`);
+    await seRenderList(seCurrentStore);
 }
 
 let _seReqLookupCtx = null;   // 상세에서 목록으로 되돌아가기 위한 진입 정보
@@ -17113,7 +17136,7 @@ async function seReqLookupDetail(reqId) {
 
 function seReqLookupBack() {
     if (!_seReqLookupCtx) { document.getElementById('seReqLookupModal').style.display = 'none'; return; }
-    seShowReqForSku(_seReqLookupCtx.sku, _seReqLookupCtx.storeId, _seReqLookupCtx.orderNo);
+    seShowReqForSku(_seReqLookupCtx.sku, _seReqLookupCtx.storeId, _seReqLookupCtx.orderNo, _seReqLookupCtx.rowId);
 }
 
 // 전시품에서 그 품목이 든 요청서 카드로 건너뛴다 — 목록을 눈으로 훑지 않아도 되게
@@ -17665,7 +17688,7 @@ function seRenderTable(storeId) {
                         const tip = linked ? '카탈로그에 쌓인 요청서 보기'
                                   : mv ? `${from}에서 옮겨온 제품 — 매출외수주번호로 원래 요청서를 찾습니다`
                                        : '연결된 요청서 없음';
-                        return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}','${seRowOrderNos(row).join('|')}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
+                        return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}','${seRowOrderNos(row).join('|')}','${row.id}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
                     })() : ''}
                 </div>
             </td>
@@ -18820,6 +18843,8 @@ function seTraByDoc(docs) {
                     <span style="font-size:0.72rem;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;">${d.doc_no || '문서번호 없음'}</span>
                     <b style="font-size:0.86rem;color:var(--se-text);">${d.title || ''}</b>
                     <span style="margin-left:auto;font-size:0.76rem;color:var(--se-muted);white-space:nowrap;">${d.approval_date || '-'} · ${d.author || '-'}</span>
+                    ${d.ep_url ? `<a href="${d.ep_url}" target="_blank" onclick="event.stopPropagation()"
+                        style="flex-shrink:0;background:#1d4ed8;color:#fff;border-radius:7px;padding:3px 10px;font-size:0.72rem;font-weight:700;text-decoration:none;white-space:nowrap;">🔗 EP 원문</a>` : ''}
                 </div>
                 <div style="font-size:0.76rem;color:var(--se-muted);margin-top:5px;line-height:1.6;">
                     ${seTraFromSample(d) ? '' : `<span title="매장 코드만 바꾸는 건이라 전시품의 거래처 변경으로는 치지 않습니다" style="font-size:0.68rem;font-weight:800;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#475569;border:1px solid var(--se-border);margin-right:6px;">코드 변경</span>`}
