@@ -15104,10 +15104,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 
 <!-- 매출외 요청서 역방향 조회 모달 -->
 <div id="seReqLookupModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:520px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
+    <div id="seReqLookupCard" style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:520px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-                <div style="font-size:0.65rem;color:#94a3b8;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">매출외 요청서 연결</div>
+                <div id="seReqLookupKind" style="font-size:0.65rem;color:#94a3b8;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">매출외 요청서 연결</div>
                 <div id="seReqLookupSku" style="font-size:0.9rem;font-weight:700;color:#f1f5f9;font-family:monospace;"></div>
             </div>
             <button onclick="document.getElementById('seReqLookupModal').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:6px 14px;color:#94a3b8;cursor:pointer;font-size:0.82rem;">닫기</button>
@@ -17009,7 +17009,9 @@ function seRowOrderNos(row) {
 async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     const modal = document.getElementById('seReqLookupModal');
     const body  = document.getElementById('seReqLookupBody');
+    document.getElementById('seReqLookupKind').textContent = '매출외 요청서 연결';
     document.getElementById('seReqLookupSku').textContent = sku;
+    seReqLookupWide(false);
     _seReqLookupCtx = { sku, storeId, orderNo, rowId: rowId || (_seReqLookupCtx || {}).rowId };
     body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
     modal.style.display = 'flex';
@@ -17251,6 +17253,7 @@ async function seOpenReqPopupByMo(mo, label) {
     await seEnsureReqIndex();
     const r = (_seReqByMo || {})[mo];
     if (!r) { alert(`매출외${mo} 요청서가 카탈로그에 없습니다.`); return; }
+    document.getElementById('seReqLookupKind').textContent = '매출외 요청서';
     document.getElementById('seReqLookupSku').textContent = label || ('매출외' + mo);
     _seReqLookupCtx = { sku: label || '', storeId: '', orderNo: '', rowId: null, fromMo: mo };
     document.getElementById('seReqLookupModal').style.display = 'flex';
@@ -17270,6 +17273,7 @@ async function seReqLookupDetail(reqId) {
     if (!r) { body.innerHTML = '<p style="color:#f87171;">요청서를 불러오지 못했습니다.</p>'; return; }
 
     _seDetailRows = rows; _seDetailReq = r;
+    seReqLookupWide(true);
     const pick = !!(_seReqLookupCtx || {}).rowId;
     const cur = (_seReqLookupCtx?.sku || '').toUpperCase();
     const curStore = _seReqLookupCtx?.storeId || '';
@@ -19703,6 +19707,119 @@ function sePrintTagsOnSale() {
 
 
 // 회수보고서 칸 — 반출된 행만 상태를 말한다. 전시 중인 행에는 해당이 없다.
+// 전시품 줄에서 회수보고서·거래처 변경 협조전을 그 자리에서 펼친다.
+// 탭으로 건너뛰면 보던 줄을 잃는다 — 매출외 요청서와 같은 팝업으로 맞췄다.
+const SE_DOCV_CSS = {
+    mono: 'font-family:monospace;color:#94a3b8;white-space:nowrap;',
+    num:  'text-align:right;color:#e2e8f0;white-space:nowrap;',
+    txt:  'color:#e2e8f0;',
+    dim:  'color:#94a3b8;white-space:nowrap;',
+};
+const seWon = v => (v == null || v === '') ? '-' : Number(v).toLocaleString();
+const SE_DOC_VIEW = {
+    rec: {
+        kind: '회수 및 처리결과 보고서',
+        head: 'recovery_reports', items: 'recovery_report_items', fk: 'report_id',
+        meta: r => [r.report_date && '보고일 ' + r.report_date, r.author, r.dept, r.reason].filter(Boolean).join(' · '),
+        foot: list => {
+            const un = list.reduce((s, x) => s + (x.unrecovered_amount || 0), 0);
+            return `품목 ${list.length}행 · 수량 ${list.reduce((s, x) => s + (x.qty || 0), 0)}`
+                 + (un ? ` · 미회수 ${un.toLocaleString()}원` : '');
+        },
+        jump: r => `seOpenRecoveryFor('${seMoNo(r.doc_no) || ''}')`,
+        jumpLabel: '🧾 회수 보고서 탭에서 열기',
+        cols: [
+            ['품목코드',  it => it.item_code || '-', 'mono'],
+            ['색상',      it => it.color_code || '-', 'mono'],
+            ['수량',      it => it.qty == null ? '-' : it.qty, 'num'],
+            ['미회수',    it => seWon(it.unrecovered_amount), 'num'],
+            ['수주번호',  it => it.order_no || '-', 'mono'],
+            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'dim'],
+        ],
+    },
+    tra: {
+        kind: '거래처 변경 협조전',
+        head: 'transfer_approvals', items: 'transfer_approval_items', fk: 'approval_id',
+        meta: r => [r.approval_date && '승인일 ' + r.approval_date,
+                    [r.from_dealer, r.to_dealer].filter(Boolean).join(' → '), r.reason].filter(Boolean).join(' · '),
+        foot: list => `품목 ${list.length}행 · 수량 ${list.reduce((s, x) => s + (x.qty || 0), 0)}`,
+        jump: r => `seJumpToTransferTab('${String(r.doc_no || '')}')`,
+        jumpLabel: '🔁 거래처 변경 탭에서 열기',
+        cols: [
+            ['품목코드',  it => it.item_code || '-', 'mono'],
+            ['색상',      it => it.color_code || '-', 'mono'],
+            ['수량',      it => it.qty == null ? '-' : it.qty, 'num'],
+            ['수주 (전)', it => it.order_no_before || '-', 'mono'],
+            ['수주 (후)', it => it.order_no_after || '-', 'mono'],
+            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'dim'],
+        ],
+    },
+};
+
+function seReqLookupWide(on) {
+    const c = document.getElementById('seReqLookupCard');
+    if (c) c.style.width = on ? '900px' : '520px';
+}
+
+async function seShowDocView(kind, docNo, curSku, curStore) {
+    const C = SE_DOC_VIEW[kind];
+    if (!C || !docNo) return;
+    const body = document.getElementById('seReqLookupBody');
+    document.getElementById('seReqLookupKind').textContent = C.kind;
+    document.getElementById('seReqLookupSku').textContent = docNo;
+    seReqLookupWide(true);
+    _seReqLookupCtx = null;            // 요청서 연결 흐름이 아니다 — 되돌아갈 목록이 없다
+    document.getElementById('seReqLookupModal').style.display = 'flex';
+    body.innerHTML = '<p style="color:#94a3b8;">불러오는 중...</p>';
+
+    const { data: hs, error } = await _sb.from(C.head).select('*').eq('doc_no', docNo).limit(1);
+    const r = (hs || [])[0];
+    if (error || !r) { body.innerHTML = `<p style="color:#f87171;">${docNo} 문서를 불러오지 못했습니다.</p>`; return; }
+    const { data: list } = await _sb.from(C.items).select('*').eq(C.fk, r.id).order('seq');
+    const items = list || [];
+
+    const want = (curSku || '').toUpperCase(), wantStore = curStore || '';
+    const trs = items.map(it => {
+        const s = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
+        const mine = !!want && s === want && (!wantStore || !it.store_id || it.store_id === wantStore);
+        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">`
+            + C.cols.map(([, f, cls], i) =>
+                `<td style="padding:5px 8px;${SE_DOCV_CSS[cls] || SE_DOCV_CSS.txt}">${i === 0 && mine ? '🎯 ' : ''}${f(it)}</td>`).join('')
+            + '</tr>';
+    }).join('');
+
+    body.innerHTML = `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+            <button onclick="${C.jump(r)}" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">${C.jumpLabel}</button>
+            ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="background:rgba(255,255,255,0.1);border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;text-decoration:none;">🔗 EP 원문</a>` : ''}
+        </div>
+        <div style="border:1px solid #334155;border-radius:10px;padding:12px 14px;background:#0f172a;">
+            <div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;">${r.title || '(제목 없음)'}</div>
+            <div style="font-size:0.72rem;font-family:monospace;color:#94a3b8;margin-bottom:3px;">${r.doc_no || ''}</div>
+            <div style="font-size:0.75rem;color:#94a3b8;">${C.meta(r) || ''}</div>
+            <div style="font-size:0.72rem;color:#475569;margin-top:3px;">${C.foot(items)}</div>
+        </div>
+        ${items.length ? `<div style="overflow-x:auto;margin-top:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+                <thead><tr style="color:#64748b;text-align:left;border-bottom:1px solid #334155;">
+                    ${C.cols.map(([h, , cls]) => `<th style="padding:5px 8px;font-weight:600;white-space:nowrap;${cls === 'num' ? 'text-align:right;' : ''}">${h}</th>`).join('')}
+                </tr></thead>
+                <tbody>${trs}</tbody>
+            </table>
+        </div>` : '<p style="color:#64748b;font-size:0.78rem;margin-top:10px;">품목 내역이 없습니다.</p>'}`;
+    body.scrollTop = 0;
+}
+
+// 거래처 변경 탭을 열고 그 문서를 찾아 둔다
+function seJumpToTransferTab(docNo) {
+    document.getElementById('seReqLookupModal').style.display = 'none';
+    openSEPanel(true);
+    seSwitchTab('transfer');
+    const box = document.getElementById('traSearch');
+    if (box) box.value = docNo || '';
+    seRenderTransfer();
+}
+
 function seRecoveryDocsFor(row) {
     if (!row.sku) return [];
     const mine = _seRecAssign[row.id];
@@ -19740,8 +19857,10 @@ function seTransferCell(row) {
                 x.order_no_after ? '→ ' + x.order_no_after : ''].filter(Boolean).join(' · ');
     }).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
     return `<div title="${tip}" style="display:flex;align-items:center;justify-content:center;">
-        <span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 7px;
-                     font-size:0.7rem;font-weight:800;color:#1d4ed8;white-space:nowrap;">🔁 ${seHyNo(a.doc_no) || '거변'}${other ? ' ↗' + String(seStoreNameOf(other.store_id)).split(' ').pop() : ''}</span></div>`;
+        <button onclick="seShowDocView('tra','${a.doc_no || ''}','${row.sku || ''}','${row.store_id || ''}')"
+                style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 7px;
+                     font-size:0.7rem;font-weight:800;color:#1d4ed8;white-space:nowrap;cursor:pointer;font-family:'Outfit',sans-serif;"
+        >🔁 ${seHyNo(a.doc_no) || '거변'}${other ? ' ↗' + String(seStoreNameOf(other.store_id)).split(' ').pop() : ''}</button></div>`;
 }
 
 function seRecoveryCell(row) {
@@ -19760,7 +19879,7 @@ function seRecoveryCell(row) {
         ${r?.ep_url
             ? `<a href="${r.ep_url}" target="_blank" title="${tip}" style="font-size:0.95rem;text-decoration:none;display:inline-flex;align-items:center;height:22px;">🔗</a>`
             : `<span style="color:#cbd5e1;font-size:0.78rem;">-</span>`}
-        ${mo ? `<button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seOpenRecoveryFor('${mo}')" title="${tip}">📄</button>` : ''}
+        ${r?.doc_no ? `<button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seShowDocView('rec','${r.doc_no}','${row.sku || ''}','${row.store_id || ''}')" title="${tip}">📄</button>` : ''}
     </div>`;
 }
 
@@ -19781,7 +19900,9 @@ function seIssueChip(sku) {
 function seShowIssues(sku) {
     const list = seIssues[(sku || '').toUpperCase()] || [];
     const body = document.getElementById('seReqLookupBody');
+    document.getElementById('seReqLookupKind').textContent = '품질 · A/S 기록';
     document.getElementById('seReqLookupSku').textContent = sku;
+    seReqLookupWide(false);
     _seReqLookupCtx = null;
     body.innerHTML = list.map(x => {
         const rows = [['전시품 특이사항', x.symptom], ['품질팀 점검사항', x.inspection],
