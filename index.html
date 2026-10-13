@@ -15726,6 +15726,17 @@ let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정�
 let seTransferDocs = {};         // sku -> 거래처 변경 협조전 항목
 let _seTraAssign = {}, _seRecAssign = {};   // 전시품 id -> 그 행 몫의 문서 한 장
 
+// 협조전에는 두 종류가 있다.
+//   판매 거변 — 쌤플/의자생산팀(31SSA) 에서 매장으로. 재산이 넘어가는 진짜 거래처 변경.
+//   코드 변경 — 논현점(폐) → 논현점 처럼 매장 코드만 바꾸는 것. 판매와 무관하다.
+// 전시품에 「거래처 변경 완료」로 쳐 주는 건 앞엣것뿐이다. 뒤엣것도 수주건명에 원래
+// 매출외 문서가 적혀 있어 수주번호를 따라가는 데는 쓸모가 있으므로 버리지는 않는다.
+function seTraFromSample(a) {
+    a = a || {};
+    return /31SSA/i.test(a.from_code || '') || /의자생산팀|쌤플/.test(a.from_dealer || '');
+}
+const seTraIsSale = x => seTraFromSample(x && x.transfer_approvals);
+
 // 같은 매장에 같은 코드가 여러 대면 문서도 여러 장이다. 그냥 목록의 첫 장을 보여주면
 // 두 행에 같은 장이 겹쳐 붙는다. 수주번호가 똑같은 짝을 먼저 묶고, 남은 행에 남은 장을
 // 차례로 이어서 한 장이 한 번만 쓰이게 한다.
@@ -15752,8 +15763,9 @@ function seAssignDocs(rows, docsOf, orderKeys) {
     return out;
 }
 function seBuildDocAssign() {
-    _seTraAssign = seAssignDocs(seDisplayData,
-        r => (seTransferDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x)),
+    // 거변은 판매한 뒤에 하는 문서다 — 전시 중인 행에 붙으면 안 된다
+    _seTraAssign = seAssignDocs(seDisplayData.filter(r => r.sold),
+        r => (seTransferDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x) && seTraIsSale(x)),
         x => [x.order_no_before, x.order_no_after]);
     _seRecAssign = seAssignDocs(seDisplayData,
         r => (seRecoveryDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x)),
@@ -17185,7 +17197,7 @@ async function seRenderList(storeId) {
                .select('store_id,item_code,color_code,order_no,qty,unrecovered_amount,recovery_reports(doc_no,title,report_date,ep_url,reason)')
                .in('store_id', seStoreGroup(storeId)),
             _sb.from('transfer_approval_items')
-               .select('store_id,item_code,color_code,qty,order_no_before,order_no_after,memo,transfer_approvals(doc_no,title,approval_date,to_office,to_dealer)')
+               .select('store_id,item_code,color_code,qty,order_no_before,order_no_after,memo,transfer_approvals(doc_no,title,approval_date,to_office,to_dealer,from_code,from_dealer)')
                .in('store_id', seStoreGroup(storeId))
         ]);
         if (displaysRes.error) throw displaysRes.error;
@@ -18810,6 +18822,7 @@ function seTraByDoc(docs) {
                     <span style="margin-left:auto;font-size:0.76rem;color:var(--se-muted);white-space:nowrap;">${d.approval_date || '-'} · ${d.author || '-'}</span>
                 </div>
                 <div style="font-size:0.76rem;color:var(--se-muted);margin-top:5px;line-height:1.6;">
+                    ${seTraFromSample(d) ? '' : `<span title="매장 코드만 바꾸는 건이라 전시품의 거래처 변경으로는 치지 않습니다" style="font-size:0.68rem;font-weight:800;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#475569;border:1px solid var(--se-border);margin-right:6px;">코드 변경</span>`}
                     ${d.from_office || ''} / <b>${d.from_dealer || ''}</b>${d.from_code ? ` (${d.from_code})` : ''}
                     &nbsp;→&nbsp; ${d.to_office || ''} / <b style="color:#1d4ed8;">${d.to_dealer || ''}</b>${d.to_code ? ` (${d.to_code})` : ''}
                 </div>
@@ -18946,7 +18959,7 @@ async function seRunAudit(force) {
             .select('store_id,item_code,color_code,order_no,qty').order('id')),
         sbAll(() => _sb.from('display_moves').select('display_id,from_store').order('moved_at')),
         sbAll(() => _sb.from('transfer_approval_items')
-            .select('store_id,item_code,color_code,qty,transfer_approvals(doc_no,approval_date)').order('id')),
+            .select('store_id,item_code,color_code,qty,order_no_before,order_no_after,transfer_approvals(doc_no,approval_date,from_code,from_dealer)').order('id')),
     ]);
     const err = [dispRes, itemRes, recRes, mvRes, traRes].find(x => x.error);
     if (err) { body.innerHTML = `<p style="color:#ef4444;">검사 실패: ${err.error.message}</p>`; return; }
@@ -19041,7 +19054,8 @@ async function seRunAudit(force) {
         return at;
     };
     const recQty = poolOf(recs, r => [r.order_no]);
-    const traQty = poolOf(tras, x => [x.order_no_before, x.order_no_after]);
+    // 코드 변경(논현점(폐) -> 논현점)은 재산이 넘어간 게 아니다 — 거변 완료로 치지 않는다
+    const traQty = poolOf(tras.filter(seTraIsSale), x => [x.order_no_before, x.order_no_after]);
     disp.filter(d => d.sold && d.sku)
         .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''))
         .forEach(d => {
