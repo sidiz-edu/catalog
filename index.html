@@ -19533,8 +19533,8 @@ async function seRunAudit(force) {
 // 회수보고서 초안 — 카탈로그가 아는 값만 채우고 모르는 칸은 비워 둔다.
 // 문서번호·작성일·창고는 지어내지 않는다.
 let _seRecDraft = null;
-function seOpenRecDraft() {
-    const scoped = seScopedStore();
+function seOpenRecDraft(only) {
+    const scoped = only || seScopedStore();
     const list = (_seAudit?.rows || [])
         .filter(r => r.kind === 'norec' && (!scoped || r.store === scoped) && r.src);
     if (!list.length) { alert('초안을 만들 건이 없습니다.'); return; }
@@ -19623,8 +19623,8 @@ function seCopyRecDraft() { seCopyDraft(); }
 // 거래처 변경 협조전 초안 — 쌤플(의자생산팀, 31SSA)에서 매장으로 재산을 넘기는 문서다.
 // 팔렸는데 거변이 아직 없는 건을 모은다. 문서번호·작성일은 지어내지 않는다.
 let _seTraDraft = null;
-function seOpenTraDraft() {
-    const scoped = seScopedStore();
+function seOpenTraDraft(only) {
+    const scoped = only || seScopedStore();
     const list = (_seAudit?.rows || [])
         .filter(r => r.kind === 'notrans' && (!scoped || r.store === scoped) && r.src);
     if (!list.length) { alert('초안을 만들 건이 없습니다.'); return; }
@@ -19696,6 +19696,56 @@ function seOpenTraDraft() {
 let _seAuditKind = 'all';
 function seAuditFilter(k) { _seAuditKind = k; seRenderAudit(); }
 
+// 거래처 변경·회수보고서는 매장마다 따로 쓴다. 그래서 매장별로 모아 놓고
+// 매장 줄에서 바로 그 매장 몫만 초안으로 뽑을 수 있게 한다.
+function seRenderDocsByStore(rows, scoped) {
+    const esc = s => String(s || '').replace(/'/g, '');
+    const per = {};
+    rows.forEach(r => { (per[r.store || ''] = per[r.store || ''] || []).push(r); });
+    const ord = {};
+    (typeof seStores === 'function' ? seStores() : []).forEach((s, i) => { ord[s.id] = i; });
+    const stores = Object.keys(per).sort((a, b) => (ord[a] ?? 99) - (ord[b] ?? 99));
+    const nTra = rows.filter(r => r.kind === 'notrans').length;
+    const nRec = rows.length - nTra;
+
+    const head = `<div style="border:1px solid #fda4af;background:#fff1f2;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:0.78rem;color:#9f1239;line-height:1.7;">
+        <b>팔렸는데 문서가 남은 ${rows.length}건 · ${stores.length}개 매장</b> — 🔴 거래처 변경부터 ${nTra}건 · 🟠 회수보고서만 ${nRec}건.<br>
+        매장 줄의 <b>🔁 거변 초안</b> · <b>📄 회수 초안</b> 을 누르면 그 매장 몫만, 맨 위 버튼을 누르면 전 매장이 한 표로 나옵니다 — 수주번호까지 채워져 있으니 복사해 붙이면 됩니다.
+        ${scoped ? `<br>지금 <b>${seStoreNameOf(scoped)}</b> 만 보고 있습니다.` : ''}
+    </div>`;
+
+    const card = st => {
+        const list = per[st].slice().sort((a, b) => seAuditDays(b) - seAuditDays(a));
+        const t2 = list.filter(r => r.kind === 'notrans').length;
+        const r2 = list.length - t2;
+        const btn = (on, label, fn, bg) => on
+            ? `<button onclick="${fn}('${esc(st)}')" style="background:${bg};border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">${label} ${on}건</button>`
+            : '';
+        return `<div style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:9px;overflow:hidden;background:var(--se-surface);">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#f8fafc;border-bottom:1px solid var(--se-border);">
+                <b style="font-size:0.84rem;color:var(--se-text);">${st ? seStoreNameOf(st) : '매장 미상'}</b>
+                <span style="font-size:0.74rem;color:var(--se-muted);">${list.length}건${t2 ? ` · 🔴 ${t2}` : ''}${r2 ? ` · 🟠 ${r2}` : ''}</span>
+                <span style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;">
+                    ${btn(t2, '🔁 거변 초안', 'seOpenTraDraft', '#be123c')}
+                    ${btn(r2, '📄 회수 초안', 'seOpenRecDraft', '#dc2626')}
+                </span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+                <tbody>${list.map((r, i) => {
+                    const d = seAuditDays(r);
+                    return `<tr style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
+                        <td style="padding:6px 10px;white-space:nowrap;width:1%;color:${SE_AUDIT_KIND[r.kind][2]};font-weight:700;">${SE_AUDIT_KIND[r.kind][0]}</td>
+                        <td style="padding:6px 9px;font-family:monospace;">${r.title}</td>
+                        <td style="padding:6px 9px;white-space:nowrap;width:1%;text-align:right;color:${d >= 90 ? '#be123c' : 'var(--se-muted)'};font-weight:${d >= 90 ? 700 : 400};">${d >= 0 ? d + '일' : '-'}</td>
+                        <td style="padding:6px 9px;color:#475569;">${r.detail.replace(/^[^—]*—\s*/, '')}</td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>
+        </div>`;
+    };
+    return head + stores.map(card).join('');
+}
+
 function seRenderAudit() {
     const body = document.getElementById('seAuditBody');
     const sum  = document.getElementById('seAuditSummary');
@@ -19744,24 +19794,9 @@ function seRenderAudit() {
         || order.indexOf(a.kind) - order.indexOf(b.kind) || a.title.localeCompare(b.title));
     else rows.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind)
         || (a.store || '').localeCompare(b.store || '') || a.title.localeCompare(b.title));
-    let lead = '';
-    if (docsMode) {
-        const per = {};
-        rows.forEach(r => { if (r.store) per[r.store] = (per[r.store] || 0) + 1; });
-        const chips = Object.entries(per).sort((a, b) => b[1] - a[1])
-            .map(([s, n]) => `${seStoreNameOf(s)} ${n}`).join(' · ');
-        const nTra = rows.filter(r => r.kind === 'notrans').length;
-        const nRec = rows.length - nTra;
-        lead = `<div style="border:1px solid #fda4af;background:#fff1f2;border-radius:10px;padding:10px 13px;margin-bottom:9px;font-size:0.78rem;color:#9f1239;line-height:1.7;">
-            <b>팔렸는데 문서가 남은 ${rows.length}건</b> — 🔴 거래처 변경부터 ${nTra}건 · 🟠 회수보고서만 ${nRec}건. 오래 묵은 것부터 놓았습니다.
-            ${chips ? `<div style="color:#be123c;margin-top:3px;">${chips}</div>` : ''}
-            <div style="margin-top:6px;">
-                위 <b>🔁 거래처 변경 초안</b> · <b>📄 회수보고서 초안</b> 을 누르면 수주번호까지 채운 표가 나옵니다 — 그대로 복사해 문서에 붙이면 됩니다.
-                ${scoped ? `<br>지금 <b>${seStoreNameOf(scoped)}</b>만 보고 있습니다. 초안도 그 매장 것만 나옵니다.` : ''}
-            </div>
-        </div>`;
-    }
-    body.innerHTML = lead + `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
+    // 문서 필요 보기는 매장별로 묶어 둔다 — 협조전·보고서를 매장 단위로 쓰기 때문이다
+    if (docsMode) { body.innerHTML = seRenderDocsByStore(rows, scoped); return; }
+    body.innerHTML = `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
     <table style="width:100%;border-collapse:collapse;font-size:0.77rem;background:var(--se-surface);">
         <thead><tr style="background:#e2e8f0;color:#475569;">
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">유형</th>
