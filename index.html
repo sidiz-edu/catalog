@@ -17080,6 +17080,19 @@ async function seLinkReqToRow(orderNo, epUrl, docNo) {
 
 let _seReqLookupCtx = null;   // 상세에서 목록으로 되돌아가기 위한 진입 정보
 
+// 거변·회수의 수주건명에는 「매출외25-04-00052(스타필드고양-홍승연- 링고…)」처럼
+// 출고 문서가 적혀 있다. 그걸 눌러 요청서 내용을 그 자리에서 펼쳐 본다.
+async function seOpenReqPopupByMo(mo, label) {
+    if (!mo) return;
+    await seEnsureReqIndex();
+    const r = (_seReqByMo || {})[mo];
+    if (!r) { alert(`매출외${mo} 요청서가 카탈로그에 없습니다.`); return; }
+    document.getElementById('seReqLookupSku').textContent = label || ('매출외' + mo);
+    _seReqLookupCtx = { sku: label || '', storeId: '', orderNo: '', rowId: null, fromMo: mo };
+    document.getElementById('seReqLookupModal').style.display = 'flex';
+    seReqLookupDetail(r.id);
+}
+
 // 팝업을 떠나지 않고 그 요청서의 전체 품목을 펼쳐 본다
 async function seReqLookupDetail(reqId) {
     const body = document.getElementById('seReqLookupBody');
@@ -17113,7 +17126,7 @@ async function seReqLookupDetail(reqId) {
 
     body.innerHTML = `
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-            <button onclick="seReqLookupBack()" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#cbd5e1;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">← 목록</button>
+            ${(_seReqLookupCtx || {}).fromMo ? '' : `<button onclick="seReqLookupBack()" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#cbd5e1;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">← 목록</button>`}
             <button onclick="seJumpToRequest('${r.id}','${esc(r.doc_no || r.title)}')" style="background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 요청서 탭에서 열기</button>
             ${r.ep_url ? `<a href="${r.ep_url}" target="_blank" style="background:rgba(255,255,255,0.1);border-radius:7px;padding:5px 11px;color:#93c5fd;font-size:0.74rem;font-weight:700;text-decoration:none;">🔗 EP 원문</a>` : ''}
         </div>
@@ -18903,7 +18916,9 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;font-family:monospace;">${it.item_code || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:right;">${it.qty ?? '-'}</td>
-                <td style="padding:6px 9px;font-family:monospace;color:#64748b;" title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;${seMoNo(it.order_title) ? 'color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;' : 'color:#64748b;'}"
+                    ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"` : ''}
+                    title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
                 <td style="padding:6px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
                 <td style="padding:6px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
@@ -18928,7 +18943,11 @@ function seTraTable(items, inner) {
                 <td style="padding:5px 9px;text-align:right;">${it.qty ?? '-'}</td>
                 <td style="padding:5px 9px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">
                     <span style="font-family:monospace;color:#64748b;">${it.order_no_before || '-'}</span>
-                    ${it.order_title ? `<div style="font-size:0.68rem;color:#94a3b8;">${it.order_title}</div>` : ''}
+                    ${it.order_title ? (seMoNo(it.order_title)
+                        ? `<div onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"
+                               title="매출외출고 요청서 내용 보기"
+                               style="font-size:0.68rem;color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">${it.order_title}</div>`
+                        : `<div style="font-size:0.68rem;color:#94a3b8;">${it.order_title}</div>`) : ''}
                     ${it.memo ? `<div style="font-size:0.68rem;color:#b45309;">${it.memo}</div>` : ''}
                 </td>
                 <td style="padding:5px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
