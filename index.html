@@ -15746,7 +15746,7 @@ const seTraIsSale = x => seTraFromSample(x && x.transfer_approvals);
 // 두 행에 같은 장이 겹쳐 붙는다. 수주번호가 똑같은 짝을 먼저 묶고, 남은 행에 남은 장을
 // 차례로 이어서 한 장이 한 번만 쓰이게 한다.
 function seAssignDocs(rows, docsOf, orderKeys) {
-    const norm = s => (s || '').replace(/\s/g, '');
+    const norm = seOrdKey;
     const used = new Set(), out = {};
     // 거변·회수는 판매된 건에 하는 문서다. 같은 수주번호로 보유 1대 + 판매 1대가 있으면
     // 문서는 판매 쪽 몫이므로 판매 행부터, 먼저 반출된 순서로 집어 간다.
@@ -16998,7 +16998,7 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     // 수주번호가 붙어 있으면 그 건이 이 전시품의 짝이다. 같은 코드가 여러 요청서로
     // 나간 경우가 많은데(링고 25-04-00052 / 24-12-00039) 다 늘어놓으면 어느 쪽이
     // 내 건인지 알 수 없다. orderNo 는 전시품·거변·회수에서 모은 번호들이다.
-    const _ordN = s => (s || '').replace(/\s/g, '');
+    const _ordN = seOrdKey;
     const rawWanted = String(orderNo || '').split('|').filter(Boolean);
     const wanted = rawWanted.map(_ordN).filter(Boolean);
     const reqNo = x => _ordN((x.outgoing_requests || {}).order_no);
@@ -17622,7 +17622,7 @@ function seRenderTable(storeId) {
             });
             give((d, it) => {
                 const o = (it.outgoing_requests || {}).order_no;
-                return !!o && seAuditNorm(d.sales_order_no) === seAuditNorm(o);
+                return !!o && seOrdKey(d.sales_order_no) === seOrdKey(o);
             });
             give(() => true);
         });
@@ -18647,9 +18647,9 @@ const seStoreGroup = id => [id, ...(SE_PAIR_BOTH[id] || [])].filter(Boolean);
 function seDocOk(row, x) {
     if (!x.store_id || x.store_id === row.store_id) return true;
     if ((seMoves[row.id] || []).some(m => m.from_store === x.store_id)) return true;
-    const o = (row.sales_order_no || '').replace(/\s/g, '');
+    const o = seOrdKey(row.sales_order_no);
     return !!o && [x.order_no, x.order_no_before, x.order_no_after]
-        .some(y => (y || '').replace(/\s/g, '') === o);
+        .some(y => seOrdKey(y) === o);
 }
 
 // ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
@@ -19073,6 +19073,10 @@ const SE_AUDIT_KIND = {
 let _seAudit = null;
 
 function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
+// 수주번호는 문서마다 P20250707-0315-00 / P20250707031500 처럼 표기가 갈린다.
+// 같은 번호이므로 글자와 숫자만 남겨 견준다. 품목코드에는 쓰지 말 것 —
+// 거기서는 하이픈이 코드와 색상을 가르는 구분자다.
+function seOrdKey(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
 // 길이가 같고 한 글자만 다른가 — 0↔O, 1↔I 같은 오타를 잡으려는 것
 function seOneCharApart(a, b) {
@@ -19089,7 +19093,7 @@ function seFindReqItem(items, d) {
         seAuditNorm(it.item_code) + '-' + seAuditNorm(it.color_code) === s);
     if (!cand.length) return null;
     const byOrder = d.sales_order_no
-        ? cand.find(it => seAuditNorm((it.outgoing_requests || {}).order_no) === seAuditNorm(d.sales_order_no))
+        ? cand.find(it => seOrdKey((it.outgoing_requests || {}).order_no) === seOrdKey(d.sales_order_no))
         : null;
     return byOrder || cand.find(it => it.store_id === d.store_id) || cand[0];
 }
@@ -19157,13 +19161,13 @@ async function seRunAudit(force) {
     const orderSku = new Set();
     items.forEach(it => {
         const o = (it.outgoing_requests || {}).order_no;
-        if (o && it.item_code) orderSku.add(seAuditNorm(o) + '|' + sku(it.item_code, it.color_code));
+        if (o && it.item_code) orderSku.add(seOrdKey(o) + '|' + sku(it.item_code, it.color_code));
     });
     disp.forEach(d => {
         if (d.sold || !d.sku) return;
         const s = seAuditNorm(d.sku);
         if (reqQty[key(d.store_id, s)]) return;
-        if (d.sales_order_no && orderSku.has(seAuditNorm(d.sales_order_no) + '|' + s)) return;
+        if (d.sales_order_no && orderSku.has(seOrdKey(d.sales_order_no) + '|' + s)) return;
         if (movedIds.has(d.id)) return;
         add('noreq', d.store_id, `${d.product_id || ''} ${s}`,
             `매장 ${d.quantity || 1}대 · 출고 문서 없음${d.location ? ' · 📍 ' + d.location : ''}`);
@@ -19178,7 +19182,7 @@ async function seRunAudit(force) {
             const s = sku(it.item_code, it.color_code), cell = { store: it.store_id, left: it.qty || 1 };
             (byStore[key(it.store_id, s)] = byStore[key(it.store_id, s)] || []).push(cell);
             orders(it).forEach(o => { if (o) {
-                const k = seAuditNorm(o) + '|' + s;
+                const k = seOrdKey(o) + '|' + s;
                 (byOrder[k] = byOrder[k] || []).push(cell);
             }});
         });
@@ -19190,7 +19194,7 @@ async function seRunAudit(force) {
     const take = (pool, d, s, q) => {
         const seen = new Set(), cells = [];
         const push = l => (l || []).forEach(c => { if (!seen.has(c)) { seen.add(c); cells.push(c); } });
-        if (d.sales_order_no) push(pool.byOrder[seAuditNorm(d.sales_order_no) + '|' + s]);
+        if (d.sales_order_no) push(pool.byOrder[seOrdKey(d.sales_order_no) + '|' + s]);
         [d.store_id, ...(movedFrom[d.id] || [])].forEach(g => push(pool.byStore[key(g, s)]));
         if (cells.reduce((a, c) => a + c.left, 0) < q) return null;
         let need = q, at = null;
