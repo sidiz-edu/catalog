@@ -15433,7 +15433,7 @@ async function seRegisterFromReq(i, btn) {
         quantity: need || 1, purpose: '전시', sold: false, display_since: since,
         memo: '요청서에서 등록', updated_by: '요청서에서 등록', updated_at: new Date().toISOString(),
     };
-    if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = auto.order_no || null; }
+    if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = seOrdSave(auto.order_no) || null; }
     const { error } = await _sb.from('store_displays').insert(rec);
     if (error) { btn.disabled = false; btn.textContent = label; alert('등록 실패: ' + error.message); return; }
     if (typeof showToast === 'function')
@@ -17264,7 +17264,7 @@ function seAskOrderNo(head, defNo, lines) {
     const msg = [head, '', ...(lines || []).filter(Boolean), '',
                  '매출외수주번호가 맞습니까? 틀리면 고쳐서 확인을 누르세요.'].join('\n');
     const ans = prompt(msg, defNo || '');
-    return ans === null ? null : ans.trim();
+    return ans === null ? null : seOrdSave(ans);
 }
 
 async function seLinkReqToRow(orderNo, epUrl, docNo) {
@@ -18051,7 +18051,7 @@ async function seSetSalesOrderNo(id) {
     const current = row?.sales_order_no || '';
     const val = prompt('매출외수주번호를 입력하세요\n(삭제하려면 비워두세요)', current);
     if (val === null) return;
-    const no = val.trim();
+    const no = seOrdSave(val);
     const { error } = await _sb.from('store_displays').update({ sales_order_no: no || null }).eq('id', id);
     if (error) { alert('저장 실패: ' + error.message); return; }
     if (row) row.sales_order_no = no || null;
@@ -19335,6 +19335,14 @@ function seOrdRank(a, b) {
     return 0;
 }
 const seOrdSame = (a, b) => seOrdRank(a, b) > 0;
+// 저장할 때는 하이픈을 뗀다 — 화면에서 P20250701-1011-01 과 P20250701101101 이
+// 섞여 보이지 않게. 견주는 건 seOrdKey 가 어차피 같게 보므로 무엇을 넣든 맞는다.
+// 형식이 다른 옛 표기(7/4-2167 같은)는 건드리지 않는다.
+const SE_ORD_HYPHEN = /^P\d{8}-\d{4}-\d{2}$/;
+function seOrdSave(s) {
+    const v = (s || '').trim();
+    return SE_ORD_HYPHEN.test(v) ? v.replace(/-/g, '') : v;
+}
 
 // 길이가 같고 한 글자만 다른가 — 0↔O, 1↔I 같은 오타를 잡으려는 것
 function seOneCharApart(a, b) {
@@ -19463,11 +19471,21 @@ async function seRunAudit(force) {
     // 수주번호가 맞으면 그게 1:1 짝이다 — 매장보다 먼저 본다.
     // 합정에 제 건과 고양에서 옮겨온 건이 같은 코드로 나란히 있으면 매장만으로는 서로 몫을 뺏는다.
     // 2대짜리 행은 1대짜리 문서 두 장으로 덮이므로 여러 장에서 모아 쓴다. 모자라면 아무것도 안 쓴다.
-    const take = (pool, d, s, q) => {
+    const take = (pool, d, s, q, exactOnly) => {
         const seen = new Set(), cells = [];
-        const push = l => (l || []).forEach(c => { if (!seen.has(c)) { seen.add(c); cells.push(c); } });
-        if (d.sales_order_no) seOrdKeys(d.sales_order_no).forEach(k => push(pool.byOrder[k + '|' + s]));
-        [d.store_id, ...(movedFrom[d.id] || [])].forEach(g => push(pool.byStore[key(g, s)]));
+        // 꼬리·날짜만 맞는 셀은 이 매장(과 옮겨온 출발 매장) 것만 쓴다. 같은 날 한 문서로
+        // 여러 매장에 나간 건(GX 24-08-00024 같은)에서 날짜만 보고 남의 매장 몫을 집어
+        // 가면 그 매장이 빈손이 된다 — 논현 GX 번호를 고치자 평택·송파가 거변 필요로 떴다.
+        // 번호가 꼭 같으면 매장 이름이 달라도 그 건이다 (다른 매장 이름으로 거변된 경우).
+        const mine = new Set([d.store_id, ...(movedFrom[d.id] || [])]);
+        const push = (l, any) => (l || []).forEach(c => {
+            if (seen.has(c) || (!any && c.store && !mine.has(c.store))) return;
+            seen.add(c); cells.push(c);
+        });
+        if (d.sales_order_no) seOrdKeys(d.sales_order_no).forEach((k, i) => {
+            if (!exactOnly || i === 0) push(pool.byOrder[k + '|' + s], i === 0);
+        });
+        if (!exactOnly) [d.store_id, ...(movedFrom[d.id] || [])].forEach(g => push(pool.byStore[key(g, s)], true));
         if (cells.reduce((a, c) => a + c.left, 0) < q) return null;
         let need = q, at = null;
         for (const c of cells) {
@@ -19482,12 +19500,22 @@ async function seRunAudit(force) {
     const recQty = poolOf(recs, r => [r.order_no]);
     // 코드 변경(논현점(폐) -> 논현점)은 재산이 넘어간 게 아니다 — 거변 완료로 치지 않는다
     const traQty = poolOf(tras.filter(seTraIsSale), x => [x.order_no_before, x.order_no_after]);
-    disp.filter(d => d.sold && d.sku)
-        .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''))
-        .forEach(d => {
-            const st = d.store_id, s = seAuditNorm(d.sku), q = d.quantity || 1;
-            const traAt = take(traQty, d, s, q);
-            const recAt = take(recQty, d, s, q);
+    // 번호가 꼭 맞는 문서를 먼저 다 묶고, 남은 행에만 꼬리·날짜·매장 단위로 준다.
+    // 한 번에 돌면 먼저 팔린 행이 매장 단위로 옆 행의 짝을 집어 간다 — 평택 링고
+    // A441BW 는 수원에서 온 행(-0265)이 평택 회수 몫(-0262)을 먼저 가져가, 번호가
+    // 꼭 맞는 평택 행이 회수 필요로 떴다.
+    const soldRows = disp.filter(d => d.sold && d.sku)
+        .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''));
+    const traOf = new Map(), recOf = new Map();
+    [true, false].forEach(exact => soldRows.forEach(d => {
+        const s = seAuditNorm(d.sku), q = d.quantity || 1;
+        if (!traOf.get(d.id)) traOf.set(d.id, take(traQty, d, s, q, exact));
+        if (!recOf.get(d.id)) recOf.set(d.id, take(recQty, d, s, q, exact));
+    }));
+    soldRows.forEach(d => {
+            const st = d.store_id, s = seAuditNorm(d.sku);
+            const traAt = traOf.get(d.id);
+            const recAt = recOf.get(d.id);
             if (recAt) return;                        // 보고서까지 끝났으면 볼 것 없다
             const days = d.sold_at ? Math.floor((Date.now() - new Date(d.sold_at)) / 86400000) : null;
             const head = `${d.exit_type || '반출'}${days != null ? ` · ${days}일 경과` : ''}`;
@@ -20314,7 +20342,7 @@ async function seSubmitEdit() {
         const src = seDisplayData.find(r => r.id === id) || {};
         const cAuto = seAutoLinkFor(updates.sku);
         const record = { ...updates, store_id: seCurrentStore,
-            sales_order_no: src.sales_order_no || cAuto?.order_no || null,
+            sales_order_no: src.sales_order_no || seOrdSave(cAuto?.order_no) || null,
             sales_link:     src.sales_link     || cAuto?.ep_url   || null,
             catalog_visible: false };
         const { data, error: insErr } = await _sb.from('store_displays').insert(record).select().single();
@@ -20333,7 +20361,7 @@ async function seSubmitEdit() {
     if ((cur.sku || '') !== (updates.sku || '')) {
         if (auto) {
             updates.sales_link     = auto.ep_url   || null;
-            updates.sales_order_no = auto.order_no || null;
+            updates.sales_order_no = seOrdSave(auto.order_no) || null;
         } else if (!seMovedIn(cur)) {
             updates.sales_link     = null;
             updates.sales_order_no = null;
@@ -20342,7 +20370,7 @@ async function seSubmitEdit() {
         // 지우면 복구가 안 되고 판매·이동까지 막히므로 그대로 둔다.
     } else if (auto) {
         if (!cur.sales_link && auto.ep_url)        updates.sales_link     = auto.ep_url;
-        if (!cur.sales_order_no && auto.order_no)  updates.sales_order_no = auto.order_no;
+        if (!cur.sales_order_no && auto.order_no)  updates.sales_order_no = seOrdSave(auto.order_no);
     }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
