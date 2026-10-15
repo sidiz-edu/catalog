@@ -15433,7 +15433,7 @@ async function seRegisterFromReq(i, btn) {
         quantity: need || 1, purpose: '전시', sold: false, display_since: since,
         memo: '요청서에서 등록', updated_by: '요청서에서 등록', updated_at: new Date().toISOString(),
     };
-    if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = seOrdSave(auto.order_no) || null; }
+    if (auto) { rec.sales_link = auto.ep_url || null; rec.sales_order_no = seOrdSingle(auto.order_no) || null; }
     const { error } = await _sb.from('store_displays').insert(rec);
     if (error) { btn.disabled = false; btn.textContent = label; alert('등록 실패: ' + error.message); return; }
     if (typeof showToast === 'function')
@@ -17261,9 +17261,12 @@ async function seUnlinkReqFromRow() {
 // (25-06-00006 은 매장 10곳에 번호가 10개다). 그대로 넣으면 남의 매장 번호가
 // 박히므로, 넣기 전에 보여 주고 고칠 수 있게 한다. 빈칸으로 두면 번호 없이 간다.
 function seAskOrderNo(head, defNo, lines) {
-    const msg = [head, '', ...(lines || []).filter(Boolean), '',
+    const one = seOrdSingle(defNo);
+    const note = defNo && !one
+        ? [`요청서 대표번호: ${defNo}`, '번호가 여러 개라 이 매장 번호를 직접 넣어 주세요.'] : [];
+    const msg = [head, '', ...(lines || []).filter(Boolean), ...note, '',
                  '매출외수주번호가 맞습니까? 틀리면 고쳐서 확인을 누르세요.'].join('\n');
-    const ans = prompt(msg, defNo || '');
+    const ans = prompt(msg, one || '');
     return ans === null ? null : seOrdSave(ans);
 }
 
@@ -19343,6 +19346,13 @@ function seOrdSave(s) {
     const v = (s || '').trim();
     return SE_ORD_HYPHEN.test(v) ? v.replace(/-/g, '') : v;
 }
+// 요청서 대표번호를 자동으로 끌어올 때는 번호 하나로 똑 떨어질 때만 쓴다.
+// 24-01-00026 처럼 매장별 번호를 여러 개 늘어놓은 값(P…0691-00, 0748-00 & …)은
+// 어느 매장 것인지 몰라 그대로 넣으면 엉뚱한 값이 박힌다 — 이럴 땐 비워 둔다.
+function seOrdSingle(s) {
+    const v = seOrdSave(s);
+    return /^P\d{14}$/.test(v) ? v : '';
+}
 
 // 길이가 같고 한 글자만 다른가 — 0↔O, 1↔I 같은 오타를 잡으려는 것
 function seOneCharApart(a, b) {
@@ -20342,7 +20352,7 @@ async function seSubmitEdit() {
         const src = seDisplayData.find(r => r.id === id) || {};
         const cAuto = seAutoLinkFor(updates.sku);
         const record = { ...updates, store_id: seCurrentStore,
-            sales_order_no: src.sales_order_no || seOrdSave(cAuto?.order_no) || null,
+            sales_order_no: src.sales_order_no || seOrdSingle(cAuto?.order_no) || null,
             sales_link:     src.sales_link     || cAuto?.ep_url   || null,
             catalog_visible: false };
         const { data, error: insErr } = await _sb.from('store_displays').insert(record).select().single();
@@ -20357,11 +20367,12 @@ async function seSubmitEdit() {
     }
     // 품목코드를 바꿨으면 기존 링크는 다른 제품 것이라 다시 잡는다
     const cur = seDisplayData.find(r => r.id === id) || {};
-    const auto = seAutoLinkFor(updates.sku);
+    // 대리점 구매는 매출외출고 문서가 없는 물건이라 요청서 번호를 끌어오지 않는다
+    const auto = document.getElementById('seEditDirect').checked ? null : seAutoLinkFor(updates.sku);
     if ((cur.sku || '') !== (updates.sku || '')) {
         if (auto) {
             updates.sales_link     = auto.ep_url   || null;
-            updates.sales_order_no = seOrdSave(auto.order_no) || null;
+            updates.sales_order_no = seOrdSingle(auto.order_no) || null;
         } else if (!seMovedIn(cur)) {
             updates.sales_link     = null;
             updates.sales_order_no = null;
@@ -20370,7 +20381,7 @@ async function seSubmitEdit() {
         // 지우면 복구가 안 되고 판매·이동까지 막히므로 그대로 둔다.
     } else if (auto) {
         if (!cur.sales_link && auto.ep_url)        updates.sales_link     = auto.ep_url;
-        if (!cur.sales_order_no && auto.order_no)  updates.sales_order_no = seOrdSave(auto.order_no);
+        if (!cur.sales_order_no && seOrdSingle(auto.order_no)) updates.sales_order_no = seOrdSingle(auto.order_no);
     }
     const { error } = await _sb.from('store_displays').update(updates).eq('id', id);
     if (error) { msg.textContent = '오류: ' + error.message; return; }
@@ -20426,7 +20437,7 @@ async function seAddDisplay() {
         const auto = seAutoLinkFor(sku);
         if (auto) {
             record.sales_link     = auto.ep_url   || null;
-            record.sales_order_no = auto.order_no || null;
+            record.sales_order_no = seOrdSingle(auto.order_no) || null;
         }
         if (purpose === '판매' && !sold && !seHasOutgoingDoc(record)) {
             msg.className = 'se-msg'; msg.textContent = SE_NO_DOC_MSG; return;
