@@ -13943,6 +13943,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                  overflow: auto; max-height: calc(100vh - 300px); min-height: 240px;
                  border-radius: 12px; border: 1px solid var(--se-border); }
 .se-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; color: var(--se-text); }
+/* 행 왼쪽 띠 — <tr> 의 box-shadow 는 크롬이 그리지 않아 칸에 건다 */
+.se-table .se-row-needrec > td { background: #fff5f5; }
+.se-table .se-row-needrec > td:first-child { box-shadow: inset 4px 0 0 #dc2626; }
+.se-table .se-row-moved > td { background: #f3f8ff; }
+.se-table .se-row-moved > td:first-child { box-shadow: inset 4px 0 0 #3b82f6; }
 .se-table th {
     background: var(--se-surface); color: var(--se-muted);
     font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
@@ -17962,10 +17967,13 @@ function seRenderTable(storeId) {
                 ${row.sold_at ? `&nbsp;🗓 ${new Date(row.sold_at).toLocaleDateString('ko-KR')}` : ''}
               </div>` : '';
         const dragOn = !seSortCol;
-        const rowStyle = needRec ? 'background:#fff5f5;box-shadow:inset 4px 0 0 #dc2626;' : '';
+        // 다른 매장에서 옮겨온 물건은 문서가 출발 매장 앞으로 나가 있어 따로 챙겨야 한다 —
+        // 목록에서 바로 눈에 띄게 왼쪽에 파란 띠를 두른다. 회수 필요(빨간 띠)가 먼저다.
+        const movedIn = !!(seMoves[row.id] && seMoves[row.id].length);
+        const rowCls = needRec ? 'se-row-needrec' : movedIn ? 'se-row-moved' : '';
         return `<tr data-id="${row.id}" data-sold="${row.sold ? 1 : 0}"
                     ondragover="seDragOver(event)" ondrop="seDrop(event)" ondragend="seDragEnd(event)"
-                    ${rowStyle ? `style="${rowStyle}"` : ''}>
+                    ${rowCls ? `class="${rowCls}"` : ''}>
             <td style="white-space:nowrap;">
                 <input type="checkbox" data-id="${row.id}" onchange="seUpdateSelection()" ${seSelectedIds.has(row.id) ? 'checked' : ''}>
                 ${dragOn ? `<span draggable="true" ondragstart="seDragStart(event)" title="끌어서 순서 바꾸기"
@@ -18614,8 +18622,10 @@ function seMoveChip(row) {
         m.moved_by || ''
     ].filter(Boolean).join(' · ')).join(String.fromCharCode(10)).replace(/"/g, '&quot;');
     const more = list.length > 1 ? ` <span style="color:#94a3b8;">외 ${list.length - 1}회</span>` : '';
-    return `<div title="${chain}" style="font-size:0.72rem;color:#1d4ed8;margin-top:3px;white-space:nowrap;">
-        🔀 ${seStoreNameOf(last.from_store)}에서 옴${last.reason ? ' · ' + last.reason : ''}${more}</div>`;
+    return `<div title="${chain}" style="margin-top:4px;">
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:700;color:#1d4ed8;
+                     background:#eff6ff;border:1.5px solid #3b82f6;border-radius:999px;padding:2px 9px;white-space:nowrap;"
+        >🔀 ${seStoreNameOf(last.from_store)}에서 옴${last.reason ? ' · ' + last.reason : ''}${more}</span></div>`;
 }
 
 // 매출외출고로 나간 기록이 없으면 매장 물건이 아니다 — 팔 수 없다.
