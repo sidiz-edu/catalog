@@ -14440,7 +14440,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:13px 16px;margin-bottom:13px;">
         <div style="font-size:0.95rem;font-weight:800;color:#b45309;margin-bottom:4px;">관리 필요 없음</div>
         <div style="font-size:0.8rem;color:#92400e;line-height:1.75;">
-            팔걸이 · 머리받침대 · 캐스터 · 글라이드 · 암패드 · 커버 같은 부속과 <b>OLLY</b>, <b>T50 전시분해</b>입니다.
+            팔걸이 · 머리받침대 · 캐스터 · 글라이드 · 암패드 · 커버 같은 부속과 <b>OLLY</b>, <b>STEPO</b>, <b>T50 전시분해</b>입니다.
             <b>전시품 · 공간 · 전체 현황 · 점검에서 모두 빠져 있습니다.</b>
             수량을 맞추거나 거래처 변경 · 회수보고서를 쓸 일이 없습니다.<br>
             <b style="color:#b91c1c;">⚠️ 제품군 섞임</b> 이 붙은 코드는 같은 코드가 진짜 제품군에도 들어가 있다는 뜻입니다 —
@@ -18926,9 +18926,9 @@ function seDocOk(row, x) {
 }
 
 // ── 악세서리 (관리 필요 없음) ────────────────────────────────────────
-// 팔걸이·머리받침대·캐스터·커버 같은 부속과 OLLY, 전시분해용 T50은 전시품처럼 세지 않는다.
+// 팔걸이·머리받침대·캐스터·커버 같은 부속과 OLLY·STEPO, 전시분해용 T50은 전시품처럼 세지 않는다.
 // 전시품·공간·전체 현황·점검에서 빼고 이 탭에서만 본다.
-const SE_ACC_SERIES = new Set(['ACCESSORY', 'OLLY (올리)', 'LOLLY', 'T50 전시분해']);
+const SE_ACC_SERIES = new Set(['ACCESSORY', 'OLLY (올리)', 'LOLLY', 'STEPO (스테포)', 'T50 전시분해']);
 const seAccSeries = row => SE_ACC_SERIES.has(row && row.product_id);
 
 // 제품군이 몇 행 잘못 박혀 있어도(성수 T21AP0CC1이 'T20 2세대'로) 품목코드 단위 다수결이면
