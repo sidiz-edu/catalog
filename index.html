@@ -15309,7 +15309,8 @@ async function seLoadRecoveryReports() {
                `${x.item_code || ''}-${x.color_code || ''}`, x.warehouse, x.store_id,
                x.raw_item_code, x.raw_color_code,   // 정정 전 원문 코드로도 찾히게
                docOfRep[x.report_id], storeName[x.store_id],
-               (_recCodeName || {})[(x.item_code || '').toUpperCase().replace(/\s/g, '')]]
+               (_recCodeName || {})[(x.item_code || '').toUpperCase().replace(/\s/g, '')],
+               seSeriesOfCode(x.item_code)]
               .filter(Boolean).join(' ').toLowerCase(),
     }));
     seRenderRecovery();
@@ -16400,12 +16401,30 @@ const seYearColor = y => SE_YEAR_COLOR[y] || ['#475569', '#f1f5f9'];
 
 
 // 공백으로 구분된 단어를 모두 포함해야 매칭 (예: "t90 논현")
+// 제품명 영문·한글 짝 — 시리즈 이름 'RINGO (링고)'에서 뽑는다. ringo로 쳐도 링고가 걸린다
+let _seNameAlias = null;
+function seNameAlias() {
+    if (_seNameAlias) return _seNameAlias;
+    _seNameAlias = {};
+    const k = s => s.toLowerCase().replace(/[\s-]/g, '');
+    const add = (a, b) => (_seNameAlias[k(a)] = _seNameAlias[k(a)] || new Set()).add(k(b));
+    [typeof displaySkuData !== 'undefined' ? displaySkuData : null,
+     typeof displaySkuExtra !== 'undefined' ? displaySkuExtra : null].forEach(src =>
+        Object.keys(src || {}).forEach(s => {
+            const m = /^(.+?)\s*\(([^)]+)\)\s*$/.exec(s);
+            if (m) { add(m[1], m[2]); add(m[2], m[1]); }
+        }));
+    return _seNameAlias;
+}
+
 function seSearchMatcher(raw) {
     const terms = (raw || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) return () => true;
+    const alias = seNameAlias();
+    const alts = terms.map(t => [t, ...(alias[t.replace(/[\s-]/g, '')] || [])]);
     return hay => {
         const packed = hay.replace(/[\s-]/g, '');
-        return terms.every(t => hay.includes(t) || packed.includes(t.replace(/[\s-]/g, '')));
+        return alts.every(as => as.some(t => hay.includes(t) || packed.includes(t.replace(/[\s-]/g, ''))));
     };
 }
 
@@ -16497,7 +16516,7 @@ async function seLoadFlatRows() {
         const pool = dispMap[k] || [];
         const left = new Map(pool.map(d => [d, d.quantity || 1]));
         const give = (it, pred) => {
-            const got = assigned.get(it) || { ds: [], have: 0 };
+            const got = assigned.get(it) || { ds: [], have: 0, sold: 0 };
             let need = (it.qty || 0) - got.have;
             pool.forEach(d => {
                 const avail = left.get(d) || 0;
@@ -16505,6 +16524,7 @@ async function seLoadFlatRows() {
                 const take = Math.min(avail, need);
                 left.set(d, avail - take);
                 if (!got.ds.includes(d)) got.ds.push(d);
+                if (d.sold) got.sold += take;
                 got.have += take; need -= take;
             });
             assigned.set(it, got);
@@ -16519,13 +16539,14 @@ async function seLoadFlatRows() {
         const r = it.outgoing_requests || {};
         const sku = n(it.item_code) + '-' + n(it.color_code);
         const k = key(it.store_id, sku);
-        const got = assigned.get(it) || { ds: [], have: 0 };
+        const got = assigned.get(it) || { ds: [], have: 0, sold: 0 };
         const ds = it.store_id ? got.ds : null;
         const have = it.store_id ? got.have : 0;
+        const sold = it.store_id ? got.sold : 0;
         const want = it.qty || 0;
         const status = !it.store_id ? 'unmatched' : !ds.length ? 'none' : have === want ? 'exists' : 'mismatch';
         return {
-            it, r, sku, have, want, status, ds: ds || [],
+            it, r, sku, have, want, sold, status, ds: ds || [],
             kind: seItemClass(it.item_code, it.product_name, it.memo),
             hay: [r.title, r.order_no, ...(ds || []).map(d => d.sales_order_no),
                   it.product_name, it.raw_product_name, it.item_code, it.color_code,
@@ -16559,7 +16580,7 @@ async function seLoadFlatRows() {
             qty: d.quantity || 1, memo: null,
         };
         return {
-            it, r: {}, sku, have: d.quantity || 1, want: 0, status: 'orphan', ds: [d],
+            it, r: {}, sku, have: d.quantity || 1, want: 0, sold: 0, status: 'orphan', ds: [d],
             kind: seItemClass(itemCode, d.product_id, d.memo),
             hay: [d.product_id, itemCode, colorCode, sku, d.store_id, d.sales_order_no,
                   seStoreNameOf(d.store_id), d.location, d.memo]
@@ -16597,20 +16618,42 @@ const SE_STATUS_STYLE = {
 };
 let _seReqStatus = 'all';
 
-function seRenderStatusBar(base) {
+// 판매 여부 — 요청서 품목에 붙은 전시품 가운데 팔린 게 있으면 판매완료로 본다
+const seFlatSale = x => x.sold > 0 ? 'sold' : 'live';
+const SE_SALE_STYLE = {
+    sold: ['✅ 판매완료', '#0f766e'],
+    live: ['🪑 판매 전',  '#475569'],
+};
+let _seReqSale = 'all';
+const seSaleChip = txt => `<span style="display:inline-block;background:#ccfbf1;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;padding:0 6px;font-weight:800;white-space:nowrap;">${txt}</span>`;
+
+// 전시 현황과 판매 여부는 따로 고른다 — 두 묶음은 서로의 결과 안에서 센다
+function seRenderStatusBar(base, saleBase) {
     const bar = document.getElementById('seReqStatusBar');
     if (!bar) return;
-    const c = {}; Object.keys(SE_AUDIT_KIND).forEach(k => c[k] = 0);
+    const c = {}; Object.keys(SE_STATUS_STYLE).forEach(k => c[k] = 0);
     base.forEach(x => c[seFlatStatus(x)]++);
     const entries = [['all', `전시 현황 전체 (${base.length})`, '#003EFF'],
         ...Object.keys(SE_STATUS_STYLE)
             .filter(k => c[k] > 0)
             .map(k => [k, `${SE_STATUS_STYLE[k][0]} (${c[k]})`, SE_STATUS_STYLE[k][1]])];
-    bar.innerHTML = entries.map(([k, label, fg]) => {
-        const on = k === _seReqStatus;
-        return `<button onclick="seFilterStatus('${k}')"
+    const s = { sold: 0, live: 0 };
+    saleBase.forEach(x => s[seFlatSale(x)]++);
+    const sale = [['all', `판매 전체 (${saleBase.length})`, '#0f766e'],
+        ...Object.keys(SE_SALE_STYLE).map(k => [k, `${SE_SALE_STYLE[k][0]} (${s[k]})`, SE_SALE_STYLE[k][1]])];
+    const chip = (fn, cur) => ([k, label, fg]) => {
+        const on = k === cur;
+        return `<button onclick="${fn}('${k}')"
             style="padding:4px 11px;border-radius:6px;font-size:0.75rem;cursor:pointer;background:${on?fg:'#fff'};color:${on?'#fff':fg};border:1px solid ${on?fg:'#e2e8f0'};font-family:'Outfit',sans-serif;">${label}</button>`;
-    }).join('');
+    };
+    bar.innerHTML = entries.map(chip('seFilterStatus', _seReqStatus)).join('')
+        + '<span style="width:1px;align-self:stretch;background:#cbd5e1;margin:0 4px;"></span>'
+        + sale.map(chip('seFilterSale', _seReqSale)).join('');
+}
+
+function seFilterSale(k) {
+    _seReqSale = k;
+    seRenderFlat();
 }
 
 function seFilterStatus(k) {
@@ -16640,11 +16683,12 @@ function seRenderFlat() {
     const base = inScope.filter(x =>
         (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
     const byStatus = x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus;
-    seRenderStatusBar(base);
-    const rows = base.filter(byStatus);
+    const bySale = x => _seReqSale === 'all' || seFlatSale(x) === _seReqSale;
+    seRenderStatusBar(base.filter(bySale), base.filter(byStatus));
+    const rows = base.filter(byStatus).filter(bySale);
 
     const cnt = document.getElementById('seReqSearchCount');
-    if (cnt) cnt.textContent = (_seReqStatus === 'all' && !scoped)
+    if (cnt) cnt.textContent = (_seReqStatus === 'all' && _seReqSale === 'all' && !scoped)
         ? `${rows.length} / ${_seFlatRows.length}개 품목`
         : `${rows.length}개${scoped ? ` / 이 매장 ${inScope.length}개` : ''} · 전체 ${_seFlatRows.length}개`;
 
@@ -16658,11 +16702,13 @@ function seRenderFlat() {
             return `<span style="color:#1d4ed8;font-weight:700;">🏠 매장 ${x.have}대 · 출고 0</span>`
                  + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
         }
-        const loc = x.ds.map(seDisplayLoc).filter(Boolean).join(' / ');
+        // 팔린 전시품은 위치가 「판매완료」라 칩과 같은 말이 두 번 뜬다
+        const loc = x.ds.map(d => seDisplayLoc(d, { dropStatus: d.sold })).filter(Boolean).join(' / ');
         const head = x.have === x.want
             ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
             : `<span style="color:#f59e0b;font-weight:700;">⚠ ${x.have}/${x.want}</span>`;
-        return head + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
+        const sale = !x.sold ? '' : seSaleChip(x.sold >= x.have ? '✅ 판매완료' : `✅ 판매 ${x.sold}`) + ' ';
+        return sale + head + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
     };
 
     body.innerHTML = `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
@@ -16678,9 +16724,12 @@ function seRenderFlat() {
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시 현황</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">요청서</th>
         </tr></thead>
-        <tbody>${rows.map((x, i) => `
-            <tr style="background:${i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);">
-                <td style="padding:6px 9px;white-space:nowrap;font-weight:600;">${x.r.request_date || '-'}</td>
+        <tbody>${rows.map((x, i) => {
+            // 다 팔린 품목은 흐리게 — 매장에 남은 것과 한눈에 갈린다
+            const done = x.sold > 0 && x.sold >= x.have;
+            return `
+            <tr style="background:${done ? '#f1f5f9' : i%2?'#f8fafc':'transparent'};border-top:1px solid var(--se-border);${done ? 'color:#64748b;' : ''}">
+                <td style="padding:6px 9px;white-space:nowrap;font-weight:600;${done ? 'box-shadow:inset 3px 0 0 #0f766e;' : ''}">${x.r.request_date || '-'}</td>
                 <td style="padding:6px 9px;">${x.it.product_name || '-'}${x.it.memo
                     ? `<div style="font-size:0.66rem;color:#b45309;line-height:1.4;">${x.it.memo}</div>` : ''}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${x.it.item_code || '-'}</td>
@@ -16692,7 +16741,8 @@ function seRenderFlat() {
                 <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.status === 'orphan'
                     ? '<span style="color:#1d4ed8;">연결된 요청서 없음</span>'
                     : (x.r.ep_url ? `<a href="${x.r.ep_url}" target="_blank" style="color:#003EFF;text-decoration:none;">${x.r.title || '-'}</a>` : (x.r.title || '-'))}</td>
-            </tr>`).join('')}</tbody>
+            </tr>`;
+        }).join('')}</tbody>
     </table></div>`;
 }
 
@@ -16911,10 +16961,10 @@ function seFilterItems(reqId, filter, btn) {
     const table = document.getElementById(`req-table-${reqId}`);
     if (!table) return;
     table.querySelectorAll('tr[data-status]').forEach(tr => {
-        tr.style.display = (filter === 'all' || tr.dataset.status === filter) ? '' : 'none';
+        tr.style.display = (filter === 'all' || tr.dataset.status === filter || tr.dataset.sale === filter) ? '' : 'none';
     });
     // 버튼 스타일 토글
-    const idle = { all: '#003EFF', none: '#ef4444', mismatch: '#f59e0b' };
+    const idle = { all: '#003EFF', none: '#ef4444', mismatch: '#f59e0b', sold: '#0f766e', live: '#475569' };
     Object.keys(idle).forEach(f => {
         const b = document.getElementById(`req-filter-${f}-${reqId}`);
         if (!b) return;
@@ -17029,7 +17079,7 @@ async function seToggleReqItems(id) {
                 ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
                 : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 매출외출고 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
             return head + matches.map(d => {
-                const status = d.sold ? '판매完' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
+                const status = d.sold ? seSaleChip('✅ 판매완료') : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
                 const q = d.quantity || 1;
                 const loc = seDisplayLoc(d, { dropStatus: true });
                 return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span>${loc ? ` <span style="color:#0f766e;font-weight:600;">📍 ${loc}</span>` : ''}</span>`;
@@ -17038,11 +17088,18 @@ async function seToggleReqItems(id) {
 
         const noDisplayCount = items.filter(it => itemStatus(it) === 'none').length;
         const mismatchCount  = items.filter(it => itemStatus(it) === 'mismatch').length;
+        // 판매 여부 — 붙은 전시품 중 팔린 게 있으면 판매완료. 다 팔렸으면 줄을 흐리게 한다
+        const itemSale = it => (matchItem(it) || []).some(d => d.sold) ? 'sold' : 'live';
+        const itemDone = it => { const m = matchItem(it) || []; return m.length > 0 && m.every(d => d.sold); };
+        const soldCount = items.filter(it => itemSale(it) === 'sold').length;
         body.innerHTML = `
-            <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+            <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
                 <button id="req-filter-all-${id}" onclick="seFilterItems('${id}','all',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #003EFF;background:#003EFF;color:#fff;font-size:0.75rem;cursor:pointer;">전체 (${items.length})</button>
                 <button id="req-filter-none-${id}" onclick="seFilterItems('${id}','none',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#ef4444;font-size:0.75rem;cursor:pointer;">❌ 매출외 출고에는 적혀있는데 매장에는 없음 (${noDisplayCount})</button>
                 <button id="req-filter-mismatch-${id}" onclick="seFilterItems('${id}','mismatch',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#f59e0b;font-size:0.75rem;cursor:pointer;">⚠ 수량 불일치 (${mismatchCount})</button>
+                <span style="width:1px;align-self:stretch;background:#cbd5e1;margin:0 2px;"></span>
+                <button id="req-filter-sold-${id}" onclick="seFilterItems('${id}','sold',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#0f766e;font-size:0.75rem;cursor:pointer;">✅ 판매완료 (${soldCount})</button>
+                <button id="req-filter-live-${id}" onclick="seFilterItems('${id}','live',this)" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;cursor:pointer;">🪑 판매 전 (${items.length - soldCount})</button>
             </div>
             <div style="overflow-x:auto;">
             <table id="req-table-${id}" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
@@ -17060,8 +17117,9 @@ async function seToggleReqItems(id) {
                     ${items.map((it, i) => {
                         const matches = it.store_id ? matchItem(it) : null;
                         const status = itemStatus(it);
-                        return `<tr data-status="${status}" style="background:${i%2?'#f8fafc':'#fff'};">
-                            <td style="padding:6px 10px;">${it.product_name||'-'}${it.memo
+                        const done = itemDone(it);
+                        return `<tr data-status="${status}" data-sale="${itemSale(it)}" style="background:${done ? '#f1f5f9' : i%2?'#f8fafc':'#fff'};${done ? 'color:#64748b;' : ''}">
+                            <td style="padding:6px 10px;${done ? 'box-shadow:inset 3px 0 0 #0f766e;' : ''}">${it.product_name||'-'}${it.memo
                                 ? `<div style="font-size:0.68rem;color:#b45309;line-height:1.4;">${it.memo}</div>` : ''}</td>
                             <td style="padding:6px 10px;font-family:monospace;">${it.item_code||'-'}</td>
                             <td style="padding:6px 10px;">${it.color_code||'-'}</td>
@@ -19189,7 +19247,8 @@ async function seLoadTransfer(force) {
 const seTraHay = (doc, it) => [doc.doc_no, doc.title, doc.author, doc.approval_date,
     doc.to_office, doc.to_dealer, doc.from_dealer,
     it && it.item_code, it && it.color_code, it && it.order_no_before, it && it.order_no_after,
-    it && it.order_title, it && it.store_id, it && seStoreNameOf(it.store_id)]
+    it && it.order_title, it && it.store_id, it && seStoreNameOf(it.store_id),
+    it && seSeriesOfCode(it.item_code)]
     .filter(Boolean).join(' ').toLowerCase();
 
 function seRenderTransfer() {
