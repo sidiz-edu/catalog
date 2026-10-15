@@ -19542,10 +19542,12 @@ async function seRunAudit(force) {
     });
     disp.forEach(d => {
         if (!d.sku) return;
-        // 옮겨온 물건은 원래 매장 요청서 몫이고, 대리점 구매는 요청서가 없는 물건이다
-        if (movedIds.has(d.id) && (d.sales_order_no || d.sales_link)) return;
+        // 대리점 구매는 요청서가 없는 물건이다
         if (seIsDirectBuy(d)) return;
-        const k = key(d.store_id, seAuditNorm(d.sku));
+        // 옮겨온 물건은 원래 매장 요청서 몫이다 — 출발 매장 쪽에서 센다.
+        // 빼 버리면 출발 매장이 「출고 1대 · 매장 0대」로 뜬다 (고양→합정 GC PRO, 청주→대전 등)
+        const from = movedIds.has(d.id) && (d.sales_order_no || d.sales_link) ? (movedFrom[d.id] || [])[0] : null;
+        const k = key(from || d.store_id, seAuditNorm(d.sku));
         // 팔린 몫은 요청서 쪽에서도 빼야 한다. 전시 수량에서만 빼면 멀쩡히 판 건이
         // 「출고 2대 · 매장 1대」처럼 모자란 것으로 뜬다 — 논현 링고가 그랬다.
         // 요청서 2건 중 하나는 팔려 거변까지 끝났고 남은 하나가 매장에 있는, 맞는 상태였다.
