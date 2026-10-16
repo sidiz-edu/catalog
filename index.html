@@ -14163,6 +14163,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                         <span style="font-size:0.84rem;font-weight:700;color:#0f766e;">대리점 구매</span>
                         <span style="font-size:0.74rem;color:#475569;">매출외출고가 아니라 매장이 직접 산 제품 — 연결될 요청서가 없는 게 정상입니다</span>
                     </label>
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;flex-wrap:wrap;">
+                        <span id="seEditOriginInfo" style="flex:1;min-width:180px;font-size:0.78rem;color:#1e40af;line-height:1.5;"></span>
+                        <button type="button" id="seEditOriginBtn" onclick="seOpenOrigin()"
+                            style="background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:6px 11px;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">🔀 다른 매장에서 넘어온 물건</button>
+                    </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:0.78rem;color:var(--se-muted);">📷 사진 (최대 5장)</label>
                         <div id="seEditPhotoGrid" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
@@ -14945,7 +14950,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div class="se-sale-note">
                 · <b>망가져서 버린 물건</b>은 ② 없이 바로 ③ (사유: 오염·훼손).<br>
-                · <b>다른 매장으로 옮겨 판 물건</b>은 ②가 판매 매장 이름, ③이 출고 매장 이름으로 올라갑니다 — 전시품 번호는 출고 매장 수주번호.<br>
+                · <b>다른 매장으로 옮겨 판 물건</b>은 ②가 판매 매장 이름, ③이 출고 매장 이름으로 올라갑니다 — 전시품 번호는 출고 매장 수주번호.
+                옮길 때는 출발 매장 행에서 <b>「이동」</b>을 쓰고, 도착 매장에 먼저 등록해 버렸으면 그 행 수정 창의
+                <b>「🔀 다른 매장에서 넘어온 물건」</b>으로 출발 매장을 지정합니다. 출발 매장에 남은 행은 거기서 지웁니다.<br>
                 · <b>협조전을 고쳐 다시 올리면</b> 「기존」 칸에 앞 협조전으로 생긴 번호가 들어갑니다 (26-08-00002: P20260731-0100-00 → P20260804-0153-00).
             </div>
         </div>
@@ -16595,21 +16602,26 @@ async function seLoadFlatRows() {
     const body = document.getElementById('seReqFlatBody');
     if (_seFlatRows) { seRenderFlat(); return; }
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
-    const [itemsRes, dispRes] = await Promise.all([
+    const [itemsRes, dispRes, mvRes] = await Promise.all([
         sbAll(() => _sb.from('outgoing_request_items')
             .select('*, outgoing_requests(id,title,request_date,order_no,doc_no,ep_url)').order('id')),
         sbAll(() => _sb.from('store_displays')
-            .select('id,store_id,product_id,sku,quantity,purpose,sold,location,memo,sales_order_no').order('id')),
+            .select('id,store_id,product_id,sku,quantity,purpose,sold,location,memo,sales_order_no,sales_link').order('id')),
+        sbAll(() => _sb.from('display_moves').select('id,display_id,from_store,to_store,reason,moved_at').order('moved_at')),
     ]);
     if (itemsRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${itemsRes.error.message}</p>`; return; }
 
     const n = s => (s || '').replace(/\s/g, '').toUpperCase();
     const key = (st, sku) => `${st}|${sku}`;
+    // 옮겨온 물건은 출발 매장 요청서 몫이다 — 점검과 같은 기준으로 출발 매장에서 센다
+    const originOf = {};
+    seDropReversedMoves(mvRes.data || []).forEach(m => { if (!originOf[m.display_id]) originOf[m.display_id] = m.from_store; });
+    const homeOf = d => (originOf[d.id] && (d.sales_order_no || d.sales_link)) ? originOf[d.id] : d.store_id;
 
     // 매장·SKU별 전시 수량 / 전체 요청 수량
     const dispMap = {}, reqTot = {};
     (dispRes.data || []).forEach(d => {
-        const k = key(d.store_id, n(d.sku));
+        const k = key(homeOf(d), n(d.sku));
         (dispMap[k] || (dispMap[k] = [])).push(d);
     });
     (itemsRes.data || []).forEach(it => {
@@ -16683,7 +16695,7 @@ async function seLoadFlatRows() {
         if (o && it.item_code) orderSku.add(n(o) + '|' + n(it.item_code) + '-' + n(it.color_code));
     });
     const orphans = (dispRes.data || []).filter(d => {
-        if (d.sold || !d.sku) return false;
+        if (d.sold || !d.sku || originOf[d.id]) return false;
         const sku = n(d.sku);
         if (reqSkuKeys.has(key(d.store_id, sku))) return false;
         if (d.sales_order_no && orderSku.has(n(d.sales_order_no) + '|' + sku)) return false;
@@ -17151,15 +17163,28 @@ async function seToggleReqItems(id) {
         const storeIds = [...new Set(items.map(it => it.store_id).filter(Boolean))];
         let displays = [], allReqItems = [];
         if (storeIds.length) {
-            const [dRes, aRes] = await Promise.all([
+            const [dRes, aRes, mRes] = await Promise.all([
                 sbAll(() => _sb.from('store_displays')
-                    .select('id,store_id,product_id,sku,color_code,purpose,sold,quantity,zone_id,location,memo')
+                    .select('id,store_id,product_id,sku,color_code,purpose,sold,quantity,zone_id,location,memo,sales_order_no,sales_link')
                     .in('store_id', storeIds).order('id')),
                 sbAll(() => _sb.from('outgoing_request_items')
                     .select('store_id,item_code,color_code,qty').in('store_id', storeIds).order('id')),
+                sbAll(() => _sb.from('display_moves').select('id,display_id,from_store,to_store,reason,moved_at').order('moved_at')),
             ]);
-            displays = dRes.data || [];
             allReqItems = aRes.data || [];
+            // 옮겨간 물건은 출발 매장 몫 — 이 매장에서 나간 것은 불러와 이 매장으로 세고, 들어온 것은 뺀다
+            const originOf = {};
+            seDropReversedMoves(mRes.data || []).forEach(m => { if (!originOf[m.display_id]) originOf[m.display_id] = m.from_store; });
+            const outIds = Object.keys(originOf).filter(id => storeIds.includes(originOf[id]));
+            let moved = [];
+            if (outIds.length) {
+                const { data } = await _sb.from('store_displays')
+                    .select('id,store_id,product_id,sku,color_code,purpose,sold,quantity,zone_id,location,memo,sales_order_no,sales_link').in('id', outIds);
+                moved = data || [];
+            }
+            const linked = d => !!(d.sales_order_no || d.sales_link);
+            displays = (dRes.data || []).filter(d => !(originOf[d.id] && linked(d)))
+                .concat(moved.filter(linked).map(d => ({ ...d, _at: d.store_id, store_id: originOf[d.id] })));
         }
 
         // 같은 매장·SKU가 여러 요청서로 나뉘어 출고되므로 요청 수량은 전체를 합산해 비교한다
@@ -17198,7 +17223,8 @@ async function seToggleReqItems(id) {
                 ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
                 : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 매출외출고 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
             return head + matches.map(d => {
-                const status = d.sold ? seSaleChip('✅ 판매완료') : d.purpose === '창고' ? '📦 창고' : '🪑 전시중';
+                const status = (d.sold ? seSaleChip('✅ 판매완료') : d.purpose === '창고' ? '📦 창고' : '🪑 전시중')
+                    + (d._at ? ` <span style="color:#1d4ed8;">🔀 ${seStoreNameOf(d._at)}로 옮김</span>` : '');
                 const q = d.quantity || 1;
                 const loc = seDisplayLoc(d, { dropStatus: true });
                 return `<span style="font-size:0.72rem;display:block;line-height:1.7;">🎯 ${status}${q > 1 ? ` <b>×${q}</b>` : ''} <span style="color:#64748b;font-family:monospace;">${d.sku||''}</span>${loc ? ` <span style="color:#0f766e;font-weight:600;">📍 ${loc}</span>` : ''}</span>`;
@@ -17490,6 +17516,140 @@ async function seUnlinkReqFromRow() {
 // 요청서 한 장에 매장별 수주번호가 따로 있는데 테이블에는 대표 번호 하나뿐이다
 // (25-06-00006 은 매장 10곳에 번호가 10개다). 그대로 넣으면 남의 매장 번호가
 // 박히므로, 넣기 전에 보여 주고 고칠 수 있게 한다. 빈칸으로 두면 번호 없이 간다.
+// ── 다른 매장에서 넘어온 물건 ──────────────────────────────────────
+// 매장에서 먼저 등록하고 보니 다른 매장에서 넘어온 물건일 때. 「이동」은 출발 매장 행을 옮기는
+// 것이라 이미 도착 매장에 만든 행에는 쓸 수 없다. 출발 매장을 지정하면 이동 기록이 남고
+// 수주번호는 출발 매장 것으로 바뀐다 — 그다음은 「이동」으로 옮긴 행과 똑같이 다룬다
+// (협조전은 판매 매장 이름, 회수보고서·점검은 출발 매장 몫).
+function seRenderOriginInfo(row) {
+    const info = document.getElementById('seEditOriginInfo'), btn = document.getElementById('seEditOriginBtn');
+    if (!info || !btn) return;
+    const mv = (seMoves[row.id] || [])[0];
+    if (mv) {
+        info.innerHTML = `🔀 <b>${seStoreNameOf(mv.from_store)}</b>에서 넘어온 물건 · ${mv.reason || ''}`;
+        btn.textContent = '출발 매장 지정 취소';
+        btn.style.background = '#64748b';
+        btn.onclick = () => seCancelOrigin(row.id);
+    } else {
+        info.innerHTML = '여기서 등록했지만 원래 <b>다른 매장으로 출고된</b> 물건이면 출발 매장을 지정하세요.';
+        btn.textContent = '🔀 다른 매장에서 넘어온 물건';
+        btn.style.background = '#1d4ed8';
+        btn.onclick = () => seOpenOrigin();
+    }
+}
+
+let _seOrigin = null;   // { row, reqs, dups }
+function seOpenOrigin() {
+    const row = (seDisplayData || []).find(r => r.id === document.getElementById('seEditId').value);
+    if (!row) return;
+    let m = document.getElementById('seOriginModal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'seOriginModal';
+        m.style.cssText = 'display:none;position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;';
+        m.onclick = e => { if (e.target === m) m.style.display = 'none'; };
+        document.body.appendChild(m);
+    }
+    const opts = seStores().filter(s => s.id !== row.store_id && !/테스트/.test(s.name))
+        .map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    m.innerHTML = `<div style="background:#fff;border-radius:14px;width:560px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.2);font-family:'Outfit',sans-serif;">
+        <div style="background:#1d4ed8;color:#fff;border-radius:14px 14px 0 0;padding:15px 20px;font-weight:800;">🔀 다른 매장에서 넘어온 물건</div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:11px;font-size:0.84rem;color:#0f172a;">
+            <div style="color:#475569;font-size:0.8rem;">${seStoreNameOf(row.store_id)} · <b>${row.product_id || ''} ${row.sku || ''}</b></div>
+            <label style="display:flex;flex-direction:column;gap:4px;">출발 매장 (원래 출고된 매장)
+                <select id="seOriginStore" onchange="seLoadOriginCands()" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">
+                    <option value="">— 고르세요 —</option>${opts}</select></label>
+            <label style="display:flex;flex-direction:column;gap:4px;">사유
+                <select id="seOriginReason" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">
+                    <option>전시품 판매</option><option>재배치</option></select></label>
+            <div id="seOriginCands" style="font-size:0.8rem;color:#64748b;">출발 매장을 고르면 그 매장 요청서와 남아 있는 행을 찾아봅니다.</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+                <button onclick="document.getElementById('seOriginModal').style.display='none'" style="padding:8px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;">닫기</button>
+                <button onclick="seSaveOrigin()" style="padding:8px 16px;border:none;background:#1d4ed8;color:#fff;border-radius:7px;font-weight:700;cursor:pointer;">지정</button>
+            </div>
+        </div></div>`;
+    _seOrigin = { row, reqs: [], dups: [] };
+    m.style.display = 'flex';
+}
+
+async function seLoadOriginCands() {
+    const st = document.getElementById('seOriginStore').value, box = document.getElementById('seOriginCands');
+    const row = _seOrigin && _seOrigin.row;
+    if (!st || !row) { box.textContent = ''; return; }
+    box.textContent = '찾는 중...';
+    const sku = (row.sku || '').toUpperCase();
+    const cut = sku.lastIndexOf('-');
+    const code = cut > 0 ? sku.slice(0, cut) : sku, color = cut > 0 ? sku.slice(cut + 1) : '';
+    const [rq, ds] = await Promise.all([
+        _sb.from('outgoing_request_items').select('qty,item_code,color_code,memo,outgoing_requests(doc_no,title,order_no,ep_url)')
+            .eq('store_id', st).ilike('item_code', code),
+        _sb.from('store_displays').select('id,sku,sold,location,memo,sales_order_no,sales_link,updated_by').eq('store_id', st),
+    ]);
+    _seOrigin.reqs = (rq.data || []).filter(i => (i.color_code || '').toUpperCase() === color && i.outgoing_requests);
+    _seOrigin.dups = (ds.data || []).filter(d => !d.sold && (d.sku || '').toUpperCase() === sku);
+    const reqHtml = _seOrigin.reqs.length
+        ? _seOrigin.reqs.map((i, n) => { const r = i.outgoing_requests;
+            return `<label style="display:flex;gap:7px;align-items:flex-start;padding:6px 8px;border:1px solid #e2e8f0;border-radius:7px;margin-top:4px;cursor:pointer;">
+                <input type="radio" name="seOriginReq" value="${n}" ${n === 0 ? 'checked' : ''} style="margin-top:3px;">
+                <span><b>${(r.doc_no || '').replace('시디즈-', '')}</b> ${r.title || ''}<br><span style="color:#64748b;">대표번호 ${r.order_no || '-'} · ${i.qty}대</span></span></label>`; }).join('')
+        : '<div style="color:#b45309;">그 매장 요청서에 같은 코드가 없습니다. 수주번호는 직접 넣게 됩니다.</div>';
+    const dupHtml = _seOrigin.dups.length
+        ? `<div style="margin-top:10px;font-weight:700;color:#0f172a;">${seStoreNameOf(st)}에 같은 코드 전시 행이 남아 있습니다</div>
+           <div style="color:#64748b;">이 물건과 같은 것이면 체크하세요 — 그 행은 지우고 번호를 이어받습니다.</div>` +
+          _seOrigin.dups.map((d, n) => `<label style="display:flex;gap:7px;align-items:center;padding:6px 8px;border:1px solid #fde68a;background:#fffbeb;border-radius:7px;margin-top:4px;cursor:pointer;">
+                <input type="checkbox" class="seOriginDup" value="${n}">
+                <span>${d.sku} · ${d.location || '위치 없음'} · ${d.sales_order_no || '번호 없음'}${d.memo ? ' · ' + d.memo : ''} <span style="color:#94a3b8;">(${d.updated_by || ''})</span></span></label>`).join('')
+        : '';
+    box.innerHTML = `<div style="font-weight:700;color:#0f172a;">원래 출고 문서</div>${reqHtml}${dupHtml}`;
+}
+
+async function seSaveOrigin() {
+    const o = _seOrigin, row = o && o.row;
+    const st = document.getElementById('seOriginStore').value;
+    if (!row || !st) { alert('출발 매장을 고르세요.'); return; }
+    const reason = document.getElementById('seOriginReason').value;
+    const pick = document.querySelector('input[name="seOriginReq"]:checked');
+    const req = pick ? o.reqs[+pick.value].outgoing_requests : null;
+    const dups = [...document.querySelectorAll('.seOriginDup:checked')].map(c => o.dups[+c.value]);
+    // 남은 행을 지우면 그 행의 번호를 이어받는다 — 그 매장 몫 번호가 이미 맞춰져 있을 가능성이 크다
+    const inherit = dups.find(d => d.sales_order_no);
+    let no = inherit ? inherit.sales_order_no : null;
+    if (!no) {
+        no = seAskOrderNo(`${seStoreNameOf(st)} → ${seStoreNameOf(row.store_id)} · ${row.sku}`, req && req.order_no,
+            [req ? `요청서 ${req.doc_no}` : '요청서 없음', `${seStoreNameOf(st)}으로 나간 수주번호를 넣어 주세요.`]);
+        if (no === null) return;
+    }
+    if (dups.length && !confirm(`${seStoreNameOf(st)}에 남은 행 ${dups.length}개를 지웁니다. 계속할까요?`)) return;
+    const who = document.getElementById('seEditUpdater').value.trim() || '관리자';
+    const { error: e1 } = await _sb.from('display_moves').insert({
+        display_id: row.id, from_store: st, to_store: row.store_id, product_id: row.product_id, sku: row.sku,
+        qty: row.quantity, reason, reason_note: '나중에 지정 — 먼저 등록된 물건의 출발 매장', moved_by: who });
+    if (e1) { alert('저장 실패: ' + e1.message); return; }
+    const { error: e2 } = await _sb.from('store_displays').update({
+        sales_order_no: no || null, sales_link: (req && req.ep_url) || (inherit && inherit.sales_link) || row.sales_link || null,
+        updated_by: '출발 매장 지정' }).eq('id', row.id);
+    if (e2) { alert('저장 실패: ' + e2.message); return; }
+    for (const d of dups) await _sb.from('store_displays').delete().eq('id', d.id);
+    document.getElementById('seOriginModal').style.display = 'none';
+    document.getElementById('seEditModal').style.display = 'none';
+    seInvalidate();
+    if (typeof showToast === 'function') showToast(`🔀 ${seStoreNameOf(st)}에서 넘어온 물건으로 지정`);
+    await seRenderList(seCurrentStore);
+}
+
+async function seCancelOrigin(id) {
+    const row = (seDisplayData || []).find(r => r.id === id), mv = (seMoves[id] || [])[0];
+    if (!row || !mv) return;
+    if (!confirm(`${seStoreNameOf(mv.from_store)}에서 넘어온 것으로 지정한 것을 취소할까요?\n수주번호는 그대로 두니 필요하면 직접 고치세요.`)) return;
+    const { error } = await _sb.from('display_moves').insert({
+        display_id: id, from_store: mv.to_store, to_store: mv.from_store, product_id: row.product_id, sku: row.sku,
+        qty: row.quantity, reason: SE_ORIGIN_CANCEL, moved_by: document.getElementById('seEditUpdater').value.trim() || '관리자' });
+    if (error) { alert('취소 실패: ' + error.message); return; }
+    document.getElementById('seEditModal').style.display = 'none';
+    seInvalidate();
+    await seRenderList(seCurrentStore);
+}
+
 function seAskOrderNo(head, defNo, lines) {
     const one = seOrdSingle(defNo);
     const note = defNo && !one
@@ -18536,6 +18696,7 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditLocation').value = row.location || '';
     document.getElementById('seEditMemo').value = (row.memo || '').replace(SE_DIRECT_RE, '').replace(/^[\s·,]+|[\s·,]+$/g, '');
     document.getElementById('seEditDirect').checked = seIsDirectBuy(row);
+    seRenderOriginInfo(row);
     document.getElementById('seEditPhoto').value = '';
     _seEditPhotos = [...(row.image_urls || [])];
     if (!_seEditPhotos.length && row.image_url) _seEditPhotos = [row.image_url];
@@ -19559,10 +19720,15 @@ function seOrdKey(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 // 남았는데 지울 권한이 없다. 거꾸로 된 쪽을 그냥 두면 그 행이 어디서 왔는지가
 // 뒤집혀 회수보고서 몫을 엉뚱한 매장에서 찾는다.
 // A→B→C 처럼 정말 여러 번 옮긴 기록은 방향이 반대가 아니라서 건드리지 않는다.
+const SE_ORIGIN_CANCEL = '출발 매장 지정 취소';
 function seDropReversedMoves(list) {
     const newer = (a, b) => (String(a.moved_at || '') !== String(b.moved_at || ''))
         ? String(a.moved_at || '') > String(b.moved_at || '')
         : String(a.id || '') > String(b.id || '');
+    // 「출발 매장 지정 취소」는 지울 수 없는 이동 기록을 상쇄하려고 남긴 것 — 짝과 함께 없던 일로 본다
+    const cancels = (list || []).filter(x => x.reason === SE_ORIGIN_CANCEL);
+    list = (list || []).filter(m => m.reason !== SE_ORIGIN_CANCEL && !cancels.some(x => x.display_id === m.display_id
+        && x.from_store === m.to_store && x.to_store === m.from_store && newer(x, m)));
     return (list || []).filter(m => !list.some(x => x !== m
         && x.display_id === m.display_id
         && x.from_store === m.to_store && x.to_store === m.from_store
