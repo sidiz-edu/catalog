@@ -17795,14 +17795,22 @@ async function seLinkReqItemToRow(i) {
 
 // 거변·회수의 수주건명에는 「매출외25-04-00052(스타필드고양-홍승연- 링고…)」처럼
 // 출고 문서가 적혀 있다. 그걸 눌러 요청서 내용을 그 자리에서 펼쳐 본다.
-async function seOpenReqPopupByMo(mo, label) {
+// 수주번호는 출고 매장 몫이다. 옮겨 판 물건은 거변 매장과 다르므로 건명에 적힌 매장을 먼저 본다.
+const seTraOriginStore = it => seStoreFromAddress(String(it.order_title || '').replace(/^거변-[^\[]*/, '')) || it.store_id || '';
+let _seReqLookupMineOnly = true;   // 요청서 팝업: 매칭된 매장 품목만 볼지
+function seReqLookupSetMine(on) {
+    _seReqLookupMineOnly = on;
+    if (_seDetailReq) seReqLookupDetail(_seDetailReq.id);
+}
+
+async function seOpenReqPopupByMo(mo, label, storeId) {
     if (!mo) return;
     await seEnsureReqIndex();
     const r = (_seReqByMo || {})[mo];
     if (!r) { alert(`매출외${mo} 요청서가 카탈로그에 없습니다.`); return; }
     document.getElementById('seReqLookupKind').textContent = '매출외 요청서';
     document.getElementById('seReqLookupSku').textContent = label || ('매출외' + mo);
-    _seReqLookupCtx = { sku: label || '', storeId: '', orderNo: '', rowId: null, fromMo: mo };
+    _seReqLookupCtx = { sku: label || '', storeId: storeId || '', orderNo: '', rowId: null, fromMo: mo };
     document.getElementById('seReqLookupModal').style.display = 'flex';
     seReqLookupDetail(r.id);
 }
@@ -17828,7 +17836,18 @@ async function seReqLookupDetail(reqId) {
     const totAmt = rows.reduce((s, it) => s + (it.amount || 0), 0);
     const esc = s => (s || '').replace(/'/g, "\'");
 
+    // 협조전·회수에서 연 팝업은 그 매장 품목만 먼저 보여준다. 매장 품목이 없으면 전체를 보인다.
+    const fromMo = !!(_seReqLookupCtx || {}).fromMo;
+    const storeRows = curStore ? rows.filter(it => it.store_id === curStore) : [];
+    const onlyMine = fromMo && curStore && _seReqLookupMineOnly && storeRows.length > 0;
+    const mineBtn = (on, txt) => `<button onclick="seReqLookupSetMine(${on})" style="background:${_seReqLookupMineOnly === on ? '#1d4ed8' : 'rgba(255,255,255,0.1)'};border:none;border-radius:7px;padding:5px 11px;color:${_seReqLookupMineOnly === on ? '#fff' : '#cbd5e1'};font-size:0.74rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">${txt}</button>`;
+    const scopeBar = fromMo && curStore ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+            ${mineBtn(true, `🎯 ${seStoreNameOf(curStore)}만`)}${mineBtn(false, '전체 매장')}
+            <span style="font-size:0.72rem;color:#94a3b8;">${storeRows.length ? `이 매장 ${storeRows.length}행 / 전체 ${rows.length}행` : '이 요청서에 이 매장 품목이 없어 전체를 보여줍니다'}</span>
+        </div>` : '';
+
     const trs = rows.map((it, i) => {
+        if (onlyMine && it.store_id !== curStore) return '';
         const sku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
         const mine = sku === cur && (!curStore || it.store_id === curStore);
         return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">
@@ -17856,6 +17875,7 @@ async function seReqLookupDetail(reqId) {
             <div style="font-size:0.75rem;color:#94a3b8;">${r.requester || ''} · 납기 ${r.delivery_date || '-'} · 수주번호 ${r.order_no || '-'}</div>
             <div style="font-size:0.72rem;color:#475569;margin-top:3px;">품목 ${rows.length}행 · 수량 ${totQty}${totAmt ? ` · 합계 ${totAmt.toLocaleString()}원` : ''}</div>
         </div>
+        ${scopeBar}
         <div style="overflow-x:auto;margin-top:10px;">
             <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
                 <thead><tr style="color:#64748b;text-align:left;border-bottom:1px solid #334155;">
@@ -19749,7 +19769,7 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;text-align:right;">${it.qty ?? '-'}</td>
                 ${seTraReqCell(it)}
                 <td style="padding:6px 9px;font-family:monospace;${seMoNo(it.order_title) ? 'color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;' : 'color:#64748b;'}"
-                    ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"` : ''}
+                    ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}','${seTraOriginStore(it)}')"` : ''}
                     title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
                 <td style="padding:6px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
@@ -19765,7 +19785,7 @@ function seTraReqCell(it) {
     const text = r ? r.title : (it.order_title || '-');
     const tip = String((r ? r.doc_no + ' · ' + r.title : it.order_title) || '').replace(/"/g, '&quot;');
     return `<td style="padding:6px 9px;max-width:340px;overflow:hidden;text-overflow:ellipsis;${mo ? 'cursor:pointer;' : ''}" title="${tip}"
-        ${mo ? `onclick="seOpenReqPopupByMo('${mo}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"` : ''}>
+        ${mo ? `onclick="seOpenReqPopupByMo('${mo}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}','${seTraOriginStore(it)}')"` : ''}>
         ${mo ? `<span style="font-family:monospace;color:#1d4ed8;margin-right:6px;">${mo}</span>` : ''}<span style="color:${r ? 'var(--se-text)' : '#94a3b8'};">${text}</span></td>`;
 }
 
@@ -19787,7 +19807,7 @@ function seTraTable(items, inner) {
                 <td style="padding:5px 9px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">
                     <span style="font-family:monospace;color:#64748b;">${it.order_no_before || '-'}</span>
                     ${it.order_title ? (seMoNo(it.order_title)
-                        ? `<div onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"
+                        ? `<div onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}','${seTraOriginStore(it)}')"
                                title="매출외출고 요청서 내용 보기"
                                style="font-size:0.68rem;color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">${it.order_title}</div>`
                         : `<div style="font-size:0.68rem;color:#94a3b8;">${it.order_title}</div>`) : ''}
