@@ -19722,6 +19722,7 @@ async function seLoadTraDisp() {
     seDropReversedMoves(m.data || []).sort((a, b) => String(a.moved_at || '').localeCompare(String(b.moved_at || '')))
         .forEach(x => { if (!first[x.display_id]) first[x.display_id] = x.from_store; });
     _seTraDisp = (d.data || []).map(r => ({ ...r, _from: first[r.id] || r.store_id, _k: seOrdKey(r.sku) }));
+    _seTraAlloc = null;
     seRenderTransfer();
     if (_recItems) seRenderRecovery();
 }
@@ -19738,26 +19739,49 @@ function seTraRowsFor(it) {
     if (byReq.length) return byReq;
     // 문서 색상 오기(CN9WW↔CM9WW, 원문 L941LC↔요청서 L091CR) — 같은 품목코드 + 같은 수주번호면 그 행이다
     const item = seOrdKey(it.item_code);
-    return _seTraDisp.filter(r => r._k.startsWith(item) && seOrdKey(String(r.sku || '').split('-')[0]) === item
-        && (r._from === from || r.store_id === it.store_id)
-        && seOrdRank(r.sales_order_no, it.order_no_before || it.order_no) === 1)
-        .map(r => ({ ...r, _codeDiff: true }));
+    const sameNo = r => (r._from === from || r.store_id === it.store_id)
+        && seOrdRank(r.sales_order_no, it.order_no_before || it.order_no) === 1;
+    const byItem = _seTraDisp.filter(r => seOrdKey(String(r.sku || '').split('-')[0]) === item && sameNo(r));
+    if (byItem.length) return byItem.map(r => ({ ...r, _codeDiff: 'color' }));
+    // 품목코드가 한 글자만 틀린 경우(G10HDA2CC2 ↔ G10HDA1CC2) — 같은 수주번호나 같은 요청서의 출고 매장 행
+    const oneOff = (x, y) => x.length === y.length && [...x].filter((c, i) => c !== y[i]).length === 1;
+    const linked = r => sameNo(r) || !!(req && req.ep_url && r._from === from && r.sales_link === req.ep_url);
+    return _seTraDisp.filter(r => linked(r) && oneOff(seOrdKey(String(r.sku || '').split('-')[0]), item))
+        .map(r => ({ ...r, _codeDiff: 'item' }));
+}
+// 문서 한 장 안에서는 줄마다 다른 전시품 행을 하나씩 붙인다 — 판매된 행부터.
+// 재상신(26-08-00002)처럼 같은 물건이 다른 문서에 다시 올라오는 건 문서가 달라 다시 쓴다.
+let _seTraAlloc = null;
+function seTraBuildAlloc() {
+    _seTraAlloc = new Map();
+    const groups = (_seTraDocs || []).map(d => d.items);
+    const byRep = {};
+    (_recItems || []).forEach(x => (byRep[x.report_id] = byRep[x.report_id] || []).push(x));
+    groups.push(...Object.values(byRep));
+    groups.forEach(items => {
+        const used = new Set();
+        items.forEach(it => {
+            const rows = (seTraRowsFor(it) || []).slice().sort((a, b) => (b.sold ? 1 : 0) - (a.sold ? 1 : 0));
+            const pick = rows.find(r => !used.has(r.id)) || rows[0] || null;
+            if (pick) used.add(pick.id);
+            _seTraAlloc.set(it, pick);
+        });
+    });
 }
 function seTraStatusCell(it) {
-    const rows = seTraRowsFor(it);
-    const td = s => `<td style="padding:6px 9px;">${s}</td>`;
-    if (rows == null) return td('<span style="color:#94a3b8;">…</span>');
-    if (!rows.length) return td('<span title="같은 매장·코드의 전시품 행을 찾지 못했습니다" style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">❓ 전시품 없음</span>');
-    return td(rows.map(r => {
-        const ex = r.sold ? seExitOf(r) : null;
-        const moved = r.store_id !== r._from;
-        const where = `${moved ? '🔀 ' : ''}${seStoreNameOf(r.store_id).replace(/^시디즈 더 프로그레시브 /, '')}${!r.sold && r.location ? ' · ' + r.location : ''}`;
-        const chip = ex
-            ? `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${ex.bg};color:#fff;">${ex.label}</span>`
-            : `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;">전시 중</span>`;
-        const diff = r._codeDiff ? ` <span title="문서와 전시품의 색상 코드가 다릅니다" style="font-size:0.66rem;color:#b45309;font-weight:700;">전시품 ${String(r.sku || '').split('-').slice(1).join('-')}</span>` : '';
-        return `<div style="display:flex;gap:5px;align-items:center;margin:1px 0;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span>${diff}</div>`;
-    }).join(''));
+    const td = s => `<td style="padding:6px 9px;white-space:nowrap;">${s}</td>`;
+    if (!_seTraDisp) return td('<span style="color:#94a3b8;">…</span>');
+    if (!_seTraAlloc || !_seTraAlloc.has(it)) seTraBuildAlloc();
+    const r = _seTraAlloc.get(it);
+    const tag = (txt, bg, fg, bd) => `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${bg};color:${fg};${bd ? 'border:1px solid ' + bd + ';' : ''}">${txt}</span>`;
+    if (!r) return td(`<span title="같은 매장·코드의 전시품 행을 찾지 못했습니다">${tag('❓ 전시품 없음', '#fef2f2', '#dc2626', '#fecaca')}</span>`);
+    const ex = r.sold ? seExitOf(r) : null;
+    const moved = r.store_id !== r._from;
+    const where = `${moved ? '🔀 ' : ''}${seStoreNameOf(r.store_id).replace(/^시디즈 더 프로그레시브 /, '')}${!r.sold && r.location ? ' · ' + r.location : ''}`;
+    const chip = ex ? tag(ex.label, ex.bg, '#fff')
+        : `<span title="문서에는 판매로 올라갔는데 전시품은 아직 「판매 중」입니다. 매장 확인이 필요합니다">${tag('⚠ 전시품은 아직 전시 중', '#fffbeb', '#b45309', '#fcd34d')}</span>`;
+    const diff = r._codeDiff ? ` <span title="문서와 전시품의 코드가 다릅니다 — 문서 오기로 보고 같은 수주번호의 전시품에 붙였습니다" style="font-size:0.66rem;color:#b45309;font-weight:700;">전시품 ${r._codeDiff === 'item' ? r.sku : String(r.sku || '').split('-').slice(1).join('-')}</span>` : '';
+    return td(`<div style="display:flex;gap:5px;align-items:center;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span>${diff}</div>`);
 }
 
 const seTraHay = (doc, it, field = 'all') => {
@@ -19958,7 +19982,7 @@ let _seAudit = null;
 // 전시품이 바뀌면 그걸 재료로 쓰는 화면의 캐시를 버린다.
 // 요청서 「품목 전체보기」는 수주번호와 전시 현황을 전시품에서 가져오므로
 // 비우지 않으면 전시품 쪽에서 번호를 고쳐도 옛 값이 그대로 남는다.
-function seInvalidate() { _seAudit = null; _seFlatRows = null; _seTraDisp = null; }
+function seInvalidate() { _seAudit = null; _seFlatRows = null; _seTraDisp = null; _seTraAlloc = null; }
 
 function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
 // 수주번호는 문서마다 P20250707-0315-00 / P20250707031500 처럼 표기가 갈린다.
