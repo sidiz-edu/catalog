@@ -17593,6 +17593,9 @@ async function seLoadOriginCands() {
     const all = (rq.data || []).filter(i => i.outgoing_requests).map(i => ({ ...i, _lv: lvl(i.item_code, i.color_code) })).filter(i => i._lv);
     const best = Math.min(...all.map(i => i._lv), 9);
     _seOrigin.reqs = all.filter(i => i._lv === best);
+    // 후보에 없으면 그 매장 요청서 전체에서 직접 찾는다
+    _seOrigin.allReqs = (rq.data || []).filter(i => i.outgoing_requests)
+        .sort((a, b) => String(b.outgoing_requests.doc_no || '').localeCompare(String(a.outgoing_requests.doc_no || '')));
     _seOrigin.dups = (ds.data || []).filter(d => !d.sold && d.sku).map(d => {
         const s = d.sku.toUpperCase(), c2 = s.lastIndexOf('-');
         return { ...d, _lv: lvl(c2 > 0 ? s.slice(0, c2) : s, c2 > 0 ? s.slice(c2 + 1) : '') };
@@ -17612,7 +17615,43 @@ async function seLoadOriginCands() {
                 <input type="checkbox" class="seOriginDup" value="${n}">
                 <span>${d.sku} · ${d.location || '위치 없음'} · ${d.sales_order_no || '번호 없음'}${d.memo ? ' · ' + d.memo : ''} <span style="color:#94a3b8;">(${d.updated_by || ''})</span></span></label>`).join('')
         : '';
-    box.innerHTML = `<div style="font-weight:700;color:#0f172a;">원래 출고 문서</div>${lvNote}${reqHtml}${dupHtml}`;
+    box.innerHTML = `<div style="font-weight:700;color:#0f172a;">원래 출고 문서</div>${lvNote}${reqHtml}
+        <div style="margin-top:10px;font-weight:700;color:#0f172a;">${seStoreNameOf(st)} 요청서 전체에서 찾기
+            <span style="font-weight:400;color:#64748b;">(${_seOrigin.allReqs.length}품목)</span></div>
+        <input id="seOriginSearch" type="text" placeholder="제품명 · 품목코드 · 색상 · 문서번호" oninput="seRenderOriginSearch()"
+            style="width:100%;box-sizing:border-box;margin-top:4px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;">
+        <div id="seOriginSearchList" style="max-height:220px;overflow-y:auto;"></div>${dupHtml}`;
+    seRenderOriginSearch();
+}
+
+// 그 매장 요청서 전체 — 고르면 위 후보 목록에 넣고 그것을 고른 상태로 둔다
+function seRenderOriginSearch() {
+    const o = _seOrigin, list = document.getElementById('seOriginSearchList');
+    if (!o || !list) return;
+    const hit = seSearchMatcher(document.getElementById('seOriginSearch').value);
+    const rows = (o.allReqs || []).map((i, n) => ({ i, n })).filter(({ i }) => hit([i.product_name, i.item_code, i.color_code,
+        `${i.item_code}-${i.color_code}`, i.outgoing_requests.doc_no, i.outgoing_requests.title].filter(Boolean).join(' ').toLowerCase()));
+    list.innerHTML = rows.slice(0, 60).map(({ i, n }) => { const r = i.outgoing_requests;
+        return `<div onclick="sePickOriginReq(${n})" style="padding:5px 8px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:0.78rem;">
+            <b>${i.product_name || ''}</b> ${i.item_code}-${i.color_code || ''} × ${i.qty}
+            <span style="color:#64748b;">· ${(r.doc_no || '').replace('시디즈-', '')} ${r.title || ''}</span></div>`; }).join('')
+        + (rows.length > 60 ? `<div style="color:#94a3b8;font-size:0.74rem;padding:4px 8px;">… ${rows.length - 60}개 더 — 검색어를 좁히세요</div>` : '')
+        || '<div style="color:#94a3b8;font-size:0.78rem;padding:6px 8px;">맞는 품목이 없습니다.</div>';
+}
+function sePickOriginReq(n) {
+    const o = _seOrigin, it = o.allReqs[n];
+    let k = o.reqs.indexOf(it);
+    if (k < 0) { o.reqs.push(it); k = o.reqs.length - 1; }
+    const box = document.getElementById('seOriginCands');
+    const lab = document.createElement('label');
+    if (!box.querySelector(`input[name="seOriginReq"][value="${k}"]`)) {
+        const r = it.outgoing_requests;
+        lab.style.cssText = 'display:flex;gap:7px;align-items:flex-start;padding:6px 8px;border:1.5px solid #1d4ed8;border-radius:7px;margin-top:4px;cursor:pointer;background:#eff6ff;';
+        lab.innerHTML = `<input type="radio" name="seOriginReq" value="${k}" style="margin-top:3px;">
+            <span><b>${(r.doc_no || '').replace('시디즈-', '')}</b> ${r.title || ''}<br><span style="color:#64748b;">${it.product_name || ''} ${it.item_code}-${it.color_code || ''} · 대표번호 ${r.order_no || '-'} · ${it.qty}대 · 직접 고름</span></span>`;
+        box.querySelector('div').after(lab);
+    }
+    box.querySelector(`input[name="seOriginReq"][value="${k}"]`).checked = true;
 }
 
 async function seSaveOrigin() {
