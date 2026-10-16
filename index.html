@@ -16851,6 +16851,7 @@ function seRenderFlat() {
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">색상</th>
             <th style="padding:7px 9px;text-align:center;white-space:nowrap;">수량</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">문서번호</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">수주번호</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시 현황</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">요청서</th>
@@ -16867,6 +16868,7 @@ function seRenderFlat() {
                 <td style="padding:6px 9px;font-family:monospace;">${x.it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:center;">${x.it.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;${!x.it.store_id?'color:#ef4444;':''}">${x.it.store_name_raw || ''}${x.it.store_id ? ` <span style="color:#22c55e;font-size:0.68rem;">(${x.it.store_id})</span>` : ' ⚠'}</td>
+                <td style="padding:6px 9px;font-size:0.72rem;white-space:nowrap;color:#334155;" title="${(x.r.doc_no || '').replace(/"/g, '&quot;')}">${x.r.doc_no ? x.r.doc_no.replace(/^시디즈-/, '') : '<span style="color:#cbd5e1;">-</span>'}</td>
                 <td style="padding:6px 9px;font-family:monospace;font-size:0.72rem;white-space:nowrap;">${seFlatOrdCell(x)}</td>
                 <td style="padding:6px 9px;font-size:0.72rem;">${badge(x)}</td>
                 <td style="padding:6px 9px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;" title="${(x.r.title||'').replace(/"/g,'&quot;')}">${x.status === 'orphan'
