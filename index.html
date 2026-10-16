@@ -15624,6 +15624,11 @@ function seRenderUnmatchedRef() {
         const k = d.sku.toUpperCase();
         dispQty[k] = (dispQty[k] || 0) + (d.quantity || 0);
     });
+    // 다른 매장으로 옮겨간 물건도 이 매장 요청서 몫으로 센다
+    (seMovedOut || []).forEach(d => {
+        const k = (d.sku || '').toUpperCase();
+        if (k) dispQty[k] = (dispQty[k] || 0) + (d.quantity || 1);
+    });
     const have = new Set(Object.keys(dispQty));
     const bag = {};
     seReqItems.forEach(it => {
@@ -15967,7 +15972,8 @@ let seDisplayData = [];
 let seReqSkuSet = new Set();
 let seDemoSku   = new Set();   // 분해도 전시용 SKU (요청서 비고 기준)
 let seIssues    = {};          // sku -> 품질·A/S 기록 (구글시트 전시품 현황에서 가져온다)
-let seMoves     = {};          // display_id -> 매장 간 이동 이력 (오래된 것부터)
+let seMoves     = {};
+let seMovedOut  = [];          // 이 매장에서 출발해 다른 매장에 있는 전시품 (이 매장 요청서 몫)          // display_id -> 매장 간 이동 이력 (오래된 것부터)
 let sePriceBySku = {};         // sku -> [{price, store}] — 매장마다 소비자가가 갈리는지 보려고 전 매장을 본다
 let seRecoveryDocs = {};         // sku -> 회수 보고서 항목 (문서 정보 포함)
 let seTransferDocs = {};         // sku -> 거래처 변경 협조전 항목
@@ -17965,6 +17971,22 @@ async function seRenderList(storeId) {
                 .select('*').in('display_id', seDisplayData.map(r => r.id))
                 .order('moved_at', { ascending: true });
             seDropReversedMoves(mv).forEach(m => { (seMoves[m.display_id] = seMoves[m.display_id] || []).push(m); });
+        }
+        // 이 매장에서 다른 매장으로 옮겨간 물건 — 이 매장 요청서 몫이라 「요청서엔 있는데 전시품이 없는 품목」에서 뺀다
+        seMovedOut = [];
+        {
+            const { data: om } = await _sb.from('display_moves').select('*').eq('from_store', storeId).order('moved_at');
+            const kept = seDropReversedMoves(om || []);
+            const ids = [...new Set(kept.map(m => m.display_id))];
+            if (ids.length) {
+                const [{ data: rows }, { data: allMv }] = await Promise.all([
+                    _sb.from('store_displays').select('id,store_id,sku,quantity,sold,sales_order_no,sales_link').in('id', ids),
+                    _sb.from('display_moves').select('*').in('display_id', ids).order('moved_at'),
+                ]);
+                const first = {};
+                seDropReversedMoves(allMv || []).forEach(m => { if (!first[m.display_id]) first[m.display_id] = m.from_store; });
+                seMovedOut = (rows || []).filter(d => d.store_id !== storeId && first[d.id] === storeId && (d.sales_order_no || d.sales_link));
+            }
         }
         seStoreZones = zonesRes.data || [];
         seReqItems = reqItemsRes.data || [];
