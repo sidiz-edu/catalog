@@ -14453,6 +14453,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 <div id="seTabTransfer" style="display:none;">
     <div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <select id="traSearchField" onchange="seRenderTransfer()" title="검색할 항목"
+                style="padding:8px 10px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;cursor:pointer;">
+                <option value="all">전체</option>
+                <option value="product">제품명</option>
+                <option value="code">품목코드 · 색상</option>
+                <option value="store">매장</option>
+                <option value="order">수주번호</option>
+                <option value="req">매출외출고 요청서</option>
+                <option value="doc">협조전 (번호 · 제목 · 작성자)</option>
+            </select>
             <input id="traSearch" type="text" oninput="seRenderTransfer()"
                 placeholder="문서번호 · 품목코드 · 색상 · 매장 · 수주번호 · 건명 (공백으로 여러 조건)"
                 style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
@@ -19616,12 +19626,22 @@ async function seLoadTransfer(force) {
     seRenderTransfer();
 }
 
-const seTraHay = (doc, it) => [doc.doc_no, doc.title, doc.author, doc.approval_date,
-    doc.to_office, doc.to_dealer, doc.from_dealer,
-    it && it.item_code, it && it.color_code, it && it.order_no_before, it && it.order_no_after,
-    it && it.order_title, it && it.store_id, it && seStoreNameOf(it.store_id),
-    it && seSeriesOfCode(it.item_code)]
-    .filter(Boolean).join(' ').toLowerCase();
+// field 를 고르면 그 항목만 본다. 품목이 없는 문서 단위 검색(it=null)은 협조전 항목에서만 걸린다.
+const seTraHay = (doc, it, field = 'all') => {
+    const req = it && _seReqByMo && _seReqByMo[seMoNo(it.order_title)];
+    const f = {
+        doc: [doc.doc_no, doc.title, doc.author, doc.approval_date],
+        product: [it && seSeriesOfCode(it.item_code)],
+        code: [it && it.item_code, it && it.color_code, it && (it.item_code || '') + '-' + (it.color_code || '')],
+        store: [it && it.store_id, it && seStoreNameOf(it.store_id)],
+        order: [it && it.order_no_before, it && it.order_no_after],
+        req: [it && it.order_title, it && seMoNo(it.order_title), req && req.title],
+    };
+    const parts = field === 'all'
+        ? [...Object.values(f).flat(), doc.to_office, doc.to_dealer, doc.from_dealer]
+        : (f[field] || []);
+    return parts.filter(Boolean).join(' ').toLowerCase();
+};
 
 function seRenderTransfer() {
     const body = document.getElementById('traBody');
@@ -19630,15 +19650,17 @@ function seRenderTransfer() {
     const scoped = seScopedStore();
     _seTraScoped = scoped;
     const hit = seSearchMatcher(document.getElementById('traSearch')?.value);
+    const field = document.getElementById('traSearchField')?.value || 'all';
+    if (field === 'req' && !_seReqByMo) seEnsureReqIndex().then(seRenderTransfer);
 
     // 매장을 좁히면 그 매장 품목만 남기고, 품목이 하나도 없는 문서는 뺀다.
     // 한 문서 안의 다른 매장 품목은 카드에서 따로 펼쳐 볼 수 있다 — 협조전은
     // 여러 매장을 한 장에 묶어 올리므로 옆 매장이 뭘 넘겼는지 같이 봐야 할 때가 있다.
     const docs = _seTraDocs.map(d => {
-        const all = d.items.filter(it => hit(seTraHay(d, it)));
+        const all = d.items.filter(it => hit(seTraHay(d, it, field)));
         const mine = scoped ? all.filter(it => seStoreGroup(scoped).includes(it.store_id)) : all;
         return { ...d, items: _seTraAll.has(d.id) ? all : mine, _mine: mine.length, _other: all.length - mine.length };
-    }).filter(d => d._mine || (!scoped && hit(seTraHay(d, null))));
+    }).filter(d => d._mine || (!scoped && (field === 'all' || field === 'doc') && hit(seTraHay(d, null, field))));
 
     const nItem = docs.reduce((s, d) => s + d._mine, 0);
     const total = _seTraDocs.reduce((s, d) => s + d.items.length, 0);
