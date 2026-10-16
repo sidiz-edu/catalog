@@ -14410,7 +14410,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             </div>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                 <div id="seReqFilterBar" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-                <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
+                <select id="seReqSearchField" onchange="seApplyReqFilters()" title="검색할 항목"
+                style="padding:6px 9px;border:1px solid var(--se-border);border-radius:8px;font-size:0.78rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;cursor:pointer;">
+                <option value="all">전체</option>
+                <option value="product">제품명</option>
+                <option value="code">품목코드 · 색상</option>
+                <option value="store">매장</option>
+                <option value="order">수주번호</option>
+                <option value="req">요청서 (번호 · 제목 · 작성자)</option>
+            </select>
+            <input id="seReqSearch" type="text" oninput="seApplyReqFilters()"
                     placeholder="공백으로 여러 조건 (예: T90 논현 / SB01F 피팅존 / 2026-08 수원)"
                     style="flex:1;min-width:240px;box-sizing:border-box;padding:6px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.78rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
                 <span id="seReqSearchCount" style="font-size:0.75rem;color:#64748b;white-space:nowrap;"></span>
@@ -14434,6 +14443,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     
     <div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+<select id="recSearchField" onchange="seRenderRecovery()" title="검색할 항목"
+                style="padding:8px 10px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;cursor:pointer;">
+                <option value="all">전체</option>
+                <option value="product">제품명</option>
+                <option value="code">품목코드 · 색상</option>
+                <option value="store">매장</option>
+                <option value="order">수주번호</option>
+                <option value="warehouse">창고</option>
+                <option value="req">매출외출고 요청서</option>
+                <option value="doc">회수보고서 (번호 · 제목)</option>
+            </select>
             <input id="recSearch" type="text" oninput="seRenderRecovery()"
                 placeholder="제품명 · 품목코드 · 색상 · 매장 · 창고 · 문서번호 · 수주번호 · 건명 (공백으로 여러 조건)"
                 style="flex:1;min-width:280px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--se-border);border-radius:8px;font-size:0.8rem;background:#fff;color:#0f172a;font-family:'Outfit',sans-serif;">
@@ -15423,7 +15443,8 @@ async function seLoadRecoveryReports() {
     if (rRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${rRes.error.message}</p>`; return; }
     _recReports = rRes.data || [];
     const docOfRep = {}, storeName = {};
-    _recReports.forEach(r => { docOfRep[r.id] = r.doc_no; });
+    const titleOfRep = {};
+    _recReports.forEach(r => { docOfRep[r.id] = r.doc_no; titleOfRep[r.id] = r.title; });
     seStores().forEach(s => { storeName[s.id] = s.name; });
     _recItems = (iRes.data || []).map(x => ({
         ...x,
@@ -15436,7 +15457,17 @@ async function seLoadRecoveryReports() {
                (_recCodeName || {})[(x.item_code || '').toUpperCase().replace(/\s/g, '')],
                seSeriesOfCode(x.item_code)]
               .filter(Boolean).join(' ').toLowerCase(),
+        _hayF: {
+            product: [(_recCodeName || {})[(x.item_code || '').toUpperCase().replace(/\s/g, '')], seSeriesOfCode(x.item_code)],
+            code: [x.item_code, x.color_code, `${x.item_code || ''}-${x.color_code || ''}`, x.raw_item_code, x.raw_color_code],
+            store: [x.store_id, storeName[x.store_id]],
+            order: [x.order_no],
+            warehouse: [x.warehouse],
+            req: [x.order_title, seMoNo(x.order_title), ((_seReqByMo || {})[seMoNo(x.order_title)] || {}).title],
+            doc: [docOfRep[x.report_id], titleOfRep[x.report_id]],
+        },
     }));
+    if (!_seTraDisp) seLoadTraDisp();
     seRenderRecovery();
 }
 
@@ -15498,7 +15529,8 @@ function seRenderRecoveryFlat() {
     const shortDoc = d => (d || '-').replace(/^시디즈-/, '');
 
     const hit = seSearchMatcher(document.getElementById('recSearch')?.value);
-    const base = _recItems.filter(x => hit(x._hay));
+    const field = seSearchField('recSearchField');
+    const base = _recItems.filter(x => hit(field === 'all' ? x._hay : seHayOf(x._hayF, field)));
 
     // 매장 필터 바 — 검색 결과 안에서 집계. 순서는 SE 드롭다운과 같게 맞춘다
     const sc = {};
@@ -15528,10 +15560,12 @@ function seRenderRecoveryFlat() {
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">색상</th>
             <th style="padding:7px 9px;text-align:center;">수량</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매장</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">전시품 상태</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">매출외출고 요청서</th>
+            <th style="padding:7px 9px;text-align:left;white-space:nowrap;">수주번호</th>
             <th style="padding:7px 9px;text-align:right;white-space:nowrap;">미회수금액</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">창고</th>
             <th style="padding:7px 9px;text-align:left;white-space:nowrap;">보고서</th>
-            <th style="padding:7px 9px;text-align:center;">요청서</th>
         </tr></thead>
         <tbody>${rows.map((x, i) => {
             const code = (x.item_code || '').toUpperCase().replace(/\s/g, '');
@@ -15547,15 +15581,14 @@ function seRenderRecoveryFlat() {
                 <td style="padding:6px 9px;font-family:monospace;">${x.color_code || '-'}${raw(x.raw_color_code, x.color_code)}</td>
                 <td style="padding:6px 9px;text-align:center;">${x.qty ?? '-'}</td>
                 <td style="padding:6px 9px;white-space:nowrap;">${nameOf[x.store_id] || x.store_id || '-'}</td>
+                ${seTraStatusCell(x)}
+                ${seTraReqCell(x)}
+                <td style="padding:6px 9px;font-family:monospace;font-size:0.72rem;white-space:nowrap;">${x.order_no || '<span style="color:#cbd5e1;">-</span>'}</td>
                 <td style="padding:6px 9px;text-align:right;font-variant-numeric:tabular-nums;">${_wonR(x.unrecovered_amount)}</td>
                 <td style="padding:6px 9px;white-space:nowrap;">${x.warehouse || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;font-size:0.7rem;white-space:nowrap;" title="${docOf[x.report_id] || ''}">${epOf[x.report_id]
                     ? `<a href="${epOf[x.report_id]}" target="_blank" style="color:#0f766e;text-decoration:none;">${shortDoc(docOf[x.report_id])} 🔗</a>`
                     : shortDoc(docOf[x.report_id])}</td>
-                <td style="padding:6px 9px;text-align:center;white-space:nowrap;">${req
-                    ? `<button onclick="seOpenRequestFor('${mo}')" title="${(req.title||'').replace(/"/g,'&quot;')}"
-                         style="padding:2px 8px;border-radius:5px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">📄 ${mo}</button>`
-                    : `<span style="color:#cbd5e1;">-</span>`}</td>
             </tr>`; }).join('')}</tbody>
     </table></div>`;
 }
@@ -15754,6 +15787,9 @@ function seRenderRecovery() {
 
     const raw = document.getElementById('recSearch')?.value || '';
     const hit = seSearchMatcher(raw);
+    const field = seSearchField('recSearchField');
+    // 명세는 고른 항목만 본다. 보고서 머리(번호·제목·사유)는 '전체'·'회수보고서'일 때만 걸린다.
+    const hitIt = x => hit(field === 'all' ? x._hay : seHayOf(x._hayF, field));
     const searching = raw.trim() !== '';
     const scoped = seScopedStore();
     _seRecScoped = scoped;
@@ -15765,10 +15801,10 @@ function seRenderRecovery() {
         const inDoc = _recItems.filter(x => x.report_id === r.id);
         const headHay = [r.doc_no, r.title, r.author, r.dept, r.lead_order_no, r.reason, r.account]
             .filter(Boolean).join(' ').toLowerCase();
-        const headHit = hit(headHay);
-        const all = (!searching || headHit) ? inDoc : inDoc.filter(x => hit(x._hay));
+        const headHit = (field === 'all' || field === 'doc') && hit(headHay);
+        const all = (!searching || headHit) ? inDoc : inDoc.filter(hitIt);
         const mine = all.filter(isMine);
-        const matched = inDoc.filter(x => hit(x._hay)).filter(isMine);
+        const matched = inDoc.filter(hitIt).filter(isMine);
         return { r, all, its: _seRecAll.has(r.id) ? all : mine,
                  matched, headHit, _mine: mine.length, _other: all.length - mine.length };
     }).filter(v => (!searching || v.headHit || v.matched.length) && (!scoped || v._mine));
@@ -16700,6 +16736,13 @@ async function seLoadFlatRows() {
                   it.product_name, it.raw_product_name, it.item_code, it.color_code,
                   sku, it.store_name_raw, r.request_date, it.memo, r.doc_no]
                  .filter(Boolean).join(' ').toLowerCase(),
+            hayF: {
+                product: [it.product_name, it.raw_product_name, seSeriesOfCode(it.item_code)],
+                code: [it.item_code, it.color_code, sku],
+                store: [it.store_name_raw, it.store_id, it.store_id && seStoreNameOf(it.store_id)],
+                order: [r.order_no, ...(ds || []).map(d => d.sales_order_no)],
+                req: [r.title, r.doc_no, r.requester, r.request_date],
+            },
         };
     }).sort((a, b) => (b.r.request_date || '').localeCompare(a.r.request_date || ''));
 
@@ -16733,6 +16776,8 @@ async function seLoadFlatRows() {
             hay: [d.product_id, itemCode, colorCode, sku, d.store_id, d.sales_order_no,
                   seStoreNameOf(d.store_id), d.location, d.memo]
                  .filter(Boolean).join(' ').toLowerCase(),
+            hayF: { product: [d.product_id], code: [itemCode, colorCode, sku],
+                    store: [d.store_id, seStoreNameOf(d.store_id)], order: [d.sales_order_no], req: [] },
         };
     });
     _seFlatRows = _seFlatRows.concat(orphans);
@@ -16826,10 +16871,11 @@ function seRenderFlat() {
     seRenderKindBar(inScope.length, flatCounts, '개');
 
     const hit = seSearchMatcher(document.getElementById('seReqSearch')?.value);
+    const reqField = seSearchField('seReqSearchField');
     // 구분·검색을 먼저 적용한다. 두 필터 바는 서로의 결과 안에서 세므로,
     // 버튼에 적힌 숫자가 "그걸 눌렀을 때 실제로 남는 개수"가 된다.
     const base = inScope.filter(x =>
-        (_seReqKind === 'all' || x.kind === _seReqKind) && hit(x.hay));
+        (_seReqKind === 'all' || x.kind === _seReqKind) && hit(reqField === 'all' ? x.hay : seHayOf(x.hayF, reqField)));
     const byStatus = x => _seReqStatus === 'all' || seFlatStatus(x) === _seReqStatus;
     const bySale = x => _seReqSale === 'all' || seFlatSale(x) === _seReqSale;
     seRenderStatusBar(base.filter(bySale), base.filter(byStatus));
@@ -16945,7 +16991,8 @@ function seApplyReqFilters() {
     cards.forEach(c => {
         const kindOk = _seReqKind === 'all' || (c.dataset.kind || '').split(' ').includes(_seReqKind);
         const storeOk = !st || (c.dataset.stores || '').split(' ').includes(st);
-        const hay = c.dataset.search || '';
+        const field = seSearchField('seReqSearchField');
+        const hay = field === 'all' ? (c.dataset.search || '') : (c.dataset['f' + field[0].toUpperCase() + field.slice(1)] || '');
         const on = kindOk && storeOk && match(hay);
         c.style.display = on ? '' : 'none';
         if (on) shown++;
@@ -16974,8 +17021,12 @@ async function seLoadRequestList() {
     if (cntEl) cntEl.textContent = `${data.length}건`;
 
     // 요청서별 검색 대상 텍스트 (품목명·품목코드·색상·매장)
-    const searchBag = {};
+    const searchBag = {}, fieldBag = {};
     (itemsRes.data || []).forEach(it => {
+        const fb = fieldBag[it.request_id] || (fieldBag[it.request_id] = { product: new Set(), code: new Set(), store: new Set() });
+        [it.product_name, it.raw_product_name, seSeriesOfCode(it.item_code)].forEach(v => v && fb.product.add(String(v).toLowerCase()));
+        [it.item_code, it.color_code, `${it.item_code || ''}-${it.color_code || ''}`].forEach(v => v && fb.code.add(String(v).toLowerCase()));
+        [it.store_name_raw, it.store_id, it.store_id && seStoreNameOf(it.store_id)].forEach(v => v && fb.store.add(String(v).toLowerCase()));
         const bag = searchBag[it.request_id] || (searchBag[it.request_id] = new Set());
         [it.product_name, it.raw_product_name, it.item_code, it.color_code, it.store_name_raw,
          `${it.item_code || ''}-${it.color_code || ''}`]
@@ -17036,6 +17087,11 @@ async function seLoadRequestList() {
                      ...(searchBag[r.id] || [])]
             .filter(Boolean).join(' ').toLowerCase()
             .replace(/"/g, '&quot;');
+        const fb = fieldBag[r.id] || {};
+        const fAttr = Object.entries({
+            product: [...(fb.product || [])], code: [...(fb.code || [])], store: [...(fb.store || [])],
+            order: [r.order_no], req: [r.title, r.doc_no, r.requester, r.request_date],
+        }).map(([k, v]) => `data-f-${k}="${v.filter(Boolean).join(' ').toLowerCase().replace(/"/g, '&quot;')}"`).join(' ');
         const mo = seMoNo(r.doc_no);
         const rec = mo ? (_seRecByMo || {})[mo] : null;
         const docChip = r.doc_no
@@ -17046,7 +17102,7 @@ async function seLoadRequestList() {
                  style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;">💰 회수 ${rec.n}건 · ${rec.amt.toLocaleString()}원</button>`
             : '';
         return `
-        <div id="req-card-${r.id}" data-kind="${Object.keys(SE_CLASS_STYLE).filter(k => hasClass(r.id, k)).join(' ')}" data-stores="${Object.keys(_seReqStoreMix[r.id] || {}).join(' ')}" data-search="${hay}" style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
+        <div id="req-card-${r.id}" data-kind="${Object.keys(SE_CLASS_STYLE).filter(k => hasClass(r.id, k)).join(' ')}" data-stores="${Object.keys(_seReqStoreMix[r.id] || {}).join(' ')}" data-search="${hay}" ${fAttr} style="border:1px solid var(--se-border);border-radius:10px;margin-bottom:8px;background:var(--se-surface);overflow:hidden;">
             <div id="req-view-${r.id}" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:14px;">
                 <div style="cursor:pointer;flex-shrink:0;text-align:center;min-width:62px;padding:9px 11px;border-radius:10px;background:${yBg};" onclick="seToggleReqItems('${r.id}')">
                     ${r.request_date
@@ -19635,7 +19691,7 @@ function seSetTraView(v) {
 async function seLoadTransfer(force) {
     const body = document.getElementById('traBody');
     if (!body) return;
-    if (_seTraDocs && !force) { seRenderTransfer(); return; }
+    if (_seTraDocs && !force) { if (!_seTraDisp) seLoadTraDisp(); seRenderTransfer(); return; }
     seLoadTraDisp();
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await sbAll(() => _sb.from('transfer_approvals')
@@ -19648,6 +19704,11 @@ async function seLoadTransfer(force) {
 }
 
 // field 를 고르면 그 항목만 본다. 품목이 없는 문서 단위 검색(it=null)은 협조전 항목에서만 걸린다.
+// 검색 항목 고르기 — 레코드마다 항목별 글자 묶음(f)을 두고, '전체'면 다 합쳐 본다
+const seHayOf = (f, field) => (field === 'all' || !field ? Object.values(f || {}).flat() : ((f || {})[field] || []))
+    .filter(Boolean).join(' ').toLowerCase();
+const seSearchField = id => document.getElementById(id)?.value || 'all';
+
 // 협조전 품목 ↔ 전시품 행. 출고 매장(옮겼으면 출발 매장) + 품목코드·색상이 같은 행을
 // 수주번호가 맞는 것 → 같은 요청서에 연결된 것 순으로 찾는다.
 let _seTraDisp = null;
@@ -19662,13 +19723,14 @@ async function seLoadTraDisp() {
         .forEach(x => { if (!first[x.display_id]) first[x.display_id] = x.from_store; });
     _seTraDisp = (d.data || []).map(r => ({ ...r, _from: first[r.id] || r.store_id, _k: seOrdKey(r.sku) }));
     seRenderTransfer();
+    if (_recItems) seRenderRecovery();
 }
 function seTraRowsFor(it) {
     if (!_seTraDisp) return null;
     const sku = seOrdKey((it.item_code || '') + (it.color_code || ''));
     const from = seTraOriginStore(it);
     const cand = _seTraDisp.filter(r => r._k === sku && (r._from === from || r.store_id === it.store_id));
-    const byNo = cand.filter(r => seOrdRank(r.sales_order_no, it.order_no_before) === 1);
+    const byNo = cand.filter(r => seOrdRank(r.sales_order_no, it.order_no_before || it.order_no) === 1);
     if (byNo.length) return byNo;
     const req = _seReqByMo && _seReqByMo[seMoNo(it.order_title)];
     // 번호가 안 맞으면 출고 매장 행만 본다 — 판 매장의 자기 물건이 잘못 걸리지 않게
@@ -19888,7 +19950,7 @@ let _seAudit = null;
 // 전시품이 바뀌면 그걸 재료로 쓰는 화면의 캐시를 버린다.
 // 요청서 「품목 전체보기」는 수주번호와 전시 현황을 전시품에서 가져오므로
 // 비우지 않으면 전시품 쪽에서 번호를 고쳐도 옛 값이 그대로 남는다.
-function seInvalidate() { _seAudit = null; _seFlatRows = null; }
+function seInvalidate() { _seAudit = null; _seFlatRows = null; _seTraDisp = null; }
 
 function seAuditNorm(s) { return (s || '').replace(/\s/g, '').toUpperCase(); }
 // 수주번호는 문서마다 P20250707-0315-00 / P20250707031500 처럼 표기가 갈린다.
