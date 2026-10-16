@@ -17581,26 +17581,38 @@ async function seLoadOriginCands() {
     const cut = sku.lastIndexOf('-');
     const code = cut > 0 ? sku.slice(0, cut) : sku, color = cut > 0 ? sku.slice(cut + 1) : '';
     const [rq, ds] = await Promise.all([
-        _sb.from('outgoing_request_items').select('qty,item_code,color_code,memo,outgoing_requests(doc_no,title,order_no,ep_url)')
-            .eq('store_id', st).ilike('item_code', code),
-        _sb.from('store_displays').select('id,sku,sold,location,memo,sales_order_no,sales_link,updated_by').eq('store_id', st),
+        _sb.from('outgoing_request_items').select('qty,item_code,color_code,product_name,memo,outgoing_requests(doc_no,title,order_no,ep_url)')
+            .eq('store_id', st),
+        _sb.from('store_displays').select('id,sku,product_id,sold,location,memo,sales_order_no,sales_link,updated_by').eq('store_id', st),
     ]);
-    _seOrigin.reqs = (rq.data || []).filter(i => (i.color_code || '').toUpperCase() === color && i.outgoing_requests);
-    _seOrigin.dups = (ds.data || []).filter(d => !d.sold && (d.sku || '').toUpperCase() === sku);
+    // 코드가 꼭 같은 것 → 품목코드만 같은 것 → 같은 제품군 순으로 넓힌다.
+    // 직원이 최신 코드로 적은 전시품(T50HLDA0VK)은 요청서의 출고 당시 코드(VTNF500HLDA)와 글자가 다르다
+    const series = seSeriesOfCode(code) || row.product_id;
+    const lvl = (ic, cc) => { ic = (ic || '').toUpperCase(); cc = (cc || '').toUpperCase();
+        return ic === code && cc === color ? 1 : ic === code ? 2 : series && seSeriesOfCode(ic) === series ? 3 : 0; };
+    const all = (rq.data || []).filter(i => i.outgoing_requests).map(i => ({ ...i, _lv: lvl(i.item_code, i.color_code) })).filter(i => i._lv);
+    const best = Math.min(...all.map(i => i._lv), 9);
+    _seOrigin.reqs = all.filter(i => i._lv === best);
+    _seOrigin.dups = (ds.data || []).filter(d => !d.sold && d.sku).map(d => {
+        const s = d.sku.toUpperCase(), c2 = s.lastIndexOf('-');
+        return { ...d, _lv: lvl(c2 > 0 ? s.slice(0, c2) : s, c2 > 0 ? s.slice(c2 + 1) : '') };
+    }).filter(d => d._lv === 1 || (best > 1 && d._lv && d._lv <= best)).sort((a, b) => a._lv - b._lv);
     const reqHtml = _seOrigin.reqs.length
         ? _seOrigin.reqs.map((i, n) => { const r = i.outgoing_requests;
             return `<label style="display:flex;gap:7px;align-items:flex-start;padding:6px 8px;border:1px solid #e2e8f0;border-radius:7px;margin-top:4px;cursor:pointer;">
                 <input type="radio" name="seOriginReq" value="${n}" ${n === 0 ? 'checked' : ''} style="margin-top:3px;">
-                <span><b>${(r.doc_no || '').replace('시디즈-', '')}</b> ${r.title || ''}<br><span style="color:#64748b;">대표번호 ${r.order_no || '-'} · ${i.qty}대</span></span></label>`; }).join('')
-        : '<div style="color:#b45309;">그 매장 요청서에 같은 코드가 없습니다. 수주번호는 직접 넣게 됩니다.</div>';
+                <span><b>${(r.doc_no || '').replace('시디즈-', '')}</b> ${r.title || ''}<br><span style="color:#64748b;">${i.product_name || ''} ${i.item_code}-${i.color_code || ''} · 대표번호 ${r.order_no || '-'} · ${i.qty}대</span></span></label>`; }).join('')
+        : `<div style="color:#b45309;">그 매장 요청서에 이 제품(${series || row.sku})이 없습니다 — 출발 매장이 맞는지 확인하세요. 그대로 지정하면 수주번호를 직접 넣게 됩니다.</div>`;
+    const lvNote = _seOrigin.reqs.length && _seOrigin.reqs[0]._lv > 1
+        ? `<div style="color:#b45309;margin-top:2px;">코드가 꼭 같은 품목은 없어서 ${_seOrigin.reqs[0]._lv === 2 ? '품목코드가 같은 것' : '같은 제품군'}을 보여줍니다 — 맞는 것을 고르세요. 전시품 코드가 최신 코드로 적혀 있으면 이렇게 나옵니다.</div>` : '';
     const dupHtml = _seOrigin.dups.length
-        ? `<div style="margin-top:10px;font-weight:700;color:#0f172a;">${seStoreNameOf(st)}에 같은 코드 전시 행이 남아 있습니다</div>
+        ? `<div style="margin-top:10px;font-weight:700;color:#0f172a;">${seStoreNameOf(st)}에 같은 제품 전시 행이 남아 있습니다</div>
            <div style="color:#64748b;">이 물건과 같은 것이면 체크하세요 — 그 행은 지우고 번호를 이어받습니다.</div>` +
           _seOrigin.dups.map((d, n) => `<label style="display:flex;gap:7px;align-items:center;padding:6px 8px;border:1px solid #fde68a;background:#fffbeb;border-radius:7px;margin-top:4px;cursor:pointer;">
                 <input type="checkbox" class="seOriginDup" value="${n}">
                 <span>${d.sku} · ${d.location || '위치 없음'} · ${d.sales_order_no || '번호 없음'}${d.memo ? ' · ' + d.memo : ''} <span style="color:#94a3b8;">(${d.updated_by || ''})</span></span></label>`).join('')
         : '';
-    box.innerHTML = `<div style="font-weight:700;color:#0f172a;">원래 출고 문서</div>${reqHtml}${dupHtml}`;
+    box.innerHTML = `<div style="font-weight:700;color:#0f172a;">원래 출고 문서</div>${lvNote}${reqHtml}${dupHtml}`;
 }
 
 async function seSaveOrigin() {
