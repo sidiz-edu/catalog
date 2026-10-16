@@ -19654,6 +19654,7 @@ function seRenderTransfer() {
     if (!docs.length) { body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;padding:12px 0;">해당 협조전이 없습니다.</p>'; return; }
 
     body.innerHTML = _seTraView === 'flat' ? seTraFlat(docs) : seTraByDoc(docs);
+    if (_seTraView === 'flat' && !_seReqByMo) seEnsureReqIndex().then(seRenderTransfer);
 }
 
 const seTraWon = v => (v == null ? '-' : Number(v).toLocaleString());
@@ -19713,7 +19714,7 @@ function seTraFlat(docs) {
     return `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
     <table style="width:100%;border-collapse:collapse;font-size:0.75rem;background:var(--se-surface);white-space:nowrap;">
         <thead><tr style="background:#e2e8f0;color:#475569;">
-            ${['협조전', '작성일', '매장', '품목코드', '색상', '수량', '기존 수주', '변경 수주', '기존금액', '변경금액']
+            ${['협조전', '작성일', '매장', '품목코드', '색상', '수량', '매출외출고 요청서', '기존 수주', '변경 수주', '기존금액', '변경금액']
                 .map(h => `<th style="padding:7px 9px;text-align:left;">${h}</th>`).join('')}
         </tr></thead>
         <tbody>${rows.map(({ d, it }, i) => `
@@ -19724,6 +19725,7 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;font-family:monospace;">${it.item_code || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:right;">${it.qty ?? '-'}</td>
+                ${seTraReqCell(it)}
                 <td style="padding:6px 9px;font-family:monospace;${seMoNo(it.order_title) ? 'color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;' : 'color:#64748b;'}"
                     ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"` : ''}
                     title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
@@ -19732,6 +19734,17 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
+}
+
+// 품목 건명의 매출외번호로 요청서를 찾아 제목을 보여준다. 못 찾으면 건명을 그대로 둔다.
+function seTraReqCell(it) {
+    const mo = seMoNo(it.order_title);
+    const r = mo && _seReqByMo && _seReqByMo[mo];
+    const text = r ? r.title : (it.order_title || '-');
+    const tip = String((r ? r.doc_no + ' · ' + r.title : it.order_title) || '').replace(/"/g, '&quot;');
+    return `<td style="padding:6px 9px;max-width:340px;overflow:hidden;text-overflow:ellipsis;${mo ? 'cursor:pointer;' : ''}" title="${tip}"
+        ${mo ? `onclick="seOpenReqPopupByMo('${mo}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}')"` : ''}>
+        ${mo ? `<span style="font-family:monospace;color:#1d4ed8;margin-right:6px;">${mo}</span>` : ''}<span style="color:${r ? 'var(--se-text)' : '#94a3b8'};">${text}</span></td>`;
 }
 
 function seTraTable(items, inner) {
