@@ -16790,7 +16790,7 @@ function seDisplayLoc(d, opts) {
     const dropStatus = opts && opts.dropStatus;
     return [d.location, d.memo]
         .map(v => (v || '').trim())
-        .filter(v => v && !/^회수대장/.test(v)
+        .filter(v => v && !/^회수대장/.test(v) && v !== '요청서에서 등록'
                        && !(dropStatus && /^(판매완료|판매중|창고|창고보관)$/.test(v)))
         .join(' · ');
 }
@@ -16896,8 +16896,14 @@ function seRenderFlat() {
             return `<span style="color:#1d4ed8;font-weight:700;">🏠 매장 ${x.have}대 · 출고 0</span>`
                  + (loc ? ` <span style="color:#0f766e;">📍 ${loc}</span>` : '');
         }
-        // 팔린 전시품은 위치가 「판매완료」라 칩과 같은 말이 두 번 뜬다
-        const loc = x.ds.map(d => seDisplayLoc(d, { dropStatus: d.sold })).filter(Boolean).join(' / ');
+        // 팔린 전시품은 위치가 「판매완료」라 칩과 같은 말이 두 번 뜬다.
+        // 다른 매장으로 옮겨 간 물건은 지금 어디서 어떤 상태인지를 먼저 적는다.
+        const shortStore = id => { const n = String(seStoreNameOf(id)).replace(/^시디즈\s*(더 프로그레시브\s*)?/, ''); return /점$/.test(n) ? n : n + '점'; };
+        const loc = x.ds.map(d => {
+            const l = seDisplayLoc(d, { dropStatus: true });
+            if (d.store_id === x.it.store_id) return seDisplayLoc(d, { dropStatus: d.sold });
+            return `<b style="color:#7c3aed;">🔀 ${shortStore(d.store_id)}${d.sold ? '에서 ' + (seExitOf(d) || {}).label : '에 전시 중'}</b>${l ? ' · ' + l : ''}`;
+        }).filter(Boolean).join(' / ');
         const head = x.have === x.want
             ? `<span style="color:#16a34a;font-weight:700;">✔ ${x.have}/${x.want}</span>`
             : `<span style="color:#f59e0b;font-weight:700;">⚠ ${x.have}/${x.want}</span>`;
