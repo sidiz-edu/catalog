@@ -19895,19 +19895,54 @@ function seTraToggleAll(id) {
     if (el) el.style.display = '';
 }
 
+// 코드 변경 협조전(26-08-00002, 26-01-00116 등)은 앞서 거변한 물건을 다시 올린 문서다.
+// 앞 문서의 받는 거래처 코드에서 출발하고, 매장·품목코드·색상·출고 요청서가 같은 줄이 짝이다.
+// 명세 전체보기에서는 짝을 한 줄로 묶는다 — 물건은 한 대다.
+let _seTraPair = null;   // { replaced: Map(원래 줄 → 새 줄), orig: Map(새 줄 → {d, it}) }
+function seTraBuildPairs() {
+    const key = it => [it.store_id, seOrdKey(it.item_code), seOrdKey(it.color_code), seMoNo(it.order_title)].join('|');
+    const replaced = new Map(), orig = new Map();
+    const sales = (_seTraDocs || []).filter(seTraFromSample);
+    (_seTraDocs || []).filter(d => !seTraFromSample(d))
+        .sort((a, b) => String(a.approval_date || '').localeCompare(String(b.approval_date || '')))
+        .forEach(nd => nd.items.forEach(it => {
+            const k = key(it);
+            const prev = sales.filter(sd => sd.to_code && sd.to_code === nd.from_code
+                    && String(sd.approval_date || '') <= String(nd.approval_date || ''))
+                .sort((a, b) => String(b.approval_date || '').localeCompare(String(a.approval_date || '')));
+            for (const sd of prev) {
+                const o = sd.items.find(x => key(x) === k && !replaced.has(x));
+                if (o) { replaced.set(o, it); orig.set(it, { d: sd, it: o }); break; }
+            }
+        }));
+    _seTraPair = { replaced, orig, src: _seTraDocs };
+}
+
 function seTraFlat(docs) {
-    const rows = [];
-    docs.forEach(d => d.items.forEach(it => rows.push({ d, it })));
+    if (!_seTraPair || _seTraPair.src !== _seTraDocs) seTraBuildPairs();
+    const all = [];
+    docs.forEach(d => d.items.forEach(it => all.push({ d, it })));
+    const shown = new Set(all.map(x => x.it));
+    // 새 문서 줄이 같이 보이면 원래 줄은 접는다
+    const rows = all.filter(x => !(_seTraPair.replaced.has(x.it) && shown.has(_seTraPair.replaced.get(x.it))));
+    const folded = all.length - rows.length;
+    const cnt = document.getElementById('traSearchCount');
+    if (cnt && folded) cnt.textContent += ` · 재작성 ${folded}건은 한 줄로 묶음`;
     return `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
     <table style="width:100%;border-collapse:collapse;font-size:0.75rem;background:var(--se-surface);white-space:nowrap;">
         <thead><tr style="background:#e2e8f0;color:#475569;">
             ${['협조전', '작성일', '매장', '제품명', '품목코드', '색상', '수량', '전시품 상태', '매출외출고 요청서', '기존 수주', '변경 수주', '기존금액', '변경금액']
                 .map(h => `<th style="padding:7px 9px;text-align:left;">${h}</th>`).join('')}
         </tr></thead>
-        <tbody>${rows.map(({ d, it }, i) => `
+        <tbody>${rows.map(({ d, it: cur }, i) => {
+            // 묶은 줄은 원래 거변 줄(출고 수주번호가 적힌 쪽)로 매칭·요청서를 보고, 금액·변경 수주는 새 문서 것을 쓴다
+            const o = _seTraPair.orig.get(cur);
+            const it = o ? o.it : cur;
+            return `
             <tr style="background:${i % 2 ? '#f8fafc' : 'transparent'};border-top:1px solid var(--se-border);">
-                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${seHyNo(d.doc_no) || d.doc_no || '-'}</td>
-                <td style="padding:6px 9px;">${d.approval_date || '-'}</td>
+                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${seHyNo(d.doc_no) || d.doc_no || '-'}${o
+                    ? `<div title="${seHyNo(o.d.doc_no) || o.d.doc_no}을(를) 고쳐 다시 쓴 문서라 한 줄로 묶었습니다" style="font-size:0.66rem;color:#64748b;font-family:'Outfit',sans-serif;">↻ ${seHyNo(o.d.doc_no) || o.d.doc_no} 재작성</div>` : ''}</td>
+                <td style="padding:6px 9px;">${d.approval_date || '-'}${o ? `<div style="font-size:0.66rem;color:#94a3b8;">${o.d.approval_date || ''}</div>` : ''}</td>
                 <td style="padding:6px 9px;">${seStoreNameOf(it.store_id)}</td>
                 <td style="padding:6px 9px;font-weight:600;">${seSeriesOfCode(it.item_code) || '<span style="color:#94a3b8;">-</span>'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${it.item_code || '-'}</td>
@@ -19918,10 +19953,10 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;font-family:monospace;${seMoNo(it.order_title) ? 'color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;' : 'color:#64748b;'}"
                     ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}','${seTraOriginStore(it)}')"` : ''}
                     title="${(it.order_title || '').replace(/"/g, '&quot;')}">${it.order_no_before || '-'}</td>
-                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${it.order_no_after || '-'}</td>
-                <td style="padding:6px 9px;text-align:right;color:#64748b;">${seTraWon(it.amount_before)}</td>
-                <td style="padding:6px 9px;text-align:right;font-weight:700;">${seTraWon(it.amount_after)}</td>
-            </tr>`).join('')}</tbody>
+                <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${cur.order_no_after || it.order_no_after || '-'}</td>
+                <td style="padding:6px 9px;text-align:right;color:#64748b;">${seTraWon(cur.amount_before)}</td>
+                <td style="padding:6px 9px;text-align:right;font-weight:700;">${seTraWon(cur.amount_after)}</td>
+            </tr>`; }).join('')}</tbody>
     </table></div>`;
 }
 
