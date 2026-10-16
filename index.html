@@ -17963,8 +17963,8 @@ function seRenderTable(storeId) {
             </div>
             ${(srcN.store || srcN.hq) ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                 <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">조달</span>
-                ${[['src_store', `매장구매 (${srcN.store})`, SE_SOURCE.store[1]],
-                   ['src_hq',    `본사구매 (${srcN.hq})`,    SE_SOURCE.hq[1]]]
+                ${[['src_store', `${SE_SOURCE.store[0]} (${srcN.store})`, SE_SOURCE.store[1]],
+                   ['src_hq',    `${SE_SOURCE.hq[0]} (${srcN.hq})`,    SE_SOURCE.hq[1]]]
                   .filter(([k]) => avail(k)).map(plain).join('')}</div>` : ''}
             ${extras.length ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                 <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">따로 보기</span>
@@ -18760,10 +18760,11 @@ const SE_SOURCE = {
     store: ['대리점구매', '#0f766e'],
     hq:    ['본사구매', '#1d4ed8'],
 };
+// 대리점 구매 태그가 없고 매출외출고 문서가 붙어 있으면 본사구매다
 function seSourceOf(row) {
     if (seIsDirectBuy(row)) return 'store';              // 메모 태그가 가장 분명한 근거
-    if (!SE_DIRECT_STORES.has(row.store_id)) return null;
-    return (row.sales_order_no || row.sales_link) ? 'hq' : 'store';
+    if (seHasOutgoingDoc(row)) return 'hq';
+    return SE_DIRECT_STORES.has(row.store_id) ? 'store' : null;
 }
 
 const seMajorOf = row => row.sold ? 'out' : 'in';
