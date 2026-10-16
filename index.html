@@ -13871,11 +13871,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-tab.active { color: #fff; background: #003EFF; border-color: #003EFF; box-shadow: 0 3px 10px rgba(0,62,255,0.28); }
 .se-tab:hover:not(.active) { background: #e0e7ff; border-color: #c7d2fe; color: #1e3a8a; }
 /* 대시보드 */
-.se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
-.se-dash-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
-.se-dash-card { background: #fff; border: 1px solid var(--se-border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
-.se-dash-h { font-size: 0.92rem; font-weight: 800; color: var(--se-text); margin-bottom: 10px; }
-@media (max-width: 900px) { .se-dash-grid { grid-template-columns: 1fr; } }
+.se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+/* 넓은 화면에선 매장 표 둘 + 점검·판매가 세 칸으로 나란히 — 스크롤 없이 한 화면에 들어온다 */
+.se-dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 12px; align-items: start; }
+.se-dash-card { background: #fff; border: 1px solid var(--se-border); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.se-dash-h { font-size: 0.9rem; font-weight: 800; color: var(--se-text); margin-bottom: 6px; }
 @media (max-width: 600px) { .se-dash-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .se-flow { display: flex; align-items: stretch; gap: 4px; background: var(--se-surface); border: 1px solid var(--se-border); border-radius: 11px; padding: 16px 14px; margin-bottom: 12px; }
 .se-flow-s { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 2px 6px; }
@@ -19950,50 +19950,72 @@ function seRenderDash() {
     const card = (icon, label, value, sub, color, go) => `
         <div ${go ? `onclick="${go}" role="button" title="눌러서 자세히 보기"` : ''} class="se-dash-card"
              style="border-top:4px solid ${color};${go ? 'cursor:pointer;' : ''}">
-            <div style="font-size:0.8rem;font-weight:700;color:#475569;">${icon} ${label}</div>
-            <div style="font-size:1.9rem;font-weight:800;color:${color};line-height:1.15;margin-top:6px;font-variant-numeric:tabular-nums;">${value.toLocaleString()}</div>
-            <div style="font-size:0.74rem;color:var(--se-muted);margin-top:3px;">${sub}</div>
+            <div style="display:flex;align-items:baseline;gap:8px;">
+                <div style="font-size:0.8rem;font-weight:700;color:#475569;">${icon} ${label}</div>
+                <div style="margin-left:auto;font-size:1.65rem;font-weight:800;color:${color};line-height:1.1;font-variant-numeric:tabular-nums;">${value.toLocaleString()}</div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">${sub}</div>
         </div>`;
     const num = (v, color, go) => !v
-        ? '<td style="padding:8px 10px;text-align:right;color:#cbd5e1;">-</td>'
-        : `<td ${go ? `onclick="${go}"` : ''} style="padding:8px 10px;text-align:right;font-weight:800;color:${color};font-variant-numeric:tabular-nums;${go ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;' : ''}">${v}</td>`;
-    const th = (h, right) => `<th style="padding:8px 10px;text-align:${right ? 'right' : 'left'};font-size:0.74rem;color:#475569;white-space:nowrap;">${h}</th>`;
-    const tot = k => stores.reduce((s, x) => s + by[x.id][k], 0);
+        ? '<td style="padding:4px 8px;text-align:right;color:#cbd5e1;">-</td>'
+        : `<td ${go ? `onclick="${go}"` : ''} style="padding:4px 8px;text-align:right;font-weight:800;color:${color};font-variant-numeric:tabular-nums;${go ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;' : ''}">${v}</td>`;
+    const th = (h, right) => `<th style="padding:5px 8px;text-align:${right ? 'right' : 'left'};font-size:0.72rem;color:#475569;white-space:nowrap;">${h}</th>`;
+    const short = id => seStoreNameOf(id).replace(/^시디즈 더 프로그레시브 |^시디즈 |^더 프로그레시브 /, '');
 
-    const trs = stores.map(s => {
-        const x = by[s.id], on = s.id === scoped;
-        return `<tr style="border-top:1px solid var(--se-border);${on ? 'background:#eef2ff;' : ''}">
-            <td style="padding:8px 10px;white-space:nowrap;"><a href="javascript:void(0)" onclick="seDashGo('store','${s.id}')"
-                style="color:#1e293b;font-weight:700;text-decoration:none;">${s.name}</a></td>
-            ${num(x.shown, '#1e293b')}${num(x.selling, '#7c3aed')}${num(x.sold, '#0f766e')}
-            ${num(x.tra, '#dc2626', `seDashGo('audit','${s.id}','docs')`)}
-            ${num(x.rec, '#ea580c', `seDashGo('audit','${s.id}','docs')`)}
-            ${num(x.issue, '#b45309', `seDashGo('audit','${s.id}','all')`)}
-        </tr>`;
-    }).join('');
+    // 매장 표는 더 프로그레시브 / 그 밖의 매장 둘로 나눠 나란히 놓는다 — 한 표로 18줄이면 화면을 넘는다
+    const table = (title, list) => {
+        const sub = k => list.reduce((s, x) => s + by[x.id][k], 0);
+        const trs = list.map(s => {
+            const x = by[s.id], on = s.id === scoped;
+            return `<tr style="border-top:1px solid var(--se-border);${on ? 'background:#eef2ff;' : ''}">
+                <td style="padding:4px 8px;white-space:nowrap;"><a href="javascript:void(0)" onclick="seDashGo('store','${s.id}')" title="${s.name}"
+                    style="color:#1e293b;font-weight:700;text-decoration:none;">${short(s.id)}</a></td>
+                ${num(x.shown, '#1e293b')}${num(x.selling, '#7c3aed')}${num(x.sold, '#0f766e')}
+                ${num(x.tra, '#dc2626', `seDashGo('audit','${s.id}','docs')`)}
+                ${num(x.rec, '#ea580c', `seDashGo('audit','${s.id}','docs')`)}
+                ${num(x.issue, '#b45309', `seDashGo('audit','${s.id}','all')`)}
+            </tr>`;
+        }).join('');
+        return `<div class="se-dash-card" style="padding:12px 0 4px;">
+            <div class="se-dash-h" style="padding:0 14px;">${title} <span style="font-size:0.72rem;font-weight:500;color:var(--se-muted);">${list.length}곳</span></div>
+            <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                <thead><tr style="background:#f1f5f9;">${th('매장')}${th('전시', 1)}${th('판매 중', 1)}${th('판매완료', 1)}${th('🔴 거변', 1)}${th('🟠 회수', 1)}${th('점검', 1)}</tr></thead>
+                <tbody>${trs}</tbody>
+                <tfoot><tr style="border-top:2px solid var(--se-border);background:#f8fafc;font-weight:800;">
+                    <td style="padding:4px 8px;">소계</td>
+                    ${['shown', 'selling', 'sold', 'tra', 'rec', 'issue'].map(k => `<td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;">${sub(k)}</td>`).join('')}
+                </tr></tfoot>
+            </table></div>
+        </div>`;
+    };
+    const tdp = stores.filter(s => /프로그레시브/.test(s.name));
+    const etc = stores.filter(s => !/프로그레시브/.test(s.name));
 
     const kinds = issueKinds.map(k => [k, audit.filter(x => x.kind === k).length]).filter(([, c]) => c);
+    // 점검 요약은 두 줄씩 — 한 줄에 하나면 오른쪽 칸만 길어져 화면을 넘는다
+    const SHORT = { qty: '수량 다름', nodisp: '매장에 없음', noreq: '요청서 없음', price: '소비자가 다름', publish: '게시 항목 빠짐', typo: '코드 오타 의심' };
     const chips = kinds.map(([k, c]) => {
         const [icon, label, color] = SE_AUDIT_KIND[k];
-        return `<button onclick="seDashGo('audit','','${k}')" style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;
-            background:#fff;border:1px solid var(--se-border);border-radius:8px;padding:7px 10px;cursor:pointer;font-family:'Outfit',sans-serif;
-            font-size:0.78rem;color:#334155;">${icon} <span style="flex:1;">${label}</span><b style="color:${color};font-size:0.9rem;">${c}</b></button>`;
+        return `<button onclick="seDashGo('audit','','${k}')" title="${label}" style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;
+            background:#fff;border:1px solid var(--se-border);border-radius:8px;padding:5px 10px;cursor:pointer;font-family:'Outfit',sans-serif;
+            font-size:0.78rem;color:#334155;">${icon} <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SHORT[k] || label}</span><b style="color:${color};font-size:0.9rem;">${c}</b></button>`;
     }).join('');
 
     const recent = sold.filter(r => r.sold_at).sort((a, b) => b.sold_at.localeCompare(a.sold_at)).slice(0, 5);
     const recentHtml = recent.map(r => `
-        <div style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-top:1px solid var(--se-border);font-size:0.78rem;">
+        <div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--se-border);font-size:0.78rem;">
             <span style="color:var(--se-muted);font-variant-numeric:tabular-nums;white-space:nowrap;">${r.sold_at.slice(0, 10)}</span>
-            <span style="font-weight:700;color:#1e293b;white-space:nowrap;">${seStoreNameOf(r.store_id).replace(/^시디즈 |^더 프로그레시브 /, '')}</span>
+            <span style="font-weight:700;color:#1e293b;white-space:nowrap;">${short(r.store_id)}</span>
             <span style="color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.product_id || ''} <span style="font-family:monospace;color:#94a3b8;">${r.sku || ''}</span></span>
         </div>`).join('');
 
     const time = _seDash.at.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     body.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
             <div style="font-size:1.15rem;font-weight:800;color:var(--se-text);">📊 전 매장 현황</div>
             <span style="font-size:0.76rem;color:var(--se-muted);">${time} 기준 · 악세서리 제외</span>
-            <button class="se-save-btn" style="margin-left:auto;" onclick="seLoadDash(true)">🔄 새로고침</button>
+            <button class="se-save-btn" style="margin-left:auto;padding:5px 12px;font-size:0.76rem;" onclick="seLoadDash(true)">🔄 새로고침</button>
         </div>
         <div class="se-dash-kpi">
             ${card('🪑', '전시 중', sum(shown), `매장 ${stores.length}곳${store.length ? ` · 창고 ${sum(store)}` : ''}`, '#003EFF', "seDashGo('overview',undefined,'전시')")}
@@ -20003,22 +20025,12 @@ function seRenderDash() {
             ${card('🟠', '회수보고서 필요', rec.length, '거변은 끝, 보고서만', '#ea580c', "seDashGo('audit','','docs')")}
         </div>
         <div class="se-dash-grid">
-            <div class="se-dash-card" style="padding:14px 0 6px;">
-                <div class="se-dash-h" style="padding:0 16px;">매장별 현황 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">매장 이름을 누르면 그 매장 전시품으로 갑니다</span></div>
-                <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
-                    <thead><tr style="background:#f1f5f9;">${th('매장')}${th('전시 중', 1)}${th('판매 중', 1)}${th('판매완료', 1)}${th('🔴 거변', 1)}${th('🟠 회수', 1)}${th('점검', 1)}</tr></thead>
-                    <tbody>${trs}</tbody>
-                    <tfoot><tr style="border-top:2px solid var(--se-border);background:#f8fafc;font-weight:800;">
-                        <td style="padding:8px 10px;">합계</td>
-                        ${['shown', 'selling', 'sold', 'tra', 'rec', 'issue'].map(k => `<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${tot(k)}</td>`).join('')}
-                    </tr></tfoot>
-                </table></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:14px;">
+            ${tdp.length ? table('더 프로그레시브', tdp) : ''}
+            ${etc.length ? table('스타필드 · 커넥트현대 · 일룸 · 기타', etc) : ''}
+            <div style="display:flex;flex-direction:column;gap:12px;">
                 <div class="se-dash-card">
                     <div class="se-dash-h">🔍 점검 요약 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${issues.filter(x => x.store).length}건${issues.some(x => !x.store) ? ` · 매장 공통 ${issues.filter(x => !x.store).length}` : ''}</span></div>
-                    <div style="display:flex;flex-direction:column;gap:6px;">${chips || '<span style="font-size:0.78rem;color:var(--se-muted);">걸린 게 없습니다.</span>'}</div>
+                    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;">${chips || '<span style="font-size:0.78rem;color:var(--se-muted);">걸린 게 없습니다.</span>'}</div>
                 </div>
                 <div class="se-dash-card">
                     <div class="se-dash-h">✅ 최근 판매완료</div>
