@@ -15364,7 +15364,7 @@ let _seRecByMo = null;   // 매출외번호 → { n, amt, docs[] }
 
 async function seEnsureReqIndex() {
     if (_seReqByMo) return _seReqByMo;
-    const { data } = await sbAll(() => _sb.from('outgoing_requests').select('id,doc_no,title,request_date').order('id'));
+    const { data } = await sbAll(() => _sb.from('outgoing_requests').select('id,doc_no,title,request_date,ep_url').order('id'));
     _seReqByMo = {};
     (data || []).forEach(r => { const mo = seMoNo(r.doc_no); if (mo) _seReqByMo[mo] = r; });
     return _seReqByMo;
@@ -19636,6 +19636,7 @@ async function seLoadTransfer(force) {
     const body = document.getElementById('traBody');
     if (!body) return;
     if (_seTraDocs && !force) { seRenderTransfer(); return; }
+    seLoadTraDisp();
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const { data, error } = await sbAll(() => _sb.from('transfer_approvals')
         .select('*, transfer_approval_items(*)').order('approval_date', { ascending: false }).order('id'));
@@ -19647,6 +19648,48 @@ async function seLoadTransfer(force) {
 }
 
 // field 를 고르면 그 항목만 본다. 품목이 없는 문서 단위 검색(it=null)은 협조전 항목에서만 걸린다.
+// 협조전 품목 ↔ 전시품 행. 출고 매장(옮겼으면 출발 매장) + 품목코드·색상이 같은 행을
+// 수주번호가 맞는 것 → 같은 요청서에 연결된 것 순으로 찾는다.
+let _seTraDisp = null;
+async function seLoadTraDisp() {
+    const [d, m] = await Promise.all([
+        sbAll(() => _sb.from('store_displays').select('id,store_id,sku,sold,exit_type,location,sales_order_no,sales_link,memo').order('id')),
+        sbAll(() => _sb.from('display_moves').select('id,display_id,from_store,to_store,reason,moved_at').order('id')),
+        seEnsureReqIndex(),
+    ]);
+    const first = {};
+    seDropReversedMoves(m.data || []).sort((a, b) => String(a.moved_at || '').localeCompare(String(b.moved_at || '')))
+        .forEach(x => { if (!first[x.display_id]) first[x.display_id] = x.from_store; });
+    _seTraDisp = (d.data || []).map(r => ({ ...r, _from: first[r.id] || r.store_id, _k: seOrdKey(r.sku) }));
+    seRenderTransfer();
+}
+function seTraRowsFor(it) {
+    if (!_seTraDisp) return null;
+    const sku = seOrdKey((it.item_code || '') + (it.color_code || ''));
+    const from = seTraOriginStore(it);
+    const cand = _seTraDisp.filter(r => r._k === sku && (r._from === from || r.store_id === it.store_id));
+    const byNo = cand.filter(r => seOrdRank(r.sales_order_no, it.order_no_before) === 1);
+    if (byNo.length) return byNo;
+    const req = _seReqByMo && _seReqByMo[seMoNo(it.order_title)];
+    // 번호가 안 맞으면 출고 매장 행만 본다 — 판 매장의 자기 물건이 잘못 걸리지 않게
+    return req && req.ep_url ? cand.filter(r => r._from === from && r.sales_link === req.ep_url) : [];
+}
+function seTraStatusCell(it) {
+    const rows = seTraRowsFor(it);
+    const td = s => `<td style="padding:6px 9px;">${s}</td>`;
+    if (rows == null) return td('<span style="color:#94a3b8;">…</span>');
+    if (!rows.length) return td('<span title="같은 매장·코드의 전시품 행을 찾지 못했습니다" style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">❓ 전시품 없음</span>');
+    return td(rows.map(r => {
+        const ex = r.sold ? seExitOf(r) : null;
+        const moved = r.store_id !== r._from;
+        const where = `${moved ? '🔀 ' : ''}${seStoreNameOf(r.store_id).replace(/^시디즈 더 프로그레시브 /, '')}${!r.sold && r.location ? ' · ' + r.location : ''}`;
+        const chip = ex
+            ? `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${ex.bg};color:#fff;">${ex.label}</span>`
+            : `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;">전시 중</span>`;
+        return `<div style="display:flex;gap:5px;align-items:center;margin:1px 0;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span></div>`;
+    }).join(''));
+}
+
 const seTraHay = (doc, it, field = 'all') => {
     const req = it && _seReqByMo && _seReqByMo[seMoNo(it.order_title)];
     const f = {
@@ -19756,7 +19799,7 @@ function seTraFlat(docs) {
     return `<div style="overflow-x:auto;border:1px solid var(--se-border);border-radius:10px;">
     <table style="width:100%;border-collapse:collapse;font-size:0.75rem;background:var(--se-surface);white-space:nowrap;">
         <thead><tr style="background:#e2e8f0;color:#475569;">
-            ${['협조전', '작성일', '매장', '품목코드', '색상', '수량', '매출외출고 요청서', '기존 수주', '변경 수주', '기존금액', '변경금액']
+            ${['협조전', '작성일', '매장', '제품명', '품목코드', '색상', '수량', '전시품 상태', '매출외출고 요청서', '기존 수주', '변경 수주', '기존금액', '변경금액']
                 .map(h => `<th style="padding:7px 9px;text-align:left;">${h}</th>`).join('')}
         </tr></thead>
         <tbody>${rows.map(({ d, it }, i) => `
@@ -19764,9 +19807,11 @@ function seTraFlat(docs) {
                 <td style="padding:6px 9px;font-family:monospace;color:#1d4ed8;">${seHyNo(d.doc_no) || d.doc_no || '-'}</td>
                 <td style="padding:6px 9px;">${d.approval_date || '-'}</td>
                 <td style="padding:6px 9px;">${seStoreNameOf(it.store_id)}</td>
+                <td style="padding:6px 9px;font-weight:600;">${seSeriesOfCode(it.item_code) || '<span style="color:#94a3b8;">-</span>'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${it.item_code || '-'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${it.color_code || '-'}</td>
                 <td style="padding:6px 9px;text-align:right;">${it.qty ?? '-'}</td>
+                ${seTraStatusCell(it)}
                 ${seTraReqCell(it)}
                 <td style="padding:6px 9px;font-family:monospace;${seMoNo(it.order_title) ? 'color:#1d4ed8;cursor:pointer;text-decoration:underline;text-underline-offset:2px;' : 'color:#64748b;'}"
                     ${seMoNo(it.order_title) ? `onclick="seOpenReqPopupByMo('${seMoNo(it.order_title)}','${(it.item_code || '') + (it.color_code ? '-' + it.color_code : '')}','${seTraOriginStore(it)}')"` : ''}
