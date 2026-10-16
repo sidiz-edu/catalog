@@ -16065,13 +16065,24 @@ function seAssignDocs(rows, docsOf, orderKeys) {
     });
     return out;
 }
+// 문서에 코드를 잘못 적은 줄(색상 CN9WW↔CM9WW, 품목코드 한 글자 G10HDA2CC2↔G10HDA1CC2)도
+// 수주번호가 완전히 같으면 그 행의 문서로 본다. 정확한 코드의 문서가 먼저 쓰인다.
+function seDocsLoose(bag, r, ordOf) {
+    const sku = r.sku.toUpperCase();
+    const item = sku.split('-')[0];
+    const near = k => { const i = k.split('-')[0]; return i === item
+        || (i.length === item.length && [...i].filter((c, n) => c !== item[n]).length === 1); };
+    const extra = Object.keys(bag || {}).filter(k => k !== sku && near(k))
+        .flatMap(k => bag[k]).filter(x => r.sales_order_no && seOrdRank(ordOf(x), r.sales_order_no) === 1);
+    return (bag[sku] || []).concat(extra);
+}
 function seBuildDocAssign() {
     // 거변은 판매한 뒤에 하는 문서다 — 전시 중인 행에 붙으면 안 된다
     _seTraAssign = seAssignDocs(seDisplayData.filter(r => r.sold),
-        r => (seTransferDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x) && seTraIsSale(x)),
+        r => seDocsLoose(seTransferDocs, r, x => x.order_no_before).filter(x => seDocOk(r, x) && seTraIsSale(x)),
         x => [x.order_no_before, x.order_no_after]);
     _seRecAssign = seAssignDocs(seDisplayData,
-        r => (seRecoveryDocs[r.sku.toUpperCase()] || []).filter(x => seDocOk(r, x)),
+        r => seDocsLoose(seRecoveryDocs, r, x => x.order_no).filter(x => seDocOk(r, x)),
         x => [x.order_no]);
 }
 let seGapNotes = {};   // sku -> {note, updated_by} — 제품 향방에 대한 매장 설명
