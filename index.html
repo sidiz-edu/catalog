@@ -18604,9 +18604,12 @@ function seEditMinorChanged() {
     const sel = document.getElementById('seEditMinor');
     if (document.getElementById('seEditMajor').value === 'in' && sel.value === '판매') {
         const row = (seDisplayData || []).find(r => r.id === document.getElementById('seEditId').value);
-        if (!seHasOutgoingDoc(row)) {
+        const back = () => { sel.value = row && row.purpose && row.purpose !== '판매' ? row.purpose : '전시'; };
+        if (document.getElementById('seEditDirect').checked || seIsDirectBuy(row)) {
+            if (!confirm(SE_DIRECT_SALE_MSG)) back();
+        } else if (!seHasOutgoingDoc(row)) {
             alert(SE_NO_DOC_MSG);
-            sel.value = row && row.purpose && row.purpose !== '판매' ? row.purpose : '전시';
+            back();
         }
     }
     seEditToggleExit();
@@ -18829,6 +18832,8 @@ function seMoveChip(row) {
 
 // 매출외출고로 나간 기록이 없으면 매장 물건이 아니다 — 팔 수 없다.
 const SE_NO_DOC_MSG = '매출외출고 문서가 연결되지 않아 판매를 할 수 없습니다.';
+// 대리점 구매 물건은 매출외 문서가 없어도 판매 중으로 둘 수 있다 — 다만 매장 결제는 안 된다
+const SE_DIRECT_SALE_MSG = '⚠️ 대리점 구매 제품\n\n이 제품은 P.P가 구매한 물건이므로 매장 결제를 해서는 안됩니다.\n\n판매 중으로 바꿀까요?';
 const seHasOutgoingDoc = row => !!(row && (row.sales_link || row.sales_order_no));
 
 // 인쇄물 공통 — 시디즈 심볼과 글꼴을 같이 쓴다.
@@ -20685,7 +20690,7 @@ async function seSubmitEdit() {
     // 매장 出 이면 매장에 있던 역할(purpose)은 그대로 보존한다 — 어디 있던 물건인지가 남아야 한다
     const cur0 = seDisplayData.find(r => r.id === id) || {};
     const purpose = major === 'in' ? minor : (cur0.purpose || '전시');
-    if (major === 'in' && minor === '판매' && !seHasOutgoingDoc(cur0)) {
+    if (major === 'in' && minor === '판매' && !seHasOutgoingDoc(cur0) && !document.getElementById('seEditDirect').checked) {
         msg.textContent = SE_NO_DOC_MSG; return;
     }
     const updates = {
@@ -20839,7 +20844,8 @@ async function seAddDisplay() {
             record.sales_order_no = seOrdSingle(auto.order_no) || null;
         }
         if (purpose === '판매' && !sold && !seHasOutgoingDoc(record)) {
-            msg.className = 'se-msg'; msg.textContent = SE_NO_DOC_MSG; return;
+            if (!seIsDirectBuy(record)) { msg.className = 'se-msg'; msg.textContent = SE_NO_DOC_MSG; return; }
+            if (!confirm(SE_DIRECT_SALE_MSG)) return;
         }
         const { error } = await _sb.from('store_displays').insert(record);
         if (error) throw error;
