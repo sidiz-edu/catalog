@@ -18674,6 +18674,9 @@ const SE_PURPOSE = {
 // 대리점 구매는 매출외출고 문서가 없는 게 정상이라 '연결X'로 몰면 안 된다.
 // 표시는 메모의 태그로 남긴다 (칼럼을 새로 만들지 않고 기존 표기와도 이어진다).
 const SE_DIRECT_TAG = '[대리점 구매]';
+// 점검의 「한 글자 다름」에서 코드가 맞다고 확인한 전시품 — 메모에 달면 다시 묻지 않는다
+const SE_CODE_OK_TAG = '[코드 확인]';
+const seIsCodeOk = row => ((row && row.memo) || '').includes(SE_CODE_OK_TAG);
 const SE_DIRECT_RE = /\[?\s*(?:대리점|매장)\s*(?:직접\s*)?구매\s*\]?/;
 const seIsDirectBuy = row => SE_DIRECT_RE.test((row && row.memo) || '');
 // 옛 표기가 섞여 있던 두 매장은 문서가 없으면 대리점 구매로 본다
@@ -19700,15 +19703,18 @@ async function seRunAudit(force) {
         if (miss.length) add('publish', d.store_id, `${d.product_id || ''} ${seAuditNorm(d.sku)}`, miss.join(' · ') + ' 없음');
     });
 
-    // 7) 품목코드 한 글자 차이 — 매장별로 '매장에만 있는 코드'와 '출고에만 있는 코드'를 맞춰본다
+    // 7) 품목코드 한 글자 차이 — 매장별로 '매장에만 있는 코드'와 '출고했는데 빈 코드'를 맞춰본다.
+    // 출고 쪽은 판매로 다 설명되는 코드를 뺀다 — 평택 링고 A447BW는 2대 다 팔렸는데도 짝으로 걸렸다.
+    // 매장 쪽은 코드를 직접 확인해 [코드 확인]을 단 전시품을 뺀다.
+    const codeOk = new Set(disp.filter(d => !d.sold && d.sku && seIsCodeOk(d)).map(d => key(d.store_id, seAuditNorm(d.sku))));
     const byStore = {};
     Object.keys(reqQty).forEach(k => { const [st, s] = k.split('|'); (byStore[st] = byStore[st] || { req: [], dis: [] }).req.push(s); });
     Object.keys(dispQty).forEach(k => { const [st, s] = k.split('|'); (byStore[st] = byStore[st] || { req: [], dis: [] }).dis.push(s); });
     Object.entries(byStore).forEach(([st, g]) => {
-        const reqOnly = g.req.filter(s => !dispQty[key(st, s)]);
-        const disOnly = g.dis.filter(s => !reqQty[key(st, s)]);
+        const reqOnly = g.req.filter(s => !dispQty[key(st, s)] && reqQty[key(st, s)] > (soldQty[key(st, s)] || 0));
+        const disOnly = g.dis.filter(s => !reqQty[key(st, s)] && !codeOk.has(key(st, s)));
         disOnly.forEach(a => reqOnly.forEach(b => {
-            if (seOneCharApart(a, b)) add('typo', st, `${a} ↔ ${b}`, '한 글자만 다릅니다 — 전시품 코드를 요청서 코드로 맞출지 확인하세요');
+            if (seOneCharApart(a, b)) add('typo', st, `${a} ↔ ${b}`, '한 글자만 다릅니다 — 전시품 코드를 요청서 코드로 맞출지 확인하세요', { sku: a });
         }));
     });
 
@@ -19881,6 +19887,21 @@ function seOpenTraDraft(only) {
 
 let _seAuditKind = 'all';
 function seAuditFilter(k) { _seAuditKind = k; seRenderAudit(); }
+
+// 「한 글자 다름」에서 전시품 코드가 맞다고 확인한 것 — 그 매장 그 코드 전시품 메모에 [코드 확인]을 단다
+async function seAuditCodeOk(store, sku) {
+    if (!confirm(`${seStoreNameOf(store)} ${sku} — 전시품 코드가 맞다고 표시할까요?\n메모에 ${SE_CODE_OK_TAG}가 붙고 점검에서 빠집니다.`)) return;
+    const { data, error } = await _sb.from('store_displays').select('id,sku,memo,sold').eq('store_id', store);
+    if (error) { alert('불러오기 실패: ' + error.message); return; }
+    const rows = (data || []).filter(d => !d.sold && seAuditNorm(d.sku) === sku && !seIsCodeOk(d));
+    for (const d of rows) {
+        const { error: e } = await _sb.from('store_displays')
+            .update({ memo: [d.memo, SE_CODE_OK_TAG].filter(Boolean).join(' · '), updated_by: '점검 — 코드 확인' }).eq('id', d.id);
+        if (e) { alert('저장 실패: ' + e.message); return; }
+    }
+    seInvalidate();
+    await seRunAudit(true);
+}
 
 // ── 대시보드 — 전 매장 현황 ─────────────────────────────────────────
 // SE 관리를 열면 처음 보는 화면. 위 매장 드롭다운과 상관없이 전 매장을 센다(고른 매장은 표에서 칠한다).
@@ -20159,7 +20180,9 @@ function seRenderAudit() {
                 <td style="padding:6px 9px;white-space:nowrap;color:${SE_AUDIT_KIND[r.kind][2]};font-weight:700;">${SE_AUDIT_KIND[r.kind][0]} ${SE_AUDIT_KIND[r.kind][1]}</td>
                 <td style="padding:6px 9px;white-space:nowrap;">${r.store ? seStoreNameOf(r.store) : '—'}</td>
                 <td style="padding:6px 9px;font-family:monospace;">${r.title}</td>
-                <td style="padding:6px 9px;color:#475569;">${r.detail}</td>
+                <td style="padding:6px 9px;color:#475569;">${r.detail}${r.kind === 'typo' && r.src && r.src.sku
+                    ? ` <button onclick="seAuditCodeOk('${r.store}','${r.src.sku}')" title="전시품 메모에 ${SE_CODE_OK_TAG}를 달고 점검에서 뺍니다"
+                        style="margin-left:6px;background:#fff;border:1px solid #93c5fd;color:#1d4ed8;border-radius:6px;padding:2px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">✓ 코드 맞음</button>` : ''}</td>
             </tr>`).join('')}</tbody>
     </table></div>`;
 }
