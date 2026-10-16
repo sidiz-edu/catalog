@@ -19734,7 +19734,14 @@ function seTraRowsFor(it) {
     if (byNo.length) return byNo;
     const req = _seReqByMo && _seReqByMo[seMoNo(it.order_title)];
     // 번호가 안 맞으면 출고 매장 행만 본다 — 판 매장의 자기 물건이 잘못 걸리지 않게
-    return req && req.ep_url ? cand.filter(r => r._from === from && r.sales_link === req.ep_url) : [];
+    const byReq = req && req.ep_url ? cand.filter(r => r._from === from && r.sales_link === req.ep_url) : [];
+    if (byReq.length) return byReq;
+    // 문서 색상 오기(CN9WW↔CM9WW, 원문 L941LC↔요청서 L091CR) — 같은 품목코드 + 같은 수주번호면 그 행이다
+    const item = seOrdKey(it.item_code);
+    return _seTraDisp.filter(r => r._k.startsWith(item) && seOrdKey(String(r.sku || '').split('-')[0]) === item
+        && (r._from === from || r.store_id === it.store_id)
+        && seOrdRank(r.sales_order_no, it.order_no_before || it.order_no) === 1)
+        .map(r => ({ ...r, _codeDiff: true }));
 }
 function seTraStatusCell(it) {
     const rows = seTraRowsFor(it);
@@ -19748,7 +19755,8 @@ function seTraStatusCell(it) {
         const chip = ex
             ? `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:${ex.bg};color:#fff;">${ex.label}</span>`
             : `<span style="font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;">전시 중</span>`;
-        return `<div style="display:flex;gap:5px;align-items:center;margin:1px 0;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span></div>`;
+        const diff = r._codeDiff ? ` <span title="문서와 전시품의 색상 코드가 다릅니다" style="font-size:0.66rem;color:#b45309;font-weight:700;">전시품 ${String(r.sku || '').split('-').slice(1).join('-')}</span>` : '';
+        return `<div style="display:flex;gap:5px;align-items:center;margin:1px 0;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span>${diff}</div>`;
     }).join(''));
 }
 
