@@ -13870,6 +13870,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 }
 .se-tab.active { color: #fff; background: #003EFF; border-color: #003EFF; box-shadow: 0 3px 10px rgba(0,62,255,0.28); }
 .se-tab:hover:not(.active) { background: #e0e7ff; border-color: #c7d2fe; color: #1e3a8a; }
+.se-tab-group { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1.5px solid #a5b4fc; border-radius: 13px; background: #eef2ff; flex-shrink: 0; }
+.se-tab-arr { color: #4f46e5; font-weight: 800; font-size: 0.95rem; flex-shrink: 0; }
 /* 대시보드 */
 .se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
 /* 넓은 화면에선 매장 표 둘 + 점검·판매가 세 칸으로 나란히 — 스크롤 없이 한 화면에 들어온다 */
@@ -15254,9 +15256,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
             <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">📦 전체 현황</button>
             <button class="se-tab" data-tab="store" onclick="seSwitchTab('store')">🪑 전시품</button>
             <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">🗺️ 공간</button>
-            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">📄 매출외출고 요청서</button>
-            <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">🔁 거래처 변경 (협조전)</button>
-            <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">🧾 회수 보고서</button>
+            <!-- 전시품 문서 세 장 — 순서대로 붙는다 -->
+            <div class="se-tab-group" title="전시품 문서 순서: 요청서 → 거래처 변경 → 회수 보고서">
+                <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">📄 매출외출고 요청서</button>
+                <span class="se-tab-arr">→</span>
+                <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">🔁 거래처 변경 (협조전)</button>
+                <span class="se-tab-arr">→</span>
+                <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">🧾 회수 보고서</button>
+            </div>
             <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">🔍 점검</button>
             <button class="se-tab" data-tab="acc" onclick="seSwitchTab('acc')">🧩 악세서리 (관리 필요 없음)</button>
             <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 본사 담당자 업무</button>
