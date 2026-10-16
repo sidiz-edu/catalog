@@ -13871,7 +13871,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 .se-tab.active { color: #fff; background: #003EFF; border-color: #003EFF; box-shadow: 0 3px 10px rgba(0,62,255,0.28); }
 .se-tab:hover:not(.active) { background: #e0e7ff; border-color: #c7d2fe; color: #1e3a8a; }
 /* 대시보드 */
-.se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
 /* 넓은 화면에선 매장 표 둘 + 점검·판매가 세 칸으로 나란히 — 스크롤 없이 한 화면에 들어온다 */
 .se-dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 12px; align-items: start; }
 .se-dash-card { background: #fff; border: 1px solid var(--se-border); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
@@ -19957,40 +19957,43 @@ function seRenderDash() {
             <div style="font-size:0.72rem;color:var(--se-muted);margin-top:2px;">${sub}</div>
         </div>`;
     const num = (v, color, go) => !v
-        ? '<td style="padding:4px 8px;text-align:right;color:#cbd5e1;">-</td>'
-        : `<td ${go ? `onclick="${go}"` : ''} style="padding:4px 8px;text-align:right;font-weight:800;color:${color};font-variant-numeric:tabular-nums;${go ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;' : ''}">${v}</td>`;
-    const th = (h, right) => `<th style="padding:5px 8px;text-align:${right ? 'right' : 'left'};font-size:0.72rem;color:#475569;white-space:nowrap;">${h}</th>`;
+        ? '<td style="padding:4px 6px;text-align:right;color:#cbd5e1;">-</td>'
+        : `<td ${go ? `onclick="${go}"` : ''} style="padding:4px 6px;text-align:right;font-weight:800;color:${color};font-variant-numeric:tabular-nums;${go ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;' : ''}">${v}</td>`;
+    const th = (h, right) => `<th style="padding:5px 6px;text-align:${right ? 'right' : 'left'};font-size:0.72rem;color:#475569;white-space:nowrap;">${h}</th>`;
     const short = id => seStoreNameOf(id).replace(/^시디즈 더 프로그레시브 |^시디즈 |^더 프로그레시브 /, '');
 
-    // 매장 표는 더 프로그레시브 / 그 밖의 매장 둘로 나눠 나란히 놓는다 — 한 표로 18줄이면 화면을 넘는다
+    // 매장 표는 더 프로그레시브 / 일룸 / 그 외로 나눠 나란히 놓는다 — 한 표로 18줄이면 화면을 넘는다.
+    // 표 제목은 머리줄 첫 칸에 둔다 — 제목 줄을 따로 두면 일룸·그 외를 겹쳐 쌓을 때 화면을 넘는다
+    const inGroup = id => short(id).replace(/^일룸 /, '');
     const table = (title, list) => {
         const sub = k => list.reduce((s, x) => s + by[x.id][k], 0);
         const trs = list.map(s => {
             const x = by[s.id], on = s.id === scoped;
             return `<tr style="border-top:1px solid var(--se-border);${on ? 'background:#eef2ff;' : ''}">
-                <td style="padding:4px 8px;white-space:nowrap;"><a href="javascript:void(0)" onclick="seDashGo('store','${s.id}')" title="${s.name}"
-                    style="color:#1e293b;font-weight:700;text-decoration:none;">${short(s.id)}</a></td>
+                <td style="padding:4px 6px;white-space:nowrap;"><a href="javascript:void(0)" onclick="seDashGo('store','${s.id}')" title="${s.name}"
+                    style="color:#1e293b;font-weight:700;text-decoration:none;">${inGroup(s.id)}</a></td>
                 ${num(x.shown, '#1e293b')}${num(x.selling, '#7c3aed')}${num(x.sold, '#0f766e')}
                 ${num(x.tra, '#dc2626', `seDashGo('audit','${s.id}','docs')`)}
                 ${num(x.rec, '#ea580c', `seDashGo('audit','${s.id}','docs')`)}
                 ${num(x.issue, '#b45309', `seDashGo('audit','${s.id}','all')`)}
             </tr>`;
         }).join('');
-        return `<div class="se-dash-card" style="padding:12px 0 4px;">
-            <div class="se-dash-h" style="padding:0 14px;">${title} <span style="font-size:0.72rem;font-weight:500;color:var(--se-muted);">${list.length}곳</span></div>
+        return `<div class="se-dash-card" style="padding:0 0 4px;overflow:hidden;">
             <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
-                <thead><tr style="background:#f1f5f9;">${th('매장')}${th('전시', 1)}${th('판매 중', 1)}${th('판매완료', 1)}${th('🔴 거변', 1)}${th('🟠 회수', 1)}${th('점검', 1)}</tr></thead>
+                <thead><tr style="background:#f1f5f9;">
+                    <th style="padding:6px 6px;text-align:left;white-space:nowrap;font-size:0.86rem;font-weight:800;color:var(--se-text);">${title} <span style="font-size:0.72rem;font-weight:500;color:var(--se-muted);">${list.length}곳</span></th>${th('전시', 1)}${th('판매 중', 1)}${th('판매완료', 1)}${th('🔴 거변', 1)}${th('🟠 회수', 1)}${th('점검', 1)}</tr></thead>
                 <tbody>${trs}</tbody>
                 <tfoot><tr style="border-top:2px solid var(--se-border);background:#f8fafc;font-weight:800;">
-                    <td style="padding:4px 8px;">소계</td>
-                    ${['shown', 'selling', 'sold', 'tra', 'rec', 'issue'].map(k => `<td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;">${sub(k)}</td>`).join('')}
+                    <td style="padding:4px 6px;">소계</td>
+                    ${['shown', 'selling', 'sold', 'tra', 'rec', 'issue'].map(k => `<td style="padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums;">${sub(k)}</td>`).join('')}
                 </tr></tfoot>
             </table></div>
         </div>`;
     };
     const tdp = stores.filter(s => /프로그레시브/.test(s.name));
-    const etc = stores.filter(s => !/프로그레시브/.test(s.name));
+    const iloom = stores.filter(s => /^일룸/.test(s.name));
+    const etc = stores.filter(s => !/프로그레시브/.test(s.name) && !/^일룸/.test(s.name));
 
     const kinds = issueKinds.map(k => [k, audit.filter(x => x.kind === k).length]).filter(([, c]) => c);
     // 점검 요약은 두 줄씩 — 한 줄에 하나면 오른쪽 칸만 길어져 화면을 넘는다
@@ -20012,7 +20015,7 @@ function seRenderDash() {
 
     const time = _seDash.at.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     body.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
             <div style="font-size:1.15rem;font-weight:800;color:var(--se-text);">📊 전 매장 현황</div>
             <span style="font-size:0.76rem;color:var(--se-muted);">${time} 기준 · 악세서리 제외</span>
             <button class="se-save-btn" style="margin-left:auto;padding:5px 12px;font-size:0.76rem;" onclick="seLoadDash(true)">🔄 새로고침</button>
@@ -20026,7 +20029,10 @@ function seRenderDash() {
         </div>
         <div class="se-dash-grid">
             ${tdp.length ? table('더 프로그레시브', tdp) : ''}
-            ${etc.length ? table('스타필드 · 커넥트현대 · 일룸 · 기타', etc) : ''}
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                ${iloom.length ? table('일룸', iloom) : ''}
+                ${etc.length ? table('그 외', etc) : ''}
+            </div>
             <div style="display:flex;flex-direction:column;gap:12px;">
                 <div class="se-dash-card">
                     <div class="se-dash-h">🔍 점검 요약 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${issues.filter(x => x.store).length}건${issues.some(x => !x.store) ? ` · 매장 공통 ${issues.filter(x => !x.store).length}` : ''}</span></div>
