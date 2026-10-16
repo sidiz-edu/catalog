@@ -18111,10 +18111,10 @@ function seRenderTable(storeId) {
             ${imgCell}
             <td>${row.display_since || '-'}</td>
             <td style="font-size:0.78rem;color:var(--se-text);">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
-            <td style="color:#94a3b8;">${[seIssueChip(row.sku),
+            <td style="color:#94a3b8;min-width:160px;">${[seIssueChip(row.sku),
                  row.exit_note ? `<span style="color:#7c2d12;">${row.exit_note}</span>` : '',
                  row.memo || ''].filter(Boolean).join('<br>') || '-'}</td>
-            <td style="color:#64748b;font-size:0.75rem;">${row.updated_by || '-'} · ${dt}${buyerInfo}${seMoveChip(row)}</td>
+            <td style="color:#64748b;font-size:0.75rem;min-width:120px;">${row.updated_by || '-'} · ${dt}${buyerInfo}${seMoveChip(row)}</td>
             <td style="vertical-align:middle;"><div class="se-act">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
