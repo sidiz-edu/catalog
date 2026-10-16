@@ -14097,6 +14097,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                             <select id="seEditMajor" onchange="seEditFillMinor()" style="background:var(--se-surface);color:var(--se-text);border:1px solid var(--se-border);border-radius:6px;padding:8px 10px;font-size:0.85rem;">
                                 <option value="in">매장</option>
                                 <option value="out">매장 出</option>
+                                <option value="lost">위치 확인 불가</option>
                             </select>
                         </div>
                         <div style="display:flex;flex-direction:column;gap:4px;">
@@ -16912,6 +16913,7 @@ function seRenderFlat() {
         const shortStore = id => { const n = String(seStoreNameOf(id)).replace(/^시디즈\s*(더 프로그레시브\s*)?/, ''); return /점$/.test(n) ? n : n + '점'; };
         // 팔린 물건은 「판매완료」만 — 위치는 남은 물건만 적는다
         const loc = x.ds.filter(d => !d.sold).map(d => {
+            if (seIsLost(d)) return `<b style="color:#a16207;">❓ ${d.store_id === x.it.store_id ? '' : shortStore(d.store_id) + ' '}위치 확인 불가</b>`;
             const l = seDisplayLoc(d, { dropStatus: true });
             if (d.store_id === x.it.store_id) return l;
             return `<b style="color:#7c3aed;">🔀 ${shortStore(d.store_id)}에 전시 중</b>${l ? ' · ' + l : ''}`;
@@ -17317,7 +17319,7 @@ async function seToggleReqItems(id) {
                 ? `<span style="font-size:0.72rem;font-weight:700;color:#22c55e;display:block;">✔ 전시 ${have} / 매출외출고 ${req}</span>`
                 : `<span style="font-size:0.72rem;font-weight:700;color:#f59e0b;display:block;">⚠ 전시 ${have} / 매출외출고 ${req} · ${diff < 0 ? `${-diff}개 부족` : `${diff}개 초과`}</span>`;
             return head + matches.map(d => {
-                const status = (d.sold ? seSaleChip('✅ 판매완료') : d.purpose === '창고' ? '📦 창고' : '🪑 전시중')
+                const status = (d.sold ? seSaleChip('✅ 판매완료') : seIsLost(d) ? '❓ 위치 확인 불가' : d.purpose === '창고' ? '📦 창고' : '🪑 전시중')
                     + (d._at ? ` <span style="color:#1d4ed8;">🔀 ${seStoreNameOf(d._at)}로 옮김</span>` : '');
                 const q = d.quantity || 1;
                 const loc = seDisplayLoc(d, { dropStatus: true });
@@ -18224,8 +18226,9 @@ function seRenderTable(storeId) {
                            || (row.sku && seDemoSku.has(row.sku.toUpperCase()) && !seIsDirectBuy(row)
                                && !demoTaken.has(row.sku.toUpperCase())));
     const kindOf = row => row.sold ? ({ '폐기': 'disposed', '연구소': 'research', '증정': 'gift' }[row.exit_type] || 'sold')
+                        : seIsLost(row) ? 'lost'
                         : row.purpose === '창고' ? 'store' : row.purpose === '판매' ? 'selling' : 'display';
-    const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0, gift: 0 };
+    const kc = { display: 0, selling: 0, sold: 0, store: 0, disposed: 0, research: 0, gift: 0, lost: 0 };
     const demoCount = seDisplayData.filter(r => !r.sold && isDemo(r)).length;
     const hasOpenIssue = row => (seIssues[(row.sku || '').toUpperCase()] || []).some(seIssueOpen);
     const asCount  = seDisplayData.filter(hasOpenIssue).length;
@@ -18236,7 +18239,8 @@ function seRenderTable(storeId) {
         : k === 'demo' ? demoCount
         : k === 'src_store' ? seDisplayData.filter(r => seSourceOf(r) === 'store').length
         : k === 'src_hq'    ? seDisplayData.filter(r => seSourceOf(r) === 'hq').length
-        : k === 'in' ? seDisplayData.filter(r => !r.sold).length
+        : k === 'lost' ? seDisplayData.filter(seIsLost).length
+        : k === 'in' ? seDisplayData.filter(r => !r.sold && !seIsLost(r)).length
         : k === 'out' ? seDisplayData.filter(r =>  r.sold).length : kc[k];
     if (seKindFilter !== 'all' && !kindAvail(seKindFilter)) seKindFilter = 'all';
     seComputeNeedRecovery();
@@ -18267,11 +18271,12 @@ function seRenderTable(storeId) {
     }
     const bar = document.getElementById('seKindBar');
     if (bar) {
-        const inN  = seDisplayData.filter(r => !r.sold).length;
+        const inN  = seDisplayData.filter(r => !r.sold && !seIsLost(r)).length;
         const outN = seDisplayData.filter(r =>  r.sold).length;
+        const lostN = seDisplayData.filter(seIsLost).length;
         const srcN = { store: 0, hq: 0 };
         seDisplayData.forEach(r => { const s = seSourceOf(r); if (s) srcN[s]++; });
-        const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN
+        const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN : k === 'lost' ? lostN
             : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount
             : k === 'src_store' ? srcN.store : k === 'src_hq' ? srcN.hq : kc[k];
 
@@ -18335,6 +18340,7 @@ function seRenderTable(storeId) {
                     ['disposed', `훼손 폐기 (${kc.disposed})`,  '#7c2d12'],
                     ['gift',     `고객 증정 (${kc.gift})`,      '#0891b2'],
                 ])}
+                ${group('lost', `위치 확인 불가 (${lostN})`, SE_MAJOR.lost[1], [])}
             </div>
             ${(srcN.store || srcN.hq) ? `<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                 <span style="font-size:0.68rem;color:var(--se-muted);font-weight:700;">조달</span>
@@ -18353,7 +18359,8 @@ function seRenderTable(storeId) {
           : seKindFilter === 'demo' ? (!row.sold && isDemo(row))
           : seKindFilter === 'src_store' ? seSourceOf(row) === 'store'
           : seKindFilter === 'src_hq'    ? seSourceOf(row) === 'hq'
-          : seKindFilter === 'in'  ? !row.sold
+          : seKindFilter === 'lost' ? seIsLost(row)
+          : seKindFilter === 'in'  ? !row.sold && !seIsLost(row)
           : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
     // 전시품 쪽 SKU별 합계 — 아래 '요청서엔 있는데 전시품이 없는 품목'에서 쓴다
@@ -18871,7 +18878,7 @@ async function seOpenEditModal(id) {
     document.getElementById('seEditSku').value = skuCode;
     seEditPopulateColorCodes(skuCode);
     document.getElementById('seEditColor').value = row.color_code || '';
-    document.getElementById('seEditMajor').value = row.sold ? 'out' : 'in';
+    document.getElementById('seEditMajor').value = seMajorOf(row);
     seEditFillMinor(row.sold ? (row.exit_type || '판매') : (row.purpose || '전시'));
     document.getElementById('seEditQty').value = row.quantity ?? 1;
     const _dateUnknown = !row.display_since;
@@ -18967,6 +18974,7 @@ function seEditFillMinor(pick) {
     const major = document.getElementById('seEditMajor').value;
     const src = major === 'out'
         ? Object.entries(SE_EXIT).map(([k, v]) => [k, v.label])
+        : major === 'lost' ? Object.entries(SE_LOST_MINOR).map(([k, v]) => [k, v[0]])
         : Object.entries(SE_PURPOSE).map(([k, v]) => [k, v[0]]);
     const sel = document.getElementById('seEditMinor');
     sel.innerHTML = src.map(([k, label]) => `<option value="${k}">${label}</option>`).join('');
@@ -19113,9 +19121,14 @@ const seExitOf = row => SE_EXIT[row.exit_type] || (row.sold ? SE_EXIT['판매'] 
 // 대분류는 매장에 있나 없나, 소분류는 그 안에서 무엇인가.
 // 매장 出 의 소분류는 SE_EXIT 가 들고 있다 (반출 사유와 같은 값이다).
 const SE_MAJOR = {
-    'in':  ['매장',   '#1d4ed8'],
-    'out': ['매장 出', '#b91c1c'],
+    'in':   ['매장',   '#1d4ed8'],
+    'out':  ['매장 出', '#b91c1c'],
+    'lost': ['위치 확인 불가', '#a16207'],
 };
+// 매장에서 찾지 못한 물건 — 팔렸는지 옮겼는지 모른다. 판매도 반출도 아니라 매장 수량에서는 뺀다.
+const SE_LOST = '확인불가';
+const SE_LOST_MINOR = { [SE_LOST]: ['❓ 확인 필요', '#a16207'] };
+const seIsLost = row => !!row && !row.sold && row.purpose === SE_LOST;
 const SE_PURPOSE = {
     '전시': ['전시',    '#3b82f6'],
     '창고': ['창고',    '#475569'],
@@ -19144,9 +19157,10 @@ function seSourceOf(row) {
     return SE_DIRECT_STORES.has(row.store_id) ? 'store' : null;
 }
 
-const seMajorOf = row => row.sold ? 'out' : 'in';
+const seMajorOf = row => row.sold ? 'out' : seIsLost(row) ? 'lost' : 'in';
 const seMinorOf = row => row.sold
     ? (() => { const e = seExitOf(row); return [seExitLabel(e), e.bg]; })()
+    : seIsLost(row) ? SE_LOST_MINOR[SE_LOST]
     : (SE_PURPOSE[row.purpose] || SE_PURPOSE['전시']);
 const seExitLabel = e => [e.icon, e.label].filter(Boolean).join(' ');
 
@@ -19733,7 +19747,7 @@ const seSearchField = id => document.getElementById(id)?.value || 'all';
 let _seTraDisp = null;
 async function seLoadTraDisp() {
     const [d, m] = await Promise.all([
-        sbAll(() => _sb.from('store_displays').select('id,store_id,sku,sold,exit_type,location,sales_order_no,sales_link,memo').order('id')),
+        sbAll(() => _sb.from('store_displays').select('id,store_id,sku,sold,exit_type,purpose,location,sales_order_no,sales_link,memo').order('id')),
         sbAll(() => _sb.from('display_moves').select('id,display_id,from_store,to_store,reason,moved_at').order('id')),
         seEnsureReqIndex(),
     ]);
@@ -19798,6 +19812,7 @@ function seTraStatusCell(it) {
     const moved = r.store_id !== r._from;
     const where = `${moved ? '🔀 ' : ''}${seStoreNameOf(r.store_id).replace(/^시디즈 더 프로그레시브 /, '')}${!r.sold && r.location ? ' · ' + r.location : ''}`;
     const chip = ex ? tag(ex.label, ex.bg, '#fff')
+        : seIsLost(r) ? tag('❓ 위치 확인 불가', '#fef3c7', '#a16207', '#fcd34d')
         : `<span title="문서에는 판매로 올라갔는데 전시품은 아직 「판매 중」입니다. 매장 확인이 필요합니다">${tag('⚠ 전시품은 아직 전시 중', '#fffbeb', '#b45309', '#fcd34d')}</span>`;
     const diff = r._codeDiff ? ` <span title="문서와 전시품의 코드가 다릅니다 — 문서 오기로 보고 같은 수주번호의 전시품에 붙였습니다" style="font-size:0.66rem;color:#b45309;font-weight:700;">전시품 ${r._codeDiff === 'item' ? r.sku : String(r.sku || '').split('-').slice(1).join('-')}</span>` : '';
     return td(`<div style="display:flex;gap:5px;align-items:center;" title="${(r.sku || '') + ' · ' + (r.sales_order_no || '수주번호 없음') + (r.memo ? ' · ' + r.memo : '')}">${chip}<span style="font-size:0.72rem;color:#475569;">${where}</span>${diff}</div>`);
@@ -20553,7 +20568,7 @@ function seRenderDash() {
     const month = new Date().toISOString().slice(0, 7);
     const scoped = seScopedStore();
 
-    const shown = rows.filter(r => !r.sold && r.purpose !== '창고');
+    const shown = rows.filter(r => !r.sold && r.purpose !== '창고' && !seIsLost(r));
     const store = rows.filter(r => !r.sold && r.purpose === '창고');
     const selling = rows.filter(r => !r.sold && r.purpose === '판매');
     const sold = rows.filter(isSale), out = rows.filter(r => r.sold && !isSale(r));
@@ -20565,7 +20580,7 @@ function seRenderDash() {
     const st = id => by[id] || (by[id] = { shown: 0, selling: 0, sold: 0, tra: 0, rec: 0, issue: 0 });
     rows.forEach(r => {
         const s = st(r.store_id);
-        if (!r.sold) { if (r.purpose !== '창고') s.shown += n(r); if (r.purpose === '판매') s.selling += n(r); }
+        if (!r.sold) { if (r.purpose !== '창고' && !seIsLost(r)) s.shown += n(r); if (r.purpose === '판매') s.selling += n(r); }
         else if (isSale(r)) s.sold += n(r);
     });
     tra.forEach(x => st(x.store).tra++);
@@ -21230,7 +21245,8 @@ async function seSubmitEdit() {
     const minor = document.getElementById('seEditMinor').value;
     // 매장 出 이면 매장에 있던 역할(purpose)은 그대로 보존한다 — 어디 있던 물건인지가 남아야 한다
     const cur0 = seDisplayData.find(r => r.id === id) || {};
-    const purpose = major === 'in' ? minor : (cur0.purpose || '전시');
+    const purpose = major === 'in' ? minor : major === 'lost' ? SE_LOST
+        : (cur0.purpose === SE_LOST ? '전시' : (cur0.purpose || '전시'));
     if (major === 'in' && minor === '판매' && !seHasOutgoingDoc(cur0) && !document.getElementById('seEditDirect').checked) {
         msg.textContent = SE_NO_DOC_MSG; return;
     }
