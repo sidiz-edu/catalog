@@ -18778,6 +18778,7 @@ const SE_PURPOSE = {
 // 대리점 구매는 매출외출고 문서가 없는 게 정상이라 '연결X'로 몰면 안 된다.
 // 표시는 메모의 태그로 남긴다 (칼럼을 새로 만들지 않고 기존 표기와도 이어진다).
 const SE_DIRECT_TAG = '[대리점 구매]';
+const SE_DIRECT_NA = '<div style="display:flex;justify-content:center;"><span title="대리점 구매 — 본사 재산이 아니라 거래처 변경·회수보고서를 쓰지 않습니다" style="color:#94a3b8;font-size:0.72rem;white-space:nowrap;">해당 없음</span></div>';
 // 점검의 「한 글자 다름」에서 코드가 맞다고 확인한 전시품 — 메모에 달면 다시 묻지 않는다
 const SE_CODE_OK_TAG = '[코드 확인]';
 const seIsCodeOk = row => ((row && row.memo) || '').includes(SE_CODE_OK_TAG);
@@ -18818,7 +18819,8 @@ function seComputeNeedRecovery() {
             if (x.order_no) byOrder[sku + '|' + x.order_no] = (byOrder[sku + '|' + x.order_no] || 0) + q;
         });
     });
-    const sold = seDisplayData.filter(r => r.sold && r.sku)
+    // 대리점 구매는 본사 재산이 아니라 팔아도 회수보고서가 없다
+    const sold = seDisplayData.filter(r => r.sold && r.sku && !seIsDirectBuy(r))
         .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''));
     const rest = [];
     sold.forEach(r => {
@@ -19764,7 +19766,8 @@ async function seRunAudit(force) {
     // 한 번에 돌면 먼저 팔린 행이 매장 단위로 옆 행의 짝을 집어 간다 — 평택 링고
     // A441BW 는 수원에서 온 행(-0265)이 평택 회수 몫(-0262)을 먼저 가져가, 번호가
     // 꼭 맞는 평택 행이 회수 필요로 떴다.
-    const soldRows = disp.filter(d => d.sold && d.sku)
+    // 대리점 구매는 팔아도 거변·회수보고서를 쓰지 않는다
+    const soldRows = disp.filter(d => d.sold && d.sku && !seIsDirectBuy(d))
         .sort((a, b) => (a.sold_at || '').localeCompare(b.sold_at || ''));
     const traOf = new Map(), recOf = new Map();
     [true, false].forEach(exact => soldRows.forEach(d => {
@@ -20615,6 +20618,7 @@ function seTransferCell(row) {
     const docs = seTransferDocsFor(row);
     if (!docs.length) {
         // 회수보고서까지 올라갔으면 끝난 건이다. 폐기는 거변 자체가 필요 없다.
+        if (row.sold && seIsDirectBuy(row)) return SE_DIRECT_NA;
         return row.sold && !seRecoveryDocsFor(row).length
             ? `<div style="display:flex;align-items:center;justify-content:center;">
                  <span style="background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:2px 7px;
@@ -20638,6 +20642,7 @@ function seTransferCell(row) {
 
 function seRecoveryCell(row) {
     if (!row.sold) return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
+    if (seIsDirectBuy(row) && !seRecoveryDocsFor(row).length) return SE_DIRECT_NA;
     if (seNeedsRecovery(row)) {
         return `<div style="display:flex;align-items:center;justify-content:center;">
             <span style="background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:2px 7px;
