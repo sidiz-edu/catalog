@@ -13860,17 +13860,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     font-family: 'Outfit', sans-serif;
 }
 .se-panel-header .se-close:hover { background: rgba(255,255,255,0.28); }
-.se-tabs-bar { background: #fff; border-top: 1px solid var(--se-border); flex-shrink: 0; }
-.se-tabs { display: flex; gap: 0; padding: 0 32px; overflow-x: auto; scrollbar-width: thin; }
+.se-tabs-bar { background: #fff; border-top: 1px solid var(--se-border); flex-shrink: 0; box-shadow: 0 -4px 14px rgba(15,23,42,0.06); }
+.se-tabs { display: flex; gap: 6px; padding: 9px 24px; overflow-x: auto; scrollbar-width: thin; }
 .se-tab {
-    padding: 14px 20px; font-size: 0.8rem; font-weight: 500;
-    cursor: pointer; color: var(--se-muted); background: transparent; border: none;
-    border-top: 2.5px solid transparent; margin-top: -1px;
-    transition: color 0.15s; font-family: 'Outfit', sans-serif;
+    padding: 9px 15px; font-size: 0.86rem; font-weight: 700;
+    cursor: pointer; color: #1e293b; background: #f1f5f9; border: 1px solid #dbe1ea; border-radius: 10px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s; font-family: 'Outfit', sans-serif;
     flex-shrink: 0; white-space: nowrap;
 }
-.se-tab.active { color: #003EFF; border-top-color: #003EFF; font-weight: 700; }
-.se-tab:hover:not(.active) { color: var(--se-text); }
+.se-tab.active { color: #fff; background: #003EFF; border-color: #003EFF; box-shadow: 0 3px 10px rgba(0,62,255,0.28); }
+.se-tab:hover:not(.active) { background: #e0e7ff; border-color: #c7d2fe; color: #1e3a8a; }
+/* 대시보드 */
+.se-dash-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.se-dash-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+.se-dash-card { background: #fff; border: 1px solid var(--se-border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.se-dash-h { font-size: 0.92rem; font-weight: 800; color: var(--se-text); margin-bottom: 10px; }
+@media (max-width: 900px) { .se-dash-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .se-dash-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .se-flow { display: flex; align-items: stretch; gap: 4px; background: var(--se-surface); border: 1px solid var(--se-border); border-radius: 11px; padding: 16px 14px; margin-bottom: 12px; }
 .se-flow-s { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 2px 6px; }
 .se-flow-n { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border-radius: 50%; background: #0f172a; color: #fff; font-size: 0.68rem; font-weight: 800; font-family: 'Outfit', sans-serif; }
@@ -14038,7 +14044,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
         <span style="font-size:1.02rem;font-weight:800;color:#b45309;letter-spacing:-0.01em;line-height:1.35;">악세사리는 전시품 목록에서 관리하지 않습니다.</span>
     </div>
     <div class="se-panel-body">
-        <div id="seTabStore">
+        <div id="seTabDash">
+            <div id="seDashBody"><p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p></div>
+        </div>
+        <div id="seTabStore" style="display:none;">
             <!-- 이동 모달 -->
             <div id="seEditModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
                 <div style="background:#fff;border:none;border-radius:16px;padding:0;width:420px;max-width:92vw;display:flex;flex-direction:column;gap:0;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.18);">
@@ -15179,15 +15188,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
     </div>
     <div class="se-tabs-bar">
         <div class="se-tabs">
-            <button class="se-tab active" data-tab="store" onclick="seSwitchTab('store')">전시품</button>
-            <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">공간</button>
-            <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">전체 현황</button>
-            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">매출외출고 요청서</button>
-            <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">회수 보고서</button>
-            <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">거래처 변경</button>
-            <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">점검</button>
-            <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">매장 전시품 판매 프로세스</button>
-            <button class="se-tab" data-tab="acc" onclick="seSwitchTab('acc')">악세서리 (관리 필요 없음)</button>
+            <button class="se-tab active" data-tab="dash" onclick="seSwitchTab('dash')">📊 대시보드</button>
+            <button class="se-tab" data-tab="sale" onclick="seSwitchTab('sale')">📋 매장 전시품 판매 프로세스</button>
+            <button class="se-tab" data-tab="store" onclick="seSwitchTab('store')">🪑 전시품</button>
+            <button class="se-tab" data-tab="zone" onclick="seSwitchTab('zone')">🗺️ 공간</button>
+            <button class="se-tab" data-tab="overview" onclick="seSwitchTab('overview')">📦 전체 현황</button>
+            <button class="se-tab" data-tab="request" onclick="seSwitchTab('request')">📄 매출외출고 요청서</button>
+            <button class="se-tab" data-tab="recovery" onclick="seSwitchTab('recovery')">🧾 회수 보고서</button>
+            <button class="se-tab" data-tab="transfer" onclick="seSwitchTab('transfer')">🔁 거래처 변경</button>
+            <button class="se-tab" data-tab="audit" onclick="seSwitchTab('audit')">🔍 점검</button>
+            <button class="se-tab" data-tab="acc" onclick="seSwitchTab('acc')">🧩 악세서리 (관리 필요 없음)</button>
             <button class="se-tab" data-tab="register" onclick="seSwitchTab('register')">🔒 본사 담당자 업무</button>
         </div>
     </div>
@@ -15955,7 +15965,13 @@ function seConfirmLogin() {
 }
 function openSEPanel(keepHash) {
     if (!keepHash) location.hash = 'se';
-    document.getElementById('seMgmtPanel').classList.add('open');
+    const panel = document.getElementById('seMgmtPanel');
+    const wasOpen = panel.classList.contains('open');
+    panel.classList.add('open');
+    if (!wasOpen) {
+        seSwitchTab('dash', true);
+        setTimeout(() => { if (document.querySelector('.se-tab.active')?.dataset.tab === 'dash') seLoadDash(); }, 0);
+    }
     // 매장 드롭다운
     const sel = document.getElementById('seStoreSelect');
     if (sel.options.length <= 1) {
@@ -15998,6 +16014,7 @@ function seOnStoreChange() {
     if (document.querySelector('.se-tab.active')?.dataset.tab === 'audit' && _seAudit) seRenderAudit();
     if (document.querySelector('.se-tab.active')?.dataset.tab === 'transfer' && _seTraDocs) seRenderTransfer();
     const tab = document.querySelector('.se-tab.active')?.dataset.tab;
+    if (tab === 'dash') { seRenderDash(); return; }
     if (tab === 'acc') { seRenderAcc(); return; }
     if (tab === 'zone' || tab === 'place') seLayoutLoadStore();
     // 요청서 탭: 전체 매장이면 요청서별로 훑고, 매장을 고르면 그 매장 품목을 바로 본다
@@ -16020,10 +16037,12 @@ function seRenderScopeNote() {
     });
 }
 
-function seSwitchTab(tab) {
+function seSwitchTab(tab, lazy) {
     document.querySelectorAll('.se-tab').forEach(t =>
         t.classList.toggle('active', t.dataset.tab === tab));
     const isLayout = tab === 'zone';
+    document.getElementById('seTabDash').style.display      = tab === 'dash'     ? '' : 'none';
+    if (tab === 'dash' && !lazy) seLoadDash();
     document.getElementById('seTabStore').style.display     = tab === 'store'    ? '' : 'none';
     document.getElementById('seTabLayout').style.display    = isLayout           ? 'flex' : 'none';
     document.getElementById('seTabOverview').style.display  = tab === 'overview' ? '' : 'none';
@@ -19863,6 +19882,152 @@ function seOpenTraDraft(only) {
 
 let _seAuditKind = 'all';
 function seAuditFilter(k) { _seAuditKind = k; seRenderAudit(); }
+
+// ── 대시보드 — 전 매장 현황 ─────────────────────────────────────────
+// SE 관리를 열면 처음 보는 화면. 위 매장 드롭다운과 상관없이 전 매장을 센다(고른 매장은 표에서 칠한다).
+// 거변·회수·점검 숫자는 점검 탭과 같은 계산(_seAudit)을 쓴다. 악세서리는 세지 않는다.
+let _seDash = null;
+
+async function seLoadDash(force) {
+    const body = document.getElementById('seDashBody');
+    if (!body) return;
+    // 전시품을 고치면 seInvalidate가 _seAudit을 비운다 — 그때는 다시 센다
+    if (_seDash && _seAudit && !force) { seRenderDash(); return; }
+    body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
+    const [dRes] = await Promise.all([
+        sbAll(() => _sb.from('store_displays')
+            .select('id,store_id,product_id,sku,quantity,purpose,sold,sold_at,exit_type,catalog_visible').order('id')),
+        (!_seAudit || force) ? seRunAudit(true) : null,
+    ]);
+    if (dRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${dRes.error.message}</p>`; return; }
+    seAccBuild(dRes.data);
+    _seDash = { at: new Date(), rows: (dRes.data || []).filter(r => r.store_id && r.store_id !== 'test' && !seIsAcc(r)) };
+    seRenderDash();
+}
+
+// 대시보드에서 매장·점검으로 건너간다. 매장을 넘기면 위 드롭다운도 그 매장으로 맞춘다
+function seDashGo(tab, store, kind) {
+    const sel = document.getElementById('seStoreSelect');
+    if (sel && store !== undefined && sel.value !== store) {
+        sel.value = store;
+        try { localStorage.setItem('seLastStore', store); } catch (e) {}
+    }
+    if (kind && tab === 'audit') _seAuditKind = kind;
+    seSwitchTab(tab);
+    if (kind && tab === 'overview') seSetOverviewFilter(kind);
+}
+
+function seRenderDash() {
+    const body = document.getElementById('seDashBody');
+    if (!body || !_seDash) return;
+    const n = r => r.quantity || 1;
+    const sum = list => list.reduce((s, r) => s + n(r), 0);
+    const isSale = r => r.sold && (!r.exit_type || r.exit_type === '판매');
+    const rows = _seDash.rows;
+    const audit = ((_seAudit && _seAudit.rows) || []).filter(x => x.store !== 'test');
+    const month = new Date().toISOString().slice(0, 7);
+    const scoped = seScopedStore();
+
+    const shown = rows.filter(r => !r.sold && r.purpose !== '창고');
+    const store = rows.filter(r => !r.sold && r.purpose === '창고');
+    const selling = rows.filter(r => !r.sold && r.purpose === '판매');
+    const sold = rows.filter(isSale), out = rows.filter(r => r.sold && !isSale(r));
+    const tra = audit.filter(x => x.kind === 'notrans'), rec = audit.filter(x => x.kind === 'norec');
+    const issueKinds = Object.keys(SE_AUDIT_KIND).filter(k => !SE_AUDIT_DOCS.includes(k));
+    const issues = audit.filter(x => issueKinds.includes(x.kind));
+
+    const by = {};
+    const st = id => by[id] || (by[id] = { shown: 0, selling: 0, sold: 0, tra: 0, rec: 0, issue: 0 });
+    rows.forEach(r => {
+        const s = st(r.store_id);
+        if (!r.sold) { if (r.purpose !== '창고') s.shown += n(r); if (r.purpose === '판매') s.selling += n(r); }
+        else if (isSale(r)) s.sold += n(r);
+    });
+    tra.forEach(x => st(x.store).tra++);
+    rec.forEach(x => st(x.store).rec++);
+    issues.forEach(x => { if (x.store) st(x.store).issue++; });
+    const stores = seStores().filter(s => by[s.id] && !/테스트/.test(s.name));
+
+    const card = (icon, label, value, sub, color, go) => `
+        <div ${go ? `onclick="${go}" role="button" title="눌러서 자세히 보기"` : ''} class="se-dash-card"
+             style="border-top:4px solid ${color};${go ? 'cursor:pointer;' : ''}">
+            <div style="font-size:0.8rem;font-weight:700;color:#475569;">${icon} ${label}</div>
+            <div style="font-size:1.9rem;font-weight:800;color:${color};line-height:1.15;margin-top:6px;font-variant-numeric:tabular-nums;">${value.toLocaleString()}</div>
+            <div style="font-size:0.74rem;color:var(--se-muted);margin-top:3px;">${sub}</div>
+        </div>`;
+    const num = (v, color, go) => !v
+        ? '<td style="padding:8px 10px;text-align:right;color:#cbd5e1;">-</td>'
+        : `<td ${go ? `onclick="${go}"` : ''} style="padding:8px 10px;text-align:right;font-weight:800;color:${color};font-variant-numeric:tabular-nums;${go ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;' : ''}">${v}</td>`;
+    const th = (h, right) => `<th style="padding:8px 10px;text-align:${right ? 'right' : 'left'};font-size:0.74rem;color:#475569;white-space:nowrap;">${h}</th>`;
+    const tot = k => stores.reduce((s, x) => s + by[x.id][k], 0);
+
+    const trs = stores.map(s => {
+        const x = by[s.id], on = s.id === scoped;
+        return `<tr style="border-top:1px solid var(--se-border);${on ? 'background:#eef2ff;' : ''}">
+            <td style="padding:8px 10px;white-space:nowrap;"><a href="javascript:void(0)" onclick="seDashGo('store','${s.id}')"
+                style="color:#1e293b;font-weight:700;text-decoration:none;">${s.name}</a></td>
+            ${num(x.shown, '#1e293b')}${num(x.selling, '#7c3aed')}${num(x.sold, '#0f766e')}
+            ${num(x.tra, '#dc2626', `seDashGo('audit','${s.id}','docs')`)}
+            ${num(x.rec, '#ea580c', `seDashGo('audit','${s.id}','docs')`)}
+            ${num(x.issue, '#b45309', `seDashGo('audit','${s.id}','all')`)}
+        </tr>`;
+    }).join('');
+
+    const kinds = issueKinds.map(k => [k, audit.filter(x => x.kind === k).length]).filter(([, c]) => c);
+    const chips = kinds.map(([k, c]) => {
+        const [icon, label, color] = SE_AUDIT_KIND[k];
+        return `<button onclick="seDashGo('audit','','${k}')" style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;
+            background:#fff;border:1px solid var(--se-border);border-radius:8px;padding:7px 10px;cursor:pointer;font-family:'Outfit',sans-serif;
+            font-size:0.78rem;color:#334155;">${icon} <span style="flex:1;">${label}</span><b style="color:${color};font-size:0.9rem;">${c}</b></button>`;
+    }).join('');
+
+    const recent = sold.filter(r => r.sold_at).sort((a, b) => b.sold_at.localeCompare(a.sold_at)).slice(0, 5);
+    const recentHtml = recent.map(r => `
+        <div style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-top:1px solid var(--se-border);font-size:0.78rem;">
+            <span style="color:var(--se-muted);font-variant-numeric:tabular-nums;white-space:nowrap;">${r.sold_at.slice(0, 10)}</span>
+            <span style="font-weight:700;color:#1e293b;white-space:nowrap;">${seStoreNameOf(r.store_id).replace(/^시디즈 |^더 프로그레시브 /, '')}</span>
+            <span style="color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.product_id || ''} <span style="font-family:monospace;color:#94a3b8;">${r.sku || ''}</span></span>
+        </div>`).join('');
+
+    const time = _seDash.at.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <div style="font-size:1.15rem;font-weight:800;color:var(--se-text);">📊 전 매장 현황</div>
+            <span style="font-size:0.76rem;color:var(--se-muted);">${time} 기준 · 악세서리 제외</span>
+            <button class="se-save-btn" style="margin-left:auto;" onclick="seLoadDash(true)">🔄 새로고침</button>
+        </div>
+        <div class="se-dash-kpi">
+            ${card('🪑', '전시 중', sum(shown), `매장 ${stores.length}곳${store.length ? ` · 창고 ${sum(store)}` : ''}`, '#003EFF', "seDashGo('overview',undefined,'전시')")}
+            ${card('🏷️', '판매 진행 중', sum(selling), `카탈로그 게시 ${sum(selling.filter(r => r.catalog_visible))}`, '#7c3aed', "seDashGo('overview',undefined,'판매')")}
+            ${card('✅', '판매완료', sum(sold), `이번 달 ${sum(sold.filter(r => (r.sold_at || '').startsWith(month)))}${out.length ? ` · 폐기 등 반출 ${sum(out)}` : ''}`, '#0f766e')}
+            ${card('🔴', '거변 필요', tra.length, '거래처 변경 협조전부터', '#dc2626', "seDashGo('audit','','docs')")}
+            ${card('🟠', '회수보고서 필요', rec.length, '거변은 끝, 보고서만', '#ea580c', "seDashGo('audit','','docs')")}
+        </div>
+        <div class="se-dash-grid">
+            <div class="se-dash-card" style="padding:14px 0 6px;">
+                <div class="se-dash-h" style="padding:0 16px;">매장별 현황 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">매장 이름을 누르면 그 매장 전시품으로 갑니다</span></div>
+                <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                    <thead><tr style="background:#f1f5f9;">${th('매장')}${th('전시 중', 1)}${th('판매 중', 1)}${th('판매완료', 1)}${th('🔴 거변', 1)}${th('🟠 회수', 1)}${th('점검', 1)}</tr></thead>
+                    <tbody>${trs}</tbody>
+                    <tfoot><tr style="border-top:2px solid var(--se-border);background:#f8fafc;font-weight:800;">
+                        <td style="padding:8px 10px;">합계</td>
+                        ${['shown', 'selling', 'sold', 'tra', 'rec', 'issue'].map(k => `<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${tot(k)}</td>`).join('')}
+                    </tr></tfoot>
+                </table></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="se-dash-card">
+                    <div class="se-dash-h">🔍 점검 요약 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${issues.filter(x => x.store).length}건${issues.some(x => !x.store) ? ` · 매장 공통 ${issues.filter(x => !x.store).length}` : ''}</span></div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">${chips || '<span style="font-size:0.78rem;color:var(--se-muted);">걸린 게 없습니다.</span>'}</div>
+                </div>
+                <div class="se-dash-card">
+                    <div class="se-dash-h">✅ 최근 판매완료</div>
+                    ${recentHtml || '<span style="font-size:0.78rem;color:var(--se-muted);">기록이 없습니다.</span>'}
+                </div>
+            </div>
+        </div>`;
+}
 
 // 거래처 변경·회수보고서는 매장마다 따로 쓴다. 그래서 매장별로 모아 놓고
 // 매장 줄에서 바로 그 매장 몫만 초안으로 뽑을 수 있게 한다.
