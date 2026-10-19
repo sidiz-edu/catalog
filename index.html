@@ -4724,6 +4724,34 @@
             </div>
         </div>
 
+        <!-- T50 2세대 좌판 -->
+        <div class="product-card" data-repair-cat="T50" onclick="showDetail('t50Gen2Seat')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t50Gen2Seat')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T502nd.jpg'); background-color: #f5f5f5;">
+                <div class="badge">좌판</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T50 2세대 좌판</h3>
+                <div class="subtitle">T50 2세대 전용 교체 좌판</div>
+                <p>T50 2세대 전용 교체 좌판입니다.</p>
+                <div class="price">65,000원</div>
+            </div>
+        </div>
+
+        <!-- T50 AIR 2세대 좌판 -->
+        <div class="product-card" data-repair-cat="T50" onclick="showDetail('t50Air2Seat')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t50Air2Seat')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50AIR2nd.jpg'); background-color: #f5f5f5;">
+                <div class="badge">좌판</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T50 AIR 2세대 좌판</h3>
+                <div class="subtitle">T50 AIR 2세대 전용 교체 좌판</div>
+                <p>T50 AIR 2세대 전용 교체 좌판입니다.</p>
+                <div class="price">65,000원</div>
+            </div>
+        </div>
+
         <!-- T50 조절형 좌판 -->
         <div class="product-card" data-repair-cat="T50" onclick="showDetail('t50Seat')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t50Seat')">✏️ 편집</button>
@@ -5162,6 +5190,20 @@
             </div>
         </div>
 
+        <!-- 뮤브 글라이드 -->
+        <div class="product-card" data-repair-cat="기타" onclick="showDetail('muuveGlide')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('muuveGlide')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_2.png'); background-color: #f5f5f5;">
+                <div class="badge">글라이드</div>
+            </div>
+            <div class="product-card-body">
+                <h3>뮤브 글라이드</h3>
+                <div class="subtitle">뮤브 전용 글라이드</div>
+                <p>뮤브 의자 다리 끝에 끼우는 전용 글라이드입니다.</p>
+                <div class="price">14,000원</div>
+            </div>
+        </div>
+
         <!-- 플릿 커버 -->
         <div class="product-card" data-repair-cat="기타" onclick="showDetail('coverPlit')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('coverPlit')">✏️ 편집</button>
@@ -5172,7 +5214,7 @@
                 <h3>플릿 커버</h3>
                 <div class="subtitle">플릿 전용 좌판 커버</div>
                 <p>세탁 가능한 플릿 전용 착탈식 좌판 커버입니다.</p>
-                <div class="price">22,000원</div>
+                <div class="price">23,000원</div>
             </div>
         </div>
 
@@ -7560,9 +7602,10 @@ const variantData = {
     ],
     t60: [
         { name: 'T60 LDA (헤드레스트 없음)', price: 439000, comparePrice: 459000 },
-        { name: 'T60 (헤드레스트)',          price: 469000, comparePrice: 489000 },
-        { name: 'T60 AIR (헤드레스트 없음)', price: 429000, comparePrice: 429000 },
-        { name: 'T60 AIR (헤드레스트)',      price: 484000, comparePrice: 504000 },
+        { name: 'T60',                       price: 459000, comparePrice: 489000 },
+        { name: 'T60 LARGE',                 price: 489000, comparePrice: 519000 },
+        { name: 'T60 AIR',                   price: 474000, comparePrice: 504000 },
+        { name: 'T60 AIR LARGE',             price: 504000, comparePrice: 534000 },
     ],
     t80: [
         { name: 'T80 메쉬/패브릭',    price: 649000, comparePrice: 689000 },
@@ -7682,11 +7725,14 @@ const variantData = {
         { name: 'T50 AIR 커버', price: 32000 },
     ],
     coverT50Air2: [{ name: 'T50 AIR 2세대 좌판 커버', price: 35000 }],
+    t50Gen2Seat:  [{ name: 'T50 2세대 좌판', price: 65000 }],
+    t50Air2Seat:  [{ name: 'T50 AIR 2세대 좌판', price: 65000 }],
+    muuveGlide:   [{ name: '뮤브 글라이드', price: 14000 }],
     coverT60Air: [
         { name: 'T60 AIR 커버', price: 35000 },
     ],
     coverPlit: [
-        { name: '플릿 커버', price: 22000 },
+        { name: '플릿 커버', price: 23000 },
     ],
     // ── 옷걸이 ──
     hangerT50:  [{ name: 'T50 & T50 AIR 옷걸이', price: 11000 }],
@@ -8070,7 +8116,7 @@ const productSpecsByGroup = {
 // ── 제품별 관련 악세서리 ──
 const productAccessories = {
     t50:     ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
-    t50gen2: ['hangerT50', 'seatBreakA', 'coverT50Air2', 'spray', 'pbag'],
+    t50gen2: ['hangerT50', 'seatBreakA', 'coverT50Air2', 't50Gen2Seat', 't50Air2Seat', 'spray', 'pbag'],
     t60:   ['hangerT60', 'seatBreakA', 'coverT60Air', 'spray', 'pbag'],
     t80:   ['spray', 'pbag'],
     t90:   ['spray', 'pbag'],
@@ -8084,7 +8130,7 @@ const productAccessories = {
     oui:   ['spray'],
     mane:  ['spray'],
     plit:  ['coverPlit', 'spray'],
-    muuve: ['spray'],
+    muuve: ['muuveGlide', 'spray'],
     ega:   ['spray'],
     button:['spray'],
     fungus:['pbag'],
@@ -8103,7 +8149,7 @@ const SE_GRADE_DISCOUNT = { A: 0.5, B: 0.6 };
 // ── 색상별 제품 코드 (productColors 인덱스와 1:1 대응) ──
 const productSkus = {
     t50:    ['T50HLDA0VK-451MWW','T50HLDA0VK-457BWW','T50HLDA0VK-452MWW','T50HLDA0VK-458DWW','T50HLDA0VK-451MBK','T50HLDA0VK-456BK','T50HLDA0VK-457BBK'],
-    t60:    ['T61HLDAM0KK-5G1BWW','T61HLDAM0KK-5G1CSG','T61HLDAM0KK-5G1DIG','T61LDAM0KK-5G1BWW'],
+    t60:    ['T61HLDAM1KK-5G1BWW','T61HLDAM1KK-5G1CSG','T61HLDAM1KK-5G1DIG','T61HLDAL0KK-5G1BWW','T61HLDAL0KK-5G1CSG','T61HLDAL0KK-5G1DIG','T61LDAM0KK-5G1BWW'],
     t80:    ['T80HLDA1KK-456BK','T80HLDA1KK-451NWW','T80HLDA1KK-L846BK','T80HLDA1KK-L841LW','T80HLDA1KK-L846CR','T80HLDA1KK-L841LC'],
     t90:    ['T90HLDA2KK-4B1LMN','T90HLDA2KK-4B6BKM','T90HLDA2KK-9I2MNI','T90HLDA2KK-9I7BKM','T90HLDA2KK-L941AC','T90HLDA2KK-L945AC','T90HLDA2KK-L738AC','T90HLDA2KK-L735LC','T90HLDA2KK-L744AC','T90HLDA2KK-L734CR','T90HLDA2KK-L734AC'],
     t20:    ['T21HF2VG-5G1WW','T21HF2VG-5G1CWW','T21HF2VG-5G6AIG','T21HF2VG-TOT1'],
@@ -8280,10 +8326,15 @@ const displaySkuData = {
     },
     'T60': {
         'T61HLDAM0KK': ['5G1BWW', '5G1CSG'],
+        'T61HLDAM1KK': ['5G1BWW', '5G1CSG', '5G1DIG'],
+        'T61HLDAL0KK': ['5G1BWW', '5G1CSG', '5G1DIG'],
+        'T61LDAM0KK': ['5G1BWW'],
         'T61X0KK': ['IG'],
     },
     'T60 AIR': {
         'T61HLDAM0KK': ['5H1ASG', '5H1BIG'],
+        'T62HLDAM1KK': ['5H1ASG', '5H1BIG', '5H1WW'],
+        'T62HLDAL0KK': ['5H1ASG', '5H1BIG', '5H1WW'],
     },
     'T80': {
         'T800HLDA': ['451A', '481'],
@@ -8349,6 +8400,7 @@ const displaySkuExtra = {
     'GC PRO': {
         'G10HDAWJ2KK': ['A446BK'],
         'G10HDAWJ3KK': ['A446BK'],
+        'G10HDA3KK': ['A441QW', 'A446BK'],
     },
     'LINIE (리니에)': {
         'TXNA250F': ['457L'],
@@ -8522,19 +8574,24 @@ const productSpecGroups = {
         {
             name: 'T60', price: 439000,
             colors: [
-                { name: '라이트그레이 (헤드레스트)', code: '#c8c4be', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_136f6080-f74c-471c-a0f4-5c92311d177c.jpg', sku: 'T61HLDAM0KK-5G1BWW' },
-                { name: '그레이 (헤드레스트)',       code: '#8c8c8c', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00.jpg', sku: 'T61HLDAM0KK-5G1CSG' },
-                { name: '차콜 (헤드레스트)',         code: '#4a4a4a', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00.jpg', sku: 'T61HLDAM0KK-5G1DIG' },
-                { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 439000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg', sku: 'T61LDAM0KK-5G1BWW' },
+                { name: '라이트그레이', code: '#c8c4be', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_ce068a56-c167-453c-990f-83b9d7a8aa19.jpg', sku: 'T61HLDAM1KK-5G1BWW' },
+                { name: '그레이', code: '#8c8c8c', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00_d18e661b-0550-46ff-aee9-188c583edc96.jpg', sku: 'T61HLDAM1KK-5G1CSG' },
+                { name: '차콜', code: '#4a4a4a', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00_5f86f5d7-1bf2-4876-8b71-c93bcf224319.jpg', sku: 'T61HLDAM1KK-5G1DIG' },
+                { name: '라이트그레이 (LARGE)', code: '#c8c4be', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_38c075db-cd8f-4f9d-bc12-67cf3c552701.jpg', sku: 'T61HLDAL0KK-5G1BWW' },
+                { name: '그레이 (LARGE)', code: '#8c8c8c', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00_bb942de9-acfc-46c4-9917-1e1975fb6478.jpg', sku: 'T61HLDAL0KK-5G1CSG' },
+                { name: '차콜 (LARGE)', code: '#4a4a4a', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00_cdf2488b-7df8-45bd-8cfa-d3550bee33be.jpg', sku: 'T61HLDAL0KK-5G1DIG' },
+                { name: '라이트그레이 (LDA·헤드레스트 없음)', code: '#d8d4ce', price: 439000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg', sku: 'T61LDAM0KK-5G1BWW' },
             ]
         },
         {
-            name: 'T60 AIR', price: 429000,
+            name: 'T60 AIR', price: 474000,
             colors: [
-                { name: '라이트그레이 (헤드레스트)', code: '#c8c4be', price: 484000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1WW_00_c6ee3026-ba4a-4c20-abdb-60f102e3ac1e.jpg', sku: 'T61HLDAM0KK-5H1WW' },
-                { name: '그레이 (헤드레스트)',       code: '#8c8c8c', price: 484000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1ASG_00_736beedd-2e0c-417f-828e-ff316289f265.jpg', sku: 'T61HLDAM0KK-5H1ASG' },
-                { name: '차콜 (헤드레스트)',         code: '#4a4a4a', price: 484000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00.jpg', sku: 'T61HLDAM0KK-5H1BIG' },
-                { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 429000, img: 'https://kr.sidiz.com/cdn/shop/files/T60_AIR_LDA_white_00_11292423-f631-4e65-a415-be51aa07ff2c.jpg', sku: 'T61LDAM0KK-5H1WW' },
+                { name: '라이트그레이', code: '#c8c4be', price: 474000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1WW_00_c6ee3026-ba4a-4c20-abdb-60f102e3ac1e.jpg', sku: 'T62HLDAM1KK-5H1WW' },
+                { name: '그레이', code: '#8c8c8c', price: 474000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1ASG_00_736beedd-2e0c-417f-828e-ff316289f265.jpg', sku: 'T62HLDAM1KK-5H1ASG' },
+                { name: '차콜', code: '#4a4a4a', price: 474000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60AIR_T61HLDAM0KK_5H1BIG_00_4363dc47-2041-455c-b6e4-e75a93475307.jpg', sku: 'T62HLDAM1KK-5H1BIG' },
+                { name: '라이트그레이 (LARGE)', code: '#c8c4be', price: 504000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1WW_00_c6ee3026-ba4a-4c20-abdb-60f102e3ac1e.jpg', sku: 'T62HLDAL0KK-5H1WW' },
+                { name: '그레이 (LARGE)', code: '#8c8c8c', price: 504000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_T61HLDAM0KK_5H1ASG_00_736beedd-2e0c-417f-828e-ff316289f265.jpg', sku: 'T62HLDAL0KK-5H1ASG' },
+                { name: '차콜 (LARGE)', code: '#4a4a4a', price: 504000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60AIR_T61HLDAM0KK_5H1BIG_00_4363dc47-2041-455c-b6e4-e75a93475307.jpg', sku: 'T62HLDAL0KK-5H1BIG' },
             ]
         },
     ],
@@ -8762,10 +8819,13 @@ const productColors = {
         { name: '딥그린/블랙',     code: '#2e4039', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T50_TNE500HLDA_457B_00_b9683a91-1903-4b0f-81bb-eaa41c305f1b.jpg' },
     ],
     t60: [
-        { name: '라이트그레이 (헤드레스트)', code: '#c8c4be', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_136f6080-f74c-471c-a0f4-5c92311d177c.jpg' },
-        { name: '그레이 (헤드레스트)',       code: '#8c8c8c', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00.jpg' },
-        { name: '차콜 (헤드레스트)',         code: '#4a4a4a', price: 469000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00.jpg' },
-        { name: '라이트그레이 (노헤드)',     code: '#d8d4ce', price: 439000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg' },
+        { name: '라이트그레이', code: '#c8c4be', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_ce068a56-c167-453c-990f-83b9d7a8aa19.jpg' },
+        { name: '그레이', code: '#8c8c8c', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00_d18e661b-0550-46ff-aee9-188c583edc96.jpg' },
+        { name: '차콜', code: '#4a4a4a', price: 459000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00_5f86f5d7-1bf2-4876-8b71-c93bcf224319.jpg' },
+        { name: '라이트그레이 (LARGE)', code: '#c8c4be', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1BWW_00_38c075db-cd8f-4f9d-bc12-67cf3c552701.jpg' },
+        { name: '그레이 (LARGE)', code: '#8c8c8c', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1CSG_00_bb942de9-acfc-46c4-9917-1e1975fb6478.jpg' },
+        { name: '차콜 (LARGE)', code: '#4a4a4a', price: 489000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_T61HLDAM0KK_5G1DIG_00_cdf2488b-7df8-45bd-8cfa-d3550bee33be.jpg' },
+        { name: '라이트그레이 (LDA·헤드레스트 없음)', code: '#d8d4ce', price: 439000, img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/T60_LDA_white_00_6f83f896-5de5-40b0-b2c4-8fa5b690cf71.jpg' },
     ],
     t80: [
         { name: '블랙 (메쉬 패브릭)',       code: '#4a4a4a', price: 649000, img: 'https://kr.sidiz.com/cdn/shop/files/thum_T80_T80HLDA1KK_456BK_00.jpg' },
@@ -8941,6 +9001,20 @@ const productColors = {
         { name: '라이트그레이', code: '#b8b8b8', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_COVER_5G1B_c8e9726b-a2cf-4fb1-9591-a2c4ac789c61.jpg' },
         { name: '그레이',       code: '#8a8a8a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_COVER_5GIC_25f832ce-2545-4738-a377-6afbe1f3a995.jpg' },
         { name: '차콜',         code: '#4a4a4a', img: 'https://kr.sidiz.com/cdn/shop/files/thum_T60AIR_COVER_5GID_b5729e93-6b02-4316-86c5-0ba8838034d2.jpg' },
+    ],
+    t50Gen2Seat: [
+        { name: '카본블랙', code: '#2e2e2e', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T502nd.jpg' },
+        { name: '미네랄그레이', code: '#7a8088', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T502nd_c6317e53-630a-496a-ae96-7e90b9e661f0.jpg' },
+        { name: '애쉬화이트', code: '#e8e4de', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T502nd_f31cd06f-fabc-4f30-b09c-5983166853fc.jpg' },
+    ],
+    t50Air2Seat: [
+        { name: '카본블랙', code: '#2e2e2e', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50AIR2nd_0d63b2d1-e8b2-49d3-b7e4-fcbc720dbaf8.jpg' },
+        { name: '미네랄그레이', code: '#7a8088', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50AIR2nd_d43797c0-a66e-4fa1-ba07-ff0629627b0e.jpg' },
+        { name: '애쉬화이트', code: '#e8e4de', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50AIR2nd.jpg' },
+    ],
+    muuveGlide: [
+        { name: '웜그레이', code: '#9a9490', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_2.png' },
+        { name: '블랙', code: '#1a1a1a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_1_7570cc20-b594-4d8f-bb29-e00bcd9aabab.png' },
     ],
     coverPlit: [
         { name: '베이지',       code: '#e8d4b4', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_PLIT_BEIGE_cover_01.jpg' },
@@ -9396,6 +9470,27 @@ const products = {
         ],
         tags: ['커버', 'T50 AIR', '악세서리', '좌판'],
     },
+    t50Gen2Seat: {
+        name: 'T50 2세대 좌판', tagline: 'T50 2세대 전용 교체 좌판',
+        desc: 'T50 2세대 전용 교체 좌판입니다. 오염이나 마모 시 간편하게 교체할 수 있습니다.',
+        price: '65,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T502nd.jpg',
+        features: [{ icon: '🔧', title: '이지리페어', desc: 'T50 2세대 전용 교체 부품입니다.' }],
+        tags: ['좌판', 'T50 2세대', '이지리페어', '교체부품'],
+    },
+    t50Air2Seat: {
+        name: 'T50 AIR 2세대 좌판', tagline: 'T50 AIR 2세대 전용 교체 좌판',
+        desc: 'T50 AIR 2세대 전용 교체 좌판입니다. 오염이나 마모 시 간편하게 교체할 수 있습니다.',
+        price: '65,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T50AIR2nd.jpg',
+        features: [{ icon: '🔧', title: '이지리페어', desc: 'T50 AIR 2세대 전용 교체 부품입니다.' }],
+        tags: ['좌판', 'T50 AIR 2세대', '이지리페어', '교체부품'],
+    },
+    muuveGlide: {
+        name: '뮤브 글라이드', tagline: '뮤브 전용 글라이드',
+        desc: '뮤브 의자 다리 끝에 끼우는 전용 글라이드입니다. 바닥 긁힘을 막고 의자를 부드럽게 밀 수 있습니다.',
+        price: '14,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_2.png',
+        features: [{ icon: '🔧', title: '이지리페어', desc: '뮤브 전용 교체 부품입니다.' }],
+        tags: ['글라이드', '뮤브', '악세서리', '교체부품'],
+    },
     coverT50Air2: {
         name: 'T50 AIR 2세대 좌판 커버', tagline: 'T50 AIR 2세대 전용 좌판 커버',
         desc: '세탁 가능한 T50 AIR 2세대 전용 착탈식 좌판 커버입니다. 오염이나 마모 시 간편하게 교체할 수 있습니다.',
@@ -9421,7 +9516,7 @@ const products = {
         name: '플릿 커버',
         tagline: '플릿 식탁의자 전용 좌판 커버',
         desc: '플릿 식탁의자 전용 착탈식 패브릭 커버입니다. 식탁 의자를 항상 깔끔하게 유지하고, 다양한 컬러로 다이닝 공간을 꾸밀 수 있습니다.',
-        price: '22,000원',
+        price: '23,000원',
         img: 'https://kr.sidiz.com/cdn/shop/files/thum_PLIT_BEIGE_cover_01_aed95ae8-8cba-4d52-a7b8-361e1b0e3c1d.jpg',
         features: [
             { icon: '🧼', title: '세탁 가능', desc: '분리 세탁이 가능해 식탁 의자를 항상 청결하게 유지합니다.' },
@@ -9832,7 +9927,7 @@ const categoryMap = {
         // T20
         't20OldHeadrest','t20Headrest','t20Seat','t20OldArm','armpadT20Tot',
         // T50
-        't50Headrest','coverT50Air','coverT50Air2','t50Seat','t50FixedArm','t50AdjArm','hangerT50',
+        't50Headrest','coverT50Air','coverT50Air2','t50Gen2Seat','t50Air2Seat','t50Seat','t50FixedArm','t50AdjArm','hangerT50',
         // T55
         't55Armpad',
         // T60
@@ -9842,7 +9937,7 @@ const categoryMap = {
         // 링고
         'coverRingo2','ringo2Seat','ringo2Back','ringo2Footrest','coverRingo1','ringo1Seat','ringo1Back','ringo1Footrest','ringo1Lever',
         // 기타
-        'coverTrevo','coverPlit','attiBlock','gxHeadrest','hangerGX','moltiLeg','moltiInnerSeat',
+        'coverTrevo','coverPlit','muuveGlide','attiBlock','gxHeadrest','hangerGX','moltiLeg','moltiInnerSeat',
         'castorUreA','castorUreB','seatBreakA','seatBreakB','glideA','glideB',
     ],
 };
@@ -10114,6 +10209,9 @@ const SEARCH_ALIASES = {
     coverT60Air:['t60air커버','t60커버'],
     coverPlit:  ['플릿커버','plit cover','coverplit'],
     t60Seat:        ['t60좌판','t60시트','t60 seat'],
+    t50Gen2Seat: ['t50 2세대 좌판', 't50 2세대좌판', 't502세대좌판', 't51d0kk'],
+    t50Air2Seat: ['t50 air 2세대 좌판', 't50air2세대좌판', 't53d0kk'],
+    muuveGlide: ['뮤브글라이드', 'muuve glide', 'm00g0kg'],
     t60AirSeat:     ['t60air좌판','t60air시트'],
     t60Armpad:      ['t60팔걸이패드','t60 armpad'],
     t60Headrest:    ['t60헤드레스트','t60 headrest'],
