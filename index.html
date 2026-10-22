@@ -18333,7 +18333,8 @@ function seRenderTable(storeId) {
     const recCount = seDisplayData.filter(seNeedsRecovery).length;
     seDisplayData.forEach(r => kc[kindOf(r)]++);
     // 해당 구분이 0건이면 버튼이 사라져 필터가 갇히므로 푼다
-    const kindAvail = k => k === 'as' ? asCount : k === 'needrec' ? recCount
+    const sendCount = seDisplayData.filter(r => !r.sold && seSendOf(r)).length;
+    const kindAvail = k => k === 'as' ? asCount : k === 'needrec' ? recCount : k === 'sendplan' ? sendCount
         : k === 'demo' ? demoCount
         : k === 'src_store' ? seDisplayData.filter(r => seSourceOf(r) === 'store').length
         : k === 'src_hq'    ? seDisplayData.filter(r => seSourceOf(r) === 'hq').length
@@ -18374,7 +18375,7 @@ function seRenderTable(storeId) {
         const lostN = seDisplayData.filter(seIsLost).length;
         const srcN = { store: 0, hq: 0 };
         seDisplayData.forEach(r => { const s = seSourceOf(r); if (s) srcN[s]++; });
-        const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN : k === 'lost' ? lostN
+        const avail = k => k === 'all' ? 1 : k === 'in' ? inN : k === 'out' ? outN : k === 'lost' ? lostN : k === 'sendplan' ? sendCount
             : k === 'demo' ? demoCount : k === 'as' ? asCount : k === 'needrec' ? recCount
             : k === 'src_store' ? srcN.store : k === 'src_hq' ? srcN.hq : kc[k];
 
@@ -18419,6 +18420,7 @@ function seRenderTable(storeId) {
             ['demo',    `🧩 T50 전시분해 (${demoCount})`, '#b45309'],
             ['as',      `⚠ A/S 조치 남음 (${asCount})`,    '#b91c1c'],
             ['needrec', `🧾 거래처 변경·회수보고서 필요 (${recCount})`, '#dc2626'],
+            ['sendplan', `🚚 보낼 예정 (${sendCount})`, '#6d28d9'],
         ].filter(([k]) => avail(k));
 
         bar.style.flexDirection = 'column';
@@ -18458,6 +18460,7 @@ function seRenderTable(storeId) {
           : seKindFilter === 'src_store' ? seSourceOf(row) === 'store'
           : seKindFilter === 'src_hq'    ? seSourceOf(row) === 'hq'
           : seKindFilter === 'lost' ? seIsLost(row)
+          : seKindFilter === 'sendplan' ? (!row.sold && !!seSendOf(row))
           : seKindFilter === 'in'  ? !row.sold && !seIsLost(row)
           : seKindFilter === 'out' ?  row.sold
           : kindOf(row) === seKindFilter);
@@ -18665,12 +18668,14 @@ function seRenderTable(storeId) {
             <td style="font-size:0.78rem;color:var(--se-text);">${row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'-') : (row.location||'-')}</td>
             <td style="color:#94a3b8;min-width:160px;">${[seIssueChip(row.sku),
                  row.exit_note ? `<span style="color:#7c2d12;">${row.exit_note}</span>` : '',
-                 row.memo || ''].filter(Boolean).join('<br>') || '-'}</td>
+                 row.sold ? '' : seSendChip(row),
+                 seMemoNoSend(row.memo)].filter(Boolean).join('<br>') || '-'}</td>
             <td style="color:#64748b;font-size:0.75rem;min-width:120px;">${row.updated_by || '-'} · ${dt}${buyerInfo}${seMoveChip(row)}</td>
             <td style="vertical-align:middle;"><div class="se-act">
                 <button class="se-del-btn" style="background:#475569;color:#fff;border:none;" onclick="seOpenEditModal('${row.id}')">수정</button>
                 <button class="se-del-btn" style="background:#0f766e;color:#fff;border:none;" onclick="seCopyDisplay('${row.id}')" title="같은 내용으로 한 행 더 만들기">복사</button>
                 <button class="se-del-btn" style="background:var(--se-blue,#3b82f6);color:#fff;border:none;" onclick="seMoveRowToStore(${i})" title="다른 매장으로 이동">이동</button>
+                ${row.sold ? '' : `<button class="se-del-btn" style="background:${seSendOf(row) ? '#6d28d9' : '#fff'};color:${seSendOf(row) ? '#fff' : '#6d28d9'};border:1px solid #c4b5fd;font-size:0.7rem;" onclick="seOpenSendPlan('${row.id}')" title="나중에 다른 매장으로 보낼 물건으로 표시">${seSendOf(row) ? '🚚 예정' : '보낼 예정'}</button>`}
                 <button class="se-del-btn" onclick="seSoftDelete('${row.id}')">삭제</button>
                 ${row.purpose === '판매' && !row.sold ? `
                   <button class="se-del-btn" style="background:${row.catalog_visible ? '#d97706' : '#ea580c'};color:#fff;border:none;font-size:0.7rem;" onclick="seToggleCatalogVisible('${row.id}',${!row.catalog_visible})">${row.catalog_visible ? '🏷️게시중' : '카탈로그 게시'}</button>` : ''}
@@ -18849,6 +18854,65 @@ function seMoveRowToStore(idx) {
     _sePendingMoveIds = [row.id];
     seOpenMoveModal();
 }
+// 「보낼 예정」 표시 — 받을 매장과 사유를 메모 태그로 남긴다. 이미 표시돼 있으면 바꾸거나 지운다.
+function seOpenSendPlan(id) {
+    const row = seDisplayData.find(r => r.id === id);
+    if (!row) return;
+    const cur = seSendOf(row);
+    let m = document.getElementById('seSendModal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'seSendModal';
+        m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:3000;align-items:center;justify-content:center;padding:16px;';
+        m.onclick = e => { if (e.target === m) m.style.display = 'none'; };
+        document.body.appendChild(m);
+    }
+    const inp = 'width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--se-border);border-radius:7px;font-size:0.84rem;background:var(--se-surface);color:var(--se-text);font-family:inherit;';
+    m.innerHTML = `<div style="background:var(--se-surface);color:var(--se-text);border-radius:12px;width:min(420px,100%);padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">🚚 다른 매장으로 보낼 예정</div>
+        <div style="font-size:0.78rem;color:var(--se-muted);margin-bottom:12px;">${[row.product_id, row.sku].filter(Boolean).join(' · ')} — 지금은 표시만 하고, 실제로 보낼 때 「이동」을 누르면 받는 매장이 미리 골라져 있습니다.</div>
+        <label style="font-size:0.76rem;color:var(--se-muted);">받을 매장</label>
+        <select id="seSendTarget" style="${inp}margin:3px 0 10px;">
+            <option value="">매장 선택</option>
+            ${seStores().filter(s => s.id !== row.store_id && s.id !== 'test').map(s => `<option value="${s.name}" ${cur && cur.name === s.name ? 'selected' : ''}>${s.name}</option>`).join('')}
+        </select>
+        <label style="font-size:0.76rem;color:var(--se-muted);">사유 (선택)</label>
+        <input id="seSendNote" value="${(cur && cur.note || '').replace(/"/g, '&quot;')}" placeholder="예: 신제품 진열 공간 부족 / 합정 전시 요청" style="${inp}margin:3px 0 10px;">
+        <label style="font-size:0.76rem;color:var(--se-muted);">표시한 사람</label>
+        <input id="seSendBy" value="${(localStorage.getItem('seUserName') || '').replace(/"/g, '&quot;')}" placeholder="이름" style="${inp}margin:3px 0 12px;">
+        <div id="seSendMsg" style="font-size:0.76rem;min-height:1em;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+            ${cur ? `<button onclick="seSaveSendPlan('${row.id}', true)" style="margin-right:auto;padding:7px 12px;border-radius:7px;border:1px solid #fecaca;background:#fff;color:#dc2626;font-size:0.8rem;font-weight:700;cursor:pointer;">표시 지우기</button>` : ''}
+            <button onclick="document.getElementById('seSendModal').style.display='none'" style="padding:7px 12px;border-radius:7px;border:1px solid var(--se-border);background:var(--se-surface);color:var(--se-text);font-size:0.8rem;cursor:pointer;">닫기</button>
+            <button onclick="seSaveSendPlan('${row.id}')" style="padding:7px 14px;border-radius:7px;border:none;background:#6d28d9;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;">저장</button>
+        </div>
+    </div>`;
+    m.style.display = 'flex';
+}
+async function seSaveSendPlan(id, clear) {
+    const row = seDisplayData.find(r => r.id === id);
+    if (!row) return;
+    const msg = document.getElementById('seSendMsg');
+    const target = clear ? '' : document.getElementById('seSendTarget').value;
+    const note = clear ? '' : document.getElementById('seSendNote').value.replace(/[\[\]:]/g, ' ').trim();
+    const by = document.getElementById('seSendBy').value.trim();
+    if (!clear && !target) { msg.style.color = '#dc2626'; msg.textContent = '받을 매장을 고르세요.'; return; }
+    if (!by) { msg.style.color = '#dc2626'; msg.textContent = '표시한 사람 이름을 적어 주세요.'; return; }
+    try { localStorage.setItem('seUserName', by); } catch {}
+    const base = seMemoNoSend(row.memo);
+    const tag = clear ? '' : `[보낼 예정 → ${target}${note ? ': ' + note : ''}]`;
+    const memo = [base, tag].filter(Boolean).join(' · ') || null;
+    msg.style.color = 'var(--se-muted)'; msg.textContent = '저장 중...';
+    const { error } = await _sb.from('store_displays')
+        .update({ memo, updated_by: by, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { msg.style.color = '#dc2626'; msg.textContent = '저장 실패: ' + error.message; return; }
+    row.memo = memo; row.updated_by = by; row.updated_at = new Date().toISOString();
+    document.getElementById('seSendModal').style.display = 'none';
+    seInvalidate();
+    seRenderTable(seCurrentStore);
+    if (typeof showToast === 'function') showToast(clear ? '보낼 예정 표시를 지웠습니다' : `🚚 ${target}로 보낼 예정`);
+}
+
 function seOpenMoveModal() {
     if (_sePendingMoveIds.length === 0) {
         _sePendingMoveIds = [...seSelectedIds];
@@ -18869,6 +18933,12 @@ function seOpenMoveModal() {
     document.getElementById('seMoveReasonNote').value = '';
     document.getElementById('seMoveModalMsg').textContent = '';
     document.getElementById('seMoveItemCount').textContent = `이동할 항목: ${_sePendingMoveIds.length}개`;
+    const plans = [...new Set(picked.map(r => (seSendOf(r) || {}).id).filter(Boolean))];
+    if (plans.length === 1 && [...sel.options].some(o => o.value === plans[0])) {
+        sel.value = plans[0];
+        document.getElementById('seMoveModalMsg').style.color = '#6d28d9';
+        document.getElementById('seMoveModalMsg').textContent = `🚚 보낼 예정으로 표시된 ${seStoreNameOf(plans[0])}을(를) 골라 두었습니다.`;
+    }
     modal.style.display = 'flex';
 }
 function seCloseMoveModal() {
@@ -18908,9 +18978,9 @@ async function seConfirmMove() {
     try {
         for (const row of rows) {
             // 행을 그대로 두고 매장만 바꾼다 — id가 유지돼야 이동 이력이 이어진다
-            const { error: upErr } = await _sb.from('store_displays')
-                .update({ store_id: targetId, updated_by: moverName, updated_at: new Date().toISOString() })
-                .eq('id', row.id);
+            const upd = { store_id: targetId, updated_by: moverName, updated_at: new Date().toISOString() };
+            if (seSendOf(row)) upd.memo = seMemoNoSend(row.memo) || null;   // 보냈으니 「보낼 예정」 표시는 지운다
+            const { error: upErr } = await _sb.from('store_displays').update(upd).eq('id', row.id);
             if (upErr) throw upErr;
             const { error: mvErr } = await _sb.from('display_moves').insert({
                 display_id: row.id, from_store: row.store_id, to_store: targetId,
@@ -19239,6 +19309,21 @@ const SE_DIRECT_TAG = '[대리점 구매]';
 const SE_DIRECT_NA = '<div style="display:flex;justify-content:center;"><span title="대리점 구매 — 본사 재산이 아니라 거래처 변경·회수보고서를 쓰지 않습니다" style="color:#94a3b8;font-size:0.72rem;white-space:nowrap;">해당 없음</span></div>';
 // 점검의 「한 글자 다름」에서 코드가 맞다고 확인한 전시품 — 메모에 달면 다시 묻지 않는다
 const SE_CODE_OK_TAG = '[코드 확인]';
+// 다른 매장으로 보낼 물건 — 메모 태그 「[보낼 예정 → 매장명: 사유]」로 남긴다 (칼럼을 새로 만들지 않는다).
+// 실제로 이동하면 태그는 지운다.
+const SE_SEND_RE = /\s*·?\s*\[보낼 예정 → ([^\]:]+?)(?:: ([^\]]*))?\]/;
+const seSendOf = row => {
+    const m = SE_SEND_RE.exec((row && row.memo) || '');
+    if (!m) return null;
+    const name = m[1].trim();
+    const s = (typeof seStores === 'function' ? seStores() : []).find(x => x.name === name);
+    return { name, id: s ? s.id : null, note: (m[2] || '').trim() };
+};
+const seMemoNoSend = memo => (memo || '').replace(SE_SEND_RE, '').trim();
+const seSendChip = row => {
+    const s = seSendOf(row);
+    return s ? `<span title="${('보낼 예정' + (s.note ? ' — ' + s.note : '')).replace(/"/g, '&quot;')}" style="display:inline-block;font-size:0.7rem;font-weight:800;padding:2px 7px;border-radius:5px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;white-space:nowrap;">🚚 보낼 예정 → ${String(s.name).replace(/^시디즈\s*(더 프로그레시브\s*)?/, '')}</span>${s.note ? `<div style="font-size:0.68rem;color:#6d28d9;">${s.note}</div>` : ''}` : '';
+};
 const seIsCodeOk = row => ((row && row.memo) || '').includes(SE_CODE_OK_TAG);
 const SE_DIRECT_RE = /\[?\s*(?:대리점|매장)\s*(?:직접\s*)?구매\s*\]?/;
 const seIsDirectBuy = row => SE_DIRECT_RE.test((row && row.memo) || '');
@@ -20634,7 +20719,7 @@ async function seLoadDash(force) {
     body.innerHTML = '<p style="color:var(--se-muted);font-size:0.83rem;">불러오는 중...</p>';
     const [dRes] = await Promise.all([
         sbAll(() => _sb.from('store_displays')
-            .select('id,store_id,product_id,sku,quantity,purpose,sold,sold_at,exit_type,catalog_visible').order('id')),
+            .select('id,store_id,product_id,sku,quantity,purpose,sold,sold_at,exit_type,catalog_visible,memo,location').order('id')),
         (!_seAudit || force) ? seRunAudit(true) : null,
     ]);
     if (dRes.error) { body.innerHTML = `<p style="color:#ef4444;">불러오기 실패: ${dRes.error.message}</p>`; return; }
@@ -20651,6 +20736,7 @@ function seDashGo(tab, store, kind) {
         try { localStorage.setItem('seLastStore', store); } catch (e) {}
     }
     if (kind && tab === 'audit') _seAuditKind = kind;
+    if (kind && tab === 'store') seKindFilter = kind;
     seSwitchTab(tab);
     if (kind && tab === 'overview') seSetOverviewFilter(kind);
 }
@@ -20777,6 +20863,17 @@ function seRenderDash() {
                     <div class="se-dash-h">🔍 점검 요약 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${issues.filter(x => x.store).length}건${issues.some(x => !x.store) ? ` · 매장 공통 ${issues.filter(x => !x.store).length}` : ''}</span></div>
                     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;">${chips || '<span style="font-size:0.78rem;color:var(--se-muted);">걸린 게 없습니다.</span>'}</div>
                 </div>
+                ${(() => {
+                    const plans = rows.filter(r => !r.sold && seSendOf(r));
+                    if (!plans.length) return '';
+                    const nm = id => String(seStoreNameOf(id)).replace(/^시디즈\s*(더 프로그레시브\s*)?/, '');
+                    return `<div class="se-dash-card">
+                        <div class="se-dash-h">🚚 보낼 예정 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${plans.length}건</span></div>
+                        ${plans.map(r => { const s = seSendOf(r); return `<div onclick="seDashGo('store','${r.store_id}','sendplan')" style="cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:0.78rem;padding:4px 0;border-top:1px solid var(--se-border);">
+                            <b style="white-space:nowrap;">${nm(r.store_id)} → ${nm(s.id || '') || s.name}</b>
+                            <span style="color:var(--se-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${[r.product_id, r.sku].filter(Boolean).join(' · ')}${s.note ? ' · ' + s.note : ''}</span></div>`; }).join('')}
+                    </div>`;
+                })()}
                 <div class="se-dash-card">
                     <div class="se-dash-h">✅ 최근 판매완료</div>
                     ${recentHtml || '<span style="font-size:0.78rem;color:var(--se-muted);">기록이 없습니다.</span>'}
