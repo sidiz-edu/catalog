@@ -4660,7 +4660,7 @@
                 <h3>T20 2세대 좌판</h3>
                 <div class="subtitle">T20 2세대 전용 좌판</div>
                 <p>T20 2세대 전용 교체 좌판입니다.</p>
-                <div class="price">50,000원</div>
+                <div class="price">35,000원<span>부터</span></div>
             </div>
         </div>
 
@@ -4869,16 +4869,30 @@
             </div>
         </div>
 
-        <!-- T60 좌판 -->
+        <!-- T60·T60 LARGE 좌판 (신사양) -->
+        <div class="product-card" data-repair-cat="T60" onclick="showDetail('t60NewSeat')">
+            <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t60NewSeat')">✏️ 편집</button>
+            <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1WW.jpg'); background-color: #f5f5f5;">
+                <div class="badge">좌판</div>
+            </div>
+            <div class="product-card-body">
+                <h3>T60 · T60 LARGE 좌판</h3>
+                <div class="subtitle">T60 신사양 · T60 LARGE 전용 교체 좌판</div>
+                <p>T60(T61HLDAM1KK)과 T60 LARGE 전용 교체 좌판입니다.</p>
+                <div class="price">65,000원</div>
+            </div>
+        </div>
+
+        <!-- T60 좌판 (구사양) -->
         <div class="product-card" data-repair-cat="T60" onclick="showDetail('t60Seat')">
             <button class="card-edit-btn" onclick="event.stopPropagation(); openCardEdit('t60Seat')">✏️ 편집</button>
             <div class="product-card-img" style="background-image: url('https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1WW.jpg'); background-color: #f5f5f5;">
                 <div class="badge">좌판</div>
             </div>
             <div class="product-card-body">
-                <h3>T60 좌판</h3>
-                <div class="subtitle">T60 / T60 AIR 전용 교체 좌판</div>
-                <p>T60 및 T60 AIR 전용 교체 좌판입니다.</p>
+                <h3>T60(구사양) 좌판</h3>
+                <div class="subtitle">T60 구사양(T61HLDAM0KK) 전용 교체 좌판</div>
+                <p>T60 구사양 전용 교체 좌판입니다.</p>
                 <div class="price">60,000원</div>
             </div>
         </div>
@@ -7710,7 +7724,7 @@ const variantData = {
     molti: [
         { name: '몰티 하이체어', price: 279000, comparePrice: 289000 },
         { name: '몰티 헬로베이비 세트', price: 399000, comparePrice: 409000 },
-        { name: '몰티 이너시트', price: 90000 },
+        { name: '몰티 이너시트', price: 99000 },
         { name: '몰티 책상의자용 다리', price: 39000 },
     ],
     atti: [
@@ -7752,7 +7766,8 @@ const variantData = {
     hangerT60:  [{ name: 'T60 & T60 AIR 옷걸이 (화이트)', price: 16000 }, { name: 'T60 & T60 AIR 옷걸이 (그레이)', price: 16000 }, { name: 'T60 & T60 AIR 옷걸이 (차콜)', price: 16000 }],
     gxHeadrest: [{ name: 'GX 헤드레스트', price: 33000 }],
     hangerGX:   [{ name: 'GX 옷걸이', price: 14000 }],
-    t60Seat:        [{ name: 'T60 좌판', price: 60000 }],
+    t60Seat:        [{ name: 'T60(구사양) 좌판', price: 60000 }],
+    t60NewSeat:     [{ name: 'T60 좌판', price: 65000 }, { name: 'T60 LARGE 좌판', price: 65000 }],
     t60AirSeat:     [{ name: 'T60 AIR 좌판', price: 60000 }],
     t60Armpad:      [{ name: 'T60&T60 AIR 팔걸이 패드', price: 21000 }],
     t60Headrest:    [{ name: 'T60&T60 AIR 헤드레스트', price: 37000 }],
@@ -7760,7 +7775,7 @@ const variantData = {
     ringo2Seat:     [{ name: '링고 2세대 좌판', price: 37000 }],
     ringo2Back:     [{ name: '링고 2세대 등판', price: 32000 }],
     t20Headrest:    [{ name: 'T20 2세대 헤드레스트', price: 27000 }],
-    t20Seat:        [{ name: 'T20 2세대 좌판', price: 50000 }],
+    t20Seat:        [{ name: 'T20 2세대 좌판 (오프화이트)', price: 50000 }, { name: 'T20 2세대 좌판 (미드그레이)', price: 35000 }, { name: 'T20 2세대 좌판 (스모크블랙)', price: 50000 }],
     t50Seat:        [{ name: 'T50 조절형 좌판', price: 45000 }],
     t50FixedArm:    [{ name: 'T50&T50 AIR 팔걸이 고정형 (좌)', price: 20000 }, { name: 'T50&T50 AIR 팔걸이 고정형 (우)', price: 20000 }],
     t55Armpad:      [{ name: 'T55 팔걸이 패드', price: 17000 }],
@@ -7776,8 +7791,8 @@ const variantData = {
     t20OldHeadrest: [{ name: 'T20 1세대 헤드레스트 (블랙)', price: 24000 }, { name: 'T20 1세대 헤드레스트 (화이트)', price: 24000 }],
     t50Headrest:    [{ name: 'T50&T50 AIR 헤드레스트 (블랙)', price: 33000 }, { name: 'T50&T50 AIR 헤드레스트 (화이트)', price: 33000 }],
     t80Headrest:    [{ name: 'T80 헤드레스트', price: 35000 }],
-    ringo1Seat:     [{ name: '링고 1세대 좌판 (소이밀크)', price: 35000 }, { name: '링고 1세대 좌판 (로지핑크)', price: 35000 }, { name: '링고 1세대 좌판 (라벤더블루)', price: 35000 }, { name: '링고 1세대 좌판 (그린티그린)', price: 35000 }],
-    ringo1Back:     [{ name: '링고 1세대 등판 (소이밀크)', price: 22000 }, { name: '링고 1세대 등판 (로지핑크)', price: 22000 }, { name: '링고 1세대 등판 (라벤더블루)', price: 22000 }, { name: '링고 1세대 등판 (그린티그린)', price: 22000 }],
+    ringo1Seat:     [{ name: '링고 1세대 좌판 (소이밀크)', price: 35000 }, { name: '링고 1세대 좌판 (로지핑크)', price: 35000 }, { name: '링고 1세대 좌판 (라벤더블루)', price: 35000 }, { name: '링고 1세대 좌판 (그린티그린)', price: 30000 }],
+    ringo1Back:     [{ name: '링고 1세대 등판 (소이밀크)', price: 22000 }, { name: '링고 1세대 등판 (로지핑크)', price: 22000 }, { name: '링고 1세대 등판 (라벤더블루)', price: 22000 }, { name: '링고 1세대 등판 (그린티그린)', price: 20000 }],
     moltiLeg:       [{ name: '몰티 책상의자용 다리 (우드)', price: 39000 }],
     moltiInnerSeat: [{ name: '몰티 이너시트 (그레이)', price: 99000 }],
     // ── 바퀴 / 글라이드 ──
@@ -8141,7 +8156,7 @@ const productSpecsByGroup = {
 const productAccessories = {
     t50:     ['hangerT50', 'seatBreakA', 'coverT50Air', 'spray', 'pbag'],
     t50gen2: ['hangerT50', 'seatBreakA', 'coverT50Air2', 't50Gen2Seat', 't50Air2Seat', 'spray', 'pbag'],
-    t60:   ['hangerT60', 'seatBreakA', 'coverT60Air', 'spray', 'pbag'],
+    t60:   ['hangerT60', 'seatBreakA', 'coverT60Air', 't60NewSeat', 'spray', 'pbag'],
     t80:   ['spray', 'pbag'],
     t90:   ['spray', 'pbag'],
     t20:   ['armpadT20Tot', 'seatBreakA', 'spray'],
@@ -9040,6 +9055,11 @@ const productColors = {
         { name: '웜그레이', code: '#9a9490', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_2.png' },
         { name: '블랙', code: '#1a1a1a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/img1_4_3_1_7570cc20-b594-4d8f-bb29-e00bcd9aabab.png' },
     ],
+    t60NewSeat: [
+        { name: '라이트그레이', code: '#c8c4be', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1WW.jpg' },
+        { name: '그레이',       code: '#8c8c8c', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1ASG.jpg' },
+        { name: '차콜',         code: '#4a4a4a', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1BIG.jpg' },
+    ],
     coverPlit: [
         { name: '베이지',       code: '#e8d4b4', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_PLIT_BEIGE_cover_01.jpg' },
         { name: '더스티그레이', code: '#9a9490', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_PLIT_WHITE_cover_01_36641a75-e037-4d9c-8ae1-3197775635a9.jpg' },
@@ -9664,12 +9684,19 @@ const products = {
         ],
         tags: ['팔걸이', '토트넘', 'T20', '악세서리'],
     },
+    t60NewSeat: {
+        name: 'T60 · T60 LARGE 좌판', tagline: 'T60 신사양 · T60 LARGE 전용 교체 좌판',
+        desc: 'T60(T61HLDAM1KK)과 T60 LARGE(T61HLDAL0KK) 전용 교체 좌판입니다. 일반(T61DM1KK)과 LARGE(T61DL1KK) 좌판이 서로 다르니 의자 코드를 확인하세요.',
+        price: '65,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1WW.jpg',
+        features: [{ icon: '🔧', title: '이지리페어', desc: 'T60 신사양 · T60 LARGE 전용 교체 부품입니다.' }],
+        tags: ['좌판', 'T60', 'T60 LARGE', '이지리페어', '교체부품'],
+    },
     t60Seat: {
-        name: 'T60 좌판', tagline: 'T60 / T60 AIR 전용 교체 좌판',
-        desc: 'T60 및 T60 AIR 전용 교체 좌판입니다. 오염이나 마모 시 간편하게 교체할 수 있습니다.',
+        name: 'T60(구사양) 좌판', tagline: 'T60 구사양 전용 교체 좌판',
+        desc: 'T60 구사양(T61HLDAM0KK) 전용 교체 좌판입니다(T61D0KK). 신사양 T60·T60 LARGE는 「T60 · T60 LARGE 좌판」을 쓰세요.',
         price: '60,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T60_seat_5H1WW.jpg',
-        features: [{ icon: '🔧', title: '이지리페어', desc: 'T60 / T60 AIR 전용 교체 부품입니다.' }],
-        tags: ['좌판', 'T60', '이지리페어', '교체부품'],
+        features: [{ icon: '🔧', title: '이지리페어', desc: 'T60 구사양 전용 교체 부품입니다.' }],
+        tags: ['좌판', 'T60', '구사양', '이지리페어', '교체부품'],
     },
     t60AirSeat: {
         name: 'T60 AIR 좌판', tagline: 'T60 AIR 전용 교체 좌판',
@@ -9722,8 +9749,8 @@ const products = {
     },
     t20Seat: {
         name: 'T20 2세대 좌판', tagline: 'T20 2세대 전용 좌판',
-        desc: 'T20 2세대 전용 교체 좌판입니다. 이지리페어 기능으로 손쉽게 교체 가능합니다.',
-        price: '50,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_SEAT_f797f077-ea07-4a51-b801-d0522c726fe8.jpg',
+        desc: 'T20 2세대 전용 교체 좌판입니다. 이지리페어 기능으로 손쉽게 교체 가능합니다. (미드그레이 35,000원 · 오프화이트·스모크블랙 50,000원)',
+        price: '35,000원', img: 'https://cdn.shopify.com/s/files/1/0865/4408/9378/files/thum_T20_2_SEAT_f797f077-ea07-4a51-b801-d0522c726fe8.jpg',
         features: [{ icon: '🔧', title: '이지리페어', desc: 'T20 2세대 전용 교체 부품입니다.' }],
         tags: ['좌판', 'T20', '이지리페어', '교체부품'],
     },
@@ -9955,7 +9982,7 @@ const categoryMap = {
         // T55
         't55Armpad',
         // T60
-        't60Headrest','coverT60Air','t60Seat','t60AirSeat','t60Armpad','hangerT60',
+        't60Headrest','coverT60Air','t60NewSeat','t60Seat','t60AirSeat','t60Armpad','hangerT60',
         // T80
         't80Headrest','t80Seat','t80Armpad',
         // 링고
@@ -10232,7 +10259,8 @@ const SEARCH_ALIASES = {
     coverT50Air:['t50air커버','t50커버'],
     coverT60Air:['t60air커버','t60커버'],
     coverPlit:  ['플릿커버','plit cover','coverplit'],
-    t60Seat:        ['t60좌판','t60시트','t60 seat'],
+    t60Seat:        ['t60구사양좌판','t60 구사양 좌판','t61d0kk'],
+    t60NewSeat:     ['t60좌판','t60시트','t60 seat','t60 large 좌판','t60라지좌판','t61dm1kk','t61dl1kk'],
     t50Gen2Seat: ['t50 2세대 좌판', 't50 2세대좌판', 't502세대좌판', 't51d0kk'],
     t50Air2Seat: ['t50 air 2세대 좌판', 't50air2세대좌판', 't53d0kk'],
     muuveGlide: ['뮤브글라이드', 'muuve glide', 'm00g0kg'],
