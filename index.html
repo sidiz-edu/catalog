@@ -4086,6 +4086,22 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
+            <!-- T60 LARGE 출시 기념 -->
+            <div class="promo-card" data-promo-end="2026-10-31" style="--pc-accent:#0d9488;">
+                <span class="promo-card-icon">🪑</span>
+                <div class="promo-card-series">T60 LARGE · T60 AIR LARGE · 출시 기념</div>
+                <div class="promo-card-name">회원 할인가에서 10% 추가 할인</div>
+                <div class="promo-card-desc">
+                    시디즈닷컴 로그인 시 쿠폰 자동 발행 — <b>회원 1인당 1회</b><br>
+                    <div class="promo-rate-row"><span class="rate-label">T60 LARGE <span style="text-decoration:line-through;color:#aaa;">489,000</span></span><span class="rate-val" style="background:#0d9488;">440,100원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T60 AIR LARGE <span style="text-decoration:line-through;color:#aaa;">504,000</span></span><span class="rate-val" style="background:#0d9488;">453,600원</span></div>
+                    <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;line-height:1.7;">
+                        좌판·등판을 키운 T60 — 의자가 좁게 느껴졌던 고객, 더 여유롭게 기대고 싶은 고객께 권해 주세요. 매장에서 <b>직접 앉아 보도록</b> 안내합니다.<br>
+                        <b style="color:#b91c1c;">주문 등록 시 LARGE 모델(T61HLDAL0KK · T62HLDAL0KK)이 맞는지 꼭 확인</b>
+                    </span>
+                </div>
+                <div class="promo-card-footer">📅 10/19(월) 12시 ~ 10/31(토) · 🛒 장바구니·견적서 자동 반영 (1대)</div>
+            </div>
             <!-- 세계 척추의 날 T80·T90 -->
             <div class="promo-card" data-promo-end="2026-10-31" style="--pc-accent:#ea580c;">
                 <span class="promo-card-icon">🦴</span>
@@ -7861,10 +7877,13 @@ const ASIAN_GAMES_CHAIRS = new Set([
 const RATE_PROMOS = [
     { ...ASIAN_GAMES_PROMO, ids: ASIAN_GAMES_CHAIRS },
     { start: '2026-10-16', end: '2026-10-31', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
+    // T60 LARGE 출시 기념 (매장 공지 26-10-15): LARGE 모델만, 회원 1인 1회 쿠폰 → 견적에는 1대만 반영한다
+    { start: '2026-10-19', end: '2026-10-31', rate: 0.10, label: 'T60 LARGE 출시 기념 10%', ids: new Set(['t60']), maxQty: 1,
+      match: i => /HLDAL0KK/i.test(i.sku || '') || /LARGE/i.test(i.variantName || '') },
 ];
 const _todayYmd = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
 const _ratePromosLive = RATE_PROMOS.filter(p => _todayYmd >= p.start && _todayYmd <= p.end);
-const _ratePromoOf = item => _ratePromosLive.filter(p => p.ids.has(item.productId)).sort((a, b) => b.rate - a.rate)[0] || null;
+const _ratePromoOf = item => _ratePromosLive.filter(p => p.ids.has(item.productId) && (!p.match || p.match(item))).sort((a, b) => b.rate - a.rate)[0] || null;
 function asianGamesItemRate(item) {
     const p = _ratePromoOf(item);
     return p ? p.rate : 0;
@@ -7872,7 +7891,16 @@ function asianGamesItemRate(item) {
 // 제품당 할인액을 반올림한 뒤 수량을 곱한다 (T80 649,000 → 584,100 처럼 공식 페이지 숫자와 맞춘다)
 function asianGamesDiscount(cart) {
     if (!_ratePromosLive.length) return null;
-    const amt = cart.reduce((s, i) => s + Math.round(i.price * asianGamesItemRate(i)) * i.qty, 0);
+    // maxQty 가 있는 행사(1인 1회 쿠폰)는 그 행사 몫으로 그 대수까지만 깎는다
+    const left = new Map();
+    const amt = cart.reduce((s, i) => {
+        const p = _ratePromoOf(i);
+        if (!p) return s;
+        const room = p.maxQty == null ? i.qty : (left.has(p) ? left.get(p) : p.maxQty);
+        const n = Math.min(i.qty, room);
+        if (p.maxQty != null) left.set(p, room - n);
+        return s + Math.round(i.price * p.rate) * n;
+    }, 0);
     const labels = [...new Set(cart.map(i => (_ratePromoOf(i) || {}).label).filter(Boolean))];
     return amt > 0 ? { label: labels.join(' · '), amt, type: 'asian' } : null;
 }
