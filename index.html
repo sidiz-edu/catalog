@@ -18854,6 +18854,207 @@ function seMoveRowToStore(idx) {
     _sePendingMoveIds = [row.id];
     seOpenMoveModal();
 }
+// ── 매장 전시품 이동 의뢰서 ─────────────────────────────────
+// 「보낼 예정」 표시를 경로(출발→도착)별로 묶어, 시공 협조전에 붙이는 엑셀과 본문을 만든다.
+// 담당자·연락처는 개인정보라 깃에 두지 않고 store_contacts 에서 그때그때 읽는다.
+const SE_LASTMILE_TEAMS = ['라스트마일사업1팀', '라스트마일사업2팀'];
+// 26-01 협조전(시디즈-협조26-01-00017)에서 확인된 배정만 기본값으로 둔다. 나머지는 고르게 한다.
+const SE_LASTMILE_DEFAULT = { suwon: 0, goyang: 0, pyeongtaek: 0, hapjeong: 0, cheongju: 1, daejeon: 1 };
+const seShortStore = id => String(seStoreNameOf(id))
+    .replace(/^(시디즈\s*)?(더 프로그레시브\s*)?(스타필드\s*)?(커넥트현대\s*)?/, '').replace(/점$/, '').trim();
+let _seMoveReq = null;
+
+async function seOpenMoveReq() {
+    let m = document.getElementById('seMoveReqModal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'seMoveReqModal';
+        m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:3000;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;';
+        m.onclick = e => { if (e.target === m) m.style.display = 'none'; };
+        document.body.appendChild(m);
+    }
+    m.innerHTML = '<div style="background:var(--se-surface);border-radius:12px;padding:20px;color:var(--se-muted);">불러오는 중...</div>';
+    m.style.display = 'flex';
+    const [d, c] = await Promise.all([
+        sbAll(() => _sb.from('store_displays').select('id,store_id,product_id,sku,color_code,quantity,memo,sold').ilike('memo', '%보낼 예정%').order('id')),
+        _sb.from('store_contacts').select('store_id,store_name,address,manager,phone'),
+    ]);
+    if (d.error) { m.innerHTML = `<div style="background:#fff;border-radius:12px;padding:20px;color:#dc2626;">불러오기 실패: ${d.error.message}</div>`; return; }
+    const contact = {};
+    (c.data || []).forEach(x => { contact[x.store_id] = x; });
+    const routes = {};
+    (d.data || []).filter(r => !r.sold && r.store_id !== 'test').forEach(r => {
+        const s = seSendOf(r);
+        if (!s || !s.id) return;
+        const key = r.store_id + '>' + s.id;
+        (routes[key] = routes[key] || { from: r.store_id, to: s.id, rows: [] }).rows.push({ ...r, _note: s.note, _on: true });
+    });
+    const ord = {};
+    seStores().forEach((s, i) => { ord[s.id] = i; });
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('seMoveReqTeam') || '{}'); } catch {}
+    _seMoveReq = {
+        contact,
+        routes: Object.values(routes).sort((a, b) => (ord[a.from] ?? 99) - (ord[b.from] ?? 99) || (ord[a.to] ?? 99) - (ord[b.to] ?? 99))
+            .map(rt => {
+                const key = rt.from + '>' + rt.to;
+                const def = SE_LASTMILE_DEFAULT[rt.from] ?? SE_LASTMILE_DEFAULT[rt.to];
+                return { ...rt, key, pickup: '', install: '', team: saved[key] || (def != null ? SE_LASTMILE_TEAMS[def] : '') };
+            }),
+    };
+    seRenderMoveReq();
+}
+
+function seRenderMoveReq() {
+    const m = document.getElementById('seMoveReqModal');
+    const R = _seMoveReq;
+    const inp = 'padding:5px 8px;border:1px solid var(--se-border);border-radius:6px;font-size:0.78rem;background:var(--se-surface);color:var(--se-text);font-family:inherit;';
+    const loc = id => { const x = R.contact[id] || {}; return [x.address || (seStores().find(s => s.id === id) || {}).address || '', x.manager, x.phone].filter(Boolean).join(' · '); };
+    const n = R.routes.reduce((s, rt) => s + rt.rows.filter(r => r._on).reduce((a, r) => a + (r.quantity || 1), 0), 0);
+    m.innerHTML = `<div style="background:var(--se-surface);color:var(--se-text);border-radius:12px;width:min(980px,100%);padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+            <div style="font-weight:800;font-size:1.05rem;">📄 매장 전시품 이동 의뢰서</div>
+            <span style="font-size:0.78rem;color:var(--se-muted);">경로 ${R.routes.length}곳 · 선택 ${n}대</span>
+            <button onclick="document.getElementById('seMoveReqModal').style.display='none'" style="margin-left:auto;padding:5px 12px;border-radius:6px;border:1px solid var(--se-border);background:var(--se-surface);color:var(--se-text);font-size:0.78rem;cursor:pointer;">닫기</button>
+        </div>
+        <div style="font-size:0.76rem;color:var(--se-muted);margin-bottom:12px;line-height:1.6;">「보낼 예정」으로 표시한 전시품을 경로별로 모았습니다. 이번에 보낼 것만 체크하고, 회수·시공일과 시공 팀을 적은 뒤 엑셀과 협조전 본문을 받으세요. 실제로 옮긴 뒤에는 각 매장에서 「이동」을 눌러 기록합니다.</div>
+        <datalist id="seTeamList">${SE_LASTMILE_TEAMS.map(x => `<option value="${x}">`).join('')}</datalist>
+        ${R.routes.length ? R.routes.map((rt, ri) => `
+        <div style="border:1px solid #ddd6fe;border-radius:10px;margin-bottom:10px;overflow:hidden;">
+            <div style="background:#f5f3ff;padding:9px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <b style="font-size:0.92rem;color:#5b21b6;">${seShortStore(rt.from)} → ${seShortStore(rt.to)}</b>
+                <label style="font-size:0.74rem;color:#6d28d9;">회수 <input value="${rt.pickup}" placeholder="예: 1월 8일" oninput="_seMoveReq.routes[${ri}].pickup=this.value" style="${inp}width:96px;"></label>
+                <label style="font-size:0.74rem;color:#6d28d9;">시공 <input value="${rt.install}" placeholder="예: 1월 10일" oninput="_seMoveReq.routes[${ri}].install=this.value" style="${inp}width:96px;"></label>
+                <label style="font-size:0.74rem;color:#6d28d9;">시공 팀 <input list="seTeamList" value="${rt.team}" placeholder="팀 선택·입력" oninput="seMoveReqTeam(${ri}, this.value)" style="${inp}width:150px;"></label>
+            </div>
+            <div style="padding:6px 12px;font-size:0.72rem;color:var(--se-muted);line-height:1.6;">출발 ${loc(rt.from) || '— 매장 정보 없음'}<br>도착 ${loc(rt.to) || '— 매장 정보 없음'}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+                <thead><tr style="background:var(--se-raised,#f8fafc);color:#475569;">
+                    <th style="padding:5px 8px;width:30px;"></th><th style="padding:5px 8px;text-align:left;">제품명</th><th style="padding:5px 8px;text-align:left;">단품코드</th>
+                    <th style="padding:5px 8px;text-align:left;">색상</th><th style="padding:5px 8px;text-align:right;">수량</th><th style="padding:5px 8px;text-align:left;">사유</th></tr></thead>
+                <tbody>${rt.rows.map((r, i) => `<tr style="border-top:1px solid var(--se-border);${r._on ? '' : 'color:#94a3b8;'}">
+                    <td style="padding:4px 8px;text-align:center;"><input type="checkbox" ${r._on ? 'checked' : ''} onchange="_seMoveReq.routes[${ri}].rows[${i}]._on=this.checked;seRenderMoveReq()"></td>
+                    <td style="padding:4px 8px;">${seMoveReqName(r)}</td>
+                    <td style="padding:4px 8px;font-family:monospace;">${(r.sku || '').split('-')[0]}</td>
+                    <td style="padding:4px 8px;font-family:monospace;">${(r.sku || '').split('-').slice(1).join('-') || r.color_code || ''}</td>
+                    <td style="padding:4px 8px;text-align:right;">${r.quantity || 1}</td>
+                    <td style="padding:4px 8px;color:var(--se-muted);">${r._note || ''}</td></tr>`).join('')}</tbody>
+            </table>
+        </div>`).join('') : '<p style="color:var(--se-muted);font-size:0.84rem;padding:12px 0;">「보낼 예정」으로 표시된 전시품이 없습니다.</p>'}
+        <div id="seMoveReqMsg" style="font-size:0.78rem;min-height:1em;margin:6px 0;"></div>
+        <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+            <button onclick="seMoveReqCopyBody()" style="padding:8px 14px;border-radius:7px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 협조전 본문 복사</button>
+            <button onclick="seMoveReqExcel()" style="padding:8px 14px;border-radius:7px;border:none;background:#6d28d9;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">⬇ 엑셀 내려받기</button>
+        </div>
+    </div>`;
+}
+
+function seMoveReqTeam(ri, v) {
+    const rt = _seMoveReq.routes[ri];
+    rt.team = v.trim();
+    try {
+        const s = JSON.parse(localStorage.getItem('seMoveReqTeam') || '{}');
+        s[rt.key] = rt.team;
+        localStorage.setItem('seMoveReqTeam', JSON.stringify(s));
+    } catch {}
+}
+
+// 의뢰서에는 매장에서 부르는 짧은 이름을 쓴다 — 「RINGO 2세대 (링고)」 → 「RINGO 2세대」
+const seMoveReqName = r => String(r.product_id || '').replace(/\s*\([^)]*\)\s*$/, '') || (r.sku || '').split('-')[0];
+const seMoveReqPicked = () => (_seMoveReq ? _seMoveReq.routes : [])
+    .map(rt => ({ ...rt, rows: rt.rows.filter(r => r._on) })).filter(rt => rt.rows.length);
+
+function seMoveReqCopyBody() {
+    const msg = document.getElementById('seMoveReqMsg');
+    const routes = seMoveReqPicked();
+    if (!routes.length) { msg.style.color = '#dc2626'; msg.textContent = '보낼 전시품을 하나 이상 고르세요.'; return; }
+    const byTeam = {};
+    routes.forEach(rt => { (byTeam[rt.team || '(시공 팀 미정)'] = byTeam[rt.team || '(시공 팀 미정)'] || []).push(`[${seShortStore(rt.from)}→${seShortStore(rt.to)}]`); });
+    const NL = String.fromCharCode(10);
+    const body = [
+        '시디즈 매장 전시품 이동을 위하여 아래와 같이 협조 요청드립니다.', '',
+        '-  아 래  -', '',
+        '1. 목적 : 시디즈 매장 전시품 이동 의뢰', '',
+        '2. 요청 내용', '※ 요청부서',
+        ...Object.entries(byTeam).map(([team, rs], i) => ` ${i + 1}) ${team} : ${rs.join(', ')}`), '',
+        '3. 첨부', ' - 시디즈 매장 전시품 이동 의뢰건',
+    ].join(NL);
+    navigator.clipboard.writeText(body).then(() => {
+        msg.style.color = '#16a34a';
+        msg.textContent = '✓ 협조전 본문을 복사했습니다. 제목: 「매장 전시품 이동을 위한 시공 협조 요청의 건」' + (byTeam['(시공 팀 미정)'] ? ' · 시공 팀이 비어 있는 경로가 있습니다.' : '');
+    }, () => { msg.style.color = '#dc2626'; msg.textContent = '클립보드 복사에 실패했습니다.'; });
+}
+
+async function seMoveReqExcel() {
+    const msg = document.getElementById('seMoveReqMsg');
+    const routes = seMoveReqPicked();
+    if (!routes.length) { msg.style.color = '#dc2626'; msg.textContent = '보낼 전시품을 하나 이상 고르세요.'; return; }
+    msg.style.color = 'var(--se-muted)'; msg.textContent = '엑셀 만드는 중...';
+    if (typeof ExcelJS === 'undefined') {
+        await new Promise((ok, ng) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+            s.onload = ok; s.onerror = ng; document.head.appendChild(s);
+        }).catch(() => null);
+        if (typeof ExcelJS === 'undefined') { msg.style.color = '#dc2626'; msg.textContent = '엑셀 라이브러리를 불러오지 못했습니다.'; return; }
+    }
+    const NL = String.fromCharCode(10);
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Sheet1');
+    [2.9, 8.6, 20.5, 8.9, 13.1, 19.4, 8.9, 13.1, 10.1, 10.1, 15.1, 14, 12.6, 7.3].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    const font = { name: '맑은 고딕', size: 10 };
+    const thin = { style: 'thin', color: { argb: 'FF000000' } };
+    const box = { top: thin, left: thin, bottom: thin, right: thin };
+    ws.getCell('B2').value = '※ 시디즈 매장 전시품 이동 의뢰건';
+    ws.getCell('B2').font = { ...font, size: 12, bold: true };
+    const head = [['B4', 'B5', '구분'], ['C4', 'E4', '현재 위치'], ['F4', 'H4', '이동 위치'], ['I4', 'I5', '회수'], ['J4', 'J5', '시공'],
+                  ['K4', 'K5', '제품명'], ['L4', 'L5', '단품코드'], ['M4', 'M5', '색상'], ['N4', 'N5', '수량']];
+    head.forEach(([a, b, v]) => { ws.mergeCells(`${a}:${b}`); ws.getCell(a).value = v; });
+    [['C5', '주소'], ['D5', '담당자'], ['E5', '연락처'], ['F5', '주소'], ['G5', '담당자'], ['H5', '연락처']].forEach(([a, v]) => { ws.getCell(a).value = v; });
+    for (let r = 4; r <= 5; r++) for (let c = 2; c <= 14; c++) {
+        const cell = ws.getCell(r, c);
+        cell.font = { ...font, bold: true }; cell.border = box;
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+    }
+    const where = id => { const x = _seMoveReq.contact[id] || {}; return { addr: x.address || (seStores().find(s => s.id === id) || {}).address || '', man: x.manager || '', tel: x.phone || '' }; };
+    let row = 6;
+    routes.forEach((rt, k) => {
+        const top = row, end = row + rt.rows.length;   // end = 합계 줄
+        const a = where(rt.from), b = where(rt.to);
+        rt.rows.forEach((r, i) => {
+            ws.getCell(row + i, 11).value = seMoveReqName(r);
+            ws.getCell(row + i, 12).value = (r.sku || '').split('-')[0];
+            ws.getCell(row + i, 13).value = (r.sku || '').split('-').slice(1).join('-') || r.color_code || '';
+            ws.getCell(row + i, 14).value = r.quantity || 1;
+        });
+        ws.mergeCells(end, 11, end, 13);
+        ws.getCell(end, 11).value = `합계 - ${k + 1}`;
+        ws.getCell(end, 14).value = { formula: `SUM(N${top}:N${end - 1})`, result: rt.rows.reduce((s, r) => s + (r.quantity || 1), 0) };
+        [[2, `${seShortStore(rt.from)} ${NL}→ ${seShortStore(rt.to)}`], [3, a.addr], [4, a.man], [5, a.tel],
+         [6, b.addr], [7, b.man], [8, b.tel], [9, rt.pickup], [10, rt.install]].forEach(([c, v]) => {
+            ws.mergeCells(top, c, end, c);
+            ws.getCell(top, c).value = v || '';
+        });
+        for (let r = top; r <= end; r++) for (let c = 2; c <= 14; c++) {
+            const cell = ws.getCell(r, c);
+            cell.font = { ...font, bold: r === end && c >= 11 };
+            cell.border = box;
+            cell.alignment = { horizontal: c === 3 || c === 6 ? 'left' : 'center', vertical: 'middle', wrapText: true };
+            if (r === end && c >= 11) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        }
+        row = end + 1;
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = '시디즈 매장 전시품 이동 의뢰건.xlsx';
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    msg.style.color = '#16a34a';
+    msg.textContent = `✓ 엑셀을 내려받았습니다 — 경로 ${routes.length}곳 · ${routes.reduce((s, rt) => s + rt.rows.reduce((a, r) => a + (r.quantity || 1), 0), 0)}대`;
+}
+
 // 「보낼 예정」 표시 — 받을 매장과 사유를 메모 태그로 남긴다. 이미 표시돼 있으면 바꾸거나 지운다.
 function seOpenSendPlan(id) {
     const row = seDisplayData.find(r => r.id === id);
@@ -20868,7 +21069,8 @@ function seRenderDash() {
                     if (!plans.length) return '';
                     const nm = id => String(seStoreNameOf(id)).replace(/^시디즈\s*(더 프로그레시브\s*)?/, '');
                     return `<div class="se-dash-card">
-                        <div class="se-dash-h">🚚 보낼 예정 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${plans.length}건</span></div>
+                        <div class="se-dash-h">🚚 보낼 예정 <span style="font-size:0.74rem;font-weight:500;color:var(--se-muted);">${plans.length}건</span>
+                            <button onclick="seOpenMoveReq()" style="margin-left:auto;padding:3px 10px;border-radius:6px;border:none;background:#6d28d9;color:#fff;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;">📄 이동 의뢰서 만들기</button></div>
                         ${plans.map(r => { const s = seSendOf(r); return `<div onclick="seDashGo('store','${r.store_id}','sendplan')" style="cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:0.78rem;padding:4px 0;border-top:1px solid var(--se-border);">
                             <b style="white-space:nowrap;">${nm(r.store_id)} → ${nm(s.id || '') || s.name}</b>
                             <span style="color:var(--se-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${[r.product_id, r.sku].filter(Boolean).join(' · ')}${s.note ? ' · ' + s.note : ''}</span></div>`; }).join('')}
