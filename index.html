@@ -4086,6 +4086,19 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
+            <!-- 세계 척추의 날 T80·T90 -->
+            <div class="promo-card" data-promo-end="2026-10-31" style="--pc-accent:#ea580c;">
+                <span class="promo-card-icon">🦴</span>
+                <div class="promo-card-series">T80 · T90 · 세계 척추의 날 (10/16)</div>
+                <div class="promo-card-name">하이엔드 의자 10% 추가 할인</div>
+                <div class="promo-card-desc">
+                    척추를 위한 프리미엄 의자 스페셜 오퍼 — <b>행사가에서 10% 추가 할인</b><br>
+                    <div class="promo-rate-row"><span class="rate-label">T90 <span style="text-decoration:line-through;color:#aaa;">1,150,000</span></span><span class="rate-val" style="background:#ea580c;">989,100원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T80 <span style="text-decoration:line-through;color:#aaa;">689,000</span></span><span class="rate-val" style="background:#ea580c;">584,100원</span></div>
+                    <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;">T90 1,099,000원 · T80 649,000원 기준 · 가죽·리미티드 등 상위 사양도 10%</span>
+                </div>
+                <div class="promo-card-footer">📅 10/16(금)부터 · 🛒 장바구니·견적서 자동 반영</div>
+            </div>
             <!-- 아시안게임 금메달 기념 -->
             <div class="promo-card" data-promo-end="2026-10-11" style="--pc-accent:#ca8a04;">
                 <span class="promo-card-icon">🥇</span>
@@ -7828,14 +7841,25 @@ const ASIAN_GAMES_CHAIRS = new Set([
     'mane', 'plit', 'oui',                                  // 리빙다이닝
     'molti', 'atti',                                        // 그로잉
 ]);
+// 기간 한정 「제품별 % 할인」 — 행사가(온라인 판매가) 기준. 같은 제품에 둘이 겹치면 큰 쪽 하나만.
+// 세계 척추의 날: kr.sidiz.com/blogs/special-offers/261016-world-spine-day (T90 1,099,000→989,100 · T80 649,000→584,100)
+const RATE_PROMOS = [
+    { ...ASIAN_GAMES_PROMO, ids: ASIAN_GAMES_CHAIRS },
+    { start: '2026-10-16', end: '2026-10-31', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
+];
+const _todayYmd = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+const _ratePromosLive = RATE_PROMOS.filter(p => _todayYmd >= p.start && _todayYmd <= p.end);
+const _ratePromoOf = item => _ratePromosLive.filter(p => p.ids.has(item.productId)).sort((a, b) => b.rate - a.rate)[0] || null;
 function asianGamesItemRate(item) {
-    return (_asianGamesActive && ASIAN_GAMES_CHAIRS.has(item.productId)) ? ASIAN_GAMES_PROMO.rate : 0;
+    const p = _ratePromoOf(item);
+    return p ? p.rate : 0;
 }
 // 제품당 할인액을 반올림한 뒤 수량을 곱한다 (T80 649,000 → 584,100 처럼 공식 페이지 숫자와 맞춘다)
 function asianGamesDiscount(cart) {
-    if (!_asianGamesActive) return null;
+    if (!_ratePromosLive.length) return null;
     const amt = cart.reduce((s, i) => s + Math.round(i.price * asianGamesItemRate(i)) * i.qty, 0);
-    return amt > 0 ? { label: ASIAN_GAMES_PROMO.label, amt, type: 'asian' } : null;
+    const labels = [...new Set(cart.map(i => (_ratePromoOf(i) || {}).label).filter(Boolean))];
+    return amt > 0 ? { label: labels.join(' · '), amt, type: 'asian' } : null;
 }
 
 // ── PRODUCT SPECS ──
@@ -11255,7 +11279,7 @@ function getBestDiscount(cart) {
         if (gcproAmt > 0) candidates.push({ label: 'GC PRO 쿠폰', amt: gcproAmt, type: 'gcpro_coupon' });
     }
 
-    // 6) 아시안게임 금메달 기념 의자 10% (2026-10-02 ~ 10-11, 타 혜택과 중복 불가)
+    // 6) 기간 한정 제품별 % 할인 (RATE_PROMOS — 아시안게임 10%, 세계 척추의 날 T80·T90 10% 등, 타 혜택과 중복 불가)
     const asian = asianGamesDiscount(cart);
     if (asian) candidates.push(asian);
 
