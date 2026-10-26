@@ -5,6 +5,7 @@ RUN npm install --omit=dev
 COPY server.js .
 RUN mkdir public
 COPY index.html public/index.html
+COPY robots.txt public/robots.txt
 COPY favicon.svg public/favicon.svg
 COPY og-image.svg public/og-image.svg
 EXPOSE 80
