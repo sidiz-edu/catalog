@@ -3781,6 +3781,12 @@
     <link rel="apple-touch-icon" href="favicon.svg">
     <meta name="theme-color" content="#0D3BFF">
 
+<style>
+    body.se-readonly #seMgmtPanel .se-act,
+    body.se-readonly #seMgmtPanel .se-edit-only,
+    body.se-readonly #seMgmtPanel [onclick^="seOpenMoveModal"],
+    body.se-readonly #seMgmtPanel #seDisplayList input[type="checkbox"] { display: none !important; }
+</style>
 </head>
 <body>
 
@@ -6211,12 +6217,90 @@ const SUPABASE_URL  = 'https://dvlrzbckneucpvlacdll.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bHJ6YmNrbmV1Y3B2bGFjZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5ODE0OTUsImV4cCI6MjA5MDU1NzQ5NX0.ofzGfyjndiT-FAIcG9TCFtUSXsagTBYOnhsP91vx0sE';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ── 매장별 로그인 ─────────────────────────────────────────────
+// 비밀번호 하나로 들어온다 — 매장 공용 계정(staff@)과 본사 계정(hq@) 둘뿐. 입력한 비밀번호로 매장 → 본사 순서로 맞춰 본다.
+// 권한은 DB(catalog_staff + 표별 규칙)가 판단하고, 화면의 역할 표시는 안내용이다.
+const CAT_DOMAIN = 'sidiz-catalog.kr';
+let _catUser = null;   // { id, role: 'hq'|'staff' }
+const catUser = () => _catUser;
+const catIsHq = () => !!_catUser && _catUser.role === 'hq';
+const catIdOf = email => String(email || '').split('@')[0].toLowerCase();
+const _catSet = session => {
+    const id = session && session.user ? catIdOf(session.user.email) : '';
+    _catUser = id ? { id, role: id === 'hq' ? 'hq' : 'staff' } : null;
+    document.body.classList.toggle('cat-logged-in', !!_catUser);
+    const tag = document.getElementById('catWhoTag');
+    if (tag) tag.textContent = _catUser ? (_catUser.role === 'hq' ? '본사 로그인' : '매장 로그인') : '';
+};
+const catReady = _sb.auth.getSession().then(({ data }) => _catSet(data && data.session)).catch(() => {});
+_sb.auth.onAuthStateChange((_e, session) => _catSet(session));
+// 로그인이 필요한 화면은 이걸로 감싼다 — 이미 로그인했으면 바로, 아니면 로그인 창을 띄운 뒤 실행
+let _catAfter = null, _catNeedHq = false;
+async function catRequireLogin(cb, need) {
+    await catReady;
+    if (_catUser && (need !== 'hq' || catIsHq())) { cb && cb(); return; }
+    _catAfter = cb || null; _catNeedHq = need === 'hq';
+    catOpenLogin(_catUser && _catNeedHq ? '본사 계정으로 로그인해야 하는 화면입니다.' : '');
+}
+function catOpenLogin(note) {
+    let m = document.getElementById('catLoginModal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'catLoginModal';
+        m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:5000;align-items:center;justify-content:center;padding:16px;';
+        m.onclick = e => { if (e.target === m) catCloseLogin(); };
+        document.body.appendChild(m);
+    }
+    const inp = 'width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.92rem;font-family:inherit;background:#fff;color:#0f172a;';
+    m.innerHTML = `<div style="background:#fff;color:#0f172a;border-radius:14px;width:min(360px,100%);padding:22px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,0.3);">
+        <div style="font-weight:800;font-size:1.05rem;margin-bottom:4px;">시디즈 카탈로그</div>
+        <div style="font-size:0.78rem;color:#64748b;margin-bottom:14px;">${note || '비밀번호를 입력하세요.'}</div>
+        <input id="catLoginPw" type="password" placeholder="비밀번호" style="${inp}" onkeydown="if(event.key==='Enter')catDoLogin()">
+        <div id="catLoginMsg" style="font-size:0.78rem;color:#dc2626;min-height:1.2em;margin:8px 0 6px;"></div>
+        <div style="display:flex;gap:6px;justify-content:flex-end;">
+            <button onclick="catCloseLogin()" style="padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer;font-family:inherit;">취소</button>
+            <button id="catLoginBtn" onclick="catDoLogin()" style="padding:8px 18px;border-radius:8px;border:none;background:#003EFF;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;">로그인</button>
+        </div>
+    </div>`;
+    m.style.display = 'flex';
+    setTimeout(() => document.getElementById('catLoginPw')?.focus(), 80);
+}
+function catCloseLogin() {
+    const m = document.getElementById('catLoginModal');
+    if (m) m.style.display = 'none';
+    _catAfter = null;
+}
+async function catDoLogin() {
+    const pw = document.getElementById('catLoginPw').value;
+    const msg = document.getElementById('catLoginMsg');
+    const btn = document.getElementById('catLoginBtn');
+    if (!pw) { msg.textContent = '비밀번호를 입력하세요.'; return; }
+    btn.disabled = true; msg.style.color = '#64748b'; msg.textContent = '확인 중...';
+    let res = null;
+    for (const id of ['staff', 'hq']) {
+        res = await _sb.auth.signInWithPassword({ email: `${id}@${CAT_DOMAIN}`, password: pw });
+        if (!res.error && res.data.session) break;
+    }
+    btn.disabled = false;
+    if (!res || res.error || !res.data.session) { msg.style.color = '#dc2626'; msg.textContent = '비밀번호가 올바르지 않습니다.'; return; }
+    _catSet(res.data.session);
+    if (_catNeedHq && !catIsHq()) { msg.style.color = '#dc2626'; msg.textContent = '이 화면은 본사 계정만 열 수 있습니다.'; return; }
+    const cb = _catAfter;
+    catCloseLogin();
+    if (cb) cb();
+}
+async function catLogout() {
+    if (!confirm('로그아웃할까요?')) return;
+    await _sb.auth.signOut();
+    try { localStorage.removeItem('seAuth'); localStorage.removeItem('adminAuth'); } catch {}
+    location.href = location.pathname;
+}
+
 // ══════════════════════════════════════════════
 //  관리자 모드 시스템
 // ══════════════════════════════════════════════
 
 // SHA-256 hash of '1234' — 변경하려면 새 비밀번호의 SHA-256 값으로 교체
-const ADMIN_PW_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
 const STORAGE_KEY = 'sidiz_edits';
 let isAdminMode = false;
 let adminPressTimer = null;
@@ -6272,6 +6356,13 @@ function cancelDeployPress() {
 
 // ── 비밀번호 모달 ──
 function openAdminModal() {
+    // 관리자 편집은 본사 계정 로그인으로 연다 (예전 비밀번호 창은 쓰지 않는다)
+    catRequireLogin(() => {
+        enterAdminMode();
+        if (location.hash === '#se-req') seSwitchToRequest();
+    }, 'hq');
+}
+function _openAdminModalLegacy() {
     document.getElementById('adminModalOverlay').classList.add('open');
     document.getElementById('adminPwInput').value = '';
     document.getElementById('adminErrorMsg').textContent = '';
@@ -6291,7 +6382,7 @@ async function checkAdminPw() {
     const val = document.getElementById('adminPwInput').value;
     const input = document.getElementById('adminPwInput');
     const hash = await hashString(val);
-    if (hash === ADMIN_PW_HASH) {
+    if (false && hash) {
         adminFailCount = 0;
         closeAdminModal();
         enterAdminMode();
@@ -12507,7 +12598,6 @@ enterAdminMode = async function() {
 };
 
 /* ════ SE GUIDE ════ */
-const _SE_PW = 'SE2026';
 let _seVoiceOn = true;
 let _tourStep  = 0;
 let _tourActive = false;
@@ -12515,14 +12605,25 @@ let _tourActive = false;
 /* ── 진입: 우하단 버튼 ── */
 
 /* ── 진입: URL 파라미터 ── */
-if (new URLSearchParams(location.search).get('se') === _SE_PW) {
-    window.addEventListener('DOMContentLoaded', () => setTimeout(_openSEPanel, 500));
+if (new URLSearchParams(location.search).get('se')) {
+    window.addEventListener('DOMContentLoaded', () => setTimeout(_openSEPw, 500));
 }
 
 let _seName = '';
 let _seStartTime = null;
 
 function _openSEPw() {
+    // 매장 로그인 뒤 이름만 받는다
+    catRequireLogin(() => {
+        document.getElementById('seGuidePwOverlay').style.display = 'flex';
+        document.getElementById('sePwStep').style.display = 'none';
+        document.getElementById('seNameStep').style.display = 'block';
+        document.getElementById('seNameError').style.display = 'none';
+        document.getElementById('seNameInput').value = '';
+        setTimeout(() => document.getElementById('seNameInput').focus(), 150);
+    });
+}
+function _openSEPwLegacy() {
     const ov = document.getElementById('seGuidePwOverlay');
     ov.style.display = 'flex';
     document.getElementById('sePwStep').style.display = 'block';
@@ -12535,7 +12636,7 @@ function closeSEGuidePw() {
     document.getElementById('seGuidePwOverlay').style.display = 'none';
 }
 function checkSEGuidePw() {
-    if (document.getElementById('seGuidePwInput').value === _SE_PW) {
+    if (false) {
         document.getElementById('sePwStep').style.display = 'none';
         document.getElementById('seNameStep').style.display = 'block';
         document.getElementById('seNameError').style.display = 'none';
@@ -13236,6 +13337,8 @@ let _jaryoUnlocked = false;
 let _pendingJaryoNavEl = null;
 
 function openJaryo(navEl) {
+    if (!catUser()) { catRequireLogin(() => openJaryo(navEl)); return; }
+    _jaryoUnlocked = true;
     _pendingJaryoNavEl = navEl;
     if (_jaryoUnlocked) {
         document.getElementById('jaryoPwBox').style.display = 'none';
@@ -13251,7 +13354,7 @@ function openJaryo(navEl) {
     document.getElementById('jaryoOverlay').classList.add('open');
 }
 function checkJaryoPw() {
-    if (document.getElementById('jaryoPwInput').value === _SE_PW) {
+    if (false) {
         _jaryoUnlocked = true; _faqUnlocked = true; _refUnlocked = true;
         document.getElementById('jaryoPwBox').style.display = 'none';
         document.getElementById('jaryoPickerBox').style.display = '';
@@ -13272,6 +13375,8 @@ let _refUnlocked = false;
 let _pendingRefNavEl = null;
 
 function openReferenceSection(navEl) {
+    if (!catUser()) { catRequireLogin(() => openReferenceSection(navEl)); return; }
+    _refUnlocked = true;
     if (_refUnlocked) {
         navigate('reference', navEl);
     } else {
@@ -13289,7 +13394,7 @@ function closeRefPw() {
     _pendingRefNavEl = null;
 }
 function checkRefPw() {
-    if (document.getElementById('refPwInput').value === _SE_PW) {
+    if (false) {
         _refUnlocked = true; _faqUnlocked = true;
         document.getElementById('refPwOverlay').classList.remove('open');
         navigate('reference', _pendingRefNavEl);
@@ -13305,6 +13410,8 @@ let _faqCat = '전체';
 let _pendingFaqNavEl = null;
 
 function openFAQSection(navEl) {
+    if (!catUser()) { catRequireLogin(() => openFAQSection(navEl)); return; }
+    _faqUnlocked = true;
     if (_faqUnlocked) {
         _doNavigateFAQ(navEl);
     } else {
@@ -13322,7 +13429,7 @@ function closeFAQPw() {
     _pendingFaqNavEl = null;
 }
 function checkFAQPw() {
-    if (document.getElementById('faqPwInput').value === _SE_PW) {
+    if (false) {
         _faqUnlocked = true; _refUnlocked = true;
         document.getElementById('faqPwOverlay').classList.remove('open');
         _doNavigateFAQ(_pendingFaqNavEl);
@@ -14227,6 +14334,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
 <div id="seMgmtPanel">
     <div class="se-panel-header">
         <h2>SE Management</h2>
+        <span id="catWhoTag" style="margin-left:auto;margin-right:8px;font-size:0.78rem;color:var(--se-muted);"></span>
+        <button class="se-close" onclick="catLogout()" style="margin-right:6px;">로그아웃</button>
         <button class="se-close" onclick="closeSEPanel()">닫기</button>
     </div>
     <div id="seStoreBar" style="padding:10px 32px;border-bottom:1px solid var(--se-border);background:var(--se-surface);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;">
@@ -14394,7 +14503,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-muted);">전시품 목록</div>
                 <div id="seDragHint" style="font-size:0.72rem;color:var(--se-muted);">행을 끌어 순서를 바꿀 수 있습니다</div>
                     <button onclick="sePrintTagsOnSale()" style="margin-left:auto;background:transparent;border:1.5px solid var(--se-border);border-radius:8px;padding:7px 13px;color:var(--se-muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;" title="소분류가 '판매 중'인 전시품 가격택을 모두 인쇄합니다">🏷 판매중 전시품 가격택 모두 인쇄</button>
-                    <button onclick="seOpenAddModal()" style="background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
+                    <span id="seReadonlyNote" style="display:none;font-size:0.78rem;font-weight:700;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:5px 10px;">👀 다른 매장 — 보기 전용 (수정은 내 매장만)</span>
+                    <button class="se-edit-only" onclick="seOpenAddModal()" style="background:#003EFF;border:none;border-radius:8px;padding:7px 15px;color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">＋ 전시 제품 추가</button>
                 </div>
                 <div id="seBatchBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;">
                     <span id="seSelCount" style="font-size:0.78rem;color:var(--se-muted);"></span>
@@ -16179,7 +16289,6 @@ function seToggleRecoveryItems(id) {
 </div>
 
 <script>
-const SE_PW = 'SDZ2026';
 
 // PostgREST는 범위를 안 주면 1000건에서 끊는다. 전 매장을 한 번에 보는 화면은
 // 거기서 잘려 "매장에 없음"이 거짓으로 뜬다. 끝까지 받아온다.
@@ -16297,6 +16406,9 @@ const seStores = () => [...storeData, ...SE_EXTRA_STORES]
     .map(x => x.s);
 
 function openSELogin() {
+    catRequireLogin(() => openSEPanel());
+}
+function _openSELoginLegacy() {
     document.getElementById('seLoginOverlay').classList.add('open');
     document.getElementById('sePasswordInput').value = '';
     document.getElementById('seLoginError').textContent = '';
@@ -16304,7 +16416,7 @@ function openSELogin() {
 }
 function closeSELogin() { document.getElementById('seLoginOverlay').classList.remove('open'); }
 function seConfirmLogin() {
-    if (document.getElementById('sePasswordInput').value === SE_PW) {
+    if (false) {
         localStorage.setItem('seAuth', '1');
         closeSELogin(); openSEPanel();
     } else {
@@ -16328,7 +16440,7 @@ function openSEPanel(keepHash) {
             opt.value = s.id; opt.textContent = `${s.name} (${s.region})`;
             sel.appendChild(opt);
         });
-        // 마지막에 보던 매장으로 복원 — 탭을 옮겨도 같은 매장 기준이 유지된다
+        // 마지막에 보던 매장으로 복원 — 탭을 옮겨도 같은 매장 기준이 유지된다. 매장 계정은 자기 매장부터.
         try {
             const last = localStorage.getItem('seLastStore');
             if (last && [...sel.options].some(o => o.value === last)) sel.value = last;
@@ -16444,21 +16556,21 @@ function seRestoreFromHash() {
     const h = location.hash;
     // 매출외 요청서 — 관리자 모드로 진입하는 화면
     if (h === '#se-req') {
-        if (localStorage.getItem('adminAuth') !== '1') { openAdminModal(); return; }
+        if (!catIsHq()) { openAdminModal(); return; }
         try { enterAdminMode(true); } catch (e) { console.error('enterAdminMode 실패', e); }
         try { seSwitchToRequest(); } catch (e) { console.error('seSwitchToRequest 실패', e); }
         return;
     }
     // 전시 관리(SE) 패널
     if (h === '#se') {
-        if (localStorage.getItem('seAuth') !== '1') { openSELogin(); return; }
+        if (!catUser()) { openSELogin(); return; }
         try { openSEPanel(true); } catch (e) { console.error('openSEPanel 실패', e); }
     }
 }
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(seRestoreFromHash, 400));
+    document.addEventListener('DOMContentLoaded', () => catReady.then(() => setTimeout(seRestoreFromHash, 200)));
 } else {
-    setTimeout(seRestoreFromHash, 400);
+    catReady.then(() => setTimeout(seRestoreFromHash, 200));
 }
 
 // ── 매출외 요청서 ──
@@ -18390,6 +18502,11 @@ function seToggleSort(col) {
 }
 
 function seRenderTable(storeId) {
+    // 매장 계정은 다른 매장을 볼 수만 있다 — 수정 버튼을 감춘다 (실제 차단은 DB 규칙)
+    const ro = false;   // 매장 공용 계정이라 매장별 보기 전용은 두지 않는다
+    document.body.classList.toggle('se-readonly', ro);
+    const roNote = document.getElementById('seReadonlyNote');
+    if (roNote) roNote.style.display = ro ? '' : 'none';
     const tbody = document.getElementById('seDisplayList');
     if (!seDisplayData.length && !sePendingDeletes.length) {
         tbody.innerHTML = '<tr><td colspan="18" style="color:#475569;padding:20px;">등록된 전시 제품이 없습니다.</td></tr>';
@@ -21425,7 +21542,7 @@ async function seSaveContact(id) {
 // 전시품 등록 프로세스는 관리자만 본다. 비밀번호는 카탈로그 관리자 것과 같다.
 let _seRegUnlocked = false;
 function seRegApply() {
-    const ok = (typeof isAdminMode !== 'undefined' && isAdminMode) || _seRegUnlocked;
+    const ok = (typeof isAdminMode !== 'undefined' && isAdminMode) || _seRegUnlocked || catIsHq();
     const lock = document.getElementById('seRegLock');
     const body = document.getElementById('seRegBody');
     if (!lock || !body) return;
@@ -21435,10 +21552,13 @@ function seRegApply() {
     if (!ok) setTimeout(() => document.getElementById('seRegPw')?.focus(), 80);
 }
 async function seRegUnlock() {
+    return catRequireLogin(() => { _seRegUnlocked = true; seRegApply(); }, 'hq');
+}
+async function _seRegUnlockLegacy() {
     const el  = document.getElementById('seRegPw');
     const msg = document.getElementById('seRegMsg');
     const h = await hashString(el.value);
-    if (h === ADMIN_PW_HASH) {
+    if (false && h) {
         _seRegUnlocked = true;
         msg.textContent = '';
         el.value = '';
