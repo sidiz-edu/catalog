@@ -8,3 +8,6 @@
 .env
 node_modules/
 .fursys-deploy-hub/
+!/og-image.png
+!/favicon-32.png
+!/apple-touch-icon.png
