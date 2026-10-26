@@ -19143,6 +19143,7 @@ function seRenderMoveReq() {
                 <label style="font-size:0.74rem;color:#6d28d9;">회수 <input value="${rt.pickup}" placeholder="예: 1월 8일" oninput="_seMoveReq.routes[${ri}].pickup=this.value" style="${inp}width:96px;"></label>
                 <label style="font-size:0.74rem;color:#6d28d9;">시공 <input value="${rt.install}" placeholder="예: 1월 10일" oninput="_seMoveReq.routes[${ri}].install=this.value" style="${inp}width:96px;"></label>
                 <label style="font-size:0.74rem;color:#6d28d9;">시공 팀 <input list="seTeamList" value="${rt.team}" placeholder="팀 선택·입력" oninput="seMoveReqTeam(${ri}, this.value)" style="${inp}width:150px;"></label>
+                <button onclick="seMoveReqCopyChat(${ri})" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.74rem;font-weight:700;cursor:pointer;">💬 이 경로 복사</button>
             </div>
             <div style="padding:6px 12px;font-size:0.72rem;color:var(--se-muted);line-height:1.6;">출발 ${loc(rt.from) || '— 매장 정보 없음'}<br>도착 ${loc(rt.to) || '— 매장 정보 없음'}</div>
             <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
@@ -19160,6 +19161,7 @@ function seRenderMoveReq() {
         </div>`).join('') : '<p style="color:var(--se-muted);font-size:0.84rem;padding:12px 0;">「보낼 예정」으로 표시된 전시품이 없습니다.</p>'}
         <div id="seMoveReqMsg" style="font-size:0.78rem;min-height:1em;margin:6px 0;"></div>
         <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+            <button onclick="seMoveReqCopyChat()" style="padding:8px 14px;border-radius:7px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.82rem;font-weight:700;cursor:pointer;">💬 채팅용 복사</button>
             <button onclick="seMoveReqCopyBody()" style="padding:8px 14px;border-radius:7px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 협조전 본문 복사</button>
             <button onclick="seMoveReqExcel()" style="padding:8px 14px;border-radius:7px;border:none;background:#6d28d9;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">⬇ 엑셀 내려받기</button>
         </div>
@@ -19180,6 +19182,43 @@ function seMoveReqTeam(ri, v) {
 const seMoveReqName = r => String(r.product_id || '').replace(/\s*\([^)]*\)\s*$/, '') || (r.sku || '').split('-')[0];
 const seMoveReqPicked = () => (_seMoveReq ? _seMoveReq.routes : [])
     .map(rt => ({ ...rt, rows: rt.rows.filter(r => r._on) })).filter(rt => rt.rows.length);
+
+// 채팅용 — 표 대신 줄글로, 경로마다 일정·출발/도착·제품을 한 덩어리로 묶는다. 팀이 여럿이면 팀별로 나눈다.
+function seMoveReqChatText(routes) {
+    const R = _seMoveReq, NL = String.fromCharCode(10);
+    const loc = id => { const x = R.contact[id] || {}; return [x.address || (seStores().find(s => s.id === id) || {}).address || '', x.manager, x.phone].filter(Boolean).join(' · ') || '매장 정보 없음'; };
+    const block = rt => {
+        const qty = rt.rows.reduce((a, r) => a + (r.quantity || 1), 0);
+        return [
+            `■ ${seShortStore(rt.from)} → ${seShortStore(rt.to)} (${qty}대)`,
+            `- 회수 ${rt.pickup || '미정'} / 시공 ${rt.install || '미정'}`,
+            `- 출발: ${loc(rt.from)}`,
+            `- 도착: ${loc(rt.to)}`,
+            ...rt.rows.map((r, i) => {
+                const code = (r.sku || '').split('-')[0];
+                const color = (r.sku || '').split('-').slice(1).join('-') || r.color_code || '';
+                return `  ${i + 1}) ${seMoveReqName(r)} · ${[code, color].filter(Boolean).join('-')} · ${r.quantity || 1}대${r._note ? ` (${r._note})` : ''}`;
+            }),
+        ].join(NL);
+    };
+    const teams = [...new Set(routes.map(rt => rt.team || '시공 팀 미정'))];
+    const body = teams.map(team => {
+        const rs = routes.filter(rt => (rt.team || '시공 팀 미정') === team);
+        return (teams.length > 1 ? `▶ ${team}${NL}${NL}` : '') + rs.map(block).join(NL + NL);
+    }).join(NL + NL);
+    return `[시디즈 매장 전시품 이동 요청]${teams.length === 1 ? ` ${teams[0]}` : ''}${NL}${NL}${body}${NL}${NL}확인 부탁드립니다. 감사합니다.`;
+}
+
+function seMoveReqCopyChat(ri) {
+    const msg = document.getElementById('seMoveReqMsg');
+    const picked = seMoveReqPicked();
+    const routes = ri == null ? picked : picked.filter(rt => rt.key === _seMoveReq.routes[ri].key);
+    if (!routes.length) { msg.style.color = '#dc2626'; msg.textContent = '보낼 전시품을 하나 이상 고르세요.'; return; }
+    navigator.clipboard.writeText(seMoveReqChatText(routes)).then(() => {
+        msg.style.color = '#16a34a';
+        msg.textContent = `✓ 채팅용으로 복사했습니다 (경로 ${routes.length}곳). 메신저에 붙여넣으세요.`;
+    }, () => { msg.style.color = '#dc2626'; msg.textContent = '클립보드 복사에 실패했습니다.'; });
+}
 
 function seMoveReqCopyBody() {
     const msg = document.getElementById('seMoveReqMsg');
