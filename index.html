@@ -18934,6 +18934,8 @@ async function seSetSalesLink(id) {
     seRenderTable(seCurrentStore);
 }
 
+// 원본 사진은 긴 변 1024px · 화질 0.72로 줄여 올린다 (매장 확인용으로 충분, 장당 ~100KB)
+const SE_PHOTO_MAX = 1024, SE_PHOTO_Q = 0.72;
 function seCompressImage(file, maxPx, quality) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -21872,7 +21874,7 @@ async function seSubmitEdit() {
     const finalUrls = [];
     for (const entry of _seEditPhotos) {
         if (entry && entry._file) {
-            const compressed = await seCompressImage(entry._file, 1200, 0.8);
+            const compressed = await seCompressImage(entry._file, SE_PHOTO_MAX, SE_PHOTO_Q);
             const safeProdId = (seriesName || 'item').replace(/[^a-zA-Z0-9_-]/g, '_');
             const path = `${seCurrentStore}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
             const { error: upErr } = await seUploadPhoto(path, compressed);
@@ -21951,7 +21953,7 @@ async function seAddDisplay() {
     try {
         const imageUrls = [];
         for (const file of _seAddPhotos) {
-            const compressed = await seCompressImage(file, 1200, 0.8);
+            const compressed = await seCompressImage(file, SE_PHOTO_MAX, SE_PHOTO_Q);
             const safeProdId = productId.replace(/[^a-zA-Z0-9_-]/g, '_');
             const path = `${storeId}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
             const { error: upErr } = await seUploadPhoto(path, compressed);
