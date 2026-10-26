@@ -5944,7 +5944,10 @@ OOO 고객님, [    ] 내로 시공 기사님이 방문 예정입니다.
     <!-- 헤더 -->
     <div style="margin-bottom:32px;">
         <p style="font-family:'Outfit',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#003EFF;margin:0 0 10px;">Display Sale</p>
-        <h1 style="font-family:'Outfit',sans-serif;font-weight:200;font-size:clamp(2rem,5vw,3rem);letter-spacing:-.02em;color:#0f172a;margin:0 0 10px;line-height:1.1;">전시품 판매</h1>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;">
+            <h1 style="font-family:'Outfit',sans-serif;font-weight:200;font-size:clamp(2rem,5vw,3rem);letter-spacing:-.02em;color:#0f172a;margin:0;line-height:1.1;">전시품 판매</h1>
+            <button class="ds-share-btn" onclick="dsCopyLink()" style="padding:8px 16px;border-radius:20px;border:1.5px solid #003EFF;background:#fff;color:#003EFF;font-size:0.85rem;font-weight:600;cursor:pointer;">🔗 링크 복사</button>
+        </div>
         <p style="font-family:'Outfit',sans-serif;font-weight:300;font-size:0.95rem;color:#64748b;margin:0;white-space:nowrap;" class="display-sale-desc-txt">더 프로그레시브 매장의 전시품을 특가에 판매합니다. 각 제품 카드의 매장 전화번호로 문의 후 방문 수령하세요.</p>
     </div>
 
@@ -10691,6 +10694,11 @@ function preparePrintCatalog(info = {}) {
     container.innerHTML = html.join('');
 }
 
+const DS_SHARE_URL = location.origin + location.pathname + '?s=displaySale';
+function dsCopyLink() {
+    navigator.clipboard.writeText(DS_SHARE_URL).then(() => showToast('🔗 전시품 판매 링크가 복사되었습니다'));
+}
+
 function navigate(sectionId, navEl) {
     // 게스트 모드: 탭 전환 대신 해당 섹션으로 스크롤
     if (document.body.classList.contains('guest-mode')) {
@@ -10717,6 +10725,9 @@ function navigate(sectionId, navEl) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (sectionId === 'displaySale') loadDisplaySaleItems('displaySaleMain');
+    // 전시품 판매는 손님에게 보낼 단독 주소(?s=displaySale)를 주소창에 띄운다
+    if (sectionId === 'displaySale') history.replaceState(null, '', DS_SHARE_URL);
+    else if (location.search === '?s=displaySale') history.replaceState(null, '', location.pathname);
 
     // Close mobile nav
     document.getElementById('headerNav').classList.remove('open');
