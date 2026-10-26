@@ -6,7 +6,6 @@ COPY server.js .
 RUN mkdir public
 COPY index.html public/index.html
 COPY robots.txt public/robots.txt
-COPY favicon.svg public/favicon.svg
-COPY og-image.svg public/og-image.svg
+COPY favicon.ico favicon-32.png apple-touch-icon.png og-image.png public/
 EXPOSE 80
 CMD ["node", "server.js"]
