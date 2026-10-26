@@ -10227,7 +10227,7 @@ function showDisplaySaleDetail(itemId) {
       <div class="ds-modal">
         <button class="ds-modal-close" onclick="document.getElementById('dsOverlay').remove()">✕</button>
         <div class="ds-gallery" id="dsGallery">
-          ${photos.map((src,i) => `<img src="${src||''}" class="${i?'hidden':''}" id="dsPhoto${i}" alt="사진 ${i+1}" onerror="this.style.display='none'">`).join('')}
+          ${photos.map((src,i) => `<img ${i ? 'data-src' : 'src'}="${src||''}" class="${i?'hidden':''}" id="dsPhoto${i}" alt="사진 ${i+1}" onerror="this.style.display='none'">`).join('')}
           ${photos.length > 1 ? `
             <button class="ds-nav prev" onclick="dsSwitchPhoto(-1)">‹</button>
             <button class="ds-nav next" onclick="dsSwitchPhoto(1)">›</button>
@@ -10275,7 +10275,9 @@ function dsSwitchPhoto(dir, absolute = false) {
     } else {
         _dsCurPhoto = (_dsCurPhoto + dir + photos.length) % photos.length;
     }
-    photos[_dsCurPhoto].classList.remove('hidden');
+    const cur = photos[_dsCurPhoto];
+    if (cur.dataset.src) { cur.src = cur.dataset.src; delete cur.dataset.src; }   // 원본은 볼 때만 받는다
+    cur.classList.remove('hidden');
     if (dots[_dsCurPhoto]) dots[_dsCurPhoto].classList.add('active');
 }
 
@@ -10296,7 +10298,22 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
             container.innerHTML = '<div style="grid-column:1/-1;color:#9ca3af;padding:20px 0;">현재 판매 중인 전시품이 없습니다.</div>';
             return;
         }
-        container.innerHTML = data.map(item => {
+        _dsList[containerId] = data;
+        dsRenderMore(containerId, true);
+    } catch(e) {
+        container.innerHTML = `<div style="grid-column:1/-1;color:#ef4444;">오류: ${e.message}</div>`;
+    }
+}
+
+// 손님 화면은 20개씩 보여준다 — 사진 전송량(Supabase Cached Egress)을 아끼려고 처음부터 다 그리지 않는다
+const DS_PAGE = 20;
+const _dsList = {};
+function dsRenderMore(containerId, reset) {
+    const container = document.getElementById(containerId);
+    const data = _dsList[containerId] || [];
+    container.querySelector('.ds-more')?.remove();
+    const from = reset ? 0 : container.querySelectorAll('.display-sale-card').length;
+    const html = data.slice(from, from + DS_PAGE).map(item => {
             const store = storeData.find(s => s.id === item.store_id);
             const storeName = store ? store.name : item.store_id;
             const storePhone = store ? store.phone : '';
@@ -10335,9 +10352,10 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
                 </div>
             </div>`;
         }).join('');
-    } catch(e) {
-        container.innerHTML = `<div style="grid-column:1/-1;color:#ef4444;">오류: ${e.message}</div>`;
-    }
+    const left = data.length - from - DS_PAGE;
+    const more = left > 0 ? `<button class="ds-more" onclick="dsRenderMore('${containerId}')" style="grid-column:1/-1;justify-self:center;padding:12px 28px;border-radius:24px;border:1.5px solid #cbd5e1;background:#fff;font-size:0.92rem;font-weight:600;color:#334155;cursor:pointer;">더 보기 (${left}개 남음)</button>` : '';
+    if (reset) container.innerHTML = html + more;
+    else container.insertAdjacentHTML('beforeend', html + more);
 }
 
 function filterRepairCat(cat) {
