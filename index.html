@@ -7102,7 +7102,7 @@ const storeData = [
         naverUrl: 'https://map.naver.com/v5/search/커넥트현대+청주+시디즈'
     },
     {
-        id: 'nowon', name: '일룸 노원점', region: '서울',
+        id: 'iloom-nowon', name: '일룸 노원점', region: '서울',
         address: '서울 노원구 한글비석로 212 2층',
         hours: '매일 10:30 – 19:30 · 명절당일 휴무',
         phone: '070-4144-1044',
@@ -16274,10 +16274,10 @@ const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.nam
 
 // SE 관리 전용 매장 — 고객용 매장 안내·견적 화면에는 노출하지 않으므로 storeData에 넣지 않는다
 const SE_EXTRA_STORES = [
-    { id: 'iloom_daegu',   name: '일룸 대구점',     region: '대구' },
-    { id: 'iloom_daejeon', name: '일룸 대전둔산점', region: '대전' },
-    { id: 'iloom_songpa',  name: '일룸 송파점',     region: '서울' },
-    { id: 'kimpo',         name: '현대김포점',      region: '경기' },
+    { id: 'iloom-daegu',   name: '일룸 대구점',     region: '대구' },
+    { id: 'iloom-daejeon', name: '일룸 대전둔산점', region: '대전' },
+    { id: 'iloom-songpa',  name: '일룸 송파점',     region: '서울' },
+    { id: 'gimpo',         name: '현대김포점',      region: '경기' },
     { id: 'garden5',       name: '현대가든파이브점', region: '서울' },
     { id: 'yongsan',       name: '시디즈 용산아이파크몰점', region: '서울' },
     { id: 'livingpower',   name: '리빙파워센터',    region: '기타' },
@@ -16510,16 +16510,16 @@ const SE_STORE_MAP = {
     '수원점':'suwon', '스타필드수원(시)':'suwon', '스타필드수원':'suwon',
     '고양점':'goyang', '스타필드고양(시)':'goyang', '스타필드고양':'goyang',
     '커넥트현대청주':'cheongju', '청주점':'cheongju',
-    '현대김포점':'kimpo', '김포점':'kimpo',
+    '현대김포점':'gimpo', '김포점':'gimpo',
     '용산아이파크몰점':'yongsan', '용산아이파크몰':'yongsan', '아이파크몰':'yongsan', '용산점':'yongsan',
     // 기타
     '리빙파워센터':'livingpower',
     // 일룸 매장
-    '일룸 대전둔산점':'iloom_daejeon', '일룸대전둔산점':'iloom_daejeon',
-    '일룸 송파점':'iloom_songpa', '일룸송파점':'iloom_songpa',
-    '일룸 노원점':'nowon', '일룸노원점':'nowon', '노원점':'nowon', '시디즈 노원점':'nowon',
-    '일룸 대구점':'iloom_daegu', '일룸대구점':'iloom_daegu',
-    '대구컬렉티브':'iloom_daegu', '일룸 대구컬렉티브':'iloom_daegu', '일룸대구컬렉티브':'iloom_daegu',
+    '일룸 대전둔산점':'iloom-daejeon', '일룸대전둔산점':'iloom-daejeon',
+    '일룸 송파점':'iloom-songpa', '일룸송파점':'iloom-songpa',
+    '일룸 노원점':'iloom-nowon', '일룸노원점':'iloom-nowon', '노원점':'iloom-nowon', '시디즈 노원점':'iloom-nowon',
+    '일룸 대구점':'iloom-daegu', '일룸대구점':'iloom-daegu',
+    '대구컬렉티브':'iloom-daegu', '일룸 대구컬렉티브':'iloom-daegu', '일룸대구컬렉티브':'iloom-daegu',
 };
 
 let _seReqParsed = null;
@@ -19610,7 +19610,7 @@ const seIsCodeOk = row => ((row && row.memo) || '').includes(SE_CODE_OK_TAG);
 const SE_DIRECT_RE = /\[?\s*(?:대리점|매장)\s*(?:직접\s*)?구매\s*\]?/;
 const seIsDirectBuy = row => SE_DIRECT_RE.test((row && row.memo) || '');
 // 옛 표기가 섞여 있던 두 매장은 문서가 없으면 대리점 구매로 본다
-const SE_DIRECT_STORES = new Set(['kimpo', 'livingpower']);
+const SE_DIRECT_STORES = new Set(['gimpo', 'livingpower']);
 const SE_SOURCE = {
     store: ['대리점구매', '#0f766e'],
     hq:    ['본사구매', '#1d4ed8'],
