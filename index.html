@@ -10207,7 +10207,7 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
             const discountRate = SE_GRADE_DISCOUNT[item.grade] ?? SE_GRADE_DISCOUNT.A;
             const discountLabel = Math.round(discountRate * 100) + '% 할인';
             const salePrice = item.consumer_price ? Math.round(item.consumer_price * (1 - discountRate)) : null;
-            const thumbUrl = (item.image_urls && item.image_urls[0]) || item.image_url;
+            const thumbUrl = seThumbUrl((item.image_urls && item.image_urls[0]) || item.image_url);
             const imgStyle = thumbUrl
                 ? `background-image:url('${thumbUrl}');background-size:cover;background-position:center;`
                 : 'background:#f1f5f9;';
@@ -18706,7 +18706,7 @@ function seRenderTable(storeId) {
         const imgCell = photos.length
             ? `<td><div style="position:relative;display:inline-block;cursor:zoom-in;"
                     onclick='openSePhoto(${JSON.stringify(photos).replace(/'/g, "&#39;")}, ${JSON.stringify(photoLabel).replace(/'/g, "&#39;")})'>
-                    <img src="${photos[0]}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;display:block;">
+                    <img src="${seThumbUrl(photos[0])}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${photos[0]}'}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;display:block;">
                     ${photos.length > 1 ? `<span style="position:absolute;right:-3px;bottom:-3px;background:#003EFF;color:#fff;font-size:0.6rem;font-weight:700;border-radius:8px;padding:1px 5px;">${photos.length}</span>` : ''}
                </div></td>`
             : `<td style="color:#94a3b8;">-</td>`;
@@ -18868,6 +18868,19 @@ function seCompressImage(file, maxPx, quality) {
         };
         img.src = url;
     });
+}
+
+// 목록·판매 화면은 작은 사본(thumbs/ 아래 같은 경로, 320px)을 쓴다 — 원본을 매번 받으면
+// Supabase 무료 전송량(Cached Egress 월 5GB)을 금방 넘는다. 사본이 없으면 원본으로 되돌아간다.
+const seThumbUrl = u => (typeof u === 'string' && u.includes('/display-photos/') && !u.includes('/display-photos/thumbs/'))
+    ? u.replace('/display-photos/', '/display-photos/thumbs/') : u;
+async function seUploadPhoto(path, blob) {
+    const opt = { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' };   // 같은 사진은 다시 받지 않게 1년 캐시
+    const { error } = await _sb.storage.from('display-photos').upload(path, blob, opt);
+    if (error) return { error };
+    const small = await seCompressImage(blob, 320, 0.7);
+    await _sb.storage.from('display-photos').upload('thumbs/' + path, small, opt);
+    return { error: null };
 }
 
 function sePopulateSkuList(seriesName) {
@@ -21775,7 +21788,7 @@ async function seSubmitEdit() {
             const compressed = await seCompressImage(entry._file, 1200, 0.8);
             const safeProdId = (seriesName || 'item').replace(/[^a-zA-Z0-9_-]/g, '_');
             const path = `${seCurrentStore}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
-            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+            const { error: upErr } = await seUploadPhoto(path, compressed);
             if (upErr) { msg.textContent = '사진 오류: ' + upErr.message; return; }
             finalUrls.push(_sb.storage.from('display-photos').getPublicUrl(path).data.publicUrl);
         } else if (typeof entry === 'string') {
@@ -21854,7 +21867,7 @@ async function seAddDisplay() {
             const compressed = await seCompressImage(file, 1200, 0.8);
             const safeProdId = productId.replace(/[^a-zA-Z0-9_-]/g, '_');
             const path = `${storeId}/${safeProdId}_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;
-            const { error: upErr } = await _sb.storage.from('display-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+            const { error: upErr } = await seUploadPhoto(path, compressed);
             if (upErr) throw upErr;
             const { data: urlData } = _sb.storage.from('display-photos').getPublicUrl(path);
             imageUrls.push(urlData.publicUrl);
@@ -22670,7 +22683,7 @@ function seUpdateChipTooltip(chip, e) {
     if (!chip || !e) { tt.style.display = 'none'; return; }
     const prod = SE_PRODUCTS.find(pr => pr.id === chip.product_id);
     const name = prod?.name || chip.product_id;
-    const img = (chip.image_urls && chip.image_urls[0]) || chip.image_url || prod?.img;
+    const img = seThumbUrl((chip.image_urls && chip.image_urls[0]) || chip.image_url) || prod?.img;
     const qty = chip.quantity || 1;
     const label = qty > 1 ? `${name} (${chip._idx + 1})` : name;
     const sku = chip.sku || '';
