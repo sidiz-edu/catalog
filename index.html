@@ -19225,30 +19225,27 @@ const seMoveReqName = r => String(r.product_id || '').replace(/\s*\([^)]*\)\s*$/
 const seMoveReqPicked = () => (_seMoveReq ? _seMoveReq.routes : [])
     .map(rt => ({ ...rt, rows: rt.rows.filter(r => r._on) })).filter(rt => rt.rows.length);
 
-// 채팅용 — 표 대신 줄글로, 경로마다 일정·출발/도착·제품을 한 덩어리로 묶는다. 팀이 여럿이면 팀별로 나눈다.
+// 채팅용 — 경로마다 번호를 붙여 출발/도착·제품만 줄글로. 회수·시공일은 적었을 때만 넣는다.
+// 매장명은 채팅에서 부르는 이름으로 — 「시디즈 더 프로그레시브 평택」→「더프로그레시브 평택」, 「스타필드 수원점」→「스타필드 수원」
+const seChatStore = id => String(seStoreNameOf(id)).replace(/^시디즈\s*/, '').replace('더 프로그레시브', '더프로그레시브').replace(/점$/, '').trim();
 function seMoveReqChatText(routes) {
     const R = _seMoveReq, NL = String.fromCharCode(10);
     const loc = id => { const x = R.contact[id] || {}; return [x.address || (seStores().find(s => s.id === id) || {}).address || '', x.manager, x.phone].filter(Boolean).join(' · ') || '매장 정보 없음'; };
-    const block = rt => {
+    return routes.map((rt, n) => {
         const qty = rt.rows.reduce((a, r) => a + (r.quantity || 1), 0);
+        const when = [rt.pickup && `회수 ${rt.pickup}`, rt.install && `시공 ${rt.install}`].filter(Boolean).join(' / ');
         return [
-            `■ ${seShortStore(rt.from)} → ${seShortStore(rt.to)} (${qty}대)`,
-            `- 회수 ${rt.pickup || '미정'} / 시공 ${rt.install || '미정'}`,
+            `${n + 1}. ${seChatStore(rt.from)} → ${seChatStore(rt.to)} (${qty}대)`,
+            ...(when ? [`- ${when}`] : []),
             `- 출발: ${loc(rt.from)}`,
             `- 도착: ${loc(rt.to)}`,
             ...rt.rows.map((r, i) => {
                 const code = (r.sku || '').split('-')[0];
                 const color = (r.sku || '').split('-').slice(1).join('-') || r.color_code || '';
-                return `  ${i + 1}) ${seMoveReqName(r)} · ${[code, color].filter(Boolean).join('-')} · ${r.quantity || 1}대${r._note ? ` (${r._note})` : ''}`;
+                return `  ${i + 1}) ${seMoveReqName(r)} · ${[code, color].filter(Boolean).join('-')} · ${r.quantity || 1}대`;
             }),
         ].join(NL);
-    };
-    const teams = [...new Set(routes.map(rt => rt.team || '시공 팀 미정'))];
-    const body = teams.map(team => {
-        const rs = routes.filter(rt => (rt.team || '시공 팀 미정') === team);
-        return (teams.length > 1 ? `▶ ${team}${NL}${NL}` : '') + rs.map(block).join(NL + NL);
     }).join(NL + NL);
-    return `[시디즈 매장 전시품 이동 요청]${teams.length === 1 ? ` ${teams[0]}` : ''}${NL}${NL}${body}${NL}${NL}확인 부탁드립니다. 감사합니다.`;
 }
 
 function seMoveReqCopyChat(ri) {
