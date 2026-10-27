@@ -451,6 +451,13 @@
         .sale-display-cat-btn { color: #003EFF !important; border-color: #a5b4fc !important; }
         .sale-display-cat-btn.active { background: #003EFF !important; color: #fff !important; border-color: #003EFF !important; }
 
+        #displaySale.section { max-width: 1320px; }
+        .ds-grid5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+        @media (max-width: 1100px) { .ds-grid5 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        @media (max-width: 860px)  { .ds-grid5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 640px)  { .ds-grid5 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+        .ds-grid5 .display-sale-card .ds-body { padding: 12px 14px 14px; }
+        .ds-grid5 .display-sale-card .ds-store { flex-wrap: wrap; }
         .display-sale-card {
             position: relative; cursor: pointer;
             background: #fff; border: 1px solid #e8eaed; border-radius: 16px;
@@ -5981,7 +5988,7 @@ OOO 고객님, [    ] 내로 시공 기사님이 방문 예정입니다.
         </div>
     </div>
 
-    <div id="displaySaleMain" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px;"></div>
+    <div id="displaySaleMain" class="ds-grid5"></div>
 </div>
 
 </div><!-- page-wrapper -->
@@ -10308,7 +10315,11 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
             container.innerHTML = '<div style="grid-column:1/-1;color:#9ca3af;padding:20px 0;">현재 판매 중인 전시품이 없습니다.</div>';
             return;
         }
-        _dsList[containerId] = data;
+        const ord = {};
+        storeData.forEach((s, i) => { ord[s.id] = i; });
+        _dsList[containerId] = data.map((d, i) => ({ d, i }))
+            .sort((a, b) => (ord[a.d.store_id] ?? 999) - (ord[b.d.store_id] ?? 999) || a.i - b.i).map(x => x.d);
+        _dsStore[containerId] = '';
         dsRenderMore(containerId, true);
     } catch(e) {
         container.innerHTML = `<div style="grid-column:1/-1;color:#ef4444;">오류: ${e.message}</div>`;
@@ -10317,13 +10328,43 @@ async function loadDisplaySaleItems(containerId = 'displaySaleContainer') {
 
 // 손님 화면은 20개씩 보여준다 — 사진 전송량(Supabase Cached Egress)을 아끼려고 처음부터 다 그리지 않는다
 const DS_PAGE = 20;
-const _dsList = {};
+const _dsList = {}, _dsStore = {};
+const dsStoreName = id => (storeData.find(s => s.id === id) || {}).name || id;
+function dsPickStore(containerId, id) {
+    _dsStore[containerId] = id;
+    dsRenderMore(containerId, true);
+}
+// 매장 고르기 칩 — 매장이 둘 이상일 때만
+function dsStoreBar(containerId) {
+    const all = _dsList[containerId] || [];
+    const cnt = {};
+    all.forEach(d => { cnt[d.store_id] = (cnt[d.store_id] || 0) + 1; });
+    const ids = Object.keys(cnt);
+    if (ids.length < 2) return '';
+    const cur = _dsStore[containerId] || '';
+    const chip = (id, label, n) => `<button onclick="dsPickStore('${containerId}','${id}')" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${cur === id ? '#003EFF' : '#e2e8f0'};background:${cur === id ? '#003EFF' : '#fff'};color:${cur === id ? '#fff' : '#334155'};font-size:0.84rem;font-weight:600;cursor:pointer;white-space:nowrap;">${label} <span style="opacity:.7;font-weight:400;">${n}</span></button>`;
+    return `<div class="ds-store-bar" style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;">${chip('', '전체', all.length)}${ids.map(id => chip(id, dsStoreName(id), cnt[id])).join('')}</div>`;
+}
+const dsStoreHead = (id, n) => {
+    const s = storeData.find(x => x.id === id) || {};
+    return `<div class="ds-store-head" style="grid-column:1/-1;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:2px solid #0f172a;padding:18px 0 8px;">
+        <span style="font-size:1.1rem;font-weight:700;color:#0f172a;">📍 ${s.name || id}</span>
+        <span style="font-size:0.85rem;color:#64748b;">${n}개</span>
+        ${s.phone ? `<a href="tel:${s.phone}" style="margin-left:auto;font-size:0.85rem;color:#003EFF;font-weight:600;text-decoration:none;">📞 ${s.phone}</a>` : ''}
+    </div>`;
+};
 function dsRenderMore(containerId, reset) {
     const container = document.getElementById(containerId);
-    const data = _dsList[containerId] || [];
+    const pick = _dsStore[containerId] || '';
+    const data = (_dsList[containerId] || []).filter(d => !pick || d.store_id === pick);
     container.querySelector('.ds-more')?.remove();
     const from = reset ? 0 : container.querySelectorAll('.display-sale-card').length;
+    const cnt = {};
+    data.forEach(d => { cnt[d.store_id] = (cnt[d.store_id] || 0) + 1; });
+    let last = reset ? null : container.dataset.lastStore;
     const html = data.slice(from, from + DS_PAGE).map(item => {
+            const head = item.store_id !== last ? dsStoreHead(item.store_id, cnt[item.store_id]) : '';
+            last = item.store_id;
             const store = storeData.find(s => s.id === item.store_id);
             const storeName = store ? store.name : item.store_id;
             const storePhone = store ? store.phone : '';
@@ -10344,7 +10385,7 @@ function dsRenderMore(containerId, reset) {
             const skuCode = item.sku ? item.sku.split('-')[0] : null;
             const skuHtml = [skuCode, item.color_code].filter(Boolean).join(' / ');
             _dsItemMap[item.id] = { item, store, storeName, storePhone, salePrice, discountLabel, discountRate };
-            return `<div class="display-sale-card" onclick="showDisplaySaleDetail('${item.id}')">
+            return head + `<div class="display-sale-card" onclick="showDisplaySaleDetail('${item.id}')">
                 <div class="ds-img-wrap">
                     <div class="ds-img-wrap-inner" style="${imgStyle}"></div>
                     <div class="ds-label-chip">Display Sale</div>
@@ -10364,7 +10405,8 @@ function dsRenderMore(containerId, reset) {
         }).join('');
     const left = data.length - from - DS_PAGE;
     const more = left > 0 ? `<button class="ds-more" onclick="dsRenderMore('${containerId}')" style="grid-column:1/-1;justify-self:center;padding:12px 28px;border-radius:24px;border:1.5px solid #cbd5e1;background:#fff;font-size:0.92rem;font-weight:600;color:#334155;cursor:pointer;">더 보기 (${left}개 남음)</button>` : '';
-    if (reset) container.innerHTML = html + more;
+    container.dataset.lastStore = last || '';
+    if (reset) container.innerHTML = dsStoreBar(containerId) + html + more;
     else container.insertAdjacentHTML('beforeend', html + more);
 }
 
