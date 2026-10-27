@@ -10343,7 +10343,7 @@ function dsStoreBar(containerId) {
     if (ids.length < 2) return '';
     const cur = _dsStore[containerId] || '';
     const chip = (id, label, n) => `<button onclick="dsPickStore('${containerId}','${id}')" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${cur === id ? '#003EFF' : '#e2e8f0'};background:${cur === id ? '#003EFF' : '#fff'};color:${cur === id ? '#fff' : '#334155'};font-size:0.84rem;font-weight:600;cursor:pointer;white-space:nowrap;">${label} <span style="opacity:.7;font-weight:400;">${n}</span></button>`;
-    return `<div class="ds-store-bar" style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;">${chip('', '전체', all.length)}${ids.map(id => chip(id, dsStoreName(id), cnt[id])).join('')}</div>`;
+    return `<div class="ds-store-bar" style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;">${chip('', '전체', all.length)}${ids.map(id => chip(id, dsStoreName(id).replace(/^시디즈\s*(더 프로그레시브\s*)?/, ''), cnt[id])).join('')}</div>`;
 }
 const dsStoreHead = (id, n) => {
     const s = storeData.find(x => x.id === id) || {};
