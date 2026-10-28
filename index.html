@@ -19174,6 +19174,8 @@ function seRenderMoveReq() {
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
             <div style="font-weight:800;font-size:1.05rem;">📄 매장 전시품 이동 의뢰서</div>
             <span style="font-size:0.78rem;color:var(--se-muted);">경로 ${R.routes.length}곳 · 선택 ${n}대</span>
+            <button onclick="seMoveReqAll(true)" style="padding:4px 10px;border-radius:6px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.74rem;font-weight:700;cursor:pointer;">전체 선택</button>
+            <button onclick="seMoveReqAll(false)" style="padding:4px 10px;border-radius:6px;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;font-size:0.74rem;font-weight:700;cursor:pointer;">전체 해제</button>
             <button onclick="document.getElementById('seMoveReqModal').style.display='none'" style="margin-left:auto;padding:5px 12px;border-radius:6px;border:1px solid var(--se-border);background:var(--se-surface);color:var(--se-text);font-size:0.78rem;cursor:pointer;">닫기</button>
         </div>
         <div style="font-size:0.76rem;color:var(--se-muted);margin-bottom:12px;line-height:1.6;">「보낼 예정」으로 표시한 전시품을 경로별로 모았습니다. 이번에 보낼 것만 체크하고, 회수·시공일과 시공 팀을 적은 뒤 엑셀과 협조전 본문을 받으세요. 실제로 옮긴 뒤에는 각 매장에서 「이동」을 눌러 기록합니다.</div>
@@ -19190,7 +19192,7 @@ function seRenderMoveReq() {
             <div style="padding:6px 12px;font-size:0.72rem;color:var(--se-muted);line-height:1.6;">출발 ${loc(rt.from) || '— 매장 정보 없음'}<br>도착 ${loc(rt.to) || '— 매장 정보 없음'}</div>
             <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
                 <thead><tr style="background:var(--se-raised,#f8fafc);color:#475569;">
-                    <th style="padding:5px 8px;width:30px;"></th><th style="padding:5px 8px;text-align:left;">제품명</th><th style="padding:5px 8px;text-align:left;">단품코드</th>
+                    <th style="padding:5px 8px;width:30px;"><input type="checkbox" title="이 경로 전체 선택/해제" ${rt.rows.every(r => r._on) ? 'checked' : ''} onchange="seMoveReqAll(this.checked, ${ri})"></th><th style="padding:5px 8px;text-align:left;">제품명</th><th style="padding:5px 8px;text-align:left;">단품코드</th>
                     <th style="padding:5px 8px;text-align:left;">색상</th><th style="padding:5px 8px;text-align:right;">수량</th><th style="padding:5px 8px;text-align:left;">사유</th></tr></thead>
                 <tbody>${rt.rows.map((r, i) => `<tr style="border-top:1px solid var(--se-border);${r._on ? '' : 'color:#94a3b8;'}">
                     <td style="padding:4px 8px;text-align:center;"><input type="checkbox" ${r._on ? 'checked' : ''} onchange="_seMoveReq.routes[${ri}].rows[${i}]._on=this.checked;seRenderMoveReq()"></td>
@@ -19208,6 +19210,11 @@ function seRenderMoveReq() {
             <button onclick="seMoveReqExcel()" style="padding:8px 14px;border-radius:7px;border:none;background:#6d28d9;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">⬇ 엑셀 내려받기</button>
         </div>
     </div>`;
+}
+
+function seMoveReqAll(on, ri) {
+    (ri == null ? _seMoveReq.routes : [_seMoveReq.routes[ri]]).forEach(rt => rt.rows.forEach(r => { r._on = on; }));
+    seRenderMoveReq();
 }
 
 function seMoveReqTeam(ri, v) {
