@@ -14574,7 +14574,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                 <!-- 매출외출고 요청서 연결 여부 -->
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
                     <div id="seLinkBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
-                    <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치 검색..."
+                    <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치, 매출외 수주번호 검색..."
                         oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
                         style="flex:1;min-width:220px;box-sizing:border-box;padding:6px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.82rem;background:var(--se-raised);color:var(--se-text);font-family:'Outfit',sans-serif;">
                 </div>
@@ -18847,6 +18847,8 @@ function seRenderTable(storeId) {
 
     // 검색 필터
     const q = seSearchQuery.trim().toLowerCase();
+    // 매출외 수주번호는 하이픈 유무와 상관없이 찾는다 (P20261103-0235-00 = 202611030235)
+    const qOrd = seOrdKey(q);
     let rows = seDisplayData.filter(row => {
         if (!kindPass(row)) return false;
         if (seLinkFilter !== 'all' && linkOf(row) !== seLinkFilter) return false;
@@ -18857,7 +18859,8 @@ function seRenderTable(storeId) {
         const sku = (row.sku || '').toLowerCase();
         const color = (row.color_code || '').toLowerCase();
         const loc = (row.zone_id ? (seStoreZones.find(z=>z.id===row.zone_id)?.zone_name||'') : (row.location||'')).toLowerCase();
-        return name.includes(q) || purpose.includes(q) || sku.includes(q) || color.includes(q) || loc.includes(q);
+        const ord = qOrd.length >= 4 && seOrdKey(row.sales_order_no).includes(qOrd);
+        return name.includes(q) || purpose.includes(q) || sku.includes(q) || color.includes(q) || loc.includes(q) || ord;
     });
     // 정렬 — 판매완료는 현재 전시품과 섞이지 않게 항상 맨 아래로 모은다.
     // 칼럼 정렬은 그 다음 기준이고, 정렬을 안 걸었으면 원래 순서를 유지한다.
