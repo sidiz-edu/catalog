@@ -14577,6 +14577,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQrModal
                     <input id="seSearchInput" type="text" placeholder="제품명, 구분, 단품코드, 색상, 위치, 매출외 수주번호 검색..."
                         oninput="seSearchQuery=this.value;seRenderTable(seCurrentStore)"
                         style="flex:1;min-width:220px;box-sizing:border-box;padding:6px 12px;border:1px solid var(--se-border);border-radius:6px;font-size:0.82rem;background:var(--se-raised);color:var(--se-text);font-family:'Outfit',sans-serif;">
+                    <button id="seExportBtn" onclick="seExportExcel()" title="지금 표에 보이는 전시품(검색·필터 적용)을 엑셀로 내려받습니다"
+                        style="padding:6px 13px;border-radius:6px;border:1.5px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;font-size:0.8rem;font-weight:700;white-space:nowrap;font-family:'Outfit',sans-serif;">📥 엑셀</button>
                 </div>
                 <div id="seLinkDesc" style="display:none;margin-bottom:8px;font-size:0.72rem;line-height:1.6;color:var(--se-muted);"></div>
                 <!-- 표가 상단 고정이라 아래에 두면 스크롤할 때 표 위를 지나가며 행을 잘라 보인다 -->
@@ -18897,6 +18899,7 @@ function seRenderTable(storeId) {
         if (ob != null) return 1;
         return a.i - b.i;
     }).map(x => x.r);
+    seExportRows = rows;
     // 열 정렬 중에는 드래그가 먹히지 않으므로 안내를 바꾼다
     const dragHint = document.getElementById('seDragHint');
     if (dragHint) dragHint.textContent = seSortCol
@@ -19403,6 +19406,57 @@ async function seMoveReqExcel() {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     msg.style.color = '#16a34a';
     msg.textContent = `✓ 엑셀을 내려받았습니다 — 경로 ${routes.length}곳 · ${routes.reduce((s, rt) => s + rt.rows.reduce((a, r) => a + (r.quantity || 1), 0), 0)}대`;
+}
+
+// 전시품 목록 엑셀 — 지금 표에 보이는 행(검색·필터·정렬 그대로)
+let seExportRows = [];
+async function seExportExcel() {
+    const btn = document.getElementById('seExportBtn');
+    if (!seExportRows.length) { alert('내보낼 전시품이 없습니다.'); return; }
+    btn.disabled = true; btn.textContent = '만드는 중...';
+    try {
+        if (typeof ExcelJS === 'undefined') {
+            await new Promise((ok, ng) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+                s.onload = ok; s.onerror = ng; document.head.appendChild(s);
+            });
+        }
+        const store = seStoreNameOf(seCurrentStore) || seCurrentStore || '전시품';
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('전시품 목록');
+        ws.columns = [
+            ['매장', 22], ['제품명', 18], ['대분류', 9], ['소분류', 11], ['단품코드', 14], ['색상', 10], ['개수', 6],
+            ['전시 시작일', 12], ['위치', 14], ['메모', 30], ['매출외수주번호', 18], ['매출외 요청서', 24],
+            ['요청서 단가', 12], ['최종 수정', 18],
+        ].map(([header, width]) => ({ header, width }));
+        seExportRows.forEach(row => {
+            const p = seIsDirectBuy(row) ? null : seReqPriceOf(row);
+            ws.addRow([
+                seStoreNameOf(row.store_id) || row.store_id, seRowName(row), SE_MAJOR[seMajorOf(row)][0], seMinorOf(row)[0],
+                row.sku ? row.sku.split('-')[0] : '', row.color_code || '', row.quantity ?? 1, row.display_since || '',
+                row.zone_id ? (seStoreZones.find(z => z.id === row.zone_id)?.zone_name || '') : (row.location || ''),
+                row.memo || '', row.sales_order_no || '', p ? (p.outgoing_requests || {}).doc_no || '' : '',
+                p ? p.unit_price : null, row.updated_at ? new Date(row.updated_at).toLocaleString('ko-KR') : '',
+            ]);
+        });
+        const head = ws.getRow(1);
+        head.font = { bold: true };
+        head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        ws.getColumn(13).numFmt = '#,##0';
+        ws.views = [{ state: 'frozen', ySplit: 1 }];
+        ws.autoFilter = { from: 'A1', to: 'N1' };
+        const buf = await wb.xlsx.writeBuffer();
+        const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+        const link = document.createElement('a');
+        link.href = url; link.download = `${store} 전시품 목록 ${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+        alert('엑셀을 만들지 못했습니다: ' + (e.message || e));
+    } finally {
+        btn.disabled = false; btn.textContent = '📥 엑셀';
+    }
 }
 
 // 「보낼 예정」 표시 — 받을 매장과 사유를 메모 태그로 남긴다. 이미 표시돼 있으면 바꾸거나 지운다.
