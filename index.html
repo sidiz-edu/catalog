@@ -16437,13 +16437,14 @@ let sePendingDeletes = [];
 let seStoreZones = [];
 const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
 
-// 전시품 표 제품명 — T60은 단품코드로 사양을 나눈다 (HLDAM1 = VE 리뉴얼, HLDAL = LARGE)
+// 전시품 표 제품명 — T60은 단품코드로 사양을 나눈다 (HLDAM0·LDAM0 = 구사양, HLDAM1 = VE 리뉴얼, HLDAL = LARGE)
 function seRowName(row) {
     const base = SE_PRODUCTS.find(p => p.id === row.product_id)?.name || row.product_id;
     if (base !== 'T60' && base !== 'T60 AIR') return base;
     const code = (row.sku || '').toUpperCase();
     const air = base === 'T60 AIR' || code.startsWith('T62') ? 'T60 AIR' : 'T60';
-    return /^T6[12]HLDAL/.test(code) ? air + ' LARGE' : /^T6[12]HLDAM1/.test(code) ? air + ' VE' : air;
+    return /^T6[12]HLDAL/.test(code) ? air + ' LARGE' : /^T6[12]HLDAM1/.test(code) ? air + ' VE'
+        : /^T61H?LDAM0/.test(code) ? air + ' (구)' : air;
 }
 
 // SE 관리 전용 매장 — 고객용 매장 안내·견적 화면에는 노출하지 않으므로 storeData에 넣지 않는다
