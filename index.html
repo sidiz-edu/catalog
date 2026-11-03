@@ -16437,6 +16437,15 @@ let sePendingDeletes = [];
 let seStoreZones = [];
 const SE_PRODUCTS = Object.entries(products).map(([id, p]) => ({ id, name: p.name || id, img: p.img || null }));
 
+// 전시품 표 제품명 — T60은 단품코드로 사양을 나눈다 (HLDAM1 = VE 리뉴얼, HLDAL = LARGE)
+function seRowName(row) {
+    const base = SE_PRODUCTS.find(p => p.id === row.product_id)?.name || row.product_id;
+    if (base !== 'T60' && base !== 'T60 AIR') return base;
+    const code = (row.sku || '').toUpperCase();
+    const air = base === 'T60 AIR' || code.startsWith('T62') ? 'T60 AIR' : 'T60';
+    return /^T6[12]HLDAL/.test(code) ? air + ' LARGE' : /^T6[12]HLDAM1/.test(code) ? air + ' VE' : air;
+}
+
 // SE 관리 전용 매장 — 고객용 매장 안내·견적 화면에는 노출하지 않으므로 storeData에 넣지 않는다
 const SE_EXTRA_STORES = [
     { id: 'iloom-daegu',   name: '일룸 대구점',     region: '대구' },
@@ -18853,8 +18862,7 @@ function seRenderTable(storeId) {
         if (!kindPass(row)) return false;
         if (seLinkFilter !== 'all' && linkOf(row) !== seLinkFilter) return false;
         if (!q) return true;
-        const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
-        const name = (prod ? prod.name : row.product_id).toLowerCase();
+        const name = seRowName(row).toLowerCase();
         const purpose = (row.purpose || '').toLowerCase();
         const sku = (row.sku || '').toLowerCase();
         const color = (row.color_code || '').toLowerCase();
@@ -18865,7 +18873,7 @@ function seRenderTable(storeId) {
     // 정렬 — 판매완료는 현재 전시품과 섞이지 않게 항상 맨 아래로 모은다.
     // 칼럼 정렬은 그 다음 기준이고, 정렬을 안 걸었으면 원래 순서를 유지한다.
     const getVal = (row, col) => {
-        if (col === 'name') return (SE_PRODUCTS.find(p=>p.id===row.product_id)?.name || row.product_id).toLowerCase();
+        if (col === 'name') return seRowName(row).toLowerCase();
         if (col === 'major') return seMajorOf(row);
         if (col === 'minor') return seMinorOf(row)[0];
         if (col === 'source') return (SE_SOURCE[seSourceOf(row)] || [''])[0];
@@ -18901,11 +18909,10 @@ function seRenderTable(storeId) {
     seRenderUnmatchedRef();
     const activeRows = rows.map((row) => {
         const i = seDisplayData.indexOf(row);
-        const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         const dt = new Date(row.updated_at).toLocaleString('ko-KR', { year:'2-digit', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
         const photos = (row.image_urls && row.image_urls.length) ? row.image_urls
                      : (row.image_url ? [row.image_url] : []);
-        const photoLabel = [prod?.name || row.product_id, row.sku].filter(Boolean).join(' · ');
+        const photoLabel = [seRowName(row), row.sku].filter(Boolean).join(' · ');
         const imgCell = photos.length
             ? `<td><div style="position:relative;display:inline-block;cursor:zoom-in;"
                     onclick='openSePhoto(${JSON.stringify(photos).replace(/'/g, "&#39;")}, ${JSON.stringify(photoLabel).replace(/'/g, "&#39;")})'>
@@ -18942,7 +18949,7 @@ function seRenderTable(storeId) {
                 ${dragOn ? `<span draggable="true" ondragstart="seDragStart(event)" title="끌어서 순서 바꾸기"
                     style="display:inline-block;cursor:grab;color:#cbd5e1;font-size:0.95rem;line-height:1;
                            padding:0 2px;vertical-align:middle;user-select:none;">⠿</span>` : ''}</td>
-            <td><span class="se-tag">${prod ? prod.name : row.product_id}</span></td>
+            <td><span class="se-tag">${seRowName(row)}</span></td>
             ${purposeCell}
             <td style="font-size:0.78rem;color:#475569;">${row.sku ? row.sku.split('-')[0] : '-'}</td>
             <td style="font-size:0.78rem;">${row.color_code || '-'}</td>
@@ -18998,10 +19005,9 @@ function seRenderTable(storeId) {
         </tr>`;
     }).join('');
     const deletedRows = sePendingDeletes.map((row, j) => {
-        const prod = SE_PRODUCTS.find(p => p.id === row.product_id);
         return `<tr style="opacity:0.45;background:rgba(239,68,68,0.06);">
             <td></td>
-            <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${prod ? prod.name : row.product_id}</span></td>
+            <td style="text-decoration:line-through;"><span class="se-tag" style="opacity:0.6;">${seRowName(row)}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${SE_MAJOR[seMajorOf(row)][0]}</span></td>
             <td><span class="se-tag" style="opacity:0.5;">${seMinorOf(row)[0]}</span></td>
             <td class="se-src-cell" style="display:none;">-</td>
