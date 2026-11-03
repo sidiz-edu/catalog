@@ -18264,13 +18264,16 @@ async function seReqLookupDetail(reqId) {
         if (onlyMine && it.store_id !== curStore) return '';
         const sku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
         const mine = sku === cur && (!curStore || it.store_id === curStore);
-        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">
-            <td style="padding:5px 8px;color:#e2e8f0;">${mine ? '🎯 ' : ''}${it.product_name || '-'}</td>
+        const sameStore = !!curStore && it.store_id === curStore;
+        const sameCode = !!cur && (it.item_code || '').toUpperCase() === cur.split('-')[0];
+        const storeTxt = it.store_name_raw || it.store_id || '-';
+        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : sameStore ? 'background:rgba(16,185,129,0.07);' : ''}">
+            <td style="padding:5px 8px;color:#e2e8f0;">${mine ? '🎯 ' : ''}${sameCode ? `<b style="color:#fde047;">${it.product_name || '-'}</b>` : (it.product_name || '-')}</td>
             <td style="padding:5px 8px;font-family:monospace;color:#94a3b8;">${it.item_code || '-'}</td>
             <td style="padding:5px 8px;font-family:monospace;color:#94a3b8;">${it.color_code || '-'}</td>
             <td style="padding:5px 8px;text-align:right;color:#e2e8f0;">${it.qty ?? '-'}</td>
             <td style="padding:5px 8px;text-align:right;color:#94a3b8;">${it.unit_price != null ? it.unit_price.toLocaleString() : '-'}</td>
-            <td style="padding:5px 8px;color:#94a3b8;white-space:nowrap;">${it.store_name_raw || it.store_id || '-'}</td>
+            <td style="padding:5px 8px;color:#94a3b8;white-space:nowrap;">${sameStore ? `<span style="background:#065f46;color:#d1fae5;border-radius:999px;padding:1px 8px;font-weight:700;">${storeTxt}</span>` : storeTxt}</td>
             ${pick ? `<td style="padding:5px 8px;text-align:right;white-space:nowrap;">${mine
                 ? '<span style="color:#60a5fa;font-size:0.7rem;font-weight:700;">현재</span>'
                 : `<button onclick="seLinkReqItemToRow(${i})" style="background:rgba(0,62,255,0.22);border:1px solid #003EFF;border-radius:6px;padding:3px 9px;color:#bfdbfe;font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">이 품목으로</button>`}</td>` : ''}
