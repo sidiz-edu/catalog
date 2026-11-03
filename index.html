@@ -21726,6 +21726,8 @@ const SE_DOCV_CSS = {
     num:  'text-align:right;color:#e2e8f0;white-space:nowrap;',
     txt:  'color:#e2e8f0;',
     dim:  'color:#94a3b8;white-space:nowrap;',
+    name: 'color:#e2e8f0;white-space:nowrap;',
+    store:'color:#94a3b8;white-space:nowrap;',
 };
 const seWon = v => (v == null || v === '') ? '-' : Number(v).toLocaleString();
 const SE_DOC_VIEW = {
@@ -21741,12 +21743,13 @@ const SE_DOC_VIEW = {
         jump: r => `seOpenRecoveryFor('${seMoNo(r.doc_no) || ''}')`,
         jumpLabel: '🧾 회수 보고서 탭에서 열기',
         cols: [
+            ['제품명',    it => (_recCodeName || {})[(it.item_code || '').toUpperCase().replace(/\s/g, '')] || '-', 'name'],
             ['품목코드',  it => it.item_code || '-', 'mono'],
             ['색상',      it => it.color_code || '-', 'mono'],
             ['수량',      it => it.qty == null ? '-' : it.qty, 'num'],
             ['미회수',    it => seWon(it.unrecovered_amount), 'num'],
             ['수주번호',  it => it.order_no || '-', 'mono'],
-            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'dim'],
+            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'store'],
         ],
     },
     tra: {
@@ -21758,12 +21761,13 @@ const SE_DOC_VIEW = {
         jump: r => `seJumpToTransferTab('${String(r.doc_no || '')}')`,
         jumpLabel: '🔁 거래처 변경 탭에서 열기',
         cols: [
+            ['제품명',    it => (_recCodeName || {})[(it.item_code || '').toUpperCase().replace(/\s/g, '')] || '-', 'name'],
             ['품목코드',  it => it.item_code || '-', 'mono'],
             ['색상',      it => it.color_code || '-', 'mono'],
             ['수량',      it => it.qty == null ? '-' : it.qty, 'num'],
             ['수주 (전)', it => it.order_no_before || '-', 'mono'],
             ['수주 (후)', it => it.order_no_after || '-', 'mono'],
-            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'dim'],
+            ['매장',      it => seStoreNameOf(it.store_id) || '-', 'store'],
         ],
     },
 };
@@ -21787,16 +21791,24 @@ async function seShowDocView(kind, docNo, curSku, curStore) {
     const { data: hs, error } = await _sb.from(C.head).select('*').eq('doc_no', docNo).limit(1);
     const r = (hs || [])[0];
     if (error || !r) { body.innerHTML = `<p style="color:#f87171;">${docNo} 문서를 불러오지 못했습니다.</p>`; return; }
-    const { data: list } = await _sb.from(C.items).select('*').eq(C.fk, r.id).order('seq');
+    const [{ data: list }] = await Promise.all([
+        _sb.from(C.items).select('*').eq(C.fk, r.id).order('seq'), seEnsureCodeNames()]);
     const items = list || [];
 
+    // 지금 보는 전시품 줄(🎯·파란 바탕) · 같은 제품 코드(제품명 노란 글씨) · 지금 보는 매장(매장명 초록 알약)
     const want = (curSku || '').toUpperCase(), wantStore = curStore || '';
+    const wantCode = want.split('-')[0];
     const trs = items.map(it => {
         const s = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
-        const mine = !!want && s === want && (!wantStore || !it.store_id || it.store_id === wantStore);
-        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : ''}">`
+        const sameStore = !!wantStore && it.store_id === wantStore;
+        const mine = !!want && s === want && (!wantStore || !it.store_id || sameStore);
+        const sameCode = !!wantCode && (it.item_code || '').toUpperCase() === wantCode;
+        const cell = (cls, v) => cls === 'store' && sameStore
+            ? `<span style="background:#065f46;color:#d1fae5;border-radius:999px;padding:1px 8px;font-weight:700;">${v}</span>`
+            : cls === 'name' && sameCode ? `<b style="color:#fde047;">${v}</b>` : v;
+        return `<tr style="${mine ? 'background:rgba(0,62,255,0.22);' : sameStore ? 'background:rgba(16,185,129,0.07);' : ''}">`
             + C.cols.map(([, f, cls], i) =>
-                `<td style="padding:5px 8px;${SE_DOCV_CSS[cls] || SE_DOCV_CSS.txt}">${i === 0 && mine ? '🎯 ' : ''}${f(it)}</td>`).join('')
+                `<td style="padding:5px 8px;${SE_DOCV_CSS[cls] || SE_DOCV_CSS.txt}">${i === 0 && mine ? '🎯 ' : ''}${cell(cls, f(it))}</td>`).join('')
             + '</tr>';
     }).join('');
 
