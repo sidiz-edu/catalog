@@ -21967,7 +21967,8 @@ function seTransferCell(row) {
 }
 
 function seRecoveryCell(row) {
-    if (!row.sold) return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
+    // 팔지 않고 경품·협찬 등으로 회수보고서만 올라간 행도 문서는 보여 준다
+    if (!row.sold && !seRecoveryDocsFor(row).length) return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
     if (seIsDirectBuy(row) && !seRecoveryDocsFor(row).length) return SE_DIRECT_NA;
     if (seNeedsRecovery(row)) {
         return `<div style="display:flex;align-items:center;justify-content:center;">
