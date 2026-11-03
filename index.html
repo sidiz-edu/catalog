@@ -18376,11 +18376,34 @@ let _seEditPhotos = [];
 let _seAddPhotos = [];
 let _seAddPhotoBlobs = [];
 let seSearchQuery = '', seSortCol = '', seSortDir = 'asc', seKindFilter = 'all', seLinkFilter = 'all';
+// 요청서 품목 단가 — 옮겨온 물건은 원래 매장 요청서에 있으므로 전 매장 품목을 한 번 받아 둔다
+let _seReqPrice = null;
+async function seReqPriceEnsure() {
+    if (_seReqPrice) return;
+    const { data } = await sbAll(() => _sb.from('outgoing_request_items')
+        .select('store_id,item_code,color_code,unit_price,outgoing_requests(doc_no,order_no,ep_url)').order('id'));
+    _seReqPrice = {};
+    (data || []).forEach(it => {
+        if (!it.item_code || !it.unit_price) return;
+        const k = `${it.item_code}-${it.color_code || ''}`.toUpperCase();
+        (_seReqPrice[k] = _seReqPrice[k] || []).push(it);
+    });
+}
+// 이 물건이 나간 요청서(링크 → 수주번호 순)로만 찾는다 — 문서 없는 물건에 남의 단가를 붙이지 않는다
+function seReqPriceOf(row) {
+    const c = (_seReqPrice || {})[(row.sku || '').toUpperCase()];
+    if (!c) return null;
+    const r = x => x.outgoing_requests || {};
+    const keys = new Set(seOrdKeys(row.sales_order_no || '').slice(0, 2));
+    return (row.sales_link && c.find(x => r(x).ep_url === row.sales_link))
+        || (keys.size && c.find(x => seOrdKeys(r(x).order_no || '').slice(0, 2).some(k => keys.has(k)))) || null;
+}
+
 async function seRenderList(storeId) {
     const tbody = document.getElementById('seDisplayList');
     tbody.innerHTML = '<tr><td colspan="18" style="color:#475569;padding:20px;">불러오는 중...</td></tr>';
     try {
-        await seAccEnsure();
+        await Promise.all([seAccEnsure(), seReqPriceEnsure()]);
         const [displaysRes, zonesRes, reqItemsRes, notesRes, issuesRes, recRes, traRes] = await Promise.all([
             _sb.from('store_displays').select('*').eq('store_id', storeId).order('display_since', { ascending: false }),
             _sb.from('store_zones').select('id,zone_name').eq('store_id', storeId).order('zone_name'),
@@ -18951,6 +18974,7 @@ function seRenderTable(storeId) {
                         return `<button class="se-del-btn" style="background:${bg};color:#fff;border:none;" onclick="seShowReqForSku('${row.sku}','${row.store_id}','${seRowOrderNos(row).join('|')}','${row.id}')" title="${tip}">${mv ? '🔀' : '📄'}</button>`;
                     })() : ''}
                 </div>
+                ${(p => p ? `<div style="text-align:center;font-size:0.72rem;color:#334155;font-weight:600;margin-top:3px;white-space:nowrap;" title="${(p.outgoing_requests || {}).doc_no || ''} 요청서 단가">${p.unit_price.toLocaleString()}원</div>` : '')(seIsDirectBuy(row) ? null : seReqPriceOf(row))}
             </td>
             <td style="min-width:86px;vertical-align:middle;">${seTransferCell(row)}</td>
             <td style="min-width:86px;vertical-align:middle;">${seRecoveryCell(row)}</td>
