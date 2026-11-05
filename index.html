@@ -21988,9 +21988,11 @@ function seTransferCell(row) {
 }
 
 function seRecoveryCell(row) {
-    // 매장에 있는 물건엔 회수보고서를 붙이지 않는다 — 남는 보고서가 코드만 같은 전시 행에 엉뚱하게 붙는다.
-    // 경품·협찬으로 나간 건은 매장 出 · 고객 증정으로 바꾸면 보인다.
-    if (!row.sold) return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
+    // 회수보고서는 매출외출고를 확정(미회수 처리)하는 문서라, 위탁매출대리점으로 일괄 거변된 매장처럼
+    // 물건이 매장에 그대로 있어도 올라간다(26-01-00030). 다만 매장에 있는 행에는 수주번호가 꼭 맞는
+    // 보고서만 붙인다 — 코드만 같은 남는 보고서가 엉뚱한 전시 행에 붙지 않도록.
+    if (!row.sold && !seRecoveryDocsFor(row).some(x => seOrdRank(x.order_no, row.sales_order_no) === 1))
+        return '<span style="color:#cbd5e1;font-size:0.78rem;">-</span>';
     if (seIsDirectBuy(row) && !seRecoveryDocsFor(row).length) return SE_DIRECT_NA;
     if (seNeedsRecovery(row)) {
         return `<div style="display:flex;align-items:center;justify-content:center;">
