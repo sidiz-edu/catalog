@@ -4122,7 +4122,7 @@
                 <div class="promo-card-footer">📅 10/19(월) 12시 ~ 10/31(토) · 🛒 장바구니·견적서 자동 반영 (1대)</div>
             </div>
             <!-- 세계 척추의 날 T80·T90 -->
-            <div class="promo-card" data-promo-end="2026-10-31" style="--pc-accent:#ea580c;">
+            <div class="promo-card" data-promo-end="2026-11-30" style="--pc-accent:#ea580c;">
                 <span class="promo-card-icon">🦴</span>
                 <div class="promo-card-series">T80 · T90 · 세계 척추의 날 (10/16)</div>
                 <div class="promo-card-name">하이엔드 의자 10% 추가 할인</div>
@@ -4132,7 +4132,7 @@
                     <div class="promo-rate-row"><span class="rate-label">T80 <span style="text-decoration:line-through;color:#aaa;">689,000</span></span><span class="rate-val" style="background:#ea580c;">584,100원</span></div>
                     <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;">T90 1,099,000원 · T80 649,000원 기준 · 가죽·리미티드 등 상위 사양도 10%</span>
                 </div>
-                <div class="promo-card-footer">📅 10/16(금)부터 · 🛒 장바구니·견적서 자동 반영</div>
+                <div class="promo-card-footer">📅 10/16(금) ~ 11/30(월) · 🛒 장바구니·견적서 자동 반영</div>
             </div>
             <!-- 아시안게임 금메달 기념 -->
             <div class="promo-card" data-promo-end="2026-10-11" style="--pc-accent:#ca8a04;">
@@ -7982,7 +7982,8 @@ const ASIAN_GAMES_CHAIRS = new Set([
 // 세계 척추의 날: kr.sidiz.com/blogs/special-offers/261016-world-spine-day (T90 1,099,000→989,100 · T80 649,000→584,100)
 const RATE_PROMOS = [
     { ...ASIAN_GAMES_PROMO, ids: ASIAN_GAMES_CHAIRS },
-    { start: '2026-10-16', end: '2026-10-31', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
+    // 11/30까지 연장 (2026-11-06 매장 문의로 확인)
+    { start: '2026-10-16', end: '2026-11-30', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
     // T60 LARGE 출시 기념 (매장 공지 26-10-15): LARGE 모델만, 회원 1인 1회 쿠폰 → 견적에는 1대만 반영한다
     { start: '2026-10-19', end: '2026-10-31', rate: 0.10, label: 'T60 LARGE 출시 기념 10%', ids: new Set(['t60']), maxQty: 1,
       match: i => /HLDAL0KK/i.test(i.sku || '') || /LARGE/i.test(i.variantName || '') },
