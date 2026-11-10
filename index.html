@@ -4108,7 +4108,7 @@
             <!-- 하나의 의자, 두 가지 좌판 (재공지 11/6) -->
             <div class="promo-card" data-promo-end="2026-11-30" style="--pc-accent:#7c3aed;">
                 <span class="promo-card-icon">🔄</span>
-                <div class="promo-card-series">T50 · T50 AIR · T60 · T60 AIR (LARGE 포함)</div>
+                <div class="promo-card-series">T50 2세대 · T50 AIR 2세대 · T60 · T60 AIR (LARGE 포함) · 1세대 제외</div>
                 <div class="promo-card-name">하나의 의자, 두 가지 좌판</div>
                 <div class="promo-card-desc">
                     ① 의자 <b>회원 할인가에서 3% 추가 할인</b> — 시디즈닷컴 로그인 시 쿠폰 자동 발행<br>
@@ -8010,7 +8010,7 @@ const ASIAN_GAMES_CHAIRS = new Set([
 const RATE_PROMOS = [
     { ...ASIAN_GAMES_PROMO, ids: ASIAN_GAMES_CHAIRS },
     // 하나의 의자, 두 가지 좌판 (11/6 재공지): T50·T60 계열 회원 할인가 3% 추가. 좌판 1만원 쿠폰은 견적에 넣지 않는다
-    { start: '2026-11-10', end: '2026-11-30', rate: 0.03, label: '하나의 의자, 두 가지 좌판 3%', ids: new Set(['t50', 't50gen2', 't60']) },
+    { start: '2026-11-10', end: '2026-11-30', rate: 0.03, label: '하나의 의자, 두 가지 좌판 3%', ids: new Set(['t50gen2', 't60']) },   // T50 1세대(t50) 제외
     // 11/30까지 연장 (2026-11-06 매장 문의로 확인)
     { start: '2026-10-16', end: '2026-11-30', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
     // T60 LARGE 출시 기념 (매장 공지 26-10-15): LARGE 모델만, 회원 1인 1회 쿠폰 → 견적에는 1대만 반영한다
