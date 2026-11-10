@@ -4105,6 +4105,33 @@
             <span class="promo-rule-pill">⚡ 중복 적용 불가 · 최대 혜택 자동 선택</span>
         </div>
         <div class="promo-cards-wrap">
+            <!-- 하나의 의자, 두 가지 좌판 (재공지 11/6) -->
+            <div class="promo-card" data-promo-end="2026-11-30" style="--pc-accent:#7c3aed;">
+                <span class="promo-card-icon">🔄</span>
+                <div class="promo-card-series">T50 · T50 AIR · T60 · T60 AIR (LARGE 포함)</div>
+                <div class="promo-card-name">하나의 의자, 두 가지 좌판</div>
+                <div class="promo-card-desc">
+                    ① 의자 <b>회원 할인가에서 3% 추가 할인</b> — 시디즈닷컴 로그인 시 쿠폰 자동 발행<br>
+                    <div class="promo-rate-row"><span class="rate-label">T50 2세대 <span style="text-decoration:line-through;color:#aaa;">419,000</span></span><span class="rate-val" style="background:#7c3aed;">406,430원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T50 AIR 2세대 <span style="text-decoration:line-through;color:#aaa;">434,000</span></span><span class="rate-val" style="background:#7c3aed;">420,980원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T60 <span style="text-decoration:line-through;color:#aaa;">459,000</span></span><span class="rate-val" style="background:#7c3aed;">445,230원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T60 LARGE <span style="text-decoration:line-through;color:#aaa;">489,000</span></span><span class="rate-val" style="background:#7c3aed;">474,330원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T60 AIR <span style="text-decoration:line-through;color:#aaa;">474,000</span></span><span class="rate-val" style="background:#7c3aed;">459,780원</span></div>
+                    <div class="promo-rate-row"><span class="rate-label">T60 AIR LARGE <span style="text-decoration:line-through;color:#aaa;">504,000</span></span><span class="rate-val" style="background:#7c3aed;">488,880원</span></div>
+                    <div style="margin-top:8px;padding:8px 10px;background:#f5f3ff;border-radius:8px;font-size:0.82rem;line-height:1.7;">
+                        ② <b>다른 소재 좌판 1만원 구매 쿠폰</b><br>
+                        T50 → T50 AIR 좌판 · T50 AIR → T50 좌판<br>
+                        T60 · T60 LARGE → T60 AIR 좌판 · T60 AIR → T60 좌판
+                    </div>
+                    <span style="font-size:0.78rem;color:#6b7280;display:block;margin-top:6px;line-height:1.7;">
+                        영업 포인트: <b>「단 1만원으로, 두 가지 사양의 의자를」</b> — 여름엔 AIR, 겨울엔 패브릭 좌판으로 바꿔 끼워 사계절 사용<br>
+                        좌판 쿠폰은 <b>마케팅 수신 동의 고객만</b> — 공식몰은 구매 다음 날 발송, 커넥트플러스 수주는 좌판 쿠폰 QR로 발급 후 등록<br>
+                        (동의: 시디즈닷컴 마이페이지 → 회원 정보 확인 및 수정 → 마케팅 수신 동의 전체 체크)<br>
+                        <b style="color:#b91c1c;">좌판은 모델별로 다르니 고객 의자 모델에 맞는지 꼭 확인 · B2C 전용(B2B 적용 금지)</b>
+                    </span>
+                </div>
+                <div class="promo-card-footer">📅 11/10(화) ~ 11/30(월) · 🛒 3% 할인은 장바구니·견적서 자동 반영 · 좌판 쿠폰은 별도</div>
+            </div>
             <!-- T60 LARGE 출시 기념 -->
             <div class="promo-card" data-promo-end="2026-10-31" style="--pc-accent:#0d9488;">
                 <span class="promo-card-icon">🪑</span>
@@ -7982,6 +8009,8 @@ const ASIAN_GAMES_CHAIRS = new Set([
 // 세계 척추의 날: kr.sidiz.com/blogs/special-offers/261016-world-spine-day (T90 1,099,000→989,100 · T80 649,000→584,100)
 const RATE_PROMOS = [
     { ...ASIAN_GAMES_PROMO, ids: ASIAN_GAMES_CHAIRS },
+    // 하나의 의자, 두 가지 좌판 (11/6 재공지): T50·T60 계열 회원 할인가 3% 추가. 좌판 1만원 쿠폰은 견적에 넣지 않는다
+    { start: '2026-11-10', end: '2026-11-30', rate: 0.03, label: '하나의 의자, 두 가지 좌판 3%', ids: new Set(['t50', 't50gen2', 't60']) },
     // 11/30까지 연장 (2026-11-06 매장 문의로 확인)
     { start: '2026-10-16', end: '2026-11-30', rate: 0.10, label: '세계 척추의 날 T80·T90 10%', ids: new Set(['t80', 't90']) },
     // T60 LARGE 출시 기념 (매장 공지 26-10-15): LARGE 모델만, 회원 1인 1회 쿠폰 → 견적에는 1대만 반영한다
