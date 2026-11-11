@@ -3389,13 +3389,16 @@
         }
         .variant-cart-btn { background:var(--sidiz-navy); color:#fff; border:none; border-radius:6px; padding:4px 12px; font-size:0.78rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
         .variant-cart-btn:hover { opacity:0.85; }
-        .variant-name { font-size: 0.88rem; font-weight: 500; flex: 1; }
+        .variant-name { font-size: 0.88rem; font-weight: 500; flex: 1; min-width: 110px; }
         .variant-price {
             font-family: 'Outfit', sans-serif;
             font-weight: 700; font-size: 0.95rem;
             color: var(--sidiz-dark);
-            display: flex; flex-direction: row; align-items: center; gap: 6px;
+            display: flex; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px 6px;
+            white-space: nowrap;
         }
+        /* 기간 할인가는 가격 아래 한 줄로 — 옆에 붙이면 옵션명이 한 글자씩 세로로 밀린다 */
+        .variant-promo { flex-basis: 100%; text-align: right; font-size: 0.76rem; color: #dc2626; font-weight: 700; white-space: normal; }
         .compare-price {
             font-size: 0.75rem; font-weight: 400;
             color: var(--text-secondary);
@@ -11396,7 +11399,7 @@ function showDetail(productId) {
                                 ${v.comparePrice ? `<span class="discount-badge">${Math.round((1 - v.price/v.comparePrice)*100)}%</span>` : ''}
                                 ${fmt(v.price)}
                             </span>
-                            ${(rp => rp ? `<span style="display:block;font-size:0.78rem;color:#dc2626;font-weight:700;margin-top:2px;">${rp.label} → ${fmt(v.price - Math.round(v.price * rp.rate))}</span>` : '')(_ratePromoOf({ productId, variantName: v.name }))}
+                            ${(rp => rp ? `<span class="variant-promo">${rp.label} → ${fmt(v.price - Math.round(v.price * rp.rate))}</span>` : '')(_ratePromoOf({ productId, variantName: v.name }))}
                         </span>
                         ${colors.length <= 1 && !specs ? `<button class="variant-cart-btn" onclick="addToCart('${productId}', '${v.name.replace(/'/g,"\\'")}', ${v.price}); showToast('🛒 담겼습니다')">담기</button>` : ''}
                     </div>
