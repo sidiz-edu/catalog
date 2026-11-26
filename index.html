@@ -18192,8 +18192,12 @@ async function seSaveOrigin() {
         display_id: row.id, from_store: st, to_store: row.store_id, product_id: row.product_id, sku: row.sku,
         qty: row.quantity, reason, reason_note: '나중에 지정 — 먼저 등록된 물건의 출발 매장', moved_by: who });
     if (e1) { alert('저장 실패: ' + e1.message); return; }
+    // 연결 문서는 출발 매장 몫이어야 한다. 번호를 이어받았으면 그 행의 문서를, 아니면 고른 요청서를 쓴다.
+    // 도착 매장에서 등록하며 붙은 원래 링크는 출발 매장 요청서일 때만 남긴다 — 도착 매장 문서가 남아 엉뚱하게 연결되던 문제
+    const keepOwn = row.sales_link && (o.allReqs || []).some(i => (i.outgoing_requests || {}).ep_url === row.sales_link);
+    const link = (inherit && inherit.sales_link) || (req && req.ep_url) || (keepOwn ? row.sales_link : null);
     const { error: e2 } = await _sb.from('store_displays').update({
-        sales_order_no: no || null, sales_link: (req && req.ep_url) || (inherit && inherit.sales_link) || row.sales_link || null,
+        sales_order_no: no || null, sales_link: link,
         updated_by: '출발 매장 지정' }).eq('id', row.id);
     if (e2) { alert('저장 실패: ' + e2.message); return; }
     for (const d of dups) await _sb.from('store_displays').delete().eq('id', d.id);
