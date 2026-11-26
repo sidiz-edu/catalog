@@ -17846,7 +17846,11 @@ async function seShowReqForSku(sku, storeId, orderNo, rowId) {
     document.getElementById('seReqLookupKind').textContent = '매출외 요청서 연결';
     document.getElementById('seReqLookupSku').textContent = sku;
     seReqLookupWide(false);
-    _seReqLookupCtx = { sku, storeId, orderNo, rowId: rowId || (_seReqLookupCtx || {}).rowId };
+    // 다른 매장에서 옮겨 온 물건은 요청서에 출발 매장 이름으로 올라가 있다 — 출발 매장 품목을 찾고 「현재」로 표시한다
+    const _rid = rowId || (_seReqLookupCtx || {}).rowId;
+    const _mv = _rid && (seMoves[_rid] || [])[0];
+    if (_mv && _mv.from_store) storeId = _mv.from_store;
+    _seReqLookupCtx = { sku, storeId, orderNo, rowId: _rid };
     body.innerHTML = '<p style="color:#94a3b8;">조회 중...</p>';
     modal.style.display = 'flex';
 
@@ -18262,9 +18266,11 @@ async function seLinkReqItemToRow(i) {
     const newSku = [it.item_code, it.color_code].filter(Boolean).join('-').toUpperCase();
     if (!newSku) { alert('이 품목에는 품목코드가 없습니다.'); return; }
     const series = seSeriesOfCode(it.item_code) || row.product_id;
+    // 요청서 칸 번호는 대표 번호 하나뿐이다 — 이 전시품에 같은 요청서의 매장 몫 번호가 이미 있으면 그걸 먼저 제안한다
+    const keepNo = row.sales_order_no && seOrdRank(row.sales_order_no, r.order_no) ? row.sales_order_no : r.order_no;
     const no = seAskOrderNo(
         `전시품  ${row.sku || '(코드 없음)'}${row.product_id ? ' · ' + row.product_id : ''}`,
-        r.order_no,
+        keepNo,
         [`요청서  ${newSku}${it.product_name ? ' · ' + it.product_name : ''} (${it.store_name_raw || it.store_id || '매장 미상'})`,
          r.doc_no ? `· ${r.doc_no}` : '',
          (row.sku || '').toUpperCase() === newSku
